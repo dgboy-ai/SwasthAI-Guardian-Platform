@@ -23,7 +23,7 @@ const replacements = {
   ' gap-20': ' gap-8 md:gap-20'
 };
 
-walkDir('frontend/src', function(file) {
+walkDir('frontend/src', function (file) {
   if (file.endsWith('.jsx')) {
     let content = fs.readFileSync(file, 'utf8');
     let original = content;
@@ -33,7 +33,7 @@ walkDir('frontend/src', function(file) {
       // and followed by a space, quote, or backtick.
       // E.g. /([ "'`])p-10([ "'`])/g
       // But we just use regex to replace safe matches that aren't already preceded by md: etc
-      
+
       const regex = new RegExp(`(?<!md:|lg:|xl:|sm:)${oldClass}(?=[ "'\`])`, 'g');
       content = content.replace(regex, newClass);
     }

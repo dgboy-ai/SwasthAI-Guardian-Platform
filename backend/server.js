@@ -73,7 +73,14 @@ if (cluster.isPrimary) {
   // In production (DATABASE_URL set): uses Aurora PostgreSQL via pg.Pool
   // In local dev (no DATABASE_URL or no PG password): falls back to SQLite automatically
   let db;
+  let pool = null; // module-level pg.Pool reference — assigned below if PostgreSQL is available
   let usingSQLite = false;
+
+  // Hard-fail if JWT_SECRET is missing in production (prevents weak fallback token)
+  if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
+    console.error('FATAL: JWT_SECRET environment variable is not set. Refusing to start in production.');
+    process.exit(1);
+  }
 
   function toPostgres(sql) {
     let i = 0;
@@ -92,25 +99,28 @@ if (cluster.isPrimary) {
       await testPool.query('SELECT 1');
       console.log('✅ Connected to PostgreSQL / Aurora');
 
+      // Assign to module-level pool so all pool.query() calls below work
+      pool = testPool;
+
       // Full pg wrapper
       db = {
         get: async (sql, params = []) => {
-          const { rows } = await testPool.query(toPostgres(sql), params);
+          const { rows } = await pool.query(toPostgres(sql), params);
           return rows[0] || null;
         },
         all: async (sql, params = []) => {
-          const { rows } = await testPool.query(toPostgres(sql), params);
+          const { rows } = await pool.query(toPostgres(sql), params);
           return rows;
         },
         run: async (sql, params = []) => {
           const pgSql = toPostgres(sql);
-          const { rows } = await testPool.query(pgSql + ' RETURNING id', params).catch(async () => {
-            return testPool.query(pgSql, params);
+          const { rows } = await pool.query(pgSql + ' RETURNING id', params).catch(async () => {
+            return pool.query(pgSql, params);
           });
           return { lastID: rows?.[0]?.id };
         },
-        exec: async (sql) => { await testPool.query(sql); },
-        pool: testPool,
+        exec: async (sql) => { await pool.query(sql); },
+        pool,
       };
       return true;
     } catch (e) {
@@ -1439,9 +1449,12 @@ CRITICAL CLINICAL & TRANSLATION SAFEGUARDS:
         uptime: Math.floor(process.uptime()),
         timestamp: new Date().toISOString(),
         worker: process.pid,
-        connections: pool.totalCount,
-        idleConnections: pool.idleCount,
-        waitingConnections: pool.waitingCount,
+        db: usingSQLite ? 'SQLite (local)' : 'PostgreSQL/Aurora',
+        ...(pool ? {
+          connections: pool.totalCount,
+          idleConnections: pool.idleCount,
+          waitingConnections: pool.waitingCount,
+        } : {}),
       });
     });
 

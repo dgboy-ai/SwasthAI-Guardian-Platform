@@ -155,49 +155,39 @@ export const AuthProvider = ({ children }) => {
   };
 
   const loginPassword = async (identifier, password, role) => {
-    // Helper to create offline session
+    // Helper to create offline session — ONLY from verified cache match
     const createOfflineSession = () => {
-      // Search local cache first to log in with real registered details offline
       try {
         const offlineUsers = JSON.parse(localStorage.getItem('offline_users') || '[]');
-        const matchedUser = offlineUsers.find(u => 
-          (u.email && u.email.toLowerCase() === identifier.toLowerCase()) || 
-          (u.phone && u.phone === identifier) || 
+        const matchedUser = offlineUsers.find(u =>
+          (u.email && u.email.toLowerCase() === identifier.toLowerCase()) ||
+          (u.phone && u.phone === identifier) ||
           (u.username && u.username.toLowerCase() === identifier.toLowerCase())
         );
 
         if (matchedUser) {
-          if (matchedUser.password === password) {
-            console.log('Match found in offline cache:', matchedUser);
-            localStorage.setItem('token', 'offline-mock-token');
-            localStorage.setItem('user', JSON.stringify(matchedUser));
-            setUser(matchedUser);
-            return matchedUser;
-          } else {
-            throw new Error('Incorrect password (Offline Cache Match).');
+          // Must match password AND role
+          if (matchedUser.password !== password) {
+            throw new Error('Incorrect password.');
           }
+          if (matchedUser.role !== role) {
+            throw new Error(`This account is registered as '${matchedUser.role}', not '${role}'.`);
+          }
+          localStorage.setItem('token', 'offline-mock-token');
+          localStorage.setItem('user', JSON.stringify(matchedUser));
+          setUser(matchedUser);
+          return matchedUser;
         }
       } catch (e) {
-        if (e.message && e.message.includes('Incorrect password')) throw e;
+        if (e.message && (e.message.includes('Incorrect password') || e.message.includes('registered as'))) throw e;
         console.error('Error reading offline cache:', e);
       }
 
-      // Default fallback if no match found (ensures demo never blocks a judge)
-      const mockUser = {
-        id: 'offline-user-' + Date.now(),
-        name: identifier.split('@')[0].charAt(0).toUpperCase() + identifier.split('@')[0].slice(1),
-        username: identifier.includes('@') ? identifier.split('@')[0] : identifier,
-        role: role,
-        villageId: 'v101',
-        isOfflineSession: true
-      };
-      localStorage.setItem('token', 'offline-mock-token');
-      localStorage.setItem('user', JSON.stringify(mockUser));
-      setUser(mockUser);
-      return mockUser;
+      // No match found — do NOT create a fake session
+      throw new Error('No account found. Please connect to the internet to log in for the first time.');
     };
 
-    // 🌐 Fast-path: strictly offline — Allow ANY credential to work
+    // Offline: only allow login if credentials exist and match in the local cache
     if (!navigator.onLine && identifier && password) return createOfflineSession();
 
     try {
@@ -231,10 +221,9 @@ export const AuthProvider = ({ children }) => {
 
   const loginOTP = async (phone, otp, role) => {
     const createOfflineOTPSession = () => {
-      // Search local cache first to log in with real registered details offline
       try {
         const offlineUsers = JSON.parse(localStorage.getItem('offline_users') || '[]');
-        const matchedUser = offlineUsers.find(u => u.phone === phone);
+        const matchedUser = offlineUsers.find(u => u.phone === phone && u.role === role);
         if (matchedUser) {
           localStorage.setItem('token', 'offline-mock-token');
           localStorage.setItem('user', JSON.stringify(matchedUser));
@@ -244,19 +233,8 @@ export const AuthProvider = ({ children }) => {
       } catch (e) {
         console.error('Error reading offline cache:', e);
       }
-
-      const mockUser = {
-        id: 'offline-otp-user-' + Date.now(),
-        name: 'Resident ' + phone.slice(-4),
-        username: phone,
-        role: role,
-        villageId: 'v101',
-        isOfflineSession: true
-      };
-      localStorage.setItem('token', 'offline-mock-token');
-      localStorage.setItem('user', JSON.stringify(mockUser));
-      setUser(mockUser);
-      return mockUser;
+      // No match — do not create fake session
+      throw new Error('No account found for this phone number. Please connect to the internet to log in for the first time.');
     };
 
     // 🌐 Fast-path: strictly offline — Allow ANY OTP to work
