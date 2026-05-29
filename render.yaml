@@ -1,0 +1,44 @@
+services:
+  # 1. Unified Node.js backend + built React frontend (production bundle)
+  - type: web
+    name: swasthai-guardian
+    runtime: node
+    plan: free
+    buildCommand: npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: 20.14.0
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DATA_DIR
+        value: /data
+      - key: GROQ_API_KEY
+        sync: false # Set this in the Render Dashboard
+      - key: AI_SERVICE_URL
+        fromService:
+          type: web
+          name: swasthai-ai-service
+          property: host
+    disk:
+      name: sqlite-data
+      mountPath: /data
+      sizeGB: 1
+
+  # 2. Python FastAPI AI service (RAG, deep learning, skin analysis, outbreak agent)
+  - type: web
+    name: swasthai-ai-service
+    runtime: docker
+    plan: free
+    dockerContext: ai-service
+    dockerfilePath: ai-service/Dockerfile
+    envVars:
+      - key: GROQ_API_KEY
+        sync: false # Set this in the Render Dashboard
+      - key: BACKEND_URL
+        fromService:
+          type: web
+          name: swasthai-guardian
+          property: host

@@ -1,0 +1,33 @@
+SwasthAI Guardian - SymptomNet Deep Learning Model
+====================================================
+Algorithm      : Multilayer Perceptron (3-layer MLP)
+Embeddings     : paraphrase-multilingual-MiniLM-L12-v2
+Training set   : 883 samples
+Test set       : 156 samples
+Epochs         : 35
+Test Accuracy  : 79.5%
+
+Classification Report:
+                             precision    recall  f1-score   support
+
+Acute Respiratory Infection       1.00      0.62      0.77         8
+                    Anaemia       1.00      0.74      0.85        19
+                 Chickenpox       0.75      1.00      0.86         3
+                    Cholera       0.56      1.00      0.71         5
+                     Dengue       1.00      0.88      0.93         8
+                  Dysentery       1.00      0.25      0.40         4
+                 Heatstroke       0.43      0.60      0.50         5
+                   Jaundice       0.85      1.00      0.92        11
+                    Malaria       1.00      1.00      1.00        12
+                    Measles       0.40      0.67      0.50         3
+                  Pneumonia       0.77      1.00      0.87        10
+             Skin Infection       0.57      0.50      0.53         8
+                  Snakebite       0.57      1.00      0.73         8
+               Tuberculosis       0.78      0.88      0.82         8
+                    Typhoid       0.86      1.00      0.92        12
+                        UTI       0.80      0.50      0.62         8
+                Viral Fever       0.94      0.67      0.78        24
+
+                   accuracy                           0.79       156
+                  macro avg       0.78      0.78      0.75       156
+               weighted avg       0.84      0.79      0.79       156

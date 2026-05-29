@@ -1,0 +1,30 @@
+# Git
+.git
+.gitignore
+
+# Node
+**/node_modules
+**/npm-debug.log*
+
+# Python
+**/__pycache__
+**/*.pyc
+**/*.pyo
+**/.pytest_cache
+
+# Env files (never bake secrets into images)
+**/.env
+**/.env.*
+!**/.env.example
+
+# Build artifacts
+**/dist
+**/.vite
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Dev tools
+**/.eslintcache
+**/coverage

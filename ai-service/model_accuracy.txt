@@ -1,0 +1,35 @@
+SwasthAI Guardian - Disease Prediction Model
+==================================================
+Algorithm     : Random Forest Classifier
+Vectorizer    : TF-IDF (unigrams + bigrams)
+Training set  : 831 samples
+Test set      : 208 samples
+CV Accuracy   : 83.5% (+/- 2.8%)
+Test Accuracy : 89.4%
+Disease Classes (17): ['Acute Respiratory Infection', 'Anaemia', 'Chickenpox', 'Cholera', 'Dengue', 'Dysentery', 'Heatstroke', 'Jaundice', 'Malaria', 'Measles', 'Pneumonia', 'Skin Infection', 'Snakebite', 'Tuberculosis', 'Typhoid', 'UTI', 'Viral Fever']
+
+Classification Report:
+                             precision    recall  f1-score   support
+
+Acute Respiratory Infection       1.00      0.20      0.33         5
+                    Anaemia       1.00      0.88      0.94        17
+                 Chickenpox       1.00      0.88      0.93         8
+                    Cholera       1.00      0.50      0.67         8
+                     Dengue       1.00      0.93      0.96        14
+                  Dysentery       0.67      1.00      0.80         8
+                 Heatstroke       1.00      0.93      0.96        14
+                   Jaundice       0.94      1.00      0.97        15
+                    Malaria       1.00      0.80      0.89        15
+                    Measles       1.00      1.00      1.00         9
+                  Pneumonia       0.73      1.00      0.85        11
+             Skin Infection       1.00      0.90      0.95        10
+                  Snakebite       1.00      1.00      1.00        14
+               Tuberculosis       1.00      0.92      0.96        12
+                    Typhoid       0.93      0.82      0.88        17
+                        UTI       1.00      0.90      0.95        10
+                Viral Fever       0.64      1.00      0.78        21
+
+                   accuracy                           0.89       208
+                  macro avg       0.94      0.86      0.87       208
+               weighted avg       0.93      0.89      0.89       208
+
