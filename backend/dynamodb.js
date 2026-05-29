@@ -1,4 +1,4 @@
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import { DynamoDBClient, ListTablesCommand, CreateTableCommand } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, PutCommand, ScanCommand, QueryCommand } from "@aws-sdk/lib-dynamodb";
 import dotenv from "dotenv";
 
@@ -8,6 +8,33 @@ const hasAwsCredentials = process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRE
 const isProduction = process.env.NODE_ENV === 'production';
 
 let docClient = null;
+
+async function ensureTablesExist(client) {
+  try {
+    const listRes = await client.send(new ListTablesCommand({}));
+    const existingTables = listRes.TableNames || [];
+    const requiredTables = [
+      { name: 'outbreak_telemetry', key: 'eventId' },
+      { name: 'sync_queues', key: 'deviceId' },
+      { name: 'village_node_state', key: 'villageId' },
+      { name: 'emergency_streams', key: 'eventId' }
+    ];
+    for (const t of requiredTables) {
+      if (!existingTables.includes(t.name)) {
+        console.log(`Creating DynamoDB table: ${t.name}...`);
+        await client.send(new CreateTableCommand({
+          TableName: t.name,
+          KeySchema: [{ AttributeName: t.key, KeyType: "HASH" }],
+          AttributeDefinitions: [{ AttributeName: t.key, AttributeType: "S" }],
+          BillingMode: "PAY_PER_REQUEST"
+        }));
+        console.log(`✅ Table ${t.name} created successfully.`);
+      }
+    }
+  } catch (err) {
+    console.warn("⚠️ DynamoDB table validation/creation skipped/failed:", err.message);
+  }
+}
 
 if (hasAwsCredentials || isProduction) {
   try {
@@ -20,6 +47,7 @@ if (hasAwsCredentials || isProduction) {
     });
     docClient = DynamoDBDocumentClient.from(client);
     console.log("⚡ AWS DynamoDB Client Initialized.");
+    ensureTablesExist(client);
   } catch (err) {
     console.error("❌ Failed to initialize AWS DynamoDB Client:", err.message);
   }

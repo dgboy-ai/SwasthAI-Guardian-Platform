@@ -16,11 +16,23 @@ const api = axios.create({
   },
 });
 
-api.interceptors.request.use((config) => {
+api.interceptors.request.use(async (config) => {
   const token = localStorage.getItem('token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+
+  // Simulated network state for judges evaluation
+  const simState = localStorage.getItem('simulated_network_state');
+  if (simState === 'offline') {
+    const err = new Error('Simulated Offline Mode');
+    err.isSimulatedOffline = true;
+    throw err;
+  }
+  if (simState === 'slow') {
+    await new Promise(resolve => setTimeout(resolve, 4000));
+  }
+
   return config;
 });
 
@@ -28,7 +40,10 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.code === 'ECONNABORTED') {
+    if (error.isSimulatedOffline || error.message?.includes('Simulated Offline')) {
+      error.message = 'No internet connection. Offline mode active.';
+      delete error.response;
+    } else if (error.code === 'ECONNABORTED') {
       // Timeout — likely 2G/poor connectivity
       error.message = 'Network too slow. Using offline mode.';
     } else if (!error.response) {

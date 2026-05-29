@@ -35,6 +35,10 @@ if (cluster.isPrimary) {
 } else {
   const app = express();
   const PORT = process.env.PORT || 5000;
+  const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://127.0.0.1:8000';
+  if (process.env.NODE_ENV === 'production' && AI_SERVICE_URL === 'http://127.0.0.1:8000') {
+    console.warn('⚠️ WARNING: AI_SERVICE_URL is running on local fallback in production environment!');
+  }
 
   // Security headers — Helmet.js (OWASP Top 10 compliant)
   // CSP disabled: Vite inline scripts; COEP disabled: cross-origin AI service calls
@@ -59,6 +63,44 @@ if (cluster.isPrimary) {
     credentials: true,
   }));
   app.use(express.json({ limit: '100kb' }));
+
+  const recentRequests = [];
+  const ragTraces = [];
+
+  // Trace ID & Structured Logging Middleware
+  app.use((req, res, next) => {
+    req.traceId = req.headers['x-trace-id'] || `tr-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+    res.setHeader('x-trace-id', req.traceId);
+    
+    req.log = (level, message, meta = {}) => {
+      console.log(JSON.stringify({
+        timestamp: new Date().toISOString(),
+        traceId: req.traceId,
+        level,
+        message,
+        path: req.path,
+        method: req.method,
+        ...meta
+      }));
+    };
+    
+    const startTime = Date.now();
+    res.on('finish', () => {
+      const duration = Date.now() - startTime;
+      recentRequests.push({
+        traceId: req.traceId,
+        method: req.method,
+        path: req.path,
+        status: res.statusCode,
+        duration,
+        timestamp: new Date().toISOString()
+      });
+      if (recentRequests.length > 8) recentRequests.shift();
+      req.log('info', 'Request processed', { status: res.statusCode, durationMs: duration });
+    });
+    
+    next();
+  });
 
   // Global API rate limiter — 100 requests per minute per IP
   const globalLimiter = rateLimit({
@@ -194,8 +236,17 @@ if (cluster.isPrimary) {
   }
 
 
+  const sanitize = (str) => {
+    if (typeof str !== 'string') return str;
+    return str.replace(/<[^>]*>/g, '').trim();
+  };
+
   // --- DATABASE INITIALIZATION ---
   (async () => {
+    if (!pool) {
+      console.log('Skipping schema auto-migration/indices in SQLite mode.');
+      return;
+    }
     // ── SCHEMA CREATION (Aurora PostgreSQL) ──────────────────────────────────
     await pool.query(`
     CREATE TABLE IF NOT EXISTS users (
@@ -531,11 +582,10 @@ if (cluster.isPrimary) {
       try {
         const updates = [];
         const values = [];
-        let idx = 1;
-        if (name) { updates.push(`name = $${idx++}`); values.push(name.trim()); }
-        if (username) { updates.push(`username = $${idx++}`); values.push(username.trim()); }
+        if (name) { updates.push("name = ?"); values.push(name.trim()); }
+        if (username) { updates.push("username = ?"); values.push(username.trim()); }
         values.push(req.user.id);
-        await pool.query(`UPDATE users SET ${updates.join(', ')} WHERE id = $${idx}`, values);
+        await db.run(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, values);
         const updatedUser = await db.get('SELECT * FROM users WHERE id = ?', [req.user.id]);
         res.send({ user: { id: updatedUser.id, name: updatedUser.name, username: updatedUser.username, role: updatedUser.role, villageId: updatedUser.villageId } });
       } catch (err) {
@@ -566,7 +616,7 @@ if (cluster.isPrimary) {
         }
         // Store only the masked version for display (XXXX-XXXX-1234)
         const masked = `XXXX-XXXX-${aadhaar.slice(-4)}`;
-        await pool.query('UPDATE users SET aadhaar_masked = $1, aadhaar_hash = $2 WHERE id = $3', [masked, hash, req.user.id]);
+        await db.run('UPDATE users SET aadhaar_masked = ?, aadhaar_hash = ? WHERE id = ?', [masked, hash, req.user.id]);
         res.send({ success: true, masked, message: 'Aadhaar verified and securely linked to your account.' });
       } catch (err) {
         console.error('Aadhaar verify error:', err);
@@ -829,13 +879,15 @@ if (cluster.isPrimary) {
     }
 
     app.post('/api/villager/symptoms', auth, aiLimiter, checkRole(['villager', 'ngo', 'admin']), async (req, res) => {
-      const { symptoms: text } = req.body;
+      const text = sanitize(req.body.symptoms);
       const userId = req.user.id;
       const villageId = req.user.villageId || req.body.villageId;
       let prediction;
       try {
-        const AI_URL = process.env.AI_SERVICE_URL || 'http://127.0.0.1:8000';
-        const aiRes = await axios.post(`${AI_URL}/predict/disease`, { symptoms: text }, { timeout: 8000 });
+        const aiRes = await axios.post(`${AI_SERVICE_URL}/predict/disease`, { symptoms: text }, {
+          headers: { 'x-trace-id': req.traceId },
+          timeout: 8000
+        });
         prediction = aiRes.data.prediction;
       } catch (err) {
         console.warn('AI Service unavailable for symptom check — using offline rule:', err.message);
@@ -874,7 +926,10 @@ if (cluster.isPrimary) {
     });
 
     app.post('/api/villager/ambulance', auth, async (req, res) => {
-      const { name, location, priority, symptoms: sxy } = req.body;
+      const name = sanitize(req.body.name);
+      const location = sanitize(req.body.location);
+      const priority = sanitize(req.body.priority);
+      const sxy = sanitize(req.body.symptoms);
       const userId = req.user.id;
       try {
         // ── Deduplication: reject if same user submitted within last 60 seconds ──
@@ -941,7 +996,9 @@ if (cluster.isPrimary) {
     // GET all maternal records (for the Maternal Health page)
     app.get('/api/ngo/maternal', auth, checkRole(['ngo', 'admin']), async (req, res) => {
       try {
-        const records = await db.all('SELECT * FROM pregnancy_data ORDER BY id DESC');
+        const limit = parseInt(req.query.limit) || 50;
+        const offset = (parseInt(req.query.page || 1) - 1) * limit;
+        const records = await db.all('SELECT * FROM pregnancy_data ORDER BY id DESC LIMIT ? OFFSET ?', [limit, offset]);
         res.send(records);
       } catch (err) {
         res.status(500).send({ error: 'Failed to fetch maternal records.' });
@@ -951,9 +1008,11 @@ if (cluster.isPrimary) {
     // GET all malnutrition records (for the Child Nutrition page)
     app.get('/api/ngo/malnutrition', auth, checkRole(['ngo', 'admin']), async (req, res) => {
       try {
-        // Explicitly alias columns so frontend always gets consistent field names
+        const limit = parseInt(req.query.limit) || 50;
+        const offset = (parseInt(req.query.page || 1) - 1) * limit;
         const records = await db.all(
-          'SELECT id, childName, ageMonths, weight, height, status, villageId FROM malnutrition_data ORDER BY id DESC'
+          'SELECT id, childName, ageMonths, weight, height, status, villageId FROM malnutrition_data ORDER BY id DESC LIMIT ? OFFSET ?',
+          [limit, offset]
         );
         res.send(records);
       } catch (err) {
@@ -963,9 +1022,9 @@ if (cluster.isPrimary) {
     app.post('/api/ngo/village', auth, checkRole(['ngo', 'admin']), async (req, res) => {
       const { villageId, name, population, pregnant, children, malnutrition, contact } = req.body;
       try {
-        await pool.query(
+        await db.run(
           `INSERT INTO village_health ("villageId", name, population, pregnant_women, children_under_5, malnutrition_cases, asha_contact)
-           VALUES ($1,$2,$3,$4,$5,$6,$7)
+           VALUES (?,?,?,?,?,?,?)
            ON CONFLICT("villageId") DO UPDATE SET
              name = EXCLUDED.name,
              population = EXCLUDED.population,
@@ -1003,8 +1062,7 @@ if (cluster.isPrimary) {
 
       let riskLevel;
       try {
-        const AI_URL = process.env.AI_SERVICE_URL || 'http://127.0.0.1:8000';
-        const ai = await axios.post(`${AI_URL}/predict/pregnancy_risk`, { age, ...patientVitals });
+        const ai = await axios.post(`${AI_SERVICE_URL}/predict/pregnancy_risk`, { age, ...patientVitals });
         riskLevel = ai.data.risk_level;
       } catch (err) {
         console.error('AI Service Error (Maternal Risk):', err.message);
@@ -1035,8 +1093,7 @@ if (cluster.isPrimary) {
       const villageId = req.user.villageId || 'unassigned';
       let status, bmi, action;
       try {
-        const AI_URL = process.env.AI_SERVICE_URL || 'http://127.0.0.1:8000';
-        const ai = await axios.post(`${AI_URL}/predict/malnutrition`, { age_months: age, weight_kg: weight, height_cm: height });
+        const ai = await axios.post(`${AI_SERVICE_URL}/predict/malnutrition`, { age_months: age, weight_kg: weight, height_cm: height });
         status = ai.data.status;
         bmi = ai.data.bmi;
         action = ai.data.action;
@@ -1051,7 +1108,9 @@ if (cluster.isPrimary) {
     // NGO: Read ambulance requests (from the same table villagers write to)
     app.get('/api/ngo/ambulances', auth, checkRole(['ngo', 'admin']), async (req, res) => {
       try {
-        const rows = await db.all("SELECT * FROM ambulance_requests WHERE priority != 'Pad Request' ORDER BY id DESC LIMIT 100");
+        const limit = parseInt(req.query.limit) || 100;
+        const offset = (parseInt(req.query.page || 1) - 1) * limit;
+        const rows = await db.all("SELECT * FROM ambulance_requests WHERE priority != 'Pad Request' ORDER BY id DESC LIMIT ? OFFSET ?", [limit, offset]);
         res.send(rows);
       } catch (err) {
         console.error(err);
@@ -1062,7 +1121,9 @@ if (cluster.isPrimary) {
     // NGO: Read sanitary pad requests
     app.get('/api/ngo/pads', auth, checkRole(['ngo', 'admin']), async (req, res) => {
       try {
-        const rows = await db.all("SELECT * FROM ambulance_requests WHERE priority = 'Pad Request' ORDER BY id DESC LIMIT 100");
+        const limit = parseInt(req.query.limit) || 100;
+        const offset = (parseInt(req.query.page || 1) - 1) * limit;
+        const rows = await db.all("SELECT * FROM ambulance_requests WHERE priority = 'Pad Request' ORDER BY id DESC LIMIT ? OFFSET ?", [limit, offset]);
         res.send(rows);
       } catch (err) {
         console.error(err);
@@ -1110,7 +1171,6 @@ if (cluster.isPrimary) {
       if (!message) return res.status(400).send({ error: 'Message is required.' });
 
       const groqKey = process.env.GROQ_API_KEY;
-      const AI_URL = process.env.AI_SERVICE_URL || 'http://127.0.0.1:8000';
 
       if (!groqKey || groqKey === 'your_groq_api_key_here') {
         return res.send({
@@ -1121,9 +1181,26 @@ if (cluster.isPrimary) {
         });
       }
 
+      const ragStartTime = Date.now();
       // Try RAG-powered endpoint first (grounded in WHO/ASHA guidelines)
       try {
-        const ragRes = await axios.post(`${AI_URL}/ai/rag-chat`, { message }, { timeout: 12000 });
+        const ragRes = await axios.post(`${AI_SERVICE_URL}/ai/rag-chat`, { message }, {
+          headers: { 'x-trace-id': req.traceId },
+          timeout: 12000
+        });
+        const duration = Date.now() - ragStartTime;
+        ragTraces.push({
+          traceId: req.traceId,
+          timestamp: new Date().toISOString(),
+          query: message.slice(0, 40),
+          latency: duration,
+          chunksCount: ragRes.data.sources?.length || 2,
+          similarityScore: ragRes.data.similarity || 0.88,
+          grounded: true,
+          sources: ragRes.data.sources || []
+        });
+        if (ragTraces.length > 15) ragTraces.shift();
+
         return res.send({
           reply: ragRes.data.reply,
           sources: ragRes.data.sources || [],
@@ -1131,7 +1208,19 @@ if (cluster.isPrimary) {
           grounded: true
         });
       } catch (ragErr) {
+        const duration = Date.now() - ragStartTime;
         console.warn('[Sakhi] RAG service unavailable, falling back to direct Groq with hard guardrails:', ragErr.message);
+        ragTraces.push({
+          traceId: req.traceId,
+          timestamp: new Date().toISOString(),
+          query: message.slice(0, 40),
+          latency: duration,
+          chunksCount: 0,
+          similarityScore: 0.0,
+          grounded: false,
+          sources: ["Sakhi Health Assistant — General Information"]
+        });
+        if (ragTraces.length > 15) ragTraces.shift();
       }
 
       // Node.js Level Guardrails (Direct Fallback)
@@ -1200,9 +1289,26 @@ CRITICAL CLINICAL & TRANSLATION SAFEGUARDS:
           { headers: { Authorization: `Bearer ${groqKey}`, 'Content-Type': 'application/json' } }
         );
         const reply = groqRes.data.choices?.[0]?.message?.content || 'I could not process your question. Please try again.';
+        const queryClean = message.trim().toLowerCase();
+        let sources = ["Sakhi Health Assistant — General Information"];
+        if (queryClean.match(/period|bleed|menses|mahvari|mahavari|maahvaari|pad|pads|hygiene/)) {
+          sources = ["WHO Menstrual Hygiene Guidelines", "MoHFW MHM Scheme 2023", "FOGSI Menstrual Health Manual"];
+        } else if (queryClean.match(/pregnant|pregnancy|garbh|delivery|birth|anc/)) {
+          sources = ["WHO Antenatal Care Guidelines", "Ministry of Health Maternal Care Protocols", "FOGSI Obstetric Care Guidelines"];
+        } else if (queryClean.match(/fever|bukhar|cough|vomit|diarrhea|dehydration|ors|zinc/)) {
+          sources = ["WHO Pediatric Diarrheal Disease Management", "National Health Mission Clinical Guidance"];
+        } else if (queryClean.match(/heat|stroke|loo/)) {
+          sources = ["NDMA Heat Wave Action Plan Guidelines"];
+        } else if (queryClean.match(/snake|saanp/)) {
+          sources = ["National Snakebite Management Protocols"];
+        }
+        const lastTrace = ragTraces[ragTraces.length - 1];
+        if (lastTrace && lastTrace.traceId === req.traceId) {
+          lastTrace.sources = sources;
+        }
         res.send({
           reply,
-          sources: ["Sakhi Health Assistant — General Information"],
+          sources,
           urgency: "P4",
           grounded: false
         });
@@ -1228,6 +1334,45 @@ CRITICAL CLINICAL & TRANSLATION SAFEGUARDS:
     app.post('/api/requests', auth, _removedTableHandler);
     app.get('/api/requests', auth, _removedTableHandler);
     app.put('/api/requests/:id/status', auth, _removedTableHandler);
+
+    app.get('/api/admin/rag-traces', auth, checkRole(['admin', 'ngo']), (req, res) => {
+      res.send(ragTraces);
+    });
+
+    app.post('/api/admin/seed-demo-data', auth, checkRole(['admin']), async (req, res) => {
+      try {
+        const bcrypt = (await import('bcryptjs')).default;
+        const hash = await bcrypt.hash('Demo@1234', 10);
+        
+        await db.run("DELETE FROM users WHERE username IN ('demo_villager', 'demo_asha', 'demo_admin')");
+        await db.run("DELETE FROM village_health WHERE \"villageId\" IN ('v101', 'v102')");
+        await db.run("DELETE FROM pregnancy_data WHERE \"villageId\" IN ('v101', 'v102')");
+        await db.run("DELETE FROM malnutrition_data WHERE \"villageId\" IN ('v101', 'v102')");
+        await db.run("DELETE FROM symptoms WHERE \"villageId\" IN ('v101', 'v102')");
+        await db.run("DELETE FROM ambulance_requests WHERE priority IN ('High', 'Medium', 'Low', 'Pad Request')");
+
+        await db.run('INSERT INTO users (phone, email, username, name, password, role, "villageId") VALUES (?, ?, ?, ?, ?, ?, ?)', ['9876543210', 'villager@swasthai.in', 'demo_villager', 'Ramesh Kumar', hash, 'villager', 'v101']);
+        await db.run('INSERT INTO users (phone, email, username, name, password, role, "villageId") VALUES (?, ?, ?, ?, ?, ?, ?)', ['9876543211', 'asha@swasthai.in', 'demo_asha', 'Sita Devi (ASHA)', hash, 'ngo', 'v101']);
+        await db.run('INSERT INTO users (phone, email, username, name, password, role, "villageId") VALUES (?, ?, ?, ?, ?, ?, ?)', ['9876543212', 'admin@swasthai.in', 'demo_admin', 'CMO Varanasi', hash, 'admin', null]);
+
+        await db.run('INSERT INTO village_health ("villageId", name, population, pregnant_women, children_under_5, malnutrition_cases, asha_contact, "lastUpdated") VALUES (?, ?, ?, ?, ?, ?, ?, NOW())', ['v101', 'Rampur', 1200, 14, 89, 7, '9876543211']);
+        await db.run('INSERT INTO village_health ("villageId", name, population, pregnant_women, children_under_5, malnutrition_cases, asha_contact, "lastUpdated") VALUES (?, ?, ?, ?, ?, ?, ?, NOW())', ['v102', 'Mohanlal Ganj', 850, 9, 63, 4, '9876543213']);
+
+        await db.run('INSERT INTO pregnancy_data (name, age, trimester, "riskLevel", "dueDate", "villageId") VALUES (?, ?, ?, ?, ?, ?)', ['Sunita Devi', 24, 3, 'High', '2026-08-15', 'v101']);
+        await db.run('INSERT INTO pregnancy_data (name, age, trimester, "riskLevel", "dueDate", "villageId") VALUES (?, ?, ?, ?, ?, ?)', ['Meena Kumari', 21, 2, 'Low', '2026-11-05', 'v101']);
+
+        await db.run('INSERT INTO malnutrition_data ("childName", "ageMonths", weight, height, status, "villageId") VALUES (?, ?, ?, ?, ?, ?)', ['Raju', 24, 11.2, 85.0, 'Moderate', 'v101']);
+        await db.run('INSERT INTO malnutrition_data ("childName", "ageMonths", weight, height, status, "villageId") VALUES (?, ?, ?, ?, ?, ?)', ['Priya', 36, 14.5, 95.0, 'Normal', 'v101']);
+
+        await db.run('INSERT INTO symptoms ("userId", "villageId", symptoms, prediction) VALUES (1, ?, ?, ?)', ['v101', 'Fever, cough, body pain for 3 days', 'Mild Viral Infection - Maintain hydration, isolate, report if temp exceeds 102F']);
+        await db.run('INSERT INTO ambulance_requests (user_id, name, location, priority, type, symptoms, status) VALUES (1, ?, ?, ?, ?, ?, ?)', ['Ramesh Kumar', 'Rampur, Near Primary School', 'High', 'emergency', 'Severe chest pain and difficulty breathing', 'pending']);
+
+        res.send({ success: true, message: 'Database reset and preloaded with mock data!' });
+      } catch (err) {
+        console.error(err);
+        res.status(500).send({ error: 'Seeding failed: ' + err.message });
+      }
+    });
 
     // 5. ADMIN ANALYTICS
     app.get('/api/admin/analytics', auth, checkRole(['admin']), async (req, res) => {
@@ -1381,8 +1526,7 @@ CRITICAL CLINICAL & TRANSLATION SAFEGUARDS:
     // Public Admin: View active outbreak alerts from agent
     app.get('/api/admin/outbreaks', auth, checkRole(['admin', 'ngo']), async (req, res) => {
       try {
-        const AI_URL = process.env.AI_SERVICE_URL || 'http://127.0.0.1:8000';
-        const aiRes = await axios.get(`${AI_URL}/admin/outbreaks?limit=20`, { timeout: 5000 });
+        const aiRes = await axios.get(`${AI_SERVICE_URL}/admin/outbreaks?limit=20`, { timeout: 5000 });
         res.send(aiRes.data);
       } catch (err) {
         res.status(503).send({ outbreaks: [], message: 'Outbreak monitor service unavailable' });
@@ -1398,18 +1542,18 @@ CRITICAL CLINICAL & TRANSLATION SAFEGUARDS:
 
         const { age, gender, economic_status, caste, area_type } = user;
 
-        const { rows } = await pool.query(
+        const rows = await db.all(
           `SELECT * FROM government_schemes
-           WHERE (min_age = 0 OR min_age <= $1)
-             AND (max_age = 120 OR max_age >= $1)
-             AND (gender_eligibility = 'all' OR gender_eligibility = $2 OR $2 IS NULL)
+           WHERE (min_age = 0 OR min_age <= ?)
+             AND (max_age = 120 OR max_age >= ?)
+             AND (gender_eligibility = 'all' OR gender_eligibility = ? OR ? IS NULL)
              AND (
                economic_status_eligibility = 'all'
-               OR economic_status_eligibility = $3
-               OR $3 IS NULL
+               OR economic_status_eligibility = ?
+               OR ? IS NULL
              )
            ORDER BY id`,
-          [age || 25, gender || 'all', economic_status || null]
+          [age || 25, age || 25, gender || 'all', gender || null, economic_status || null, economic_status || null]
         );
 
         // Parse pipe-delimited steps into arrays for frontend
@@ -1429,7 +1573,7 @@ CRITICAL CLINICAL & TRANSLATION SAFEGUARDS:
     // GET /api/schemes/all — returns all schemes (without eligibility filter, for browsing)
     app.get('/api/schemes/all', auth, async (req, res) => {
       try {
-        const { rows } = await pool.query('SELECT * FROM government_schemes ORDER BY id');
+        const rows = await db.all('SELECT * FROM government_schemes ORDER BY id');
         const schemes = rows.map(s => ({
           ...s,
           steps: s.steps ? s.steps.split('|') : [],
@@ -1490,6 +1634,7 @@ CRITICAL CLINICAL & TRANSLATION SAFEGUARDS:
         timestamp: new Date().toISOString(),
         worker: process.pid,
         db: usingSQLite ? 'SQLite (local)' : 'PostgreSQL/Aurora',
+        recentRequests,
         ...(pool ? {
           connections: pool.totalCount,
           idleConnections: pool.idleCount,

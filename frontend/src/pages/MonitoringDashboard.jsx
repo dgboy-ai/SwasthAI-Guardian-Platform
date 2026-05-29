@@ -251,13 +251,18 @@ export default function MonitoringDashboard() {
   const [latency, setLatency] = useState(null);
   const [prevLatency, setPrevLatency] = useState(null);
   const [queueStats, setQueueStats] = useState({ maternalCount: 0, childCount: 0, ambulanceCount: 0, symptomCount: 0, totalPending: 0 });
-  const [onlineStatus, setOnlineStatus] = useState(navigator.onLine);
+  const [onlineStatus, setOnlineStatus] = useState(localStorage.getItem('simulated_network_state') === 'offline' ? false : navigator.onLine);
   const [dbConnections, setDbConnections] = useState(null);
   const [eventLog, setEventLog] = useState([]);
   const [dynamoFeed, setDynamoFeed] = useState(null);
   const [dynamoLoading, setDynamoLoading] = useState(false);
+  const [ragTraces, setRagTraces] = useState([]);
+  const [networkSimState, setNetworkSimState] = useState(localStorage.getItem('simulated_network_state') || 'online');
+  const [demoRunning, setDemoRunning] = useState(false);
+  const [seedLoading, setSeedLoading] = useState(false);
 
   // ── Simulation state
+  const [recentRequests, setRecentRequests] = useState([]);
   const [simMode, setSimMode] = useState('idle'); // 'idle' | 'surge' | 'storm' | 'replay'
   const [simRunning, setSimRunning] = useState(false);
   const [simLogs, setSimLogs] = useState([]);
@@ -266,6 +271,74 @@ export default function MonitoringDashboard() {
 
   // ── Helpers
   const now = () => new Date().toLocaleTimeString('en-IN', { hour12: false });
+
+  const toggleNetworkSim = (state) => {
+    localStorage.setItem('simulated_network_state', state);
+    setNetworkSimState(state);
+    if (state === 'offline') {
+      setOnlineStatus(false);
+      window.dispatchEvent(new Event('offline'));
+    } else {
+      setOnlineStatus(true);
+      window.dispatchEvent(new Event('online'));
+    }
+  };
+
+  const triggerDemoSeed = async () => {
+    if (seedLoading) return;
+    setSeedLoading(true);
+    addSimLog('⚡ Preloading realistic maternal health, malnutrition, symptom, and outbreak records...', '#f59e0b');
+    try {
+      const res = await api.post('/admin/seed-demo-data');
+      addSimLog(`✅ Database Reset & Seeded: ${res.data.message}`, '#10b981');
+      addEvent('SEED', 'Demo dataset preloaded', 'success');
+    } catch (err) {
+      addSimLog(`❌ Database Seeding Failed: ${err.response?.data?.error || err.message}`, '#ef4444');
+      addEvent('SEED', 'Demo dataset preloading failed', 'error');
+    } finally {
+      setSeedLoading(false);
+    }
+  };
+
+  const runJudgeDemo = async () => {
+    if (demoRunning) return;
+    setDemoRunning(true);
+    setSimLogs([]);
+    addSimLog('🏁 Starting SwasthAI H0 Judge Demo Pipeline...', '#6366f1');
+    
+    // 1. Sim Offline
+    addSimLog('🔌 Simulating cellular network drop (OFFLINE)...', '#f59e0b');
+    toggleNetworkSim('offline');
+    await new Promise(r => setTimeout(r, 1500));
+
+    // 2. Queue Offline items
+    addSimLog('📝 Queuing rural health logs offline (IndexedDB)...', '#ec4899');
+    await queueMaternalRecord({ name: 'Ankita Patel', age: 26, trimester: 3, riskLevel: 'High', villageId: 'v101' });
+    await queueChildRecord({ childName: 'Ganesh', ageMonths: 14, weight: 7.8, height: 71.0, status: 'Severe', villageId: 'v101' });
+    await queueAmbulanceRequest({ name: 'Sita Devi', location: 'Ward 3, Rampur', priority: 'High', type: 'emergency', symptoms: 'Emergency labor pains' });
+    
+    // Trigger queue refresh event
+    window.dispatchEvent(new Event('swasthai_queue_updated'));
+    await new Promise(r => setTimeout(r, 3000));
+
+    // 3. Reconnect Online
+    addSimLog('📡 Cellular network restored! Reconnecting to AWS cloud...', '#10b981');
+    toggleNetworkSim('online');
+    await new Promise(r => setTimeout(r, 1500));
+
+    // 4. Force sync
+    addSimLog('⚡ Replaying local IndexedDB log queues to DynamoDB & PostgreSQL...', '#6366f1');
+    await syncAllQueues();
+    window.dispatchEvent(new Event('swasthai_queue_updated'));
+    await new Promise(r => setTimeout(r, 2000));
+
+    // 5. Outbreak surge
+    addSimLog('🦠 Initiating automated epidemic outbreak detection simulation...', '#ef4444');
+    await runOutbreakSurge();
+    
+    addSimLog('🎉 Demo loop completed successfully!', '#10b981');
+    setDemoRunning(false);
+  };
 
   const addEvent = useCallback((type, message, level = 'info') => {
     setEventLog(prev => [{ type, message, level, time: now() }, ...prev].slice(0, 80));
@@ -287,10 +360,12 @@ export default function MonitoringDashboard() {
       } else {
         addEvent('PING', 'No response — offline?', 'error');
       }
-      // Fetch DB connection count from health endpoint
       try {
         const res = await api.get('/health');
         if (res.data?.connections !== undefined) setDbConnections(res.data.connections);
+        if (res.data?.recentRequests !== undefined) setRecentRequests(res.data.recentRequests);
+        const ragRes = await api.get('/admin/rag-traces');
+        if (ragRes.data) setRagTraces(ragRes.data);
       } catch { /* ignore */ }
     };
     poll();
@@ -518,6 +593,99 @@ export default function MonitoringDashboard() {
       {/* ── AWS Stack Status Banner */}
       <StackStatusBanner online={onlineStatus} />
 
+      {/* ── 👨‍⚖️ Judge Evaluation Toolkit */}
+      <div style={{
+        background: 'linear-gradient(135deg, rgba(99,102,241,0.08) 0%, rgba(139,92,246,0.08) 100%)',
+        border: '1px solid rgba(139,92,246,0.2)',
+        borderRadius: 16,
+        padding: '16px 20px',
+        marginBottom: 20,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        gap: 16
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={{ fontSize: 20 }}>👨‍⚖️</span>
+          <div>
+            <h4 style={{ fontSize: 13, fontWeight: 800, margin: 0, color: '#c084fc', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Judge Evaluation Toolkit</h4>
+            <p style={{ fontSize: 11, color: '#9ca3af', margin: '2px 0 0' }}>Simulate offline failures and execute end-to-end user sync flows instantly.</p>
+          </div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          {/* Network Simulator buttons */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(0,0,0,0.2)', borderRadius: 10, padding: 3, border: '1px solid rgba(255,255,255,0.05)' }}>
+            <span style={{ fontSize: 9, fontWeight: 800, color: '#4b5563', padding: '0 8px', textTransform: 'uppercase' }}>Network:</span>
+            {['online', 'slow', 'offline'].map((state) => (
+              <button
+                key={state}
+                onClick={() => toggleNetworkSim(state)}
+                style={{
+                  fontSize: 9,
+                  fontWeight: 800,
+                  padding: '4px 10px',
+                  borderRadius: 7,
+                  cursor: 'pointer',
+                  background: networkSimState === state
+                    ? state === 'offline' ? '#ef4444' : state === 'slow' ? '#f59e0b' : '#10b981'
+                    : 'transparent',
+                  border: 'none',
+                  color: networkSimState === state ? '#fff' : '#6b7280',
+                  textTransform: 'uppercase',
+                  transition: 'all 0.2s',
+                }}
+              >
+                {state}
+              </button>
+            ))}
+          </div>
+
+          {/* One-Click Judge Demo */}
+          <button
+            onClick={runJudgeDemo}
+            disabled={demoRunning}
+            style={{
+              padding: '8px 16px',
+              background: 'linear-gradient(90deg, #8b5cf6, #6366f1)',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 10,
+              fontSize: 11,
+              fontWeight: 700,
+              cursor: demoRunning ? 'not-allowed' : 'pointer',
+              boxShadow: '0 4px 12px rgba(139,92,246,0.2)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6
+            }}
+          >
+            {demoRunning ? '⏳ Running Demo...' : '🚀 One-Click Judge Demo'}
+          </button>
+
+          {/* Seed loader */}
+          <button
+            onClick={triggerDemoSeed}
+            disabled={seedLoading}
+            style={{
+              padding: '8px 16px',
+              background: 'rgba(255,255,255,0.05)',
+              color: '#d1d5db',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: 10,
+              fontSize: 11,
+              fontWeight: 700,
+              cursor: seedLoading ? 'not-allowed' : 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6
+            }}
+          >
+            {seedLoading ? '⏳ Seeding...' : '🌱 Seed Demo Datasets'}
+          </button>
+        </div>
+      </div>
+
       {/* ── Top Metrics Row */}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: 20, marginBottom: 20, alignItems: 'start' }}>
@@ -585,6 +753,95 @@ export default function MonitoringDashboard() {
             {eventLog.length === 0 && <div style={{ color: '#4b5563', fontSize: 12 }}>Waiting for events…</div>}
             {eventLog.map((ev, i) => <EventEntry key={i} event={ev} />)}
           </div>
+        </div>
+      </div>
+
+      {/* ── Trace ID & request latency monitor */}
+      <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 16, padding: 20, marginBottom: 20 }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: '#9ca3af', marginBottom: 14 }}>🔍 Live Request Traces (Correlation & Latency)</div>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, textAlign: 'left' }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)', color: '#6b7280' }}>
+                <th style={{ padding: '8px 4px' }}>Timestamp</th>
+                <th style={{ padding: '8px 4px' }}>Trace ID</th>
+                <th style={{ padding: '8px 4px' }}>Method</th>
+                <th style={{ padding: '8px 4px' }}>Path</th>
+                <th style={{ padding: '8px 4px' }}>Status</th>
+                <th style={{ padding: '8px 4px' }}>Latency</th>
+              </tr>
+            </thead>
+            <tbody>
+              {recentRequests.length === 0 && (
+                <tr>
+                  <td colSpan="6" style={{ padding: 12, color: '#4b5563', textAlign: 'center' }}>No requests recorded yet.</td>
+                </tr>
+              )}
+              {recentRequests.map((r, i) => (
+                <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', color: '#d1d5db' }}>
+                  <td style={{ padding: '8px 4px', color: '#6b7280' }}>{new Date(r.timestamp).toLocaleTimeString()}</td>
+                  <td style={{ padding: '8px 4px', fontFamily: 'monospace', color: '#6366f1' }}>{r.traceId}</td>
+                  <td style={{ padding: '8px 4px', fontWeight: 700 }}>{r.method}</td>
+                  <td style={{ padding: '8px 4px' }}>{r.path}</td>
+                  <td style={{ padding: '8px 4px', color: r.status < 400 ? '#10b981' : '#ef4444' }}>{r.status}</td>
+                  <td style={{ padding: '8px 4px', color: r.duration < 200 ? '#10b981' : r.duration < 500 ? '#f59e0b' : '#ef4444' }}>{r.duration}ms</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* ── RAG Diagnostics Panel */}
+      <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 16, padding: 20, marginBottom: 20 }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: '#9ca3af', marginBottom: 14 }}>🧠 Sakhi RAG Retrieval & Knowledge Diagnostics</div>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, textAlign: 'left' }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)', color: '#6b7280' }}>
+                <th style={{ padding: '8px 4px' }}>Timestamp</th>
+                <th style={{ padding: '8px 4px' }}>Query Message</th>
+                <th style={{ padding: '8px 4px' }}>Retrieval Latency</th>
+                <th style={{ padding: '8px 4px' }}>Mode</th>
+                <th style={{ padding: '8px 4px' }}>Confidence Score</th>
+                <th style={{ padding: '8px 4px' }}>Grounded Guidelines Sources</th>
+              </tr>
+            </thead>
+            <tbody>
+              {ragTraces.length === 0 && (
+                <tr>
+                  <td colSpan="6" style={{ padding: 12, color: '#4b5563', textAlign: 'center' }}>No RAG queries recorded yet. Ask Sakhi a question!</td>
+                </tr>
+              )}
+              {ragTraces.map((t, i) => (
+                <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', color: '#d1d5db' }}>
+                  <td style={{ padding: '8px 4px', color: '#6b7280' }}>{new Date(t.timestamp).toLocaleTimeString()}</td>
+                  <td style={{ padding: '8px 4px', fontWeight: 600 }}>"{t.query}"</td>
+                  <td style={{ padding: '8px 4px', color: t.latency < 500 ? '#10b981' : '#f59e0b' }}>{t.latency}ms</td>
+                  <td style={{ padding: '8px 4px' }}>
+                    <span style={{
+                      padding: '2px 8px', borderRadius: 10, fontSize: 10, fontWeight: 700,
+                      background: t.grounded ? 'rgba(16,185,129,0.1)' : 'rgba(245,158,11,0.1)',
+                      color: t.grounded ? '#10b981' : '#f59e0b',
+                      border: `1px solid ${t.grounded ? '#10b98133' : '#f59e0b33'}`
+                    }}>
+                      {t.grounded ? 'GROUNDED RAG' : 'GROQ FALLBACK'}
+                    </span>
+                  </td>
+                  <td style={{ padding: '8px 4px', fontWeight: 700, color: t.grounded ? '#10b981' : '#4b5563' }}>
+                    {t.grounded ? `${Math.round(t.similarityScore * 100)}%` : '—'}
+                  </td>
+                  <td style={{ padding: '8px 4px', color: '#9ca3af' }}>
+                    {(t.sources || []).map((src, si) => (
+                      <span key={si} style={{ display: 'inline-block', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 4, padding: '1px 6px', fontSize: 10, marginRight: 4, marginBottom: 4 }}>
+                        📚 {src}
+                      </span>
+                    ))}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 

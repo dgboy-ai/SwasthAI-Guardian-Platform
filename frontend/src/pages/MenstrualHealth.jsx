@@ -400,6 +400,7 @@ function HealthAssistant() {
             text:    `[Offline Mode] ${matchedTip.a}`,
             sources: [matchedTip.src],
             urgency: matchedTip.urgency,
+            grounded: false,
           }]);
           if (matchedTip.urgency === 'P1' || matchedTip.urgency === 'P2' || matchedTip.urgency === 'P3') {
             speakResponse(matchedTip.a, speakLang);
@@ -411,6 +412,7 @@ function HealthAssistant() {
             text:    fallbackText,
             sources: ["Sakhi Local Memory (Offline)"],
             urgency: "P4",
+            grounded: false,
           }]);
           speakResponse(fallbackText, speakLang);
         }
@@ -427,6 +429,7 @@ function HealthAssistant() {
         text:    res.data.reply,
         sources: res.data.sources  || [],
         urgency: res.data.urgency  || 'P4',
+        grounded: res.data.grounded,
       }]);
       // Auto-speak high-urgency responses (P1 and P2 are emergencies)
       if (res.data.urgency === 'P1' || res.data.urgency === 'P2') {
@@ -471,6 +474,7 @@ function HealthAssistant() {
           text:    `[Connection Slow - Local Fallback] ${matchedTip.a}`,
           sources: [matchedTip.src],
           urgency: matchedTip.urgency,
+          grounded: false,
         }]);
         speakResponse(matchedTip.a, speakLang);
       } else {
@@ -478,6 +482,7 @@ function HealthAssistant() {
           role: 'ai',
           text: t.menstrual?.sakhi_error || 'I could not process your question right now. Please try again, or contact your ASHA worker for immediate help.',
           isError: true,
+          grounded: false,
         }]);
       }
     } finally {
@@ -601,17 +606,29 @@ function HealthAssistant() {
               }`}>
                 {m.text}
                 {m.role === 'ai' && !m.isError && (
-                  <div className="absolute -right-1.5 -top-1.5 w-4.5 h-4.5 sm:w-5 sm:h-5 bg-emerald-500 text-white rounded-full flex items-center justify-center shadow-sm border-2 border-white">
-                    <CheckCircle2 className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                  <div className={`absolute -right-1.5 -top-1.5 w-4.5 h-4.5 sm:w-5 sm:h-5 text-white rounded-full flex items-center justify-center shadow-sm border-2 border-white ${
+                    m.grounded === false ? 'bg-amber-500' : 'bg-emerald-500'
+                  }`}>
+                    {m.grounded === false ? (
+                      <AlertTriangle className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-white" />
+                    ) : (
+                      <CheckCircle2 className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-white" />
+                    )}
                   </div>
                 )}
               </div>
               {/* ── CITATION CHIPS (Tristha Grounded Q&A) ───────────────────────── */}
               {m.role === 'ai' && !m.isError && (
                 <div className="flex flex-wrap gap-1.5 pl-1">
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded-full text-[8px] font-black uppercase tracking-tighter border border-emerald-100">
-                    Grounded Protocol Match
-                  </span>
+                  {m.grounded === false ? (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 text-amber-700 rounded-full text-[8px] font-black uppercase tracking-tighter border border-amber-100 animate-pulse">
+                      ⚠️ RAG Offline · Fallback Mode
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded-full text-[8px] font-black uppercase tracking-tighter border border-emerald-100">
+                      Grounded Protocol Match
+                    </span>
+                  )}
                   {m.urgency && m.urgency !== 'P4' && (
                     <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest border ${
                       URGENCY_COLORS[m.urgency] || URGENCY_COLORS.P4

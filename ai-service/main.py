@@ -237,6 +237,42 @@ from outbreak_agent import start_agent_background, get_recent_outbreaks
 
 app = FastAPI(title="SwasthAI Guardian: AI Hub")
 
+import logging
+import json
+import time
+
+# Structured JSON Logger
+class JsonFormatter(logging.Formatter):
+    def format(self, record):
+        log_data = {
+            "timestamp": self.formatTime(record, self.datefmt),
+            "level": record.levelname,
+            "message": record.getMessage(),
+            "logger": record.name,
+            "traceId": getattr(record, "trace_id", "none")
+        }
+        if record.exc_info:
+            log_data["exception"] = self.formatException(record.exc_info)
+        return json.dumps(log_data)
+
+logger = logging.getLogger("swasthai_ai")
+if not logger.handlers:
+    handler = logging.StreamHandler()
+    handler.setFormatter(JsonFormatter())
+    logger.addHandler(handler)
+    logger.setLevel(logging.INFO)
+
+@app.middleware("http")
+async def add_trace_id_and_log(request, call_next):
+    trace_id = request.headers.get("x-trace-id", f"tr-ai-{os.getpid()}-{int(time.time())}")
+    struct_logger = logging.LoggerAdapter(logger, {"trace_id": trace_id})
+    request.state.logger = struct_logger
+    struct_logger.info(f"Incoming AI request: {request.method} {request.url.path}")
+    response = await call_next(request)
+    response.headers["x-trace-id"] = trace_id
+    struct_logger.info(f"AI response status: {response.status_code}")
+    return response
+
 # AI service is called only by the Node.js backend — never directly by the browser
 # Restrict CORS to backend URL only (open wildcard was a security gap)
 _ALLOWED_ORIGINS = [
