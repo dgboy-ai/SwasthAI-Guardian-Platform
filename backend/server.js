@@ -427,7 +427,9 @@ if (cluster.isPrimary) {
       try {
         const token = req.header('Authorization')?.replace('Bearer ', '');
         if (!token) return res.status(401).send({ error: 'Auth Required' });
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'swasthai_secret_2026');
+        const jwtSecret = process.env.JWT_SECRET;
+        if (!jwtSecret) return res.status(500).send({ error: 'Server misconfiguration: JWT_SECRET not set.' });
+        const decoded = jwt.verify(token, jwtSecret);
         req.user = decoded;
         next();
       } catch (err) { res.status(401).send({ error: 'Invalid Token' }); }
@@ -468,17 +470,22 @@ if (cluster.isPrimary) {
 
     app.post('/api/auth/login-otp', authLimiter, async (req, res) => {
       const { phone, otp, role } = req.body;
-      const isDemoOtp = (otp === '1234');
+      // Demo OTP 1234 only active in non-production environments
+      const isDemoOtp = process.env.NODE_ENV !== 'production' && (otp === '1234');
       if (!isDemoOtp) {
         const record = await db.get(
           `SELECT * FROM otps WHERE phone = $1 AND otp = $2 AND "createdAt" >= NOW() - INTERVAL '5 minutes' ORDER BY "createdAt" DESC LIMIT 1`,
           [phone, otp]
         );
-        if (!record) return res.status(401).send({ error: 'Invalid OTP. Use OTP: 1234 for demo.' });
+        if (!record) return res.status(401).send({ error: 'Invalid OTP.' });
+        // Delete OTP after use to prevent replay attacks
+        await db.run('DELETE FROM otps WHERE phone = ? AND otp = ?', [phone, otp]);
       }
       const user = await db.get('SELECT * FROM users WHERE phone = ? AND role = ?', [phone, role]);
       if (!user) return res.status(404).send({ error: 'No account found with this phone number for the selected role.' });
-      const token = jwt.sign({ id: user.id, role: user.role, villageId: user.villageId }, process.env.JWT_SECRET || 'swasthai_secret_2026', { expiresIn: '7d' });
+      const jwtSecret = process.env.JWT_SECRET;
+      if (!jwtSecret) return res.status(500).send({ error: 'Server misconfiguration: JWT_SECRET not set.' });
+      const token = jwt.sign({ id: user.id, role: user.role, villageId: user.villageId }, jwtSecret, { expiresIn: '7d' });
       res.send({ token, user: { id: user.id, name: user.name, username: user.username, role: user.role, villageId: user.villageId } });
     });
 
@@ -492,8 +499,9 @@ if (cluster.isPrimary) {
       const passwordMatch = await bcrypt.compare(password, user.password);
       if (!passwordMatch) return res.status(401).send({ error: 'Invalid credentials.' });
 
-      // FIXED: use the same JWT_SECRET as the auth middleware — was using a hardcoded fallback before
-      const token = jwt.sign({ id: user.id, role: user.role, villageId: user.villageId }, process.env.JWT_SECRET || 'swasthai_secret_2026', { expiresIn: '7d' });
+      const jwtSecret = process.env.JWT_SECRET;
+      if (!jwtSecret) return res.status(500).send({ error: 'Server misconfiguration: JWT_SECRET not set.' });
+      const token = jwt.sign({ id: user.id, role: user.role, villageId: user.villageId }, jwtSecret, { expiresIn: '7d' });
       res.send({ token, user: { id: user.id, name: user.name, username: user.username, role: user.role, villageId: user.villageId } });
     });
 
@@ -1295,20 +1303,31 @@ CRITICAL CLINICAL & TRANSLATION SAFEGUARDS:
     // Internal: Called by Python outbreak_agent.py to fetch symptom clusters
     app.get('/api/admin/clusters', async (req, res) => {
       const agentSecret = req.headers['x-agent-secret'];
-      if (agentSecret !== (process.env.AGENT_SECRET || 'swasthai_agent_internal_2026')) {
+      const expectedSecret = process.env.AGENT_SECRET;
+      if (!expectedSecret || agentSecret !== expectedSecret) {
         return res.status(403).send({ error: 'Forbidden' });
       }
       try {
-        const rows = await pool.query(
-          `SELECT "villageId", COUNT(*) as count,
-                  string_agg(symptoms, ' | ') as symptoms
-           FROM symptoms
-           WHERE "createdAt" >= NOW() - INTERVAL '1 day'
-           GROUP BY "villageId"
-           HAVING COUNT(*) >= 3
-           ORDER BY count DESC`
+        // DB-agnostic query: uses db wrapper (works with both PostgreSQL and SQLite)
+        // GROUP_CONCAT works in SQLite; PostgreSQL also supports it via the db abstraction
+        const rows = await db.all(
+          usingSQLite
+            ? `SELECT "villageId", COUNT(*) as count,
+                      GROUP_CONCAT(symptoms, ' | ') as symptoms
+               FROM symptoms
+               WHERE "createdAt" >= datetime('now', '-1 day')
+               GROUP BY "villageId"
+               HAVING COUNT(*) >= 3
+               ORDER BY count DESC`
+            : `SELECT "villageId", COUNT(*) as count,
+                      string_agg(symptoms, ' | ') as symptoms
+               FROM symptoms
+               WHERE "createdAt" >= NOW() - INTERVAL '1 day'
+               GROUP BY "villageId"
+               HAVING COUNT(*) >= 3
+               ORDER BY count DESC`
         );
-        res.send(rows.rows);
+        res.send(rows);
       } catch (err) {
         res.status(500).send({ error: err.message });
       }
@@ -1317,18 +1336,19 @@ CRITICAL CLINICAL & TRANSLATION SAFEGUARDS:
     // Internal: Called by Python outbreak_agent.py to store confirmed outbreak alerts
     app.post('/api/admin/outbreak-alert', async (req, res) => {
       const agentSecret = req.headers['x-agent-secret'];
-      if (agentSecret !== (process.env.AGENT_SECRET || 'swasthai_agent_internal_2026')) {
+      const expectedSecret = process.env.AGENT_SECRET;
+      if (!expectedSecret || agentSecret !== expectedSecret) {
         return res.status(403).send({ error: 'Forbidden' });
       }
       const { villageId, disease, action } = req.body;
       try {
-        await pool.query(
+        await db.run(
           `INSERT INTO village_health ("villageId", "outbreakAlert", "lastUpdated")
-           VALUES ($1, $2, NOW())
+           VALUES (?, ?, ?)
            ON CONFLICT("villageId") DO UPDATE
-             SET "outbreakAlert" = EXCLUDED."outbreakAlert",
-                 "lastUpdated" = NOW()`,
-          [villageId, `${disease}: ${action}`]
+             SET "outbreakAlert" = excluded."outbreakAlert",
+                 "lastUpdated" = excluded."lastUpdated"`,
+          [villageId, `${disease}: ${action}`, new Date().toISOString()]
         );
         console.log(`[OUTBREAK ALERT RECEIVED] Village: ${villageId}, Disease: ${disease}`);
         res.status(201).send({ status: 'Alert stored' });
