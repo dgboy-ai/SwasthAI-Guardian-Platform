@@ -431,6 +431,15 @@ A **Demo Credentials banner** is shown at the bottom of the login page.
 
 > On first login, the DISHA 2023 consent modal will appear. Click "Haan, Main Samjha — I Agree" to proceed.
 
+## 👨‍⚖️ Judge Staging & Evaluation Toolkit (New in Batch 10)
+
+To simplify hackathon evaluation and give judges complete transparency, we have integrated a **Judge Evaluation Toolkit** directly inside the **System Observability Dashboard** (accessible via the **Monitoring** routes):
+
+* **Global Network Simulator**: Toggle between **Online**, **Slow (2G)**, and **Offline** states. Mocks cellular network failures at the Axios request interceptor level, instantly routing forms and symptom checkers to use IndexedDB queuing and local offline advisors.
+* **One-Click Staging Demo Script**: Executes a full simulation flow: toggles network **offline** $\rightarrow$ queues multiple maternal, child, and ambulance records in local device cache $\rightarrow$ restores network **online** $\rightarrow$ replays and reconciles all queued items to PostgreSQL/DynamoDB in real time $\rightarrow$ triggers epidemic surge alarms.
+* **Sakhi RAG Diagnostics Panel**: Exposes prompt query latencies, similarity search scores, retrieval chunk count, and model modes (Grounded RAG vs Fallback Direct Groq) to prove vector retrieval security and accuracy.
+* **Database Preload Seeding Utility**: Pre-populates all relational database tables (PostgreSQL/SQLite) with realistic district records on command with one click.
+
 ---
 
 ## 📁 Repository Structure

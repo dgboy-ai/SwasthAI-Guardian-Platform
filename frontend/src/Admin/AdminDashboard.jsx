@@ -273,33 +273,33 @@ export default function AdminDashboard() {
         {/* ── OUTBREAK AI TAB ── */}
         {activeTab === 'intelligence' && (
           <div className="animate-in fade-in duration-700 space-y-5">
-            <div className="bg-emerald-900 rounded-[2rem] p-8 md:p-12 text-white relative overflow-hidden">
+            <div className="bg-emerald-900 rounded-[1.5rem] p-5 sm:p-6 md:p-8 text-white relative overflow-hidden">
               <div className="absolute right-[-5%] top-[-15%] opacity-10 pointer-events-none">
                 <BrainCircuit className="w-64 h-64" />
               </div>
-              <div className="relative z-10 mb-8">
-                <div className="p-3 bg-emerald-800 text-emerald-400 rounded-2xl border border-emerald-700 inline-block mb-6">
-                  <BrainCircuit className="w-6 h-6" />
+              <div className="relative z-10 mb-4">
+                <div className="p-2 bg-emerald-800 text-emerald-400 rounded-xl border border-emerald-700 inline-block mb-3">
+                  <BrainCircuit className="w-5 h-5" />
                 </div>
-                <h2 className="text-3xl font-black mb-3 tracking-tight">Neural Outbreak Radar</h2>
-                <p className="text-emerald-100/70 text-base font-medium leading-relaxed max-w-xl">
-                  SwasthAI monitors symptom clusters in real time. If 5 or more cases of the same disease appear from the same village within 24 hours, an automatic outbreak alert is triggered and sent to all admins.
+                <h2 className="text-xl sm:text-2xl font-black mb-1.5 tracking-tight">Epidemic Outbreak Radar</h2>
+                <p className="text-emerald-100/70 text-xs sm:text-sm font-medium leading-relaxed max-w-xl">
+                  SwasthAI monitors symptom reports in real time. If 3 or more cases of the same infectious symptoms are reported from the same village within 24 hours, an automated outbreak alert is instantly generated.
                 </p>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
                 {[
                   { label: 'Villages Monitored', val: '1,200+' },
                   { label: 'Symptom Events Today', val: stats.today_symptoms ?? '—' },
                   { label: 'Outbreak Threshold', val: '3+ cases / 24h' },
                 ].map(item => (
-                  <div key={item.label} className="bg-emerald-800/50 border border-emerald-700/50 rounded-2xl p-4">
-                    <p className="text-2xl font-black text-white">{item.val}</p>
-                    <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mt-1">{item.label}</p>
+                  <div key={item.label} className="bg-emerald-800/50 border border-emerald-700/50 rounded-xl p-3 flex flex-col justify-between">
+                    <p className="text-lg sm:text-xl font-black text-white">{item.val}</p>
+                    <p className="text-[9px] font-black text-emerald-400 uppercase tracking-widest mt-0.5">{item.label}</p>
                   </div>
                 ))}
               </div>
               <button onClick={issueDistrictAlert}
-                className={`px-8 py-3.5 rounded-xl font-black text-xs uppercase tracking-widest transition-all shadow-lg ${
+                className={`w-full sm:w-auto px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest transition-all shadow-lg ${
                   alertSent ? 'bg-emerald-400 text-white cursor-default' : 'bg-white text-emerald-900 hover:bg-emerald-500 hover:text-white'
                 }`}>
                 {alertSent ? '✅ Alert Sent to All ASHA Workers' : 'Issue District-Wide Alert'}
@@ -362,14 +362,14 @@ export default function AdminDashboard() {
               <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm p-6 h-fit">
                 <div className="flex items-center gap-2 mb-6">
                   <Activity className="w-4 h-4 text-emerald-500" />
-                  <h3 className="font-black text-slate-900 text-sm uppercase tracking-widest">Surveillance Logic</h3>
+                  <h3 className="font-black text-slate-900 text-sm uppercase tracking-widest">How Detection Works</h3>
                 </div>
                 <div className="space-y-6">
                   {[
-                    { step: '1', t: 'Symptom Ingestion', d: 'Villager submits symptoms via app/voice.' },
-                    { step: '2', t: 'Pattern Mapping', d: 'AI classifies cases against MoHFW disease database.' },
-                    { step: '3', t: 'Cluster Trigger', d: 'Agent detects ≥ 3 cases in 24h at same village node.' },
-                    { step: '4', t: 'District Alert', d: 'Outbreak confirmed via Groq Llama-3.1 epidemiology model.' },
+                    { step: '1', t: 'Log Symptoms', d: 'Villager submits health symptoms via app or voice recorder.' },
+                    { step: '2', t: 'Analyze Trends', d: 'AI maps reports against standard disease databases.' },
+                    { step: '3', t: 'Match Threshold', d: 'Engine checks if ≥ 3 similar cases appear in 24 hours.' },
+                    { step: '4', t: 'ASHA Alerts', d: 'Outbreak is confirmed and notification is sent to ASHA workers.' },
                   ].map(item => (
                     <div key={item.step} className="flex gap-4 items-start">
                       <div className="w-8 h-8 bg-slate-900 text-white rounded-xl flex items-center justify-center font-black text-xs shrink-0">{item.step}</div>
@@ -382,7 +382,7 @@ export default function AdminDashboard() {
                 </div>
                 <div className="mt-8 p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
                   <p className="text-[10px] font-black text-emerald-700 uppercase tracking-widest mb-1">Current Status</p>
-                  <p className="text-xs font-bold text-emerald-900 leading-relaxed">Agent is actively monitoring 1,200+ regional health nodes.</p>
+                  <p className="text-xs font-bold text-emerald-900 leading-relaxed">Active monitoring is running across all village locations.</p>
                 </div>
               </div>
             </div>
@@ -470,21 +470,21 @@ export default function AdminDashboard() {
                 <WifiOff className="w-64 h-64" />
               </div>
               <WifiOff className="w-8 h-8 text-emerald-400 mb-5 opacity-50" />
-              <h2 className="text-3xl font-black tracking-tight mb-3">Offline Node Resilience</h2>
+              <h2 className="text-3xl font-black tracking-tight mb-3">Offline-First Sync Network</h2>
               <p className="text-slate-400 text-base font-medium leading-relaxed max-w-xl mb-8">
-                SwasthAI is designed to work in low-connectivity rural areas. Village health workers can continue recording data offline, which is automatically synced when connectivity is restored.
+                Enables healthcare workers to log maternal records, child nutrition checks, and emergency requests even in remote areas with zero cell reception. Data is saved locally on their device and automatically syncs to the cloud the moment internet is restored.
               </p>
               <div className="flex items-center gap-3">
                 <div className="w-3 h-3 rounded-full bg-emerald-500 animate-ping" />
-                <p className="text-[11px] font-black uppercase tracking-widest text-emerald-400">Regional Sync Handshake Active</p>
+                <p className="text-[11px] font-black uppercase tracking-widest text-emerald-400">📡 Automatic Sync Engine Active & Listening</p>
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {[
-                { label: 'Offline Nodes Monitored', val: '418',   icon: Database  },
-                { label: 'Data Integrity',           val: '100%',  icon: Shield    },
-                { label: 'Auto-Sync Protocol',       val: 'Active', icon: Zap      },
+                { label: 'Active Village Devices', val: '418',   icon: Database  },
+                { label: 'Sync Success Rate',       val: '100%',  icon: Shield    },
+                { label: 'Local Sync Status',       val: 'Synced', icon: Zap      },
               ].map(item => (
                 <div key={item.label} className="bg-white rounded-[1.5rem] border border-slate-100 shadow-sm p-5 flex items-center gap-4">
                   <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center shrink-0">
