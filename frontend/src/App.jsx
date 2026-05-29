@@ -29,6 +29,7 @@ const MonitoringDashboard    = lazy(() => import('./pages/MonitoringDashboard'))
 // Components
 import Footer from './components/Footer';
 import OfflineToast from './components/OfflineToast';
+import ErrorBoundary from './components/ErrorBoundary';
 
 // Skeleton loader shown while lazy chunks download
 function PageLoader() {
@@ -91,8 +92,8 @@ export default function App() {
         <Router>
           <div className="font-inter">
             <Suspense fallback={<PageLoader />}>
+            <ErrorBoundary>
             <Routes>
-              {/* MANDATORY INTRO FLOW SEQUENCE */}
               <Route path="/" element={<IntroFlow />} />
               <Route path="/intro" element={<IntroFlow />} />
               
@@ -183,6 +184,7 @@ export default function App() {
                 </ProtectedRoute>
               } />
             </Routes>
+            </ErrorBoundary>
             </Suspense>
             {/* YouTube-style offline toast — appears on every page when data cuts */}
             <OfflineToast />

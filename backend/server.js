@@ -58,7 +58,27 @@ if (cluster.isPrimary) {
     },
     credentials: true,
   }));
-  app.use(express.json());
+  app.use(express.json({ limit: '100kb' }));
+
+  // Global API rate limiter — 100 requests per minute per IP
+  const globalLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 100,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many requests. Please slow down.' },
+  });
+  app.use('/api/', globalLimiter);
+
+  // Strict AI rate limiter — 10 requests per minute per IP (prevents Groq quota exhaustion)
+  const aiLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 10,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'AI request limit reached. Please wait 1 minute.' },
+  });
+
 
   // Rate limiting — max 15 auth attempts per 15 minutes per IP
   const authLimiter = rateLimit({
@@ -808,7 +828,7 @@ if (cluster.isPrimary) {
       return bestMatch;
     }
 
-    app.post('/api/villager/symptoms', auth, checkRole(['villager', 'ngo', 'admin']), async (req, res) => {
+    app.post('/api/villager/symptoms', auth, aiLimiter, checkRole(['villager', 'ngo', 'admin']), async (req, res) => {
       const { symptoms: text } = req.body;
       const userId = req.user.id;
       const villageId = req.user.villageId || req.body.villageId;
@@ -1085,7 +1105,7 @@ if (cluster.isPrimary) {
     });
 
     // GROQ AI Health Assistant (Maternal Health chatbot)
-    app.post('/api/health-assistant', auth, async (req, res) => {
+    app.post('/api/health-assistant', auth, aiLimiter, async (req, res) => {
       const { message } = req.body;
       if (!message) return res.status(400).send({ error: 'Message is required.' });
 

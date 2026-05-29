@@ -4,6 +4,7 @@ import Navbar from '../components/Navbar';
 import { Camera, ShieldCheck, ChevronRight, RotateCcw, HeartPulse, Activity } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import imageCompression from 'browser-image-compression';
+import api from '../services/api';
 // ── PHOTO ANALYSIS: Skin-aware pixel processing ──────────────────────────────
 // Only analyzes pixels that look like skin (any skin tone — fair to dark).
 // Ignores backgrounds (green, white, blue, walls, clothes, etc.)

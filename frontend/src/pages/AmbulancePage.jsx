@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import api from '../services/api';
 import { useLanguage } from '../context/LanguageContext';
+import { queueAmbulanceRequest } from '../utils/offlineSyncQueue';
 
 export default function AmbulancePage() {
   const { t } = useLanguage();
@@ -139,6 +140,13 @@ export default function AmbulancePage() {
         } else {
           console.error('SOS dispatch failed:', err);
           setDispatchError('network');
+          // Queue failed SOS request
+          queueAmbulanceRequest({
+            name: user?.name || 'SOS User',
+            location,
+            priority: 'Critical',
+            symptoms: 'One-tap SOS — Emergency, patient requires immediate attention.'
+          }).catch(qErr => console.warn('Could not queue SOS request offline:', qErr.message));
         }
       } finally {
         setSosLoading(false);
@@ -202,6 +210,14 @@ export default function AmbulancePage() {
       } else {
         console.error('Ambulance dispatch failed (Network/Other):', err);
         setDispatchError('network');
+        // Queue regular ambulance request
+        const selectedType = emergencyTypes.find(t => t.id === formData.emergencyType);
+        queueAmbulanceRequest({
+          name: formData.patientName,
+          location: getLocationString(),
+          priority: selectedType?.priority || 'High',
+          symptoms: `${selectedType?.label || formData.emergencyType}${formData.contactNumber ? ` | Contact: ${formData.contactNumber}` : ''}`
+        }).catch(qErr => console.warn('Could not queue ambulance request offline:', qErr.message));
       }
     } finally {
       setLoading(false);
