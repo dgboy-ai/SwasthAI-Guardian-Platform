@@ -1,9 +1,114 @@
 # SwasthAI Guardian 🌿
 ### Offline-First Healthcare Infrastructure for Low-Connectivity Environments
 
-### 🌐 [Link to the live production build](https://swasthai-guardian.onrender.com)
+### 🌐 [Live Demo](https://swasthai-guardian.onrender.com) | 🏆 [H0 Hackathon Submission](https://h01.devpost.com) | 📋 [Deployment Guide](DEPLOYMENT.md)
 
 ---
+
+## 🏆 H0 Hackathon — Track 2: Monetizable B2B App (Healthcare)
+
+**Sponsor**: Amazon Web Services | **Event**: H0: Hack the Zero Stack with Vercel v0 and AWS Databases
+
+| | |
+|---|---|
+| **AWS Databases Used** | Amazon Aurora PostgreSQL + Amazon DynamoDB |
+| **Frontend Deployment** | Vercel |
+| **AWS Region** | ap-south-1 (Mumbai — correct for India healthcare data) |
+| **Target Market** | India's 600M rural citizens + 1.4M ASHA health workers |
+
+### What changed after the submission period started (May 27, 2026):
+> *Required disclosure under the "New & Existing Projects" rule*
+
+- ✅ **AWS Aurora PostgreSQL** wired as primary database (replaced SQLite-only baseline)
+- ✅ **Amazon DynamoDB** schema redesigned with composite keys + GSIs + TTL (4 tables)
+- ✅ **OutbreakAgent** refactored: eliminated local SQLite storage, now writes to DynamoDB via backend
+- ✅ **SSE live feed** (`/api/admin/live-feed`) — admin dashboard gets real-time ambulance/outbreak pushes
+- ✅ **Ambulance handler** now writes to DynamoDB `emergency_streams` table on every dispatch
+- ✅ **`/api/health/detailed`** added — shows full AWS connection state, DynamoDB schema, AI modules
+- ✅ **CORS** updated to allow `*.vercel.app` domain automatically
+- ✅ **`vercel.json`** upgraded with security headers (X-Frame-Options, XSS protection, asset caching)
+- ✅ **`DEPLOYMENT.md`** created — shows district health officers how to deploy in under 2 hours
+
+---
+
+## 🗄️ AWS Database Architecture — Deliberate Design Decisions
+
+### Why Two Databases? (Not Just One)
+
+Most apps use one database for everything. SwasthAI uses two with very different purposes:
+
+| | Amazon Aurora PostgreSQL | Amazon DynamoDB |
+|---|---|---|
+| **Why chosen** | ACID compliance for medical records | Millisecond write latency for telemetry |
+| **Rationale** | A corrupted pregnancy record could cost a life | A disease cluster must be written in <10ms regardless of concurrent village load |
+| **Access pattern** | Transactional reads/writes, joins, aggregations | Append-only high-throughput streams, time-series |
+| **Data stored** | Users, symptoms, pregnancies, ambulances, schemes | Outbreaks, sync queues, village heartbeats, emergencies |
+| **Billing** | Provisioned (db.t3.micro → scale to r6g.large) | PAY_PER_REQUEST (auto-scales to millions) |
+
+### DynamoDB Table Design (Composite Keys + GSIs)
+
+```
+Table: outbreak_telemetry
+  PK: villageId (HASH) + detectedAt (RANGE)   ← time-range queries per village
+  GSI: disease-index → disease + detectedAt   ← cross-village disease queries
+
+Table: sync_queues
+  PK: deviceId (HASH) + queuedAt (RANGE)      ← all pending records per device
+  GSI: status-index → status + queuedAt       ← fleet-level "all failed syncs"
+
+Table: village_node_state
+  PK: villageId (HASH)                        ← single-item heartbeat state
+  TTL: expiresAt                              ← auto-expire stale nodes after 7 days
+
+Table: emergency_streams
+  PK: districtId (HASH) + streamId (RANGE)   ← all emergencies in a district
+  GSI: priority-index → priority + streamId  ← critical-only filter
+```
+
+### The Agentic Outbreak Loop (What No Other Submission Has)
+
+```
+Every 30 minutes →
+  OutbreakAgent queries Aurora for village symptom clusters
+  → Calls Groq Llama-3 with WHO epidemiological thresholds
+  → If confidence ≥ 70%: classified as real outbreak
+  → POST to /api/admin/outbreak-alert
+  → Backend writes to DynamoDB outbreak_telemetry (composite key: villageId + detectedAt)
+  → SSE broadcast to all connected admin dashboards
+  → Admin sees real-time Outbreak Radar update with AI reasoning trace
+```
+
+---
+
+## 📊 Real-World Impact (Verified Statistics)
+
+| Metric | Source |
+|---|---|
+| 600 million rural Indians lack reliable healthcare | WHO 2023 |
+| 1 doctor per 10,000 citizens in tribal districts | MoHFW India |
+| 1.4 million ASHA workers are the primary healthcare touchpoint | MoHFW ASHA Program |
+| 47 km average distance to nearest PHC in tribal areas | NRHM District Health Survey |
+| 6 preventable diseases cause 65% of rural deaths | ICMR 2022 |
+| SwasthAI covers 17 diseases in 6 languages | This platform |
+
+---
+
+## 🔬 Judge API Access
+
+```bash
+# Full stack status (AWS connections, DynamoDB schema, AI modules)
+GET https://swasthai-guardian.onrender.com/api/health/detailed
+
+# Live application
+https://your-app.vercel.app
+
+# Demo credentials: OTP mode → any phone → OTP: 1234
+# Roles: Villager (default) | NGO (select on login) | Admin (select on login)
+```
+
+---
+
+
 
 > **SwasthAI Guardian** is a production-grade, multi-role healthcare platform designed for India's 600,000+ villages. It connects rural citizens, ASHA health workers, NGO field teams, and district hospital administrators through custom-trained machine learning, an offline-first architecture, full voice interaction, and native support for **6 Indian languages**.
 
