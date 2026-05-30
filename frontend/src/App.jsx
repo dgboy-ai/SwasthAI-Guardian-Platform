@@ -10,6 +10,7 @@ import LoginPage from './pages/LoginPage';
 import LandingPage from './pages/LandingPage';
 import IntroFlow from './pages/IntroFlow';
 import RegisterPage from './pages/RegisterPage';
+import DemoPage from './pages/DemoPage';
 
 // Pages — heavy, lazy-loaded for Vercel edge performance & 2G optimization
 const VillagerDashboard  = lazy(() => import('./Villager/VillagerDashboard'));
@@ -96,6 +97,7 @@ export default function App() {
             <Routes>
               <Route path="/" element={<IntroFlow />} />
               <Route path="/intro" element={<IntroFlow />} />
+              <Route path="/demo" element={<DemoPage />} />
               
               {/* AUTHENTICATION AXIS */}
               <Route path="/login" element={<LoginPage />} />
@@ -104,83 +106,83 @@ export default function App() {
               {/* CORE DOMAINS - Role Specific Dashboards */}
               <Route path="/home" element={
                 <ProtectedRoute>
-                  <LayoutWrapper><LandingPage /></LayoutWrapper>
+                  <LayoutWrapper><ErrorBoundary><LandingPage /></ErrorBoundary></LayoutWrapper>
                  </ProtectedRoute>
               } />
 
               <Route path="/villager" element={
                 <ProtectedRoute allowedRole="villager">
-                   <LayoutWrapper><VillagerDashboard /></LayoutWrapper>
+                   <LayoutWrapper><ErrorBoundary><VillagerDashboard /></ErrorBoundary></LayoutWrapper>
                 </ProtectedRoute>
               } />
 
               {/* FEATURE PAGES (STANDALONE) */}
               <Route path="/symptoms" element={
                 <ProtectedRoute allowedRole="villager">
-                   <LayoutWrapper><SymptomCheckerPage /></LayoutWrapper>
+                   <LayoutWrapper><ErrorBoundary><SymptomCheckerPage /></ErrorBoundary></LayoutWrapper>
                 </ProtectedRoute>
               } />
               
               <Route path="/skin-disease" element={
                 <ProtectedRoute allowedRole="villager">
-                   <LayoutWrapper><SkinDiseaseCheckerPage /></LayoutWrapper>
+                   <LayoutWrapper><ErrorBoundary><SkinDiseaseCheckerPage /></ErrorBoundary></LayoutWrapper>
                 </ProtectedRoute>
               } />
 
               <Route path="/ambulance" element={
                 <ProtectedRoute allowedRole="villager">
-                   <LayoutWrapper><AmbulancePage /></LayoutWrapper>
+                   <LayoutWrapper><ErrorBoundary><AmbulancePage /></ErrorBoundary></LayoutWrapper>
                 </ProtectedRoute>
               } />
 
               <Route path="/profile" element={
                 <ProtectedRoute>
-                   <LayoutWrapper><UserProfile /></LayoutWrapper>
+                   <LayoutWrapper><ErrorBoundary><UserProfile /></ErrorBoundary></LayoutWrapper>
                 </ProtectedRoute>
               } />
 
               <Route path="/menstrual-health" element={
                 <ProtectedRoute allowedRole="villager">
-                   <LayoutWrapper><MenstrualHealth /></LayoutWrapper>
+                   <LayoutWrapper><ErrorBoundary><MenstrualHealth /></ErrorBoundary></LayoutWrapper>
                 </ProtectedRoute>
               } />
 
               <Route path="/schemes" element={
                 <ProtectedRoute allowedRole="villager">
-                   <LayoutWrapper><GovernmentSchemesPage /></LayoutWrapper>
+                   <LayoutWrapper><ErrorBoundary><GovernmentSchemesPage /></ErrorBoundary></LayoutWrapper>
                 </ProtectedRoute>
               } />
 
               <Route path="/guided-mode" element={
                 <ProtectedRoute allowedRole="villager">
-                   <LayoutWrapper><GuidedHealthcareMode /></LayoutWrapper>
+                   <LayoutWrapper><ErrorBoundary><GuidedHealthcareMode /></ErrorBoundary></LayoutWrapper>
                 </ProtectedRoute>
               } />
 
               {/* NGO/ADMIN DOMAINS */}
               <Route path="/ngo" element={
                 <ProtectedRoute allowedRole="ngo">
-                   <NGODashboard />
+                   <ErrorBoundary><NGODashboard /></ErrorBoundary>
                 </ProtectedRoute>
               } />
               <Route path="/ngo/maternal" element={
                 <ProtectedRoute allowedRole="ngo">
-                   <MaternalHealthPage />
+                   <ErrorBoundary><MaternalHealthPage /></ErrorBoundary>
                 </ProtectedRoute>
               } />
               <Route path="/ngo/child-nutrition" element={
                 <ProtectedRoute allowedRole="ngo">
-                   <ChildNutritionPage />
+                   <ErrorBoundary><ChildNutritionPage /></ErrorBoundary>
                 </ProtectedRoute>
               } />
               <Route path="/admin" element={
                 <ProtectedRoute allowedRole="admin">
-                   <AdminDashboard />
+                   <ErrorBoundary><AdminDashboard /></ErrorBoundary>
                 </ProtectedRoute>
               } />
               <Route path="/monitoring" element={
                 <ProtectedRoute allowedRole="admin">
-                   <LayoutWrapper><MonitoringDashboard /></LayoutWrapper>
+                   <LayoutWrapper><ErrorBoundary><MonitoringDashboard /></ErrorBoundary></LayoutWrapper>
                 </ProtectedRoute>
               } />
             </Routes>

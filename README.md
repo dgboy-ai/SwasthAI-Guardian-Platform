@@ -141,9 +141,24 @@ SwasthAI Guardian has matured through deliberate architectural iterations to ser
 
 ---
 
-## 🏆 Why SwasthAI is Different
+## 🏆 Why SwasthAI Is Architecturally Different
 
-Most health apps call a third-party AI API and display the result. SwasthAI **owns its intelligence** and operates without a stable internet connection.
+Most health apps call a third-party AI API and display the result. SwasthAI **owns its intelligence**, operates without a stable internet connection, and utilizes a robust, dual-database production-ready architecture:
+
+### 1. Dual-Database Strategy: Two Databases, Two Distinct Purposes
+Unlike typical hackathon projects that throw all data into a single database, SwasthAI Guardian is architected like a real-world enterprise healthcare system:
+- **Amazon Aurora PostgreSQL** for structured relational records (Users, Pregnancy tracking, Malnutrition data, Ambulance requests, and Government schemes). ACID compliance guarantees that crucial medical files and maternal records are never corrupted.
+- **Amazon DynamoDB** for high-velocity telemetry (Real-time outbreak streams, client sync queue records, village node heartbeats, and emergency broadcast states). Built with composite keys and global secondary indexes to handle massive append-only write throughput.
+
+### 2. Autonomous Agentic Outbreak Monitor
+Instead of just displaying static charts on a dashboard, SwasthAI operates an **autonomous background agent (OutbreakAgent)**. Every 30 minutes, it scans clinical trends in Aurora PostgreSQL, uses LLM (Groq Llama-3.3-70B) reasoning to filter out seasonal anomalies from genuine clusters, writes outbreak signals to DynamoDB `outbreak_telemetry`, and triggers live EventSource notifications to district health commanders and local ASHA workers instantly.
+
+### 3. Fully Production Offline-First Sync Queue
+More than a simple PWA caching manifest:
+- Frontline healthcare workers can log patient symptoms completely offline.
+- Actions are queued inside an IndexedDB-backed transactional sync queue.
+- The UI actively displays sync depth ("3 entries pending").
+- When a 2G/3G signal is reacquired, the queue auto-replays transactions, updating the Aurora PostgreSQL transactional layer, while recording client-device state inside the DynamoDB `sync_queues` telemetry to give district administrators full visibility of connectivity health.
 
 ---
 

@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import adminService from '../services/adminService';
 import api from '../services/api';
+import SkeletonCard from '../components/SkeletonCard';
 
 /* ─── Sidebar nav ─────────────────────────────────────────────────────────── */
 const NAV_ITEMS = [
@@ -116,6 +117,64 @@ function KpiCard({ icon: Icon, label, value, trend, badge, color }) {
   );
 }
 
+/* ─── AI Reasoning Trace (live Groq decision log from Sakhi RAG) ────────── */
+function AIReasoningTrace() {
+  const [traces, setTraces]   = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [open, setOpen]       = useState(true);
+
+  useEffect(() => {
+    api.get('/admin/rag-traces')
+      .then(r => setTraces(r.data || []))
+      .catch(() => setTraces([]))
+      .finally(() => setLoading(false));
+  }, []);
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="w-full px-5 py-4 flex items-center justify-between hover:bg-slate-50 transition-colors"
+      >
+        <div className="flex items-center gap-2">
+          <BrainCircuit className="w-4 h-4 text-emerald-600" />
+          <p className="font-black text-slate-900 text-[13px]">AI Decision Log — Groq Reasoning Trace</p>
+          <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-full text-[9px] font-black">
+            {traces.length} entries
+          </span>
+        </div>
+        <span className="text-slate-400 text-sm">{open ? '▲' : '▼'}</span>
+      </button>
+      {open && (
+        <div className="p-4 space-y-2 max-h-80 overflow-y-auto bg-slate-950">
+          {loading ? (
+            <p className="text-[11px] text-slate-500 font-mono text-center py-6">Loading trace logs…</p>
+          ) : traces.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-[11px] font-mono text-slate-500">No traces yet — trigger a Sakhi health query to see reasoning logs</p>
+            </div>
+          ) : [...traces].reverse().map((t, i) => (
+            <div key={i} className="p-3 bg-slate-900 border border-slate-800 rounded-xl font-mono text-[10px] space-y-0.5">
+              <div className="flex items-center justify-between">
+                <span className="text-emerald-400 font-bold">TRACE-{String(traces.length - i).padStart(3, '0')}</span>
+                <span className="text-slate-500">{t.timestamp ? new Date(t.timestamp).toLocaleTimeString() : '—'}</span>
+              </div>
+              <p className="text-slate-400">Query: <span className="text-white">{t.query || 'Health query'}</span></p>
+              <p className="text-slate-400">Latency: <span className={`font-bold ${(t.latency || 0) < 500 ? 'text-emerald-400' : 'text-amber-400'}`}>{t.latency || '—'}ms</span></p>
+              <p className="text-slate-400">
+                Grounded: <span className={`font-bold ${t.grounded ? 'text-emerald-400' : 'text-amber-400'}`}>{t.grounded ? '✓ RAG (WHO/ASHA)' : '⚡ Direct Groq'}</span>
+              </p>
+              {t.sources?.length > 0 && (
+                <p className="text-slate-500">Sources: {t.sources.slice(0, 2).join(' · ')}</p>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ══════════════════════════════════════════════════════════════════════════ */
 export default function AdminDashboard() {
   const [activeView, setActiveView]         = useState('command');
@@ -168,11 +227,52 @@ export default function AdminDashboard() {
     return () => clearInterval(iv);
   }, []);
 
-  /* Use real data if available, or demo mock data only if Judge Demo Mode is ON */
+  /* ── SSE real-time feed — live ambulance + outbreak pushes from backend ─── */
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) return; // only connect when logged in
+
+    const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace(/\/+$/, '');
+    // EventSource doesn't support custom headers, so pass token as query param
+    const sseUrl = `${API_BASE}/admin/live-feed?token=${encodeURIComponent(token)}`;
+
+    let sse;
+    try {
+      sse = new EventSource(sseUrl, { withCredentials: false });
+
+      sse.addEventListener('ambulance', (e) => {
+        try {
+          const req = JSON.parse(e.data);
+          setAmbulances(prev => [req, ...(prev || [])].slice(0, 50));
+          lastSyncRef.current = Date.now();
+          setLastSync('Just now');
+        } catch (_) {}
+      });
+
+      sse.addEventListener('outbreak', (e) => {
+        try {
+          const outbreak = JSON.parse(e.data);
+          setOutbreaks(prev => [outbreak, ...(prev || [])].slice(0, 50));
+        } catch (_) {}
+      });
+
+      sse.onerror = () => {
+        // SSE will auto-reconnect; errors are expected when backend is offline
+        sse.close();
+      };
+    } catch (_) {
+      // EventSource not supported or backend offline — polling fallback handles this
+    }
+
+    return () => { if (sse) sse.close(); };
+  }, []);
+
+
   const S  = stats || (judgeDemoMode ? DEMO_STATS : { pregnancies: 0, malnutrition: 0, villages: 0, today_symptoms: 0 });
   const SM = summary || (judgeDemoMode ? DEMO_SUMMARY : { totalUsers: 0, totalNgos: 0, emergencyCount: 0, sanitaryCount: 0, totalRequests: 0 });
   const OB = outbreaks || (judgeDemoMode ? DEMO_OUTBREAKS : []);
   const AM = ambulances || (judgeDemoMode ? DEMO_AMBULANCES : []);
+  const isLoading = stats === null && summary === null && !judgeDemoMode;
 
   const issueDistrictAlert = async () => {
     try {
@@ -433,12 +533,25 @@ export default function AdminDashboard() {
 
                   {/* KPI Cards */}
                   <div className="grid grid-cols-3 gap-3">
-                    <KpiCard icon={Heart}       color="rose"    label="High-Risk Pregnancies"      value={S.pregnancies ?? 126}      trend={18} />
-                    <KpiCard icon={Baby}        color="amber"   label="Severe Malnutrition Cases"  value={S.malnutrition ?? 248}     trend={12} />
-                    <KpiCard icon={Radio}       color="red"     label="Active Outbreak Clusters"   value={OB.length || 3}            badge="NEW" />
-                    <KpiCard icon={Truck}       color="emerald" label="Active Ambulances"          value={`${AM.length || 7}/7`} />
-                    <KpiCard icon={WifiOff}     color="slate"   label="Offline Villages"           value={S.villages ?? 4} />
-                    <KpiCard icon={Activity}    color="purple"  label="Emergency Cases Today"      value={S.today_symptoms ?? 12}    trend={20} />
+                    {isLoading ? (
+                      <>
+                        <SkeletonCard className="h-40" />
+                        <SkeletonCard className="h-40" />
+                        <SkeletonCard className="h-40" />
+                        <SkeletonCard className="h-40" />
+                        <SkeletonCard className="h-40" />
+                        <SkeletonCard className="h-40" />
+                      </>
+                    ) : (
+                      <>
+                        <KpiCard icon={Heart}       color="rose"    label="High-Risk Pregnancies"      value={S.pregnancies ?? 126}      trend={18} />
+                        <KpiCard icon={Baby}        color="amber"   label="Severe Malnutrition Cases"  value={S.malnutrition ?? 248}     trend={12} />
+                        <KpiCard icon={Radio}       color="red"     label="Active Outbreak Clusters"   value={OB.length || 3}            badge="NEW" />
+                        <KpiCard icon={Truck}       color="emerald" label="Active Ambulances"          value={`${AM.length || 7}/7`} />
+                        <KpiCard icon={WifiOff}     color="slate"   label="Offline Villages"           value={S.villages ?? 4} />
+                        <KpiCard icon={Activity}    color="purple"  label="Emergency Cases Today"      value={S.today_symptoms ?? 12}    trend={20} />
+                      </>
+                    )}
                   </div>
 
                   {/* Row of AI District Intelligence & Offline Village Monitor */}
@@ -954,6 +1067,8 @@ export default function AdminDashboard() {
                   ))}
                 </div>
               </div>
+              {/* AI Reasoning Trace — live Groq decision log from Sakhi RAG */}
+              <AIReasoningTrace />
             </div>
           )}
 

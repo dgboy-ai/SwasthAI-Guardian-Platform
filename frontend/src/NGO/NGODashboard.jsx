@@ -8,9 +8,11 @@ import {
   Loader, PhoneCall, RefreshCw, WifiOff, Zap
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import ngoService from '../services/ngoService';
-import PregnancyTracker from './PregnancyTracker';
-import MalnutritionForm from './MalnutritionForm';
+import SkeletonCard from '../components/SkeletonCard';
+import api from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 /* ─── AI Urgency Classifier (Tristha Track: Ticket Classification) ─────── */
 // Classifies incoming health requests into P1-P4 urgency levels
@@ -118,8 +120,9 @@ function ErrorBanner({ message }) {
 
 /* ─── Main Dashboard ──────────────────────────────────────── */
 export default function NGODashboard() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab]       = useState('summary');
-  const [showModal, setShowModal]       = useState(null);
 
   const [ambulances, setAmbulances]     = useState([]);
   const [pads, setPads]                 = useState([]);
@@ -296,14 +299,21 @@ export default function NGODashboard() {
                 { label: 'Pending Pad Reqs',  val: pads.filter(r=>r.status==='pending').length,          icon: Package,       color: 'rose'  },
                 { label: 'Ambulance Total',   val: ambulances.length,                                    icon: Activity,      color: 'amber' },
                 { label: 'Pad Reqs Total',    val: pads.length,                                          icon: Stethoscope,   color: 'purple'},
-              ].map(item => (
-                <div key={item.label} className="bg-white rounded-[1.5rem] border border-slate-100 shadow-sm p-5 hover:shadow-md transition-all">
+              ].map((item, idx) => (
+                <motion.div 
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.05, duration: 0.3 }}
+                  whileHover={{ y: -4, scale: 1.01 }}
+                  key={item.label} 
+                  className="bg-white rounded-[1.5rem] border border-slate-100 shadow-sm p-5 hover:shadow-md transition-all duration-300 cursor-default"
+                >
                   <div className={`w-9 h-9 rounded-xl flex items-center justify-center mb-4 bg-${item.color}-50 text-${item.color}-500`}>
                     <item.icon className="w-4 h-4" />
                   </div>
                   <p className="text-3xl font-black text-slate-900">{item.val}</p>
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">{item.label}</p>
-                </div>
+                </motion.div>
               ))}
             </div>
 
@@ -378,7 +388,7 @@ export default function NGODashboard() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div onClick={() => setShowModal('pregnancy')}
+              <div onClick={() => navigate('/ngo/maternal')}
                 className="bg-emerald-600 rounded-[2rem] p-8 text-white relative overflow-hidden group hover:scale-[1.01] transition-all cursor-pointer">
                 <div className="absolute right-[-5%] top-[-10%] opacity-10"><Shield className="w-48 h-48" /></div>
                 <Heart className="w-8 h-8 text-emerald-300 mb-4" />
@@ -391,7 +401,7 @@ export default function NGODashboard() {
                 </div>
               </div>
 
-              <div onClick={() => setShowModal('malnutrition')}
+              <div onClick={() => navigate('/ngo/child-nutrition')}
                 className="bg-slate-900 rounded-[2rem] p-8 text-white relative overflow-hidden group hover:scale-[1.01] transition-all cursor-pointer">
                 <div className="absolute right-[-5%] top-[-10%] opacity-5"><Baby className="w-48 h-48" /></div>
                 <Activity className="w-8 h-8 text-emerald-400 mb-4" />
@@ -429,8 +439,10 @@ export default function NGODashboard() {
               {ambulanceErr && <ErrorBanner message={ambulanceErr} />}
 
               {loadingAmb ? (
-                <div className="flex items-center justify-center py-16">
-                  <Loader className="w-6 h-6 animate-spin text-emerald-500" />
+                <div className="space-y-4">
+                  <SkeletonCard />
+                  <SkeletonCard />
+                  <SkeletonCard />
                 </div>
               ) : ambulances.length === 0 ? (
                 <div className="text-center py-16">
@@ -478,8 +490,10 @@ export default function NGODashboard() {
               {padErr && <ErrorBanner message={padErr} />}
 
               {loadingPad ? (
-                <div className="flex items-center justify-center py-16">
-                  <Loader className="w-6 h-6 animate-spin text-rose-500" />
+                <div className="space-y-4">
+                  <SkeletonCard />
+                  <SkeletonCard />
+                  <SkeletonCard />
                 </div>
               ) : pads.length === 0 ? (
                 <div className="text-center py-16">
@@ -502,28 +516,7 @@ export default function NGODashboard() {
 
       </main>
 
-      {/* Modals */}
-      <AnimatePresence>
-        {showModal && (
-          <div className="fixed inset-0 z-[2000] bg-slate-900/50 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 30 }}
-              className="w-full max-w-2xl bg-white rounded-[2rem] shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto">
-              <div className="flex items-center justify-between p-6 border-b border-slate-100">
-                <h3 className="font-black text-slate-900 text-lg">
-                  {showModal === 'pregnancy' ? 'Pregnancy Tracker' : 'Child Malnutrition Assessment'}
-                </h3>
-                <button onClick={() => setShowModal(null)} className="p-2 hover:bg-slate-100 rounded-xl transition-colors">
-                  <X className="w-5 h-5 text-slate-400" />
-                </button>
-              </div>
-              <div className="p-6">
-                {showModal === 'pregnancy'    && <PregnancyTracker />}
-                {showModal === 'malnutrition' && <MalnutritionForm />}
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      {/* Modals removed in favor of full page-level offline-capable routes */}
     </div>
   );
 }

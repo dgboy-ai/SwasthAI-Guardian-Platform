@@ -103,12 +103,13 @@ export default function AmbulancePage() {
   const handleSOS = () => {
     setSosLoading(true);
     const fire = async (lat, lng) => {
+      let location = 'SOS: Location pending';
       try {
         // Reverse-geocode so NGO dashboard shows village name, not raw coordinates
         const humanAddress = (lat !== 'Unknown')
           ? await reverseGeocode(lat, lng)
           : 'Location unavailable';
-        const location = (lat !== 'Unknown')
+        location = (lat !== 'Unknown')
           ? `SOS: ${humanAddress} (GPS: ${lat}, ${lng})`
           : 'SOS: Location unavailable — please call user directly';
         const res = await api.post('/villager/ambulance', {
@@ -309,6 +310,7 @@ export default function AmbulancePage() {
                             key={type.id}
                             type="button"
                             onClick={() => setFormData({ ...formData, emergencyType: type.id })}
+                            style={{ minHeight: '56px' }}
                             className={`p-3 sm:p-4 rounded-xl border-2 text-left transition-all ${
                               formData.emergencyType === type.id
                                 ? 'bg-rose-50 border-rose-500 shadow-sm shadow-rose-100'
@@ -331,6 +333,7 @@ export default function AmbulancePage() {
                         <button
                           type="button"
                           onClick={() => captureGPS()}
+                          style={{ minHeight: '54px' }}
                           className={`w-full p-3.5 sm:p-4 rounded-xl border-2 flex items-center justify-center gap-2.5 sm:gap-3 transition-all font-bold text-xs sm:text-sm ${
                             formData.locStatus === 'success'
                               ? 'bg-emerald-50 border-emerald-400 text-emerald-700'

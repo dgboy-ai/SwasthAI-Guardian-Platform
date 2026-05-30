@@ -32,6 +32,7 @@ export default function SymptomCheckerPage() {
   const [voiceLang, setVoiceLang] = useState('');
   const recognitionRef = useRef(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
 
   // Seed offline emergency cache + purge stale on mount
   React.useEffect(() => {
@@ -154,6 +155,47 @@ export default function SymptomCheckerPage() {
     URL.revokeObjectURL(url);
   };
 
+  const speakResult = (resultObj) => {
+    if (!window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+
+    if (isPlayingAudio) {
+      setIsPlayingAudio(false);
+      return;
+    }
+
+    const titleText = lang === 'hi' ? resultObj.titleHindi : resultObj.title;
+    const messageText = lang === 'hi' ? resultObj.messageHindi : resultObj.message;
+    const rawAiResult = resultObj.aiResult || '';
+
+    // Auto-translate or read the diagnosis out loud in Hindi if selected
+    let translationText = '';
+    if (lang === 'hi' && rawAiResult) {
+      translationText = rawAiResult
+        .replace(/Viral Fever & Cold/g, 'सामान्य वायरल बुखार और सर्दी')
+        .replace(/Acute Respiratory Infection/g, 'तीव्र श्वसन संक्रमण')
+        .replace(/Snakebite/g, 'सांप का काटना')
+        .replace(/Heatstroke/g, 'लू लगना')
+        .replace(/Chickenpox/g, 'चेचक छोटी माता')
+        .replace(/Measles/g, 'खसरा')
+        .replace(/Anaemia/g, 'एनीमिया खून की कमी')
+        .replace(/reliable advice/gi, 'अहम पोषण व आराम सलाह');
+    } else {
+      translationText = rawAiResult;
+    }
+
+    const fullUtteranceText = `${titleText}. ${messageText}. ${translationText ? 'Diagnosis: ' + translationText : ''}`;
+    const utterance = new SpeechSynthesisUtterance(fullUtteranceText);
+    utterance.lang = lang === 'hi' ? 'hi-IN' : 'en-US';
+    utterance.rate = 0.95;
+
+    utterance.onstart = () => setIsPlayingAudio(true);
+    utterance.onend = () => setIsPlayingAudio(false);
+    utterance.onerror = () => setIsPlayingAudio(false);
+
+    window.speechSynthesis.speak(utterance);
+  };
+
   const handleAnalyze = async () => {
     if (selectedSymptoms.length === 0 && !otherSymptom) return;
     setLoading(true);
@@ -191,7 +233,9 @@ export default function SymptomCheckerPage() {
       const cached = await getCachedSymptomResult(fullText, lang);
       if (cached) {
         const tier = getSeverityTier(selectedSymptoms, cached.prediction || '', otherSymptom);
-        setResult({ ...tier, aiResult: cached.prediction, fromCache: true });
+        const finalRes = { ...tier, aiResult: cached.prediction, fromCache: true };
+        setResult(finalRes);
+        speakResult(finalRes);
         setLoading(false);
         return;
       }
@@ -204,7 +248,9 @@ export default function SymptomCheckerPage() {
       const aiPrediction = res.data.prediction || '';
       const alert = res.data.alert || null;
       const tier = getSeverityTier(selectedSymptoms, aiPrediction, otherSymptom);
-      setResult({ ...tier, aiResult: aiPrediction });
+      const finalRes = { ...tier, aiResult: aiPrediction };
+      setResult(finalRes);
+      speakResult(finalRes);
       if (alert) setOutbreakAlert(alert);
 
       // ── Cache the fresh result ─────────────────────────────────────────────
@@ -217,7 +263,9 @@ export default function SymptomCheckerPage() {
         window.location.href = '/login';
       } else {
         const tier = getSeverityTier(selectedSymptoms, '', otherSymptom);
-        setResult({ ...tier, offline: true, error: true });
+        const finalRes = { ...tier, offline: true, error: true };
+        setResult(finalRes);
+        speakResult(finalRes);
         
         // Queue the failed request for replay on reconnect
         queueSymptomCheck({
@@ -451,6 +499,7 @@ export default function SymptomCheckerPage() {
                         ? 'bg-emerald-50 border-emerald-500 shadow-md shadow-emerald-100'
                         : 'bg-slate-50 border-slate-100 hover:border-emerald-200'
                         }`}
+                      style={{ minHeight: '64px' }}
                     >
                       {item.severe && (
                         <span className="absolute top-2 right-2 text-[8px] font-black text-rose-500 uppercase tracking-widest bg-rose-50 px-1.5 py-0.5 rounded-full border border-rose-100">
@@ -682,8 +731,19 @@ export default function SymptomCheckerPage() {
                           {React.createElement(severityConfig[result.type]?.icon, { className: 'w-4 h-4' })}
                         </div>
                         <p className="text-[10px] font-black text-white/70 uppercase tracking-widest">AI Assessment</p>
+                        
+                        {/* Audio Synthesis trigger button */}
+                        <button
+                          onClick={() => speakResult(result)}
+                          className={`ml-auto p-2 bg-white/10 hover:bg-white/20 border border-white/20 rounded-lg text-white transition-all flex items-center justify-center ${isPlayingAudio ? 'animate-pulse scale-105 bg-white/20' : ''}`}
+                          title="Read out loud / बोलकर सुनें"
+                          style={{ minWidth: '36px', minHeight: '36px' }}
+                        >
+                          <Volume2 className={`w-3.5 h-3.5 ${isPlayingAudio ? 'text-emerald-300' : 'text-white'}`} />
+                        </button>
+
                         {result.fromCache && (
-                          <span className="ml-auto text-[8px] font-black text-white/60 bg-white/10 border border-white/20 px-2 py-0.5 rounded-full uppercase tracking-widest">⚡ Cached</span>
+                          <span className="text-[8px] font-black text-white/60 bg-white/10 border border-white/20 px-2 py-0.5 rounded-full uppercase tracking-widest">⚡ Cached</span>
                         )}
                       </div>
 
