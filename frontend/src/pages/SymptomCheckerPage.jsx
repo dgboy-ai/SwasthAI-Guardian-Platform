@@ -329,8 +329,8 @@ export default function SymptomCheckerPage() {
     const recognition = new SpeechRecognition();
     recognition.lang = currentLang;
     recognition.continuous = false;
-    recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
+    recognition.interimResults = true;
+    recognition.maxAlternatives = 3;
 
     recognitionRef.current = recognition;
     setIsVoiceActive(true);
@@ -338,17 +338,39 @@ export default function SymptomCheckerPage() {
     setInterimText('');
 
     recognition.onresult = (e) => {
-      const text = e.results[0][0].transcript;
-      const cleaned = cleanText(text);
-      if (cleaned) {
-        setOtherSymptom(prev => {
-          const base = prev.trim();
-          return base ? base + ' ' + cleaned : cleaned;
-        });
+      let finalTranscript = '';
+      let currentInterim = '';
+
+      for (let i = e.resultIndex; i < e.results.length; ++i) {
+        if (e.results[i].isFinal) {
+          let bestAlternative = e.results[i][0];
+          for (let j = 1; j < e.results[i].length; j++) {
+            if (e.results[i][j].confidence > bestAlternative.confidence) {
+              bestAlternative = e.results[i][j];
+            }
+          }
+          finalTranscript += bestAlternative.transcript;
+        } else {
+          currentInterim += e.results[i][0].transcript;
+        }
       }
-      setIsVoiceActive(false);
-      setVoiceLang('');
-      recognitionRef.current = null;
+
+      if (currentInterim) {
+        setInterimText(currentInterim);
+      }
+
+      if (finalTranscript) {
+        const cleaned = cleanText(finalTranscript);
+        if (cleaned) {
+          setOtherSymptom(prev => {
+            const base = prev.trim();
+            return base ? base + ' ' + cleaned : cleaned;
+          });
+        }
+        setIsVoiceActive(false);
+        setVoiceLang('');
+        recognitionRef.current = null;
+      }
     };
 
     recognition.onend = () => {
@@ -465,16 +487,73 @@ export default function SymptomCheckerPage() {
           )}
         </AnimatePresence>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-10">
-          {/* LEFT COLUMN: INPUTS */}
-          <div className="lg:col-span-2 space-y-6 sm:space-y-10">
+            {/* Step 2: Symptom Grid Card */}
+            <div className="bg-white rounded-[1.5rem] sm:rounded-[2rem] border border-slate-100 shadow-sm p-4 sm:p-8">
+              <div className="flex items-center justify-between mb-4 sm:mb-8">
+                <div>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Step 2</p>
+                  <h3 className="text-lg font-black text-slate-900 tracking-tight flex items-center gap-2">
+                    <PlusCircle className="w-5 h-5 text-emerald-600" />
+                    {t.symptom?.select_symptoms || 'Or Select From Quick List / या लक्षण चुनें'}
+                  </h3>
+                </div>
+                {selectedSymptoms.length > 0 && (
+                  <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 border border-emerald-200 rounded-full">
+                    <span className="text-[10px] font-black text-emerald-700 uppercase tracking-widest">{selectedSymptoms.length} Selected</span>
+                  </motion.div>
+                )}
+              </div>
 
-            {/* Voice Input Card (Primary Interaction) */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
+                {[
+                  { id: 'fever', label: 'Fever', hindi: '🤒 बुखार', severe: false, icon: Thermometer },
+                  { id: 'cough', label: 'Cough', hindi: '🤧 खाँसी', severe: false, icon: Wind },
+                  { id: 'chest_pain', label: 'Chest Pain', hindi: '🤕 सीने में दर्द', severe: true, icon: Activity },
+                  { id: 'breathing', label: 'Breathing Issue', hindi: '😮‍💨 सांस की तकलीफ', severe: true, icon: Wind },
+                  { id: 'bleeding', label: 'Bleeding', hindi: '🩸 खून आना', severe: true, icon: Droplets },
+                  { id: 'headache', label: 'Headache', hindi: '🤕 सिर दर्द', severe: false, icon: Info },
+                  { id: 'vomiting', label: 'Vomiting', hindi: '🤢 उल्टी', severe: false, icon: BriefcaseMedical },
+                  { id: 'weakness', label: 'Weakness', hindi: '💤 कमज़ोरी', severe: false, icon: HeartPulse },
+                  { id: 'dizziness', label: 'Dizziness', hindi: '😵 चक्कर आना', severe: false, icon: Info },
+                  { id: 'vision_loss', label: 'Vision Loss', hindi: '🕶️ आंख के आगे अंधेरा', severe: true, icon: Scan },
+                  { id: 'paralysis', label: 'Limb Weakness', hindi: '💪 एक तरफ़ कमज़ोरी', severe: true, icon: ShieldCheck },
+                ].map((item) => {
+                  const isSelected = selectedSymptoms.includes(item.id);
+                  return (
+                    <motion.button
+                      key={item.id}
+                      whileTap={{ scale: 0.97 }}
+                      onClick={() => handleSymptomChange(item.id)}
+                      className={`p-4 sm:p-5 rounded-2xl border-2 text-left transition-all relative overflow-hidden group ${isSelected
+                        ? 'bg-emerald-50 border-emerald-500 shadow-md shadow-emerald-100'
+                        : 'bg-slate-50 border-slate-100 hover:border-emerald-200'
+                        }`}
+                      style={{ minHeight: '80px' }}
+                    >
+                      {item.severe && (
+                        <span className="absolute top-2 right-2 text-[8px] font-black text-rose-500 uppercase tracking-widest bg-rose-50 px-1.5 py-0.5 rounded-full border border-rose-100">
+                          Severe
+                        </span>
+                      )}
+                      <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center mb-2 transition-all ${isSelected ? 'bg-emerald-600 text-white' : 'bg-slate-300 text-white'}`}>
+                        <item.icon className="w-4 h-4 sm:w-5 sm:h-5" />
+                      </div>
+                      <p className={`font-black text-xs sm:text-sm leading-tight ${isSelected ? 'text-slate-900' : 'text-slate-700'}`}>
+                        {item.label}
+                      </p>
+                      <p className="text-[10px] text-slate-500 font-bold mt-1 uppercase tracking-wider">{item.hindi}</p>
+                    </motion.button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Step 3: Voice Input Card (Primary Interaction) */}
             <div className="bg-white rounded-[1.5rem] sm:rounded-[2rem] border-2 border-emerald-500/30 shadow-md p-5 sm:p-8 relative overflow-hidden">
               <div className="absolute right-0 top-0 w-24 h-24 bg-emerald-50 rounded-bl-full pointer-events-none opacity-50" />
               
               <div className="mb-5 relative z-10">
-                <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-1">🎤 Primary Input Method / मुख्य विकल्प</p>
+                <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-1">Step 3: Primary Input Method / मुख्य विकल्प</p>
                 <h3 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
                   <span className="text-lg animate-bounce">🎤</span> Speak Your Symptoms / बोलकर लक्षण बताएं
                 </h3>
@@ -581,67 +660,6 @@ export default function SymptomCheckerPage() {
                   </motion.div>
                 )}
               </AnimatePresence>
-            </div>
-
-            {/* Step 3: Symptom Grid Card */}
-            <div className="bg-white rounded-[1.5rem] sm:rounded-[2rem] border border-slate-100 shadow-sm p-4 sm:p-8">
-              <div className="flex items-center justify-between mb-4 sm:mb-8">
-                <div>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Step 3</p>
-                  <h3 className="text-lg font-black text-slate-900 tracking-tight flex items-center gap-2">
-                    <PlusCircle className="w-5 h-5 text-emerald-600" />
-                    {t.symptom?.select_symptoms || 'Or Select From Quick List / या लक्षण चुनें'}
-                  </h3>
-                </div>
-                {selectedSymptoms.length > 0 && (
-                  <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 border border-emerald-200 rounded-full">
-                    <span className="text-[10px] font-black text-emerald-700 uppercase tracking-widest">{selectedSymptoms.length} Selected</span>
-                  </motion.div>
-                )}
-              </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
-                {[
-                  { id: 'fever', label: 'Fever', hindi: '🤒 बुखार', severe: false, icon: Thermometer },
-                  { id: 'cough', label: 'Cough', hindi: '🤧 खाँसी', severe: false, icon: Wind },
-                  { id: 'chest_pain', label: 'Chest Pain', hindi: '🤕 सीने में दर्द', severe: true, icon: Activity },
-                  { id: 'breathing', label: 'Breathing Issue', hindi: '😮‍💨 सांस की तकलीफ', severe: true, icon: Wind },
-                  { id: 'bleeding', label: 'Bleeding', hindi: '🩸 खून आना', severe: true, icon: Droplets },
-                  { id: 'headache', label: 'Headache', hindi: '🤕 सिर दर्द', severe: false, icon: Info },
-                  { id: 'vomiting', label: 'Vomiting', hindi: '🤢 उल्टी', severe: false, icon: BriefcaseMedical },
-                  { id: 'weakness', label: 'Weakness', hindi: '💤 कमज़ोरी', severe: false, icon: HeartPulse },
-                  { id: 'dizziness', label: 'Dizziness', hindi: '😵 चक्कर आना', severe: false, icon: Info },
-                  { id: 'vision_loss', label: 'Vision Loss', hindi: '🕶️ आंख के आगे अंधेरा', severe: true, icon: Scan },
-                  { id: 'paralysis', label: 'Limb Weakness', hindi: '💪 एक तरफ़ कमज़ोरी', severe: true, icon: ShieldCheck },
-                ].map((item) => {
-                  const isSelected = selectedSymptoms.includes(item.id);
-                  return (
-                    <motion.button
-                      key={item.id}
-                      whileTap={{ scale: 0.97 }}
-                      onClick={() => handleSymptomChange(item.id)}
-                      className={`p-4 sm:p-5 rounded-2xl border-2 text-left transition-all relative overflow-hidden group ${isSelected
-                        ? 'bg-emerald-50 border-emerald-500 shadow-md shadow-emerald-100'
-                        : 'bg-slate-50 border-slate-100 hover:border-emerald-200'
-                        }`}
-                      style={{ minHeight: '80px' }}
-                    >
-                      {item.severe && (
-                        <span className="absolute top-2 right-2 text-[8px] font-black text-rose-500 uppercase tracking-widest bg-rose-50 px-1.5 py-0.5 rounded-full border border-rose-100">
-                          Severe
-                        </span>
-                      )}
-                      <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center mb-2 transition-all ${isSelected ? 'bg-emerald-600 text-white' : 'bg-slate-300 text-white'}`}>
-                        <item.icon className="w-4 h-4 sm:w-5 sm:h-5" />
-                      </div>
-                      <p className={`font-black text-xs sm:text-sm leading-tight ${isSelected ? 'text-slate-900' : 'text-slate-700'}`}>
-                        {item.label}
-                      </p>
-                      <p className="text-[10px] text-slate-500 font-bold mt-1 uppercase tracking-wider">{item.hindi}</p>
-                    </motion.button>
-                  );
-                })}
-              </div>
             </div>
 
             {/* Analyze Button */}
