@@ -38,8 +38,11 @@ __pycache__/
 *.sqlite-wal
 *.sqlite-journal
 
-# Model files (keep if small, but often ignored if large)
-# disease_model.pkl
+# AI Model files - too large for GitHub (regenerate via training scripts)
+# Run: python generate_dataset.py && python train_disease_model.py && python train_deep_model.py
+ai-service/disease_model.pkl
+ai-service/deep_disease_model.pkl
+ai-service/symptom_dataset.csv
 
 # Logs
 npm-debug.log*

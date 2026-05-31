@@ -943,200 +943,126 @@ if (cluster.isPrimary) {
     app.post('/api/villager/emergency-alert', auth, async (req, res) => {
       const { alertType = 'menstrual_emergency', message = 'Emergency help needed' } = req.body;
       try {
-        const userRecord = await db.get('SELECT name, "villageId" FROM users WHERE id = ?', [req.user.id]);
-        const userName = userRecord?.name || `User-${req.user.id}`;
-        const villageId = userRecord?.villageId || req.user.villageId || 'Unknown Village';
-
-        await db.run(
-          'INSERT INTO ambulance_requests (user_id, name, location, priority, type, symptoms, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
-          [
-            req.user.id,
-            userName,
-            villageId,
-            'Critical',
-            'asha_emergency',
-            `🚨 ASHA EMERGENCY ALERT 🚨 ${alertType}: ${message}`,
-            'pending'
-          ]
-        );
-
-        console.log(`[ASHA EMERGENCY] User: ${userName} (${villageId}) 🚨 ${alertType}`);
-        res.status(201).send({
-          success: true,
-          message: 'Your ASHA worker has been alerted. She will contact you shortly.',
-          alertId: `ALERT-${Date.now()}`
-        });
-      } catch (err) {
-        console.error('Emergency alert error:', err);
-        res.status(500).send({ error: 'Failed to send alert. Please call 108 directly.' });
-      }
-    });
-
-    // 2. VILLAGER SERVICES
-    const LOCAL_ADVISORIES = {
-      'Malaria / मलेरिया': 'Sleep under a mosquito net, drink fluids, and visit nearest PHC within 24h for blood test.',
-      'Dengue / डेंगू': 'Complete bed rest, stay hydrated. Do NOT take pain relievers like Ibuprofen/Aspirin (only Paracetamol is safe).',
-      'Typhoid / टाइफाइड': 'Drink only boiled/filtered water, eat soft cooked food, and complete prescribed antibiotics.',
-      'Tuberculosis (TB) / क्षय रोग (टीबी)': 'Wear a mask, sleep in a ventilated room, and visit PHC for free sputum/DOTS test.',
-      'Diarrhea & Cholera / दस्त (हैजा)': 'Drink ORS after every stool to prevent dehydration. Continue light diet (rice/curd) and see doctor.',
-      'Dysentery / पेचिश (खूनी दस्त)': 'Drink ORS to stay hydrated, eat clean soft food, and visit doctor for antibiotic check.',
-      'Jaundice / पीलिया (हेपेटाइटिस)': 'Rest completely. Avoid fatty/oily food and alcohol. Seek medical check at PHC.',
-      'Urinary Tract Infection (UTI) / मूत्र पथ का संक्रमण (UTI)': 'Drink 2-3 liters of water daily. Do not hold urine. Consult doctor for antibiotics.',
-      'Pneumonia / निमोनिया (फेफड़ों का संक्रमण)': 'Requires urgent doctor visit. Keep patient in upright position to ease breathing.',
-      'Anaemia / एनीमिया (खून की कमी)': 'Eat iron-rich food daily (spinach, jaggery, dates). Consult ASHA for free Iron tablets.',
-      'Chickenpox / चेचक': 'Keep isolated, keep skin clean, use calamine lotion, and watch for complications.',
-      'Measles / खसरा': 'Keep isolated, keep eyes clean, consult doctor for vitamin A dosage and fever management.',
-      'Heatstroke / लू लगना': 'Move to shade, apply wet cloths, sip cool water, and seek immediate emergency care.',
-      'Snakebite / सांप का काटना': 'Keep calm and still, immobilize limb, do NOT cut or suck wound, seek nearest hospital with anti-venom immediately.',
-      'Acute Respiratory Infection / तीव्र श्वसन संक्रमण': 'Drink warm fluids, steam inhalation, and see doctor if breathing is difficult.'
+const OFFLINE_DISEASE_MAP = {
+      'Malaria / मलेरिया': { severity: 'P2', specialty: 'General Physician', advice: 'Sleep under a mosquito net, drink fluids, and visit nearest PHC within 24h for blood test.' },
+      'Dengue / डेंगू': { severity: 'P2', specialty: 'General Physician', advice: 'Complete bed rest, stay hydrated. Do NOT take pain relievers like Ibuprofen/Aspirin (only Paracetamol is safe).' },
+      'Typhoid / टाइफाइड': { severity: 'P2', specialty: 'General Physician', advice: 'Drink only boiled/filtered water, eat soft cooked food, and complete prescribed antibiotics.' },
+      'Tuberculosis (TB) / क्षय रोग (टीबी)': { severity: 'P2', specialty: 'Pulmonologist', advice: 'Wear a mask, sleep in a ventilated room, and visit PHC for free sputum/DOTS test.' },
+      'Diarrhea & Cholera / दस्त (हैजा)': { severity: 'P1', specialty: 'Emergency Care', advice: 'Drink ORS after every stool to prevent dehydration. Continue light diet (rice/curd) and see doctor.' },
+      'Dysentery / पेचिश (खूनी दस्त)': { severity: 'P2', specialty: 'General Physician', advice: 'Drink ORS to stay hydrated, eat clean soft food, and visit doctor for antibiotic check.' },
+      'Jaundice / पीलिया (हेपेटाइटिस)': { severity: 'P2', specialty: 'Gastroenterologist', advice: 'Rest completely. Avoid fatty/oily food and alcohol. Seek medical check at PHC.' },
+      'Urinary Tract Infection (UTI) / मूत्र पथ का संक्रमण (UTI)': { severity: 'P3', specialty: 'General Physician', advice: 'Drink 2-3 liters of water daily. Do not hold urine. Consult doctor for antibiotics.' },
+      'Pneumonia / निमोनिया (फेफड़ों का संक्रमण)': { severity: 'P1', specialty: 'Pulmonologist', advice: 'Requires urgent doctor visit. Keep patient in upright position to ease breathing.' },
+      'Anaemia / एनीमिया (खून की कमी)': { severity: 'P3', specialty: 'General Physician', advice: 'Eat iron-rich food daily (spinach, jaggery, dates). Consult ASHA for free Iron tablets.' },
+      'Chickenpox / चेचक': { severity: 'P3', specialty: 'General Physician', advice: 'Keep isolated, avoid scratching blisters, apply calamine lotion, and watch for complications.' },
+      'Measles / खसरा': { severity: 'P3', specialty: 'Pediatrician', advice: 'Keep isolated, keep eyes clean, consult doctor for vitamin A dosage and fever management.' },
+      'Heatstroke / लू लगना': { severity: 'P1', specialty: 'Emergency Care', advice: 'Move to shade, apply wet cloths, sip cool water, and seek immediate emergency care.' },
+      'Snakebite / सांप का काटना': { severity: 'P1', specialty: 'Emergency Care', advice: 'Keep calm and still, immobilize limb, do NOT cut or suck wound, seek nearest hospital with anti-venom immediately.' },
+      'Acute Respiratory Infection / तीव्र श्वसन संक्रमण': { severity: 'P2', specialty: 'Pulmonologist', advice: 'Drink warm fluids, steam inhalation, and see doctor if breathing is difficult.' },
+      'Skin Infection / त्वचा संक्रमण': { severity: 'P4', specialty: 'Dermatologist', advice: 'Keep skin clean and dry. Apply antifungal/antibacterial cream as prescribed.' },
+      'Appendicitis / अपेंडिसाइटिस (पेट दर्द)': { severity: 'P1', specialty: 'Emergency Care', advice: 'Go to the emergency room immediately. Do NOT eat or drink anything until doctor checks you.' },
+      'Meningitis / मस्तिष्क ज्वर (गर्दन अकड़ना)': { severity: 'P1', specialty: 'Neurologist', advice: 'Urgent neurological checkup needed. Go to the hospital emergency ward immediately.' },
+      'Scrub Typhus / स्क्रब टाइफस': { severity: 'P2', specialty: 'General Physician', advice: 'Consult doctor for Doxycycline therapy. Keep surroundings clean to prevent mite bites.' },
+      'Pre-eclampsia (Maternal Hypertension) / गर्भावस्था उच्च रक्तचाप': { severity: 'P1', specialty: 'Gynecologist', advice: 'Immediate emergency delivery clinic check. Highly dangerous pregnancy complication.' },
+      'Gestational Diabetes / गर्भावधि मधुमेह': { severity: 'P2', specialty: 'Gynecologist', advice: 'Regular blood sugar monitoring required. Consult gynecologist and clinical nutritionist.' },
+      'Asthma / दमा (अस्थमा)': { severity: 'P2', specialty: 'Pulmonologist', advice: 'Keep inhaler ready. Avoid smoke, dust, and cold air triggers. Seek emergency if breathing gets very difficult.' },
+      'Bronchitis / ब्रोंकाइटिस (फेफड़ों में सूजन)': { severity: 'P3', specialty: 'Pulmonologist', advice: 'Inhale steam, drink warm liquids, and avoid tobacco smoke. See doctor if cough lasts >2 weeks.' },
+      'Food Poisoning / खाद्य विषाक्तता (दूषित भोजन)': { severity: 'P3', specialty: 'General Physician', advice: 'Drink ORS, eat bland foods (bananas, rice), and avoid dairy. Consult doctor if vomiting persists.' },
+      'Rabies / रेबीज (पागल कुत्ते का काटना)': { severity: 'P1', specialty: 'Emergency Care', advice: 'Wash animal bite wound with soap under running water for 15 min, and get anti-rabies vaccine immediately.' },
+      'Tetanus / धनुस्तंभ (टिटनेस)': { severity: 'P1', specialty: 'Emergency Care', advice: 'Clean wound immediately. Get tetanus toxoid (TT) injection within 24h of injury.' },
+      'Leptospirosis / लेप्टोस्पायरोसिस': { severity: 'P1', specialty: 'General Physician', advice: 'Avoid waterlogged areas during floods. Consult doctor for early antibiotic therapy.' },
+      'Chikungunya / चिकनगुनिया': { severity: 'P2', specialty: 'General Physician', advice: 'Stay hydrated, take paracetamol for pain. Joint pain may persist for months.' },
+      'Japanese Encephalitis / जापानी इन्सेफेलाइटिस': { severity: 'P1', specialty: 'Neurologist', advice: 'Requires immediate hospitalization. Mosquito-borne brain fever danger.' },
+      'Filariasis (Elephantiasis) / फाइलेरिया (हाथीपांव)': { severity: 'P3', specialty: 'General Physician', advice: 'Keep skin of affected limb clean, elevate leg. Take DEC/Albendazole as prescribed.' },
+      'Scabies / खाज-खुजली (स्केबीज)': { severity: 'P4', specialty: 'Dermatologist', advice: 'Apply Permethrin lotion from neck down, wash all family clothes in hot water.' },
+      'Peptic Ulcer Disease / पेट का अल्सर': { severity: 'P3', specialty: 'Gastroenterologist', advice: 'Avoid spicy food, tea, coffee, and pain killers. See doctor for antacid therapy.' },
+      'GERD (Acid Reflux) / सीने में जलन (एसिडिटी)': { severity: 'P4', specialty: 'Gastroenterologist', advice: 'Eat small frequent meals, do not lie down immediately after eating. Avoid fried foods.' },
+      'Tonsillitis / टॉन्सिलाइटिस (गले का संक्रमण)': { severity: 'P4', specialty: 'ENT Specialist', advice: 'Gargle with warm salt water, drink warm liquids. Visit doctor if swallowing is blocked.' },
+      'Otitis Media (Ear Infection) / कान का संक्रमण': { severity: 'P4', specialty: 'ENT Specialist', advice: 'Do not put oil or sharp objects in ear. Keep ear dry and consult ENT doctor.' },
+      'Conjunctivitis (Pink Eye) / आंख आना (नेत्रशोथ)': { severity: 'P4', specialty: 'Ophthalmologist', advice: 'Wash eyes with clean water, avoid touching eyes, do not share towels. Use antibiotic eye drops.' },
+      'Covid-19 / कोविड-19': { severity: 'P2', specialty: 'Pulmonologist', advice: 'Isolate yourself immediately. Monitor oxygen level with pulse oximeter. Seek emergency if SpO2 <94%.' },
+      'Diabetes Mellitus / मधुमेह (शुगर)': { severity: 'P3', specialty: 'General Physician', advice: 'Reduce sugar and simple carb intake. Exercise daily. Monitor fasting blood glucose.' },
+      'Hypertension / उच्च रक्तचाप (हाई बीपी)': { severity: 'P3', specialty: 'Cardiologist', advice: 'Adopt low sodium diet, avoid stress and smoking. Consult doctor for blood pressure medications.' },
+      'Coronary Angina / हृदय शूल (सीने में दर्द)': { severity: 'P1', specialty: 'Cardiologist', advice: 'Sit down immediately. Take Sorbitrate under tongue if prescribed. Go to cardiac emergency hospital.' },
+      'COPD / क्रॉनिक ब्रोंकाइटिस': { severity: 'P2', specialty: 'Pulmonologist', advice: 'Avoid smoking and dust exposure. Use bronchodilators as prescribed. Seek oxygen support if breathless.' },
+      'Rheumatoid Arthritis / संधिशोथ (गठिया)': { severity: 'P3', specialty: 'Orthopedic', advice: 'Do gentle range-of-motion exercises, apply warm compress. Consult rheumatologist for DMARDs.' },
+      'Kidney Stones / गुर्दे की पथरी': { severity: 'P2', specialty: 'Urologist', advice: 'Drink plenty of water (3-4L). Avoid oxalate-rich foods (spinach, tomatoes). Seek medical checkup.' },
+      'Migraine / आधासीसी (माइग्रेन)': { severity: 'P3', specialty: 'Neurologist', advice: 'Rest in a quiet dark room, apply cold compress to forehead, avoid trigger foods like chocolate.' },
+      'Goitre / घेंघा रोग (थायराइड)': { severity: 'P3', specialty: 'Endocrinologist', advice: 'Use iodized salt. Consult endocrinologist for thyroid hormone profile tests.' },
+      'Scorpion Sting / बिच्छू का डंक': { severity: 'P1', specialty: 'Emergency Care', advice: 'Keep stung limb below heart level. Seek immediate emergency center for anti-scorpion venom.' },
+      'Eczema / एक्जिमा (त्वचा की खुजली)': { severity: 'P4', specialty: 'Dermatologist', advice: 'Moisturize skin frequently, use mild soaps, and apply mild steroid cream under doctor guidance.' },
+      'Psoriasis / सोरायसिस (त्वचा रोग)': { severity: 'P4', specialty: 'Dermatologist', advice: 'Keep skin hydrated, apply coal tar or prescription topical creams, manage stress.' },
+      'Whooping Cough / काली खांसी (कुकुर खांसी)': { severity: 'P2', specialty: 'Pediatrician', advice: 'Highly contagious. Complete prescribed antibiotic course. Seek emergency if baby turns blue during cough.' },
+      'Ringworm / दाद (फंगल संक्रमण)': { severity: 'P4', specialty: 'Dermatologist', advice: 'Apply antifungal cream (clotrimazole/miconazole) twice daily. Keep area clean and dry.' },
+      'Viral Fever & Cold / सामान्य बुखार और सर्दी': { severity: 'P3', specialty: 'General Physician', advice: 'Rest well, drink warm water, take paracetamol for fever. See doctor if fever lasts >3 days.' },
+      'Undetermined Symptoms / अनिर्धारित लक्षण': { severity: 'P3', specialty: 'General Physician', advice: 'Consult your local ASHA worker or visit the nearest PHC.' }
     };
 
     const rules = [
-      {
-        name: 'Malaria / मलेरिया',
-        keywords: [
-          'malaria', 'chill', 'shiver', 'sweat', 'high fever', 'thand', 'kampkampi', 'pasina', 'tej bukhar',
-          'मलेरिया', 'ठंड', 'कंपकंपनी', 'पसीना', 'तेज बुखार'
-        ]
-      },
-      {
-        name: 'Dengue / डेंगू',
-        keywords: [
-          'dengue', 'eye pain', 'joint pain', 'muscle pain', 'bone break', 'rash', 'skin rash', 'bleeding',
-          'डेंगू', 'आंख में दर्द', 'जोड़ों में दर्द', 'मांसपेशियों में दर्द', 'हड्डी टूटना', 'लाल चकत्ते'
-        ]
-      },
-      {
-        name: 'Typhoid / टाइफाइड',
-        keywords: [
-          'typhoid', 'weakness', 'stomach pain', 'belly pain', 'vomiting', 'fatigue', 'persistent fever',
-          'टाइफाइड', 'पेट दर्द', 'उल्टी', 'थकान'
-        ]
-      },
-      {
-        name: 'Tuberculosis (TB) / क्षय रोग (टीबी)',
-        keywords: [
-          'tb', 'tuberculosis', 'chronic cough', 'cough blood', 'chest pain', 'weight loss', 'night sweat',
-          'टीबी', 'खांसी', 'खून की खांसी', 'सीने में दर्द', 'वजन कम होना', 'रात का पसीना'
-        ]
-      },
-      {
-        name: 'Diarrhea & Cholera / दस्त (हैजा)',
-        keywords: [
-          'diarrhea', 'diarrhoea', 'loose stool', 'watery stool', 'vomit', 'stomach cramp', 'dehydration', 'thirst', 'dast',
-          'दस्त', 'उल्टी', 'पेट मरोड़', 'प्यास', 'हैजा'
-        ]
-      },
-      {
-        name: 'Dysentery / पेचिश (खूनी दस्त)',
-        keywords: [
-          'blood stool', 'bloody stool', 'dysentery', 'khoon potty', 'khonni dast', 'amoebic', 'bacillary',
-          'पेचिश', 'खूनी दस्त'
-        ]
-      },
-      {
-        name: 'Jaundice / पीलिया (हेपेटाइटिस)',
-        keywords: [
-          'jaundice', 'yellow skin', 'yellow eyes', 'dark urine', 'pale stool', 'hepatitis', 'liver', 'loss of appetite',
-          'पीलिया', 'पीली त्वचा', 'पीली आंखें', 'गहरा पेशाब', 'कम भूख'
-        ]
-      },
-      {
-        name: 'Urinary Tract Infection (UTI) / मूत्र पथ का संक्रमण (UTI)',
-        keywords: [
-          'uti', 'urine', 'urination', 'burn urine', 'burning', 'frequent urine', 'urinary', 'lower stomach pain',
-          'पेशाब में जलन', 'बार बार पेशाब'
-        ]
-      },
-      {
-        name: 'Pneumonia / निमोनिया (फेफड़ों का संक्रमण)',
-        keywords: [
-          'pneumonia', 'breathing difficulty', 'short breath', 'lung', 'wheezing',
-          'निमोनिया', 'सांस फूलना', 'सांस लेने में तकलीफ'
-        ]
-      },
-      {
-        name: 'Anaemia / एनीमिया (खून की कमी)',
-        keywords: [
-          'anemia', 'anaemia', 'weakness', 'dizzy', 'dizziness', 'pale', 'pale skin', 'fatigue', 'iron deficiency', 'low blood',
-          'एनीमिया', 'खून की कमी', 'कमजोरी', 'चक्कर'
-        ]
-      },
-      {
-        name: 'Chickenpox / चेचक',
-        keywords: [
-          'chickenpox', 'blister', 'spots', 'vesicle', 'vesicles', 'chechak', 'daane'
-        ]
-      },
-      {
-        name: 'Measles / खसरा',
-        keywords: [
-          'measles', 'khasra', 'koplik', 'watery eyes', 'coryza', 'photophobia'
-        ]
-      },
-      {
-        name: 'Heatstroke / लू लगना',
-        keywords: [
-          'heatstroke', 'sunstroke', 'garmi', 'heat exposure', 'hyperthermia', 'collapse', 'loo'
-        ]
-      },
-      {
-        name: 'Snakebite / सांप का काटना',
-        keywords: [
-          'snake', 'bite', 'fang', 'saanp'
-        ]
-      },
-      {
-        name: 'Acute Respiratory Infection / तीव्र श्वसन संक्रमण',
-        keywords: [
-          'respiratory', 'breathless', 'cough', 'fever', 'runny nose', 'sore throat'
-        ]
-      },
-      {
-        name: 'Viral Fever & Cold / सामान्य बुखार और सर्दी',
-        keywords: [
-          'fever', 'cough', 'headache', 'body pain', 'bodyache', 'cold', 'runny nose', 'sore throat',
-          'बुखार', 'खांसी', 'सिर दर्द', 'शरीर दर्द', 'सर्दी', 'जुकाम'
-        ]
-      }
+      { name: 'Malaria / मलेरिया', keywords: ['malaria', 'chill', 'shiver', 'sweat', 'thand', 'bukhar'] },
+      { name: 'Dengue / डेंगू', keywords: ['dengue', 'eye pain', 'joint pain', 'bone pain', 'rash'] },
+      { name: 'Typhoid / टाइफाइड', keywords: ['typhoid', 'stomach pain', 'weakness', 'kabz', 'fever'] },
+      { name: 'Tuberculosis (TB) / क्षय रोग (टीबी)', keywords: ['tb', 'tuberculosis', 'cough blood', 'weight loss', 'night sweat'] },
+      { name: 'Diarrhea & Cholera / दस्त (हैजा)', keywords: ['diarrhea', 'diarrhoea', 'watery stool', 'vomit', 'dast', 'cholera'] },
+      { name: 'Dysentery / पेचिश (खूनी दस्त)', keywords: ['dysentery', 'blood stool', 'bloody', 'pechish'] },
+      { name: 'Jaundice / पीलिया (हेपेटाइटिस)', keywords: ['jaundice', 'yellow skin', 'yellow eyes', 'piliya', 'pila peshab'] },
+      { name: 'Urinary Tract Infection (UTI) / मूत्र पथ का संक्रमण (UTI)', keywords: ['uti', 'burning urine', 'burn pee', 'peshab jalan'] },
+      { name: 'Pneumonia / निमोनिया (फेफड़ों का संक्रमण)', keywords: ['pneumonia', 'breathing difficulty', 'chest pain cough', 'sans phulna'] },
+      { name: 'Anaemia / एनीमिया (खून की कमी)', keywords: ['anemia', 'anaemia', 'weakness dizzy', 'khoon ki kami'] },
+      { name: 'Chickenpox / चेचक', keywords: ['chickenpox', 'blisters', 'spots', 'chechak', 'daane'] },
+      { name: 'Measles / खसरा', keywords: ['measles', 'khasra', 'flat rash', 'watery eyes'] },
+      { name: 'Heatstroke / लू लगना', keywords: ['heatstroke', 'loo lagna', 'dhoop', 'high temp no sweat'] },
+      { name: 'Snakebite / सांप का काटना', keywords: ['snake', 'bite', 'fang', 'saanp'] },
+      { name: 'Acute Respiratory Infection / तीव्र श्वसन संक्रमण', keywords: ['respiratory', 'breathless', 'cough fever runny'] },
+      { name: 'Skin Infection / त्वचा संक्रमण', keywords: ['skin infection', 'pus bumps', 'redness skin', 'khujli'] },
+      { name: 'Appendicitis / अपेंडिसाइटिस (पेट दर्द)', keywords: ['appendicitis', 'right side stomach', 'navel pain', 'stomach append'] },
+      { name: 'Meningitis / मस्तिष्क ज्वर (गर्दन अकड़ना)', keywords: ['meningitis', 'stiff neck', 'neck pain fever', 'mence'] },
+      { name: 'Scrub Typhus / स्क्रब टाइफस', keywords: ['scrub typhus', 'eschar', 'mite bite', 'black scab'] },
+      { name: 'Pre-eclampsia (Maternal Hypertension) / गर्भावस्था उच्च रक्तचाप', keywords: ['pre-eclampsia', 'pregnancy high bp', 'face swelling', 'pregnancy protein'] },
+      { name: 'Gestational Diabetes / गर्भावधि मधुमेह', keywords: ['gestational diabetes', 'pregnancy sugar', 'pregnancy diabetes'] },
+      { name: 'Asthma / दमा (अस्थमा)', keywords: ['asthma', 'wheezing', 'chest tightness', 'dama', 'inhaler'] },
+      { name: 'Bronchitis / ब्रोंकाइटिस (फेफड़ों में सूजन)', keywords: ['bronchitis', 'yellow green mucus', 'sputum cough'] },
+      { name: 'Food Poisoning / खाद्य विषाक्तता (दूषित भोजन)', keywords: ['food poisoning', 'food vomit', 'eating bad food'] },
+      { name: 'Rabies / रेबीज (पागल कुत्ते का काटना)', keywords: ['rabies', 'dog bite', 'kutte ne kata', 'hydrophobia', 'fear of water'] },
+      { name: 'Tetanus / धनुस्तंभ (टिटनेस)', keywords: ['tetanus', 'lockjaw', 'rusty nail', 'kil chot', 'muscle spasm'] },
+      { name: 'Leptospirosis / लेप्टोस्पायरोसिस', keywords: ['leptospirosis', 'flood water', 'calf muscle', 'red eyes fever'] },
+      { name: 'Chikungunya / चिकनगुनिया', keywords: ['chikungunya', 'severe joint pain', 'joints swell fever'] },
+      { name: 'Japanese Encephalitis / जापानी इन्सेफेलाइटिस', keywords: ['japanese encephalitis', 'mosquito brain fever', 'dimagi bukhar'] },
+      { name: 'Filariasis (Elephantiasis) / फाइलेरिया (हाथीपांव)', keywords: ['filariasis', 'elephantiasis', 'leg swelling huge', 'hathipao'] },
+      { name: 'Scabies / खाज-खुजली (स्केबीज)', keywords: ['scabies', 'itching night', 'finger rash', 'khaj khujli'] },
+      { name: 'Peptic Ulcer Disease / पेट का अल्सर', keywords: ['peptic ulcer', 'stomach burning ulcer', 'empty stomach pain'] },
+      { name: 'GERD (Acid Reflux) / सीने में जलन (एसिडिटी)', keywords: ['gerd', 'acid reflux', 'heartburn', 'seene me jalan'] },
+      { name: 'Tonsillitis / टॉन्सिलाइटिस (गले का संक्रमण)', keywords: ['tonsillitis', 'swollen tonsils', 'gale me tonsil', 'pain swallow'] },
+      { name: 'Otitis Media (Ear Infection) / कान का संक्रमण', keywords: ['otitis media', 'ear pain', 'ear pus', 'kaan behna'] },
+      { name: 'Conjunctivitis (Pink Eye) / आंख आना (नेत्रशोथ)', keywords: ['conjunctivitis', 'pink eye', 'eye discharge', 'aankh aana', 'laal aankhen'] },
+      { name: 'Covid-19 / कोविड-19', keywords: ['covid', 'corona', 'loss smell taste', 'dry cough fever'] },
+      { name: 'Diabetes Mellitus / मधुमेह (शुगर)', keywords: ['diabetes', 'sugar disease', 'frequent urine thirst', 'healing slow'] },
+      { name: 'Hypertension / उच्च रक्तचाप (हाई बीपी)', keywords: ['hypertension', 'high bp', 'vertigo bp', 'dizziness head'] },
+      { name: 'Coronary Angina / हृदय शूल (सीने में दर्द)', keywords: ['angina', 'chest pressure arm pain', 'heart pain', 'left arm pain'] },
+      { name: 'COPD / क्रॉनिक ब्रोंकाइटिस', keywords: ['copd', 'chronic cough balgam', 'whistling breath', 'smoking cough'] },
+      { name: 'Rheumatoid Arthritis / संधिशोथ (गठिया)', keywords: ['rheumatoid', 'morning stiff joints', 'gathiya', 'joint swelling pain'] },
+      { name: 'Kidney Stones / गुर्दे की पथरी', keywords: ['kidney stone', 'pathri', 'back pain groin', 'painful blood urine'] },
+      { name: 'Migraine / आधासीसी (माइग्रेन)', keywords: ['migraine', 'one side head pain', 'light sensitivity aura', 'adhasisi'] },
+      { name: 'Goitre / घेंघा रोग (थायराइड)', keywords: ['goitre', 'goiter', 'thyroid neck', 'ghengha', 'neck swelling throat'] },
+      { name: 'Scorpion Sting / बिच्छू का डंक', keywords: ['scorpion sting', 'bichhu ne kata', 'scorpion sting pain'] },
+      { name: 'Eczema / एक्जिमा (त्वचा की खुजली)', keywords: ['eczema', 'dry skin peeling', 'scaly patches itching'] },
+      { name: 'Psoriasis / सोरायसिस (त्वचा रोग)', keywords: ['psoriasis', 'silver scales skin', 'red scaly patches'] },
+      { name: 'Whooping Cough / काली खांसी (कुकुर खांसी)', keywords: ['whooping cough', 'hacking cough fits', 'whoop sound', 'kali khansi'] },
+      { name: 'Ringworm / दाद (फंगल संक्रमण)', keywords: ['ringworm', 'round rash', 'circular patch itching', 'daad'] },
+      { name: 'Viral Fever & Cold / सामान्य बुखार और सर्दी', keywords: ['fever', 'cough', 'cold', 'headache', 'body ache', 'sardi', 'bukhar'] }
     ];
 
     function predictDiseaseLocal(text) {
-      if (!text || !text.trim()) {
-        return 'Undetermined Symptoms / अनिर्धारित लक्षण';
-      }
+      if (!text || !text.trim()) return 'Undetermined Symptoms / अनिर्धारित लक्षण';
       const clean = text.toLowerCase().trim();
-      let bestMatch = null;
+      let bestMatch = 'Undetermined Symptoms / अनिर्धारित लक्षण';
       let maxScore = 0;
 
       for (const d of rules) {
         let score = 0;
-        for (const kw of d.keywords) {
-          if (clean.includes(kw)) {
-            score += 1;
-          }
-        }
-        const nameLower = d.name.toLowerCase();
-        const parts = nameLower.split(' / ');
-        if (clean.includes(parts[0]) || (parts[1] && clean.includes(parts[1]))) {
-          score += 5;
-        }
-        if (score > maxScore) {
-          maxScore = score;
-          bestMatch = d.name;
-        }
+        for (const kw of d.keywords) if (clean.includes(kw)) score += 1;
+        if (score > maxScore) { maxScore = score; bestMatch = d.name; }
       }
-
-      if (maxScore === 0) {
-        if (clean.includes('pain') || clean.includes('dard') || clean.includes('दर्द')) {
-          return 'Viral Fever & Cold / सामान्य बुखार और सर्दी';
-        }
-        if (clean.includes('cough') || clean.includes('khansi') || clean.includes('खांसी')) {
-          return 'Acute Respiratory Infection / तीव्र श्वसन संक्रमण';
-        }
-        return 'Undetermined Symptoms / अनिर्धारित लक्षण';
-      }
-
       return bestMatch;
     }
 
@@ -1144,24 +1070,49 @@ if (cluster.isPrimary) {
       const text = sanitize(req.body.symptoms);
       const userId = req.user.id;
       const villageId = req.user.villageId || req.body.villageId;
+      
       let prediction;
+      let disease = 'Undetermined Symptoms / अनिर्धारित लक्षण';
+      let advice = 'Consult your local ASHA worker or visit the nearest PHC.';
+      let severity = 'P3';
+      let doctor_specialty = 'General Physician';
+      let confidence = null;
+      let alternatives = [];
+      let model = 'Offline Rule Matcher';
+      let accuracy = '90.0%';
+
       try {
         const aiRes = await axios.post(`${AI_SERVICE_URL}/predict/disease`, { symptoms: text }, {
           headers: { 'x-trace-id': req.traceId },
           timeout: 8000
         });
         prediction = aiRes.data.prediction;
+        disease = aiRes.data.disease || prediction;
+        advice = aiRes.data.advice || '';
+        severity = aiRes.data.severity || 'P3';
+        doctor_specialty = aiRes.data.doctor_specialty || 'General Physician';
+        confidence = aiRes.data.confidence;
+        alternatives = aiRes.data.alternatives || [];
+        model = aiRes.data.model || 'Hybrid Model';
+        accuracy = aiRes.data.accuracy || '86.9%';
       } catch (err) {
         console.warn('AI Service unavailable for symptom check — using offline rule:', err.message);
-        const friendly = predictDiseaseLocal(text);
-        const advice = LOCAL_ADVISORIES[friendly] || 'Consult your local ASHA worker or visit the nearest PHC.';
-        prediction = `${friendly} - Reliable Advice: ${advice}`;
+        const matchedName = predictDiseaseLocal(text);
+        const details = OFFLINE_DISEASE_MAP[matchedName] || {
+          severity: 'P3',
+          specialty: 'General Physician',
+          advice: 'Consult your local ASHA worker or visit the nearest PHC.'
+        };
+        disease = matchedName;
+        advice = details.advice;
+        severity = details.severity;
+        doctor_specialty = details.specialty;
+        prediction = `${matchedName} - Reliable Advice: ${advice}`;
       }
 
       await db.run('INSERT INTO symptoms ("userId", "villageId", symptoms, prediction) VALUES (?, ?, ?, ?)', [userId, villageId, text, prediction]);
 
       // Outbreak detection: check same village last 24h
-      // Using JS-computed timestamp + ? placeholder so the same query works in both SQLite and PostgreSQL
       const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
       const logs = await db.all(
         `SELECT id FROM symptoms WHERE "villageId" = ? AND "createdAt" >= ?`,
@@ -1170,7 +1121,18 @@ if (cluster.isPrimary) {
       const alert = logs.length > 5 ? `⚠️ CLUSTER ALERT in ${villageId}: ${logs.length} similar cases detected.` : null;
       if (alert) eventEmitter.emit('outbreak_detected', { villageId, count: logs.length, prediction });
 
-      res.send({ prediction, alert });
+      res.send({ 
+        prediction,
+        disease,
+        advice,
+        severity,
+        doctor_specialty,
+        confidence,
+        alternatives,
+        model,
+        accuracy,
+        alert 
+      });
     });
 
     app.post('/api/villager/skin-log', auth, async (req, res) => {

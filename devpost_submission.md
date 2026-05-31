@@ -24,7 +24,7 @@ Most health applications simply call a third-party AI API and display the result
 
 | Architectural Component | V1 Baseline | V2 Production Upgrade |
 | :--- | :--- | :--- |
-| **Custom Medical AI & Input Guardrails** | Evolved from our V1 Random Forest model. | We evolved from our V1 Random Forest model to a custom Deep Learning MLP (**SymptomNet**) powered by multilingual Transformer embeddings (paraphrase-multilingual-MiniLM-L12-v2), achieving **96%+ diagnostic accuracy**, while retaining the Random Forest model as a secondary fallback. More importantly, we implemented **under-the-hood clinical text guardrails** that detect and block keyboard mashing, repeated character spam, and off-topic conversations in English, Hindi, and Tamil, utilizing a **Double-Uncertainty Safety Gate** to prevent hallucinated diagnoses. |
+| **Custom Medical AI & Input Guardrails** | Evolved from our V1 Random Forest model. | We evolved from our V1 Random Forest model to a custom Deep Learning MLP (**SymptomNet**) powered by multilingual Transformer embeddings (paraphrase-multilingual-MiniLM-L12-v2), achieving **64.6% diagnostic accuracy across 101 classes** (exceptional given a 0.99% random guess baseline), while retaining our Random Forest model (51.8% accuracy) as a secondary fallback. More importantly, we implemented **under-the-hood clinical text guardrails** that detect and block keyboard mashing, repeated character spam, and off-topic conversations in English, Hindi, and Tamil, utilizing a **Double-Uncertainty Safety Gate** to prevent hallucinated diagnoses. |
 | **Deterministic Clinical Heuristic Fallback** | Standard AI endpoint prone to clinical hallucinations under high uncertainty. | If the neural models are uncertain (< 40% confidence) due to ambiguous symptoms, the system absolutely refuses to guess or hallucinate. Instead, it routes the query to a deterministic, offline-capable rule engine built on ASHA guidelines. It safely maps known rural symptom clusters (e.g. weakness + dizziness) to highly accurate first-aid advice, and if undetermined, gracefully advises the villager to consult their local ASHA worker. This zero-hallucination approach maximizes patient trust and ensures no false information is provided. |
 | **"Sakhi" Women's Health AI** | Generic conversational LLM chatbot. | Our private conversational AI for women's health is now powered by a **Grounded RAG (Retrieval-Augmented Generation)** system. It retrieves clinical guidelines from 38 official WHO/MoHFW sources before answering, citing its sources, supporting voice output, and failing over to local knowledge base chunks if the primary AI API is unreachable. |
 | **Under-the-Hood Offline Sync (Maternal & Child Health)** | Required active internet connection for patient registrations. | NGO/ASHA workers can now register maternal pregnancy vitals and child nutrition assessments in zero-signal zones. The app computes risk levels and growth status instantly client-side using **local clinical heuristic engines** (WHO blood pressure criteria and BMI Z-score indexes), queuing records locally with visual **"Sync Pending"** indicators, and silently uploading them as soon as the browser detects an internet signal. |
@@ -45,7 +45,7 @@ SwasthAI Guardian is built on a **true 3-service Microservices Architecture**. E
 |   React + Vite Frontend |---->|  Node.js + Express API   |---->|  FastAPI AI Service    |
 |   (Offline PWA Mode)    |     |  (Secure Backend Hub)    |     |  (Neural AI Engine)    |
 |                         |     |                          |     |                        |
-|  * Luminous Emerald UI  |     |  * JWT Auth & Bcrypt     |     |  * SymptomNet (96%+) |
+|  * Luminous Emerald UI  |     |  * JWT Auth & Bcrypt     |     |  * SymptomNet (64.6%) |
 |  * 6-Language i18n      |     |  * Cluster Load Balance  |     |  * Grounded RAG (Sakhi)|
 |  * Offline Login/Sync   |     |  * SQLite (Offline Sync) |     |  * Edge Photo Guardrail|
 |  * Voice Input/Output   |     |  * Target Alert Routing  |     |  * Outbreak Agent Loop |
@@ -95,7 +95,7 @@ This architecture means **clinical data is never lost** — it accumulates local
 
 ### 👨 Villager Features
 
-*   **AI Symptom Checker** with multilingual voice input and **96%+ diagnostic accuracy** (SymptomNet/RF hybrid).
+*   **AI Symptom Checker** with multilingual voice input and **64.6% diagnostic accuracy** (SymptomNet/RF hybrid across 101 classes).
 *   **Clinical Input Filters** under-the-hood to reject gibberish, spam, and non-health topics.
 *   **Sakhi Women's Health AI** powered by Grounded RAG using WHO/MoHFW guidelines.
 *   **Skin Disease Scanner** with image-based Edge AI assessment and skin tone/blur/blank verification guardrails.
@@ -162,11 +162,11 @@ This architecture means **clinical data is never lost** — it accumulates local
 - Python FastAPI Microservice
 - Transformer Embeddings + SymptomNet Neural Network
 - Random Forest Fallback Model (Tier 2 Safety)
-- Pillow (Skin Tone & Edge Density Segmenter)
 - FastAPI Test Suite
 - Groq-powered Llama 3.3
 - Grounded RAG Architecture (38 WHO/MoHFW sources)
 - Autonomous Outbreak Detection Agent (30-min scan interval)
+- 52,900 samples multilingual dataset generator across 101 classes
 
 ---
 
@@ -184,7 +184,7 @@ This architecture means **clinical data is never lost** — it accumulates local
 
 ## Accomplishments that we're proud of
 
-*   Built a healthcare AI engine with **96%+ diagnostic accuracy** (SymptomNet — Deep Learning MLP on multilingual Transformer embeddings).
+*   Built a healthcare AI engine with **64.6% diagnostic accuracy** across **101 distinct disease classes** (SymptomNet — Deep Learning MLP on multilingual Transformer embeddings).
 *   Developed **under-the-hood text and image guardrails** that protect the model against noise.
 *   Developed complete **offline Login, Registration, and maternal/child sync** registry.
 *   Created an **autonomous AI outbreak detection system** running on 30-minute intervals.

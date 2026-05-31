@@ -20,10 +20,14 @@ BATCH_SIZE = 16
 EPOCHS = 35
 LEARNING_RATE = 0.001
 
-# 2. Data Preparation (Importing from existing data)
-from train_disease_model import TRAINING_DATA
+# 2. Data Preparation (Importing from CSV)
+import os
+csv_path = os.path.join(os.path.dirname(__file__), "symptom_dataset.csv")
+if not os.path.exists(csv_path):
+    raise FileNotFoundError(f"Dataset not found at {csv_path}. Run generate_dataset.py first.")
 
-df = pd.DataFrame(TRAINING_DATA, columns=["symptoms", "disease"])
+df = pd.read_csv(csv_path)
+df['symptoms'] = df['symptoms'].astype(str)
 label_encoder = LabelEncoder()
 df['label'] = label_encoder.fit_transform(df['disease'])
 
