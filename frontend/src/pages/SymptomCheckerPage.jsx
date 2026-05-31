@@ -469,149 +469,65 @@ export default function SymptomCheckerPage() {
           {/* LEFT COLUMN: INPUTS */}
           <div className="lg:col-span-2 space-y-6 sm:space-y-10">
 
-            {/* Step 1: Symptom Grid Card */}
-            <div className="bg-white rounded-[1.5rem] sm:rounded-[2rem] border border-slate-100 shadow-sm p-4 sm:p-8 transition-all hover:shadow-md">
-              <div className="flex items-center justify-between mb-4 sm:mb-8">
-                <div>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Step 1</p>
-                  <h3 className="text-lg font-black text-slate-900 tracking-tight flex items-center gap-2">
-                    <PlusCircle className="w-5 h-5 text-emerald-600" />
-                    {t.symptom?.select_symptoms || 'Select Symptoms'}
-                  </h3>
-                </div>
-                {selectedSymptoms.length > 0 && (
-                  <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 border border-emerald-200 rounded-full">
-                    <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                    <span className="text-[10px] font-black text-emerald-700 uppercase tracking-widest">{selectedSymptoms.length} Selected</span>
-                  </motion.div>
-                )}
+            {/* Voice Input Card (Primary Interaction) */}
+            <div className="bg-white rounded-[1.5rem] sm:rounded-[2rem] border-2 border-emerald-500/30 shadow-md p-5 sm:p-8 relative overflow-hidden">
+              <div className="absolute right-0 top-0 w-24 h-24 bg-emerald-50 rounded-bl-full pointer-events-none opacity-50" />
+              
+              <div className="mb-5 relative z-10">
+                <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-1">🎤 Primary Input Method / मुख्य विकल्प</p>
+                <h3 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+                  <span className="text-lg animate-bounce">🎤</span> Speak Your Symptoms / बोलकर लक्षण बताएं
+                </h3>
+                <p className="text-xs text-slate-500 font-bold mt-1">
+                  Many villagers prefer speaking. Press the green microphone below and tell us how you feel in your own language.
+                </p>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
-                {symptomList.map((item) => {
-                  const isSelected = selectedSymptoms.includes(item.id);
-                  return (
-                    <motion.button
-                      key={item.id}
-                      whileTap={{ scale: 0.97 }}
-                      onClick={() => handleSymptomChange(item.id)}
-                      className={`p-3 sm:p-5 rounded-2xl border-2 text-left transition-all relative overflow-hidden group ${isSelected
-                        ? 'bg-emerald-50 border-emerald-500 shadow-md shadow-emerald-100'
-                        : 'bg-slate-50 border-slate-100 hover:border-emerald-200'
-                        }`}
-                      style={{ minHeight: '64px' }}
-                    >
-                      {item.severe && (
-                        <span className="absolute top-2 right-2 text-[8px] font-black text-rose-500 uppercase tracking-widest bg-rose-50 px-1.5 py-0.5 rounded-full border border-rose-100">
-                          Severe
-                        </span>
-                      )}
-                      <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center mb-3 sm:mb-4 transition-all ${isSelected ? 'bg-emerald-600 text-white rotate-6' : 'bg-white text-slate-300'}`}>
-                        <item.icon className="w-4 h-4 sm:w-5 sm:h-5" />
-                      </div>
-                      <p className={`font-black text-xs sm:text-sm leading-tight ${isSelected ? 'text-slate-900' : 'text-slate-600'}`}>
-                        {item.label}
-                      </p>
-                      <p className="text-[9px] sm:text-[10px] text-slate-400 font-bold mt-1 uppercase tracking-wider">{item.hindi}</p>
-                    </motion.button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Voice / Text Input Card */}
-            <div className="bg-white rounded-[1.5rem] sm:rounded-[2rem] border border-slate-100 shadow-sm p-5 sm:p-8">
-              <div className="mb-5">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Step 2 (Optional)</p>
-                <h3 className="text-lg font-black text-slate-900 tracking-tight">{t.symptom?.describe_words || 'Describe in Your Own Words'}</h3>
-                <p className="text-xs text-slate-400 font-medium mt-1">{t.symptom?.describe_desc || 'Speak or type in Hindi, English, or Tamil — auto-detected.'}</p>
+              {/* Huge Microphone Button Container */}
+              <div className="flex flex-col items-center justify-center py-6 sm:py-8 bg-slate-50 rounded-2xl border border-slate-100 relative">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={startVoice}
+                  title={isVoiceActive ? 'Tap to stop' : navigator.onLine ? 'Tap to speak' : 'No internet'}
+                  className={`w-24 h-24 sm:w-28 sm:h-28 rounded-full flex flex-col items-center justify-center transition-all ${isVoiceActive
+                    ? 'bg-rose-600 text-white shadow-xl shadow-rose-200 animate-pulse'
+                    : !navigator.onLine
+                      ? 'bg-slate-300 text-slate-500 cursor-not-allowed'
+                      : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-xl shadow-emerald-200 border-4 border-emerald-100'
+                    }`}
+                >
+                  {isVoiceActive ? (
+                    <>
+                      <Volume2 className="w-10 h-10 mb-1" />
+                      <span className="text-[8px] font-black uppercase tracking-wider">TAP TO STOP</span>
+                    </>
+                  ) : !navigator.onLine ? (
+                    <>
+                      <WifiOff className="w-10 h-10 mb-1" />
+                      <span className="text-[8px] font-black uppercase tracking-wider">OFFLINE</span>
+                    </>
+                  ) : (
+                    <>
+                      <Mic className="w-10 h-10 mb-1" />
+                      <span className="text-[8px] font-black uppercase tracking-wider">TAP TO SPEAK</span>
+                    </>
+                  )}
+                </motion.button>
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-4">
+                  {isVoiceActive ? 'Listening...' : 'बोलने के लिए दबाएं'}
+                </p>
               </div>
 
-              {/* Offline / warning message (shows even when not actively listening) */}
-              <AnimatePresence>
-                {interimText && interimText.startsWith('⚠️') && (
-                  <motion.div
-                    key="offline-warn"
-                    initial={{ opacity: 0, y: 4 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0 }}
-                    className="mb-3 p-3 bg-amber-50 border border-amber-300 rounded-2xl flex items-start gap-2"
-                  >
-                    <WifiOff className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-xs font-black text-amber-700">{interimText}</p>
-                      <p className="text-[10px] text-amber-500 font-medium mt-0.5">Voice needs internet · Checkbox input works offline ✅</p>
-                    </div>
-                    <button onClick={() => setInterimText('')} className="ml-auto text-amber-300 hover:text-amber-500">
-                      <X className="w-3 h-3" />
-                    </button>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              {/* Live Listening Overlay — appears above textarea when voice is active */}
-              <AnimatePresence>
-                {isVoiceActive && (
-                  <motion.div
-                    key="voice-overlay"
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 6 }}
-                    className="mb-3 p-4 bg-rose-50 border-2 border-rose-300 rounded-2xl"
-                  >
-                    {/* Animated waveform bars */}
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="flex items-end gap-[3px] h-5">
-                        {[1, 2, 3, 4, 5].map(i => (
-                          <motion.div
-                            key={i}
-                            className="w-[3px] bg-rose-500 rounded-full"
-                            animate={{ height: ['6px', `${8 + i * 4}px`, '6px'] }}
-                            transition={{ duration: 0.5 + i * 0.1, repeat: Infinity, delay: i * 0.08 }}
-                          />
-                        ))}
-                      </div>
-                      <span className="text-[10px] font-black text-rose-600 uppercase tracking-widest">
-                        Listening{voiceLang ? ` · ${LANG_LABELS[voiceLang] || voiceLang}` : ''}
-                      </span>
-                      <button
-                        onClick={stopVoice}
-                        className="ml-auto text-[9px] font-black text-rose-400 uppercase tracking-widest hover:text-rose-600 transition-colors"
-                      >
-                        Tap to stop ✕
-                      </button>
-                    </div>
-                    {/* Live interim transcript */}
-                    <p className="text-sm font-medium text-rose-700 min-h-[20px] italic leading-relaxed">
-                      {interimText || <span className="text-rose-300">Waiting for speech...</span>}
-                    </p>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              <div className="relative">
+              {/* Text Area fallback option */}
+              <div className="mt-5 relative">
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Or Type Below / या नीचे लिखें</p>
                 <textarea
                   value={otherSymptom}
                   onChange={(e) => setOtherSymptom(e.target.value)}
-                  placeholder="E.g. Kal se bukhar hai, pair mein dard hai... / I have had fever since yesterday... / நேற்றிலிருந்து காய்ச்சல்..."
-                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 pr-16 text-sm font-medium text-slate-700 placeholder:text-slate-300 focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/5 outline-none transition-all min-h-[100px] resize-none"
+                  placeholder="E.g. Kal se bukhar hai, pair mein dard hai... / I have had fever since yesterday..."
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 pr-12 text-sm font-medium text-slate-700 placeholder:text-slate-300 focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/5 outline-none transition-all min-h-[90px] resize-none"
                 />
-                <button
-                  onClick={startVoice}
-                  title={isVoiceActive ? 'Tap to stop' : navigator.onLine ? 'Tap to speak' : 'No internet — voice unavailable'}
-                  className={`absolute bottom-4 right-4 p-3 rounded-xl transition-all ${isVoiceActive
-                    ? 'bg-rose-600 text-white shadow-lg shadow-rose-200'
-                    : !navigator.onLine
-                      ? 'bg-slate-300 text-white cursor-not-allowed'
-                      : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg shadow-emerald-200'
-                    }`}
-                >
-                  {isVoiceActive
-                    ? <Volume2 className="w-4 h-4" />
-                    : !navigator.onLine
-                      ? <WifiOff className="w-4 h-4" />
-                      : <Mic className="w-4 h-4" />}
-                </button>
               </div>
 
               {/* Language hint strip */}
@@ -619,15 +535,112 @@ export default function SymptomCheckerPage() {
                 {['hi-IN', 'en-IN', 'ta-IN'].map(l => (
                   <span
                     key={l}
-                    className={`text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-full border transition-all ${voiceLang === l
+                    className={`text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full border transition-all ${voiceLang === l
                       ? 'bg-rose-100 border-rose-300 text-rose-600'
-                      : 'bg-slate-50 border-slate-100 text-slate-300'
+                      : 'bg-slate-50 border-slate-100 text-slate-400 font-bold'
                       }`}
                   >
                     {LANG_LABELS[l]}
                   </span>
                 ))}
                 <span className="text-[9px] text-slate-300 font-medium">auto-fallback</span>
+              </div>
+
+              {/* Live Listening Overlay */}
+              <AnimatePresence>
+                {isVoiceActive && (
+                  <motion.div
+                    key="voice-overlay"
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 6 }}
+                    className="absolute inset-0 bg-rose-50/95 flex flex-col items-center justify-center p-6 text-center z-20"
+                  >
+                    <div className="flex items-end gap-[4px] h-10 mb-4">
+                      {[1, 2, 3, 4, 5, 6].map(i => (
+                        <motion.div
+                          key={i}
+                          className="w-1.5 bg-rose-600 rounded-full"
+                          animate={{ height: ['10px', `${12 + i * 5}px`, '10px'] }}
+                          transition={{ duration: 0.4 + i * 0.08, repeat: Infinity, delay: i * 0.05 }}
+                        />
+                      ))}
+                    </div>
+                    <span className="text-xs font-black text-rose-600 uppercase tracking-widest mb-1 animate-pulse">
+                      Listening {voiceLang ? `(${LANG_LABELS[voiceLang]})` : ''} / बोलें...
+                    </span>
+                    <p className="text-sm font-bold text-rose-800 italic max-w-xs mt-2 leading-relaxed">
+                      {interimText || '"आवाज़ सुनी जा रही है..."'}
+                    </p>
+                    <button
+                      onClick={stopVoice}
+                      className="mt-6 px-4 py-2 bg-rose-600 text-white rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg shadow-rose-200 hover:bg-rose-700"
+                    >
+                      Tap to Stop ✕
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* Step 3: Symptom Grid Card */}
+            <div className="bg-white rounded-[1.5rem] sm:rounded-[2rem] border border-slate-100 shadow-sm p-4 sm:p-8">
+              <div className="flex items-center justify-between mb-4 sm:mb-8">
+                <div>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Step 3</p>
+                  <h3 className="text-lg font-black text-slate-900 tracking-tight flex items-center gap-2">
+                    <PlusCircle className="w-5 h-5 text-emerald-600" />
+                    {t.symptom?.select_symptoms || 'Or Select From Quick List / या लक्षण चुनें'}
+                  </h3>
+                </div>
+                {selectedSymptoms.length > 0 && (
+                  <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 border border-emerald-200 rounded-full">
+                    <span className="text-[10px] font-black text-emerald-700 uppercase tracking-widest">{selectedSymptoms.length} Selected</span>
+                  </motion.div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
+                {[
+                  { id: 'fever', label: 'Fever', hindi: '🤒 बुखार', severe: false, icon: Thermometer },
+                  { id: 'cough', label: 'Cough', hindi: '🤧 खाँसी', severe: false, icon: Wind },
+                  { id: 'chest_pain', label: 'Chest Pain', hindi: '🤕 सीने में दर्द', severe: true, icon: Activity },
+                  { id: 'breathing', label: 'Breathing Issue', hindi: '😮‍💨 सांस की तकलीफ', severe: true, icon: Wind },
+                  { id: 'bleeding', label: 'Bleeding', hindi: '🩸 खून आना', severe: true, icon: Droplets },
+                  { id: 'headache', label: 'Headache', hindi: '🤕 सिर दर्द', severe: false, icon: Info },
+                  { id: 'vomiting', label: 'Vomiting', hindi: '🤢 उल्टी', severe: false, icon: BriefcaseMedical },
+                  { id: 'weakness', label: 'Weakness', hindi: '💤 कमज़ोरी', severe: false, icon: HeartPulse },
+                  { id: 'dizziness', label: 'Dizziness', hindi: '😵 चक्कर आना', severe: false, icon: Info },
+                  { id: 'vision_loss', label: 'Vision Loss', hindi: '🕶️ आंख के आगे अंधेरा', severe: true, icon: Scan },
+                  { id: 'paralysis', label: 'Limb Weakness', hindi: '💪 एक तरफ़ कमज़ोरी', severe: true, icon: ShieldCheck },
+                ].map((item) => {
+                  const isSelected = selectedSymptoms.includes(item.id);
+                  return (
+                    <motion.button
+                      key={item.id}
+                      whileTap={{ scale: 0.97 }}
+                      onClick={() => handleSymptomChange(item.id)}
+                      className={`p-4 sm:p-5 rounded-2xl border-2 text-left transition-all relative overflow-hidden group ${isSelected
+                        ? 'bg-emerald-50 border-emerald-500 shadow-md shadow-emerald-100'
+                        : 'bg-slate-50 border-slate-100 hover:border-emerald-200'
+                        }`}
+                      style={{ minHeight: '80px' }}
+                    >
+                      {item.severe && (
+                        <span className="absolute top-2 right-2 text-[8px] font-black text-rose-500 uppercase tracking-widest bg-rose-50 px-1.5 py-0.5 rounded-full border border-rose-100">
+                          Severe
+                        </span>
+                      )}
+                      <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center mb-2 transition-all ${isSelected ? 'bg-emerald-600 text-white' : 'bg-slate-300 text-white'}`}>
+                        <item.icon className="w-4 h-4 sm:w-5 sm:h-5" />
+                      </div>
+                      <p className={`font-black text-xs sm:text-sm leading-tight ${isSelected ? 'text-slate-900' : 'text-slate-700'}`}>
+                        {item.label}
+                      </p>
+                      <p className="text-[10px] text-slate-500 font-bold mt-1 uppercase tracking-wider">{item.hindi}</p>
+                    </motion.button>
+                  );
+                })}
               </div>
             </div>
 
@@ -643,7 +656,7 @@ export default function SymptomCheckerPage() {
                 {loading ? (
                   <><RefreshCw className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin" /> {t.symptom?.analyzing || 'Analyzing Symptoms...'}</>
                 ) : (
-                  <><BrainCircuit className="w-4 h-4 sm:w-5 sm:h-5" /> {t.symptom?.check_now || 'Analyze with AI'}</>
+                  <><BrainCircuit className="w-4 h-4 sm:w-5 sm:h-5" /> {t.symptom?.check_now || 'Analyze Symptoms / जांच शुरू करें'}</>
                 )}
               </span>
             </motion.button>
@@ -657,22 +670,39 @@ export default function SymptomCheckerPage() {
             <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden min-h-[320px] flex flex-col">
               <AnimatePresence mode="wait">
 
-                {/* Idle State */}
+                {/* Idle State / How It Works */}
                 {!result && !loading && (
                   <motion.div
                     key="idle"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="flex-1 flex flex-col items-center justify-center text-center p-8"
+                    className="flex-1 flex flex-col p-6 sm:p-8"
                   >
-                    <div className="w-20 h-20 bg-slate-50 rounded-[1.5rem] flex items-center justify-center mb-5 border border-slate-100">
-                      <Activity className="w-10 h-10 text-slate-200" />
+                    <div className="flex flex-col items-center text-center mb-6">
+                      <div className="w-16 h-16 bg-emerald-50 rounded-[1.2rem] flex items-center justify-center mb-3 border border-emerald-100/50">
+                        <Activity className="w-8 h-8 text-emerald-600" />
+                      </div>
+                      <h3 className="text-sm font-black text-slate-800 uppercase tracking-tight">How It Works / जांच कैसे करें</h3>
                     </div>
-                    <h3 className="text-base font-black text-slate-300 uppercase tracking-tight mb-2">Awaiting Analysis</h3>
-                    <p className="text-slate-300 text-xs font-medium leading-relaxed max-w-[160px]">
-                      Select symptoms and click Analyze to get your AI result.
-                    </p>
+                    
+                    <div className="space-y-3 flex-1 text-slate-600">
+                      {[
+                        { num: '✅', text: 'Select symptoms or voice input', textHi: 'लक्षण चुनें या बोलकर बताएं' },
+                        { num: '🟢', text: 'Press Analyze Symptoms button', textHi: 'जांच बटन पर क्लिक करें' },
+                        { num: '🌿', text: 'Receive instant AI health guidance', textHi: 'तुरंत सरकारी नियमों के अनुसार सलाह लें' },
+                        { num: '🚑', text: 'Get emergency helpline alerts', textHi: 'इमरजेंसी में अस्पताल गाइडेंस पाएं' },
+                        { num: '👩', text: 'Connect with local ASHA worker', textHi: 'आशा दीदी से संपर्क करें' },
+                      ].map((item, i) => (
+                        <div key={i} className="flex items-start gap-3 p-2 bg-slate-50 rounded-xl border border-slate-100/70">
+                          <span className="text-base shrink-0">{item.num}</span>
+                          <div>
+                            <p className="text-[11px] font-black leading-tight text-slate-800">{item.text}</p>
+                            <p className="text-[9px] font-medium leading-tight text-slate-500 mt-0.5">{item.textHi}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </motion.div>
                 )}
 
@@ -705,7 +735,7 @@ export default function SymptomCheckerPage() {
                           initial={{ width: 0 }}
                           animate={{ width: '100%' }}
                           transition={{ duration: isOnline ? 4.5 : 1.2, ease: 'linear' }}
-                          className="h-full bg-emerald-500"
+                          className="h-full bg-emerald-50"
                         />
                       </div>
                     </div>
