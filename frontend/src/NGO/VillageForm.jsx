@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MapPin, Users, HeartPulse, UserPlus, Info } from 'lucide-react';
+import { MapPin } from 'lucide-react';
 import api from '../services/api';
 
 export default function VillageForm({ onSave }) {
@@ -8,18 +8,34 @@ export default function VillageForm({ onSave }) {
     name: '',
     district: '',
     population: '',
-    ashaContact: ''
+    ashaContact: '',
+    pregnant: 0,
+    children: 0,
+    malnutrition: 0,
   });
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSubmitting(true);
+    setError(null);
     try {
-      // In a real app we'd call /api/ngo/village
-      // For now we'll mock success
-      onSave(formData);
-      alert('Village initialized successfully!');
+      await api.post('/ngo/village', {
+        villageId: formData.villageId.trim(),
+        name: formData.name.trim(),
+        population: parseInt(formData.population, 10) || 0,
+        pregnant: parseInt(formData.pregnant, 10) || 0,
+        children: parseInt(formData.children, 10) || 0,
+        malnutrition: parseInt(formData.malnutrition, 10) || 0,
+        contact: formData.ashaContact.trim(),
+        district: formData.district.trim(),
+      });
+      onSave?.(formData);
     } catch (err) {
-      console.error(err);
+      setError(err.response?.data?.error || err.message || 'Failed to register village.');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -35,25 +51,29 @@ export default function VillageForm({ onSave }) {
         </div>
       </div>
 
+      {error && (
+        <p className="mb-4 text-sm font-bold text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-3">{error}</p>
+      )}
+
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
             <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">Village Identifier</label>
-            <input 
-              className="input-field" 
-              placeholder="e.g. V-1024" 
+            <input
+              className="input-field"
+              placeholder="e.g. v101"
               value={formData.villageId}
-              onChange={(e) => setFormData({...formData, villageId: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, villageId: e.target.value })}
               required
             />
           </div>
           <div className="space-y-2">
             <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">Village Name</label>
-            <input 
-              className="input-field" 
-              placeholder="e.g. Rampur" 
+            <input
+              className="input-field"
+              placeholder="e.g. Rampur"
               value={formData.name}
-              onChange={(e) => setFormData({...formData, name: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               required
             />
           </div>
@@ -61,39 +81,42 @@ export default function VillageForm({ onSave }) {
 
         <div className="space-y-2">
           <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">District Name</label>
-          <input 
-            className="input-field" 
-            placeholder="e.g. Varanasi" 
+          <input
+            className="input-field"
+            placeholder="e.g. Varanasi"
             value={formData.district}
-            onChange={(e) => setFormData({...formData, district: e.target.value})}
-            required
+            onChange={(e) => setFormData({ ...formData, district: e.target.value })}
           />
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">Population axis</label>
-            <input 
+            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">Population</label>
+            <input
               type="number"
-              className="input-field" 
-              placeholder="Total residents" 
+              className="input-field"
+              placeholder="Total residents"
               value={formData.population}
-              onChange={(e) => setFormData({...formData, population: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, population: e.target.value })}
             />
           </div>
           <div className="space-y-2">
             <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">ASHA Primary Contact</label>
-            <input 
-              className="input-field" 
-              placeholder="+91-0000000000" 
+            <input
+              className="input-field"
+              placeholder="+91-0000000000"
               value={formData.ashaContact}
-              onChange={(e) => setFormData({...formData, ashaContact: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, ashaContact: e.target.value })}
             />
           </div>
         </div>
 
-        <button type="submit" className="w-full btn-primary py-4 text-sm font-black uppercase tracking-widest shadow-indigo-100 mt-4">
-           Submit Village Data Node
+        <button
+          type="submit"
+          disabled={submitting}
+          className="w-full btn-primary py-4 text-sm font-black uppercase tracking-widest shadow-indigo-100 mt-4 disabled:opacity-60"
+        >
+          {submitting ? 'Saving…' : 'Submit Village Data Node'}
         </button>
       </form>
     </div>

@@ -18,12 +18,16 @@ from datetime import datetime
 from groq import Groq
 
 BACKEND_URL   = os.getenv("BACKEND_URL", "http://localhost:5000")
-AGENT_SECRET  = os.getenv("AGENT_SECRET", "swasthai_agent_internal_2026")
+AGENT_SECRET  = os.getenv("AGENT_SECRET")
+if not AGENT_SECRET and os.getenv("NODE_ENV") == "production":
+    raise RuntimeError("AGENT_SECRET is required for OutbreakAgent in production")
 CHECK_INTERVAL_SECONDS = 30 * 60  # 30 minutes
 
 # ── Cluster Fetching ────────────────────────────────────────────────────────────
 def _fetch_symptom_clusters():
     """Fetch recent symptom records from backend grouped by village."""
+    if not AGENT_SECRET:
+        return []
     try:
         headers = {"X-Agent-Secret": AGENT_SECRET}
         res = requests.get(f"{BACKEND_URL}/api/admin/clusters", headers=headers, timeout=10)

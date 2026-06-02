@@ -18,7 +18,7 @@ const api = axios.create({
 
 api.interceptors.request.use(async (config) => {
   const token = localStorage.getItem('token');
-  if (token) {
+  if (token && token !== 'offline-mock-token') {
     config.headers.Authorization = `Bearer ${token}`;
   }
 

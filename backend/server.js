@@ -940,10 +940,8 @@ if (cluster.isPrimary) {
       return c === 0;
     }
 
-    app.post('/api/villager/emergency-alert', auth, async (req, res) => {
-      const { alertType = 'menstrual_emergency', message = 'Emergency help needed' } = req.body;
-      try {
-const OFFLINE_DISEASE_MAP = {
+    // --- OFFLINE CLINICAL RULE-BASED MATCHING ---
+    const OFFLINE_DISEASE_MAP = {
       'Malaria / मलेरिया': { severity: 'P2', specialty: 'General Physician', advice: 'Sleep under a mosquito net, drink fluids, and visit nearest PHC within 24h for blood test.' },
       'Dengue / डेंगू': { severity: 'P2', specialty: 'General Physician', advice: 'Complete bed rest, stay hydrated. Do NOT take pain relievers like Ibuprofen/Aspirin (only Paracetamol is safe).' },
       'Typhoid / टाइफाइड': { severity: 'P2', specialty: 'General Physician', advice: 'Drink only boiled/filtered water, eat soft cooked food, and complete prescribed antibiotics.' },
@@ -962,47 +960,46 @@ const OFFLINE_DISEASE_MAP = {
       'Skin Infection / त्वचा संक्रमण': { severity: 'P4', specialty: 'Dermatologist', advice: 'Keep skin clean and dry. Apply antifungal/antibacterial cream as prescribed.' },
       'Appendicitis / अपेंडिसाइटिस (पेट दर्द)': { severity: 'P1', specialty: 'Emergency Care', advice: 'Go to the emergency room immediately. Do NOT eat or drink anything until doctor checks you.' },
       'Meningitis / मस्तिष्क ज्वर (गर्दन अकड़ना)': { severity: 'P1', specialty: 'Neurologist', advice: 'Urgent neurological checkup needed. Go to the hospital emergency ward immediately.' },
-      'Scrub Typhus / स्क्रब टाइफस': { severity: 'P2', specialty: 'General Physician', advice: 'Consult doctor for Doxycycline therapy. Keep surroundings clean to prevent mite bites.' },
-      'Pre-eclampsia (Maternal Hypertension) / गर्भावस्था उच्च रक्तचाप': { severity: 'P1', specialty: 'Gynecologist', advice: 'Immediate emergency delivery clinic check. Highly dangerous pregnancy complication.' },
-      'Gestational Diabetes / गर्भावधि मधुमेह': { severity: 'P2', specialty: 'Gynecologist', advice: 'Regular blood sugar monitoring required. Consult gynecologist and clinical nutritionist.' },
-      'Asthma / दमा (अस्थमा)': { severity: 'P2', specialty: 'Pulmonologist', advice: 'Keep inhaler ready. Avoid smoke, dust, and cold air triggers. Seek emergency if breathing gets very difficult.' },
-      'Bronchitis / ब्रोंकाइटिस (फेफड़ों में सूजन)': { severity: 'P3', specialty: 'Pulmonologist', advice: 'Inhale steam, drink warm liquids, and avoid tobacco smoke. See doctor if cough lasts >2 weeks.' },
-      'Food Poisoning / खाद्य विषाक्तता (दूषित भोजन)': { severity: 'P3', specialty: 'General Physician', advice: 'Drink ORS, eat bland foods (bananas, rice), and avoid dairy. Consult doctor if vomiting persists.' },
-      'Rabies / रेबीज (पागल कुत्ते का काटना)': { severity: 'P1', specialty: 'Emergency Care', advice: 'Wash animal bite wound with soap under running water for 15 min, and get anti-rabies vaccine immediately.' },
-      'Tetanus / धनुस्तंभ (टिटनेस)': { severity: 'P1', specialty: 'Emergency Care', advice: 'Clean wound immediately. Get tetanus toxoid (TT) injection within 24h of injury.' },
-      'Leptospirosis / लेप्टोस्पायरोसिस': { severity: 'P1', specialty: 'General Physician', advice: 'Avoid waterlogged areas during floods. Consult doctor for early antibiotic therapy.' },
-      'Chikungunya / चिकनगुनिया': { severity: 'P2', specialty: 'General Physician', advice: 'Stay hydrated, take paracetamol for pain. Joint pain may persist for months.' },
-      'Japanese Encephalitis / जापानी इन्सेफेलाइटिस': { severity: 'P1', specialty: 'Neurologist', advice: 'Requires immediate hospitalization. Mosquito-borne brain fever danger.' },
-      'Filariasis (Elephantiasis) / फाइलेरिया (हाथीपांव)': { severity: 'P3', specialty: 'General Physician', advice: 'Keep skin of affected limb clean, elevate leg. Take DEC/Albendazole as prescribed.' },
-      'Scabies / खाज-खुजली (स्केबीज)': { severity: 'P4', specialty: 'Dermatologist', advice: 'Apply Permethrin lotion from neck down, wash all family clothes in hot water.' },
-      'Peptic Ulcer Disease / पेट का अल्सर': { severity: 'P3', specialty: 'Gastroenterologist', advice: 'Avoid spicy food, tea, coffee, and pain killers. See doctor for antacid therapy.' },
-      'GERD (Acid Reflux) / सीने में जलन (एसिडिटी)': { severity: 'P4', specialty: 'Gastroenterologist', advice: 'Eat small frequent meals, do not lie down immediately after eating. Avoid fried foods.' },
-      'Tonsillitis / टॉन्सिलाइटिस (गले का संक्रमण)': { severity: 'P4', specialty: 'ENT Specialist', advice: 'Gargle with warm salt water, drink warm liquids. Visit doctor if swallowing is blocked.' },
-      'Otitis Media (Ear Infection) / कान का संक्रमण': { severity: 'P4', specialty: 'ENT Specialist', advice: 'Do not put oil or sharp objects in ear. Keep ear dry and consult ENT doctor.' },
-      'Conjunctivitis (Pink Eye) / आंख आना (नेत्रशोथ)': { severity: 'P4', specialty: 'Ophthalmologist', advice: 'Wash eyes with clean water, avoid touching eyes, do not share towels. Use antibiotic eye drops.' },
-      'Covid-19 / कोविड-19': { severity: 'P2', specialty: 'Pulmonologist', advice: 'Isolate yourself immediately. Monitor oxygen level with pulse oximeter. Seek emergency if SpO2 <94%.' },
-      'Diabetes Mellitus / मधुमेह (शुगर)': { severity: 'P3', specialty: 'General Physician', advice: 'Reduce sugar and simple carb intake. Exercise daily. Monitor fasting blood glucose.' },
-      'Hypertension / उच्च रक्तचाप (हाई बीपी)': { severity: 'P3', specialty: 'Cardiologist', advice: 'Adopt low sodium diet, avoid stress and smoking. Consult doctor for blood pressure medications.' },
-      'Coronary Angina / हृदय शूल (सीने में दर्द)': { severity: 'P1', specialty: 'Cardiologist', advice: 'Sit down immediately. Take Sorbitrate under tongue if prescribed. Go to cardiac emergency hospital.' },
-      'COPD / क्रॉनिक ब्रोंकाइटिस': { severity: 'P2', specialty: 'Pulmonologist', advice: 'Avoid smoking and dust exposure. Use bronchodilators as prescribed. Seek oxygen support if breathless.' },
-      'Rheumatoid Arthritis / संधिशोथ (गठिया)': { severity: 'P3', specialty: 'Orthopedic', advice: 'Do gentle range-of-motion exercises, apply warm compress. Consult rheumatologist for DMARDs.' },
-      'Kidney Stones / गुर्दे की पथरी': { severity: 'P2', specialty: 'Urologist', advice: 'Drink plenty of water (3-4L). Avoid oxalate-rich foods (spinach, tomatoes). Seek medical checkup.' },
-      'Migraine / आधासीसी (माइग्रेन)': { severity: 'P3', specialty: 'Neurologist', advice: 'Rest in a quiet dark room, apply cold compress to forehead, avoid trigger foods like chocolate.' },
-      'Goitre / घेंघा रोग (थायराइड)': { severity: 'P3', specialty: 'Endocrinologist', advice: 'Use iodized salt. Consult endocrinologist for thyroid hormone profile tests.' },
-      'Scorpion Sting / बिच्छू का डंक': { severity: 'P1', specialty: 'Emergency Care', advice: 'Keep stung limb below heart level. Seek immediate emergency center for anti-scorpion venom.' },
-      'Eczema / एक्जिमा (त्वचा की खुजली)': { severity: 'P4', specialty: 'Dermatologist', advice: 'Moisturize skin frequently, use mild soaps, and apply mild steroid cream under doctor guidance.' },
-      'Psoriasis / सोरायसिस (त्वचा रोग)': { severity: 'P4', specialty: 'Dermatologist', advice: 'Keep skin hydrated, apply coal tar or prescription topical creams, manage stress.' },
-      'Whooping Cough / काली खांसी (कुकुर खांसी)': { severity: 'P2', specialty: 'Pediatrician', advice: 'Highly contagious. Complete prescribed antibiotic course. Seek emergency if baby turns blue during cough.' },
-      'Ringworm / दाद (फंगल संक्रमण)': { severity: 'P4', specialty: 'Dermatologist', advice: 'Apply antifungal cream (clotrimazole/miconazole) twice daily. Keep area clean and dry.' },
-      'Viral Fever & Cold / सामान्य बुखार और सर्दी': { severity: 'P3', specialty: 'General Physician', advice: 'Rest well, drink warm water, take paracetamol for fever. See doctor if fever lasts >3 days.' },
-      'Undetermined Symptoms / अनिर्धारित लक्षण': { severity: 'P3', specialty: 'General Physician', advice: 'Consult your local ASHA worker or visit the nearest PHC.' }
+      'Scrub Typhus / स्क्रब टाइफस': { severity: 'P2', specialty: 'General Physician', advice: 'Avoid contact with bush/shrubs, wear long clothes, and see doctor for Doxycycline check.' },
+      'Pre-eclampsia (Maternal Hypertension) / गर्भावस्था उच्च रक्तचाप': { severity: 'P1', specialty: 'Obstetrician', advice: 'URGENT. Bed rest on left side, avoid salt, and visit hospital immediately to check blood pressure.' },
+      'Gestational Diabetes / गर्भावधि मधुमेह': { severity: 'P2', specialty: 'Obstetrician', advice: 'Restrict sugars, follow diabetic diet plan, do moderate walking, and visit doctor for sugar profile.' },
+      'Asthma / दमा (अस्थमा)': { severity: 'P2', specialty: 'Pulmonologist', advice: 'Avoid dust/smoke, use prescribed rescue inhaler, and see doctor if breathing does not improve.' },
+      'Bronchitis / ब्रोंकाइटिस (फेफड़ों में सूजन)': { severity: 'P2', specialty: 'Pulmonologist', advice: 'Warm steam inhalation, drink hot water, avoid cold items, and seek medical consultation.' },
+      'Food Poisoning / खाद्य विषाक्तता (दूषित भोजन)': { severity: 'P2', specialty: 'General Physician', advice: 'Drink plenty of ORS/coconut water. Avoid solid food for a few hours. Consult doctor if vomiting persists.' },
+      'Rabies / रेबीज (पागल कुत्ते का काटना)': { severity: 'P1', specialty: 'Emergency Care', advice: 'Wash wound under running tap water with soap for 15 mins. Visit hospital immediately for Anti-Rabies Vaccine (ARV).' },
+      'Tetanus / धनुस्तंभ (टिटनेस)': { severity: 'P1', specialty: 'Emergency Care', advice: 'Seek immediate hospitalization. Keep patient in a quiet, dark room to prevent muscle spasms.' },
+      'Leptospirosis / लेप्टोस्पायरोसिस': { severity: 'P2', specialty: 'General Physician', advice: 'Avoid walking in waterlogged areas. See doctor immediately for early antibiotics.' },
+      'Chikungunya / चिकनगुनिया': { severity: 'P2', specialty: 'General Physician', advice: 'Stay hydrated, take paracetamol for joint pain, and rest completely. Joint pain may persist for weeks.' },
+      'Japanese Encephalitis / जापानी इन्सेफेलाइटिस': { severity: 'P1', specialty: 'Neurologist', advice: 'Requires immediate hospitalization. Monitor child/patient for fits or consciousness level.' },
+      'Filariasis (Elephantiasis) / फाइलेरिया (हाथीपांव)': { severity: 'P3', specialty: 'General Physician', advice: 'Keep leg clean, elevate limb, wear comfortable footwear, and consult for DEC tablets.' },
+      'Scabies / खाज-खुजली (स्केबीज)': { severity: 'P3', specialty: 'Dermatologist', advice: 'Wash all clothes/bedding in hot water. Apply Permethrin lotion from neck down as prescribed.' },
+      'Peptic Ulcer Disease / पेट का अल्सर': { severity: 'P3', specialty: 'Gastroenterologist', advice: 'Avoid spicy food, tea, coffee, and pain-relievers. Eat small regular meals. Consult doctor.' },
+      'GERD (Acid Reflux) / सीने में जलन (एसिडिटी)': { severity: 'P3', specialty: 'Gastroenterologist', advice: 'Do not lie down immediately after eating. Avoid fatty food, caffeine, and smoking.' },
+      'Tonsillitis / टॉन्सिलाइटिस (गले का संक्रमण)': { severity: 'P3', specialty: 'ENT Specialist', advice: 'Gargle with warm salt water, drink warm fluids, rest voice, and see doctor if pain is severe.' },
+      'Otitis Media (Ear Infection) / कान का संक्रमण': { severity: 'P3', specialty: 'ENT Specialist', advice: 'Do not put oil or water in ear. Keep ear dry and consult doctor for antibiotics.' },
+      'Conjunctivitis (Pink Eye) / आंख आना (नेत्रशोथ)': { severity: 'P3', specialty: 'Ophthalmologist', advice: 'Wash hands frequently, do not touch eyes, use separate towel, and use antibiotic eye drops.' },
+      'Covid-19 / कोविड-19': { severity: 'P2', specialty: 'General Physician', advice: 'Isolate yourself, wear a mask, monitor oxygen levels, and consult doctor if oxygen drops below 94%.' },
+      'Diabetes Mellitus / मधुमेह (शुगर)': { severity: 'P3', specialty: 'Endocrinologist', advice: 'Avoid sweets/simple carbs, walk 30 mins daily, take medicines regularly, and inspect feet daily.' },
+      'Hypertension / उच्च रक्तचाप (हाई बीपी)': { severity: 'P3', specialty: 'Cardiologist', advice: 'Reduce salt intake, avoid stress, walk daily, check BP weekly, and do not miss BP medicine.' },
+      'Coronary Angina / हृदय शूल (सीने में दर्द)': { severity: 'P1', specialty: 'Cardiologist', advice: 'Keep patient calm, sit down, place Sorbitrate tablet under tongue if prescribed, go to ER immediately.' },
+      'COPD / क्रॉनिक ब्रोंकाइटिस': { severity: 'P2', specialty: 'Pulmonologist', advice: 'Avoid smoking/chulha smoke, use inhaler as directed, seek doctor if breathless at rest.' },
+      'Rheumatoid Arthritis / संधिशोथ (गठिया)': { severity: 'P3', specialty: 'Rheumatologist', advice: 'Gentle joint exercises, apply warm compress, avoid cold weather, and consult doctor.' },
+      'Kidney Stones / गुर्दे की पथरी': { severity: 'P2', specialty: 'Urologist', advice: 'Drink 3-4 liters of water daily. Avoid spinach, tomatoes, and excess salt. Consult doctor.' },
+      'Migraine / आधासीसी (माइग्रेन)': { severity: 'P3', specialty: 'Neurologist', advice: 'Rest in a dark quiet room, drink water, avoid triggers like tea/caffeine or bright light.' },
+      'Goitre / घेंघा रोग (थायराइड)': { severity: 'P3', specialty: 'Endocrinologist', advice: 'Use iodized salt in cooking. Consult doctor for thyroid hormone level test.' },
+      'Scorpion Sting / बिच्छू का डंक': { severity: 'P1', specialty: 'Emergency Care', advice: 'Wash with soap, keep limb low and still, do NOT cut, seek nearest doctor/hospital immediately for anti-venom.' },
+      'Eczema / एक्जिमा (त्वचा की खुजली)': { severity: 'P3', specialty: 'Dermatologist', advice: 'Moisturize skin immediately after bath, avoid harsh soaps, use cotton clothes.' },
+      'Psoriasis / सोरायसिस (त्वचा रोग)': { severity: 'P3', specialty: 'Dermatologist', advice: 'Keep skin moisturized, expose to mild sunlight, avoid scratching, and follow doctor\'s treatment.' },
+      'Whooping Cough / काली खांसी (कुकुर खांसी)': { severity: 'P2', specialty: 'Pediatrician', advice: 'Keep child in fresh air, give small frequent liquids, and seek doctor for antibiotic check.' },
+      'Ringworm / दाद (फंगल संक्रमण)': { severity: 'P3', specialty: 'Dermatologist', advice: 'Do not scratch, keep area dry, wash towel/clothes separately, apply antifungal cream.' },
+      'Viral Fever & Cold / सामान्य बुखार और सर्दी': { severity: 'P4', specialty: 'General Physician', advice: 'Rest, drink warm fluids, monitor temperature, take paracetamol for fever. Consult doctor if fever lasts >3 days.' }
     };
 
     const rules = [
-      { name: 'Malaria / मलेरिया', keywords: ['malaria', 'chill', 'shiver', 'sweat', 'thand', 'bukhar'] },
-      { name: 'Dengue / डेंगू', keywords: ['dengue', 'eye pain', 'joint pain', 'bone pain', 'rash'] },
-      { name: 'Typhoid / टाइफाइड', keywords: ['typhoid', 'stomach pain', 'weakness', 'kabz', 'fever'] },
-      { name: 'Tuberculosis (TB) / क्षय रोग (टीबी)', keywords: ['tb', 'tuberculosis', 'cough blood', 'weight loss', 'night sweat'] },
+      { name: 'Malaria / मलेरिया', keywords: ['malaria', 'chills fever', 'shivering', 'jod bukhar', 'mosquito bite'] },
+      { name: 'Dengue / डेंगू', keywords: ['dengue', 'eye pain', 'joint muscle pain', 'bone breaking fever', 'platelet', 'rash fever'] },
+      { name: 'Typhoid / टाइफाइड', keywords: ['typhoid', 'step-ladder fever', 'stomach pain headache', 'miadi bukhar', 'miyadi bukhar'] },
+      { name: 'Tuberculosis (TB) / क्षय रोग (टीबी)', keywords: ['tuberculosis', 'tb', 'cough three weeks', 'blood sputum', 'weight loss night sweat'] },
       { name: 'Diarrhea & Cholera / दस्त (हैजा)', keywords: ['diarrhea', 'diarrhoea', 'watery stool', 'vomit', 'dast', 'cholera'] },
       { name: 'Dysentery / पेचिश (खूनी दस्त)', keywords: ['dysentery', 'blood stool', 'bloody', 'pechish'] },
       { name: 'Jaundice / पीलिया (हेपेटाइटिस)', keywords: ['jaundice', 'yellow skin', 'yellow eyes', 'piliya', 'pila peshab'] },
@@ -1065,6 +1062,52 @@ const OFFLINE_DISEASE_MAP = {
       }
       return bestMatch;
     }
+
+    app.post('/api/villager/emergency-alert', auth, async (req, res) => {
+      const { alertType = 'menstrual_emergency', message = 'Emergency help needed' } = req.body;
+      try {
+        const userId = req.user.id;
+        const userRecord = await db.get('SELECT name, "villageId" FROM users WHERE id = ?', [userId]);
+        const userName = userRecord?.name || 'Unknown User';
+        const villageId = userRecord?.villageId || 'v101';
+
+        let requestId;
+        if (pool) {
+          const resPg = await pool.query(
+            'INSERT INTO ambulance_requests (user_id, name, location, priority, symptoms, status, type) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id',
+            [userId, userName, villageId, 'High', message, 'pending', alertType]
+          );
+          requestId = resPg.rows[0].id;
+        } else {
+          const result = await db.run(
+            'INSERT INTO ambulance_requests (user_id, name, location, priority, symptoms, status, type) VALUES (?, ?, ?, ?, ?, ?, ?)',
+            [userId, userName, villageId, 'High', message, 'pending', alertType]
+          );
+          requestId = result.lastID;
+        }
+
+        const timestamp = new Date().toISOString();
+        const requestObj = { requestId, userId, name: userName, location: villageId, priority: 'High', symptoms: message, status: 'pending', timestamp, type: alertType };
+
+        // Write emergency to DynamoDB emergency_streams
+        await dynamoHelper.put('emergency_streams', {
+          districtId: 'district_main',
+          streamId:   `amb-${requestId}-${Date.now()}`,
+          priority:   'High',
+          ...requestObj
+        });
+
+        // SSE broadcast
+        if (typeof app.locals.broadcastToAdmins === 'function') {
+          app.locals.broadcastToAdmins('ambulance', requestObj);
+        }
+
+        res.status(201).json({ success: true, requestId });
+      } catch (err) {
+        console.error('Emergency alert error:', err);
+        res.status(500).json({ error: 'Failed to process emergency alert.' });
+      }
+    });
 
     app.post('/api/villager/symptoms', auth, aiLimiter, checkRole(['villager', 'ngo', 'admin']), async (req, res) => {
       const text = sanitize(req.body.symptoms);

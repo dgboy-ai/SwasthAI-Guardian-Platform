@@ -486,7 +486,9 @@ export default function SymptomCheckerPage() {
             </motion.div>
           )}
         </AnimatePresence>
-
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
+          {/* LEFT: INPUTS */}
+          <div className="space-y-6">
             {/* Step 2: Symptom Grid Card */}
             <div className="bg-white rounded-[1.5rem] sm:rounded-[2rem] border border-slate-100 shadow-sm p-4 sm:p-8">
               <div className="flex items-center justify-between mb-4 sm:mb-8">

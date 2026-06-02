@@ -230,7 +230,7 @@ export default function AdminDashboard() {
   /* ── SSE real-time feed — live ambulance + outbreak pushes from backend ─── */
   useEffect(() => {
     const token = localStorage.getItem('token');
-    if (!token) return; // only connect when logged in
+    if (!token || token === 'offline-mock-token') return;
 
     const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace(/\/+$/, '');
     // EventSource doesn't support custom headers, so pass token as query param

@@ -5,12 +5,30 @@ import {
   PhoneCall, HeartPulse, RefreshCw, AlertTriangle
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
+import api from '../services/api';
+
+const NODE_LAYOUT = {
+  v101: { x: 140, y: 110 },
+  v102: { x: 320, y: 130 },
+  v103: { x: 200, y: 240 },
+  v104: { x: 90, y: 210 },
+  v105: { x: 360, y: 260 },
+};
+
+const DEFAULT_NODES = [
+  { id: 'v101', name: 'Rameshwar / रामेश्वर', x: 140, y: 110, population: 4200, pregnant: 68, children: 290, cases: 2, asha: '+91 94150 12345', status: 'normal', latestAlert: null },
+  { id: 'v102', name: 'Shivpur / शिवपुर', x: 320, y: 130, population: 5800, pregnant: 92, children: 410, cases: 12, asha: '+91 94500 54321', status: 'outbreak', latestAlert: '⚠️ Dengue Spike: 8 cases in 48h' },
+  { id: 'v103', name: 'Kharela / खरेला', x: 200, y: 240, population: 3100, pregnant: 45, children: 195, cases: 1, asha: '+91 94310 98765', status: 'normal', latestAlert: null },
+  { id: 'v104', name: 'Babatpur / बाबतपुर', x: 90, y: 210, population: 4900, pregnant: 73, children: 330, cases: 0, asha: '+91 98890 11223', status: 'emergency', latestAlert: '🚨 Active SOS: Pregnancy referral dispatch' },
+  { id: 'v105', name: 'Chiraigaon / चिरईगाँव', x: 360, y: 260, population: 6200, pregnant: 110, children: 480, cases: 4, asha: '+91 99190 44556', status: 'normal', latestAlert: null },
+];
 
 export default function DistrictOutbreakMap({ onNodeSelect, activeVillageId = null }) {
   const { lang } = useLanguage();
   const [hoveredNode, setHoveredNode] = useState(null);
   const [selectedNode, setSelectedNode] = useState(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [nodes, setNodes] = useState(DEFAULT_NODES);
 
   useEffect(() => {
     const goOnline = () => setIsOnline(true);
@@ -23,69 +41,40 @@ export default function DistrictOutbreakMap({ onNodeSelect, activeVillageId = nu
     };
   }, []);
 
-  // 5 Village Nodes in Uttar Pradesh rural healthcare network
-  const [nodes, setNodes] = useState([
-    {
-      id: 'v101',
-      name: 'Rameshwar / रामेश्वर',
-      x: 140, y: 110,
-      population: 4200,
-      pregnant: 68,
-      children: 290,
-      cases: 2,
-      asha: '+91 94150 12345',
-      status: 'normal', // 'normal', 'emergency', 'outbreak'
-      latestAlert: null
-    },
-    {
-      id: 'v102',
-      name: 'Shivpur / शिवपुर',
-      x: 320, y: 130,
-      population: 5800,
-      pregnant: 92,
-      children: 410,
-      cases: 12,
-      asha: '+91 94500 54321',
-      status: 'outbreak', // Outbreak spike!
-      latestAlert: '⚠️ Dengue Spike: 8 cases in 48h'
-    },
-    {
-      id: 'v103',
-      name: 'Kharela / खरेला',
-      x: 200, y: 240,
-      population: 3100,
-      pregnant: 45,
-      children: 195,
-      cases: 1,
-      asha: '+91 94310 98765',
-      status: 'normal',
-      latestAlert: null
-    },
-    {
-      id: 'v104',
-      name: 'Babatpur / बाबतपुर',
-      x: 90, y: 210,
-      population: 4900,
-      pregnant: 73,
-      children: 330,
-      cases: 0,
-      asha: '+91 98890 11223',
-      status: 'emergency', // Active ambulance alert
-      latestAlert: '🚨 Active SOS: Pregnancy referral dispatch'
-    },
-    {
-      id: 'v105',
-      name: 'Chiraigaon / चिरईगाँव',
-      x: 360, y: 260,
-      population: 6200,
-      pregnant: 110,
-      children: 480,
-      cases: 4,
-      asha: '+91 99190 44556',
-      status: 'normal',
-      latestAlert: null
-    }
-  ]);
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token || token === 'offline-mock-token') return;
+
+    const loadVillages = async () => {
+      try {
+        const res = await api.get('/ngo/villages');
+        const villages = Array.isArray(res.data) ? res.data : [];
+        if (!villages.length) return;
+
+        setNodes(villages.map((v, i) => {
+          const pos = NODE_LAYOUT[v.villageId] || { x: 80 + (i % 3) * 120, y: 100 + Math.floor(i / 3) * 80 };
+          const alert = v.outbreakAlert || v.outbreakalert;
+          return {
+            id: v.villageId,
+            name: v.name || v.villageId,
+            x: pos.x,
+            y: pos.y,
+            population: v.population ?? 0,
+            pregnant: v.pregnant_women ?? 0,
+            children: v.children_under_5 ?? 0,
+            cases: v.malnutrition_cases ?? 0,
+            asha: v.asha_contact || '—',
+            status: alert ? 'outbreak' : 'normal',
+            latestAlert: alert,
+          };
+        }));
+      } catch (_) {
+        /* keep default demo layout */
+      }
+    };
+
+    loadVillages();
+  }, []);
 
   // Keep synced with parent selection if provided
   useEffect(() => {

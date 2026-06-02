@@ -237,8 +237,13 @@ export const AuthProvider = ({ children }) => {
       throw new Error('No account found for this phone number. Please connect to the internet to log in for the first time.');
     };
 
-    // 🌐 Fast-path: strictly offline — Allow ANY OTP to work
-    if (!navigator.onLine && phone && otp) return createOfflineOTPSession();
+    if (!navigator.onLine && phone && otp) {
+      const isDevDemoOtp = import.meta.env.DEV && otp === '1234';
+      if (!isDevDemoOtp) {
+        throw new Error('Offline OTP login is only available in development with demo OTP 1234 for cached accounts.');
+      }
+      return createOfflineOTPSession();
+    }
 
     try {
       const res = await api.post('/auth/login-otp', { phone, otp, role });
@@ -253,8 +258,8 @@ export const AuthProvider = ({ children }) => {
         error.code === 'ECONNABORTED' || 
         (error.response && error.response.status >= 500);
 
-      if (isNetworkOrServerError && phone && otp) {
-        console.log('API unreachable or slow. Creating secure offline OTP session.');
+      if (isNetworkOrServerError && phone && otp && import.meta.env.DEV && otp === '1234') {
+        console.log('API unreachable — offline demo OTP for cached account.');
         return createOfflineOTPSession();
       }
       throw error.response?.data?.error || error.message || 'OTP Login failed.';
@@ -264,7 +269,11 @@ export const AuthProvider = ({ children }) => {
   const requestOTP = async (phone) => {
     // 🌐 OFFLINE FALLBACK: Allow user to proceed to the OTP screen
     if (!navigator.onLine) {
-      return { message: 'Offline mode: Use OTP 1234 to login.' };
+      return {
+        message: import.meta.env.DEV
+          ? 'Offline: use OTP 1234 only for accounts already cached on this device.'
+          : 'No network. Connect once to request a real OTP.',
+      };
     }
 
     try {
@@ -273,7 +282,11 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       // 🌐 Fallback: if network call fails, let them proceed
       if (!error.response) {
-        return { message: 'Network offline: Use OTP 1234 to login.' };
+        return {
+          message: import.meta.env.DEV
+            ? 'Network offline: demo OTP 1234 works for cached accounts only.'
+            : 'Network offline. Connect to request OTP.',
+        };
       }
       throw error.response?.data?.error || 'OTP request failed. Please try again.';
     }

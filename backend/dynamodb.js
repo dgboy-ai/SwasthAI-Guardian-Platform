@@ -161,7 +161,12 @@ if (hasAwsCredentials || isProduction) {
     console.error("❌ Failed to initialize AWS DynamoDB Client:", err.message);
   }
 } else {
-  console.log("[DynamoDB] No AWS credentials found — running in local mock mode. Set AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY to connect to real DynamoDB.");
+  const msg = "[DynamoDB] No AWS credentials — local mock mode. Set AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY for real DynamoDB.";
+  if (isProduction) {
+    console.error(`⚠️ PRODUCTION WARNING: ${msg}`);
+  } else {
+    console.log(msg);
+  }
 }
 
 // ── In-memory mock storage for local dev ─────────────────────────────────────

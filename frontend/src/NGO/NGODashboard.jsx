@@ -159,6 +159,31 @@ export default function NGODashboard() {
     return () => clearInterval(t);
   }, [activeTab]);
 
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token || token === 'offline-mock-token') return;
+
+    const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace(/\/+$/, '');
+    const sseUrl = `${API_BASE}/ngo/live-feed?token=${encodeURIComponent(token)}`;
+
+    let sse;
+    try {
+      sse = new EventSource(sseUrl);
+      sse.addEventListener('ambulance', () => fetchAmbulances());
+      sse.addEventListener('outbreak', (e) => {
+        try {
+          const outbreak = JSON.parse(e.data);
+          if (!user?.villageId || outbreak.villageId === user.villageId) {
+            setOutbreaks((prev) => [outbreak, ...prev].slice(0, 20));
+          }
+        } catch (_) {}
+      });
+      sse.onerror = () => sse?.close();
+    } catch (_) {}
+
+    return () => { if (sse) sse.close(); };
+  }, [user?.villageId]);
+
   const fetchOutbreaks = async () => {
     setLoadingOutbreaks(true);
     try {
