@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-const API = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace(/\/api$/, '');
 
 // ── Category config ──────────────────────────────────────────────────────────
 const CATEGORY_META = {
