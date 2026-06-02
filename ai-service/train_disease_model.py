@@ -34,8 +34,13 @@ if __name__ == "__main__":
     print("[...] Training Random Forest Classifier...")
     pipeline.fit(X_train, y_train)
 
-    cv_scores = cross_val_score(pipeline, X, y, cv=5, scoring="accuracy")
-    print(f"[OK] 5-Fold Cross-Val Accuracy: {cv_scores.mean()*100:.1f}% (+/- {cv_scores.std()*100:.1f}%)")
+    if os.getenv("GITHUB_ACTIONS"):
+        print("[CI] Skipping 5-fold cross-validation for faster pipeline")
+        cv_mean, cv_std = 0.0, 0.0
+    else:
+        cv_scores = cross_val_score(pipeline, X, y, cv=5, scoring="accuracy")
+        cv_mean, cv_std = cv_scores.mean(), cv_scores.std()
+        print(f"[OK] 5-Fold Cross-Val Accuracy: {cv_mean*100:.1f}% (+/- {cv_std*100:.1f}%)")
 
     y_pred = pipeline.predict(X_test)
     test_acc = accuracy_score(y_test, y_pred)
@@ -57,7 +62,7 @@ if __name__ == "__main__":
         f.write("Vectorizer    : TF-IDF (unigrams + bigrams)\n")
         f.write(f"Training set  : {len(X_train)} samples\n")
         f.write(f"Test set      : {len(X_test)} samples\n")
-        f.write(f"CV Accuracy   : {cv_scores.mean()*100:.1f}% (+/- {cv_scores.std()*100:.1f}%)\n")
+        f.write(f"CV Accuracy   : {cv_mean*100:.1f}% (+/- {cv_std*100:.1f}%)\n")
         f.write(f"Test Accuracy : {test_acc * 100:.1f}%\n\n")
         f.write(f"Disease Classes ({df['disease'].nunique()}):\n")
         for cls in sorted(df['disease'].unique()):

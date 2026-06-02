@@ -4,7 +4,7 @@ Algorithm     : Random Forest Classifier
 Vectorizer    : TF-IDF (unigrams + bigrams)
 Training set  : 44965 samples
 Test set      : 7935 samples
-CV Accuracy   : 50.6% (+/- 0.5%)
+CV Accuracy   : 0.0% (+/- 0.0%)
 Test Accuracy : 51.8%
 
 Disease Classes (101):

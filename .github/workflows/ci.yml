@@ -44,4 +44,7 @@ jobs:
         with:
           python-version: "3.11"
       - run: pip install -r requirements.txt
+      # Models are gitignored; train RF like Dockerfile before guardrail integration tests
+      - run: python generate_dataset.py
+      - run: python train_disease_model.py
       - run: python test_guardrail.py

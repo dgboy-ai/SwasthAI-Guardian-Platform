@@ -101,6 +101,28 @@ def has_health_keywords(text: str) -> bool:
             
     return False
 
+# Romanized Tamil (spoken-type input) → English symptom terms for local/RF matching
+ROMANIZED_TA_TO_EN = {
+    "kaichal": "fever",
+    "irumal": "cough",
+    "moochu": "runny nose",
+    "maarbu": "chest",
+    "vaali": "pain",
+    "thalaivaali": "headache",
+    "vayiru": "stomach",
+    "thalarchi": "dizziness",
+    "balgam": "cough",
+    "sarumpu": "swelling",
+}
+
+def expand_transliterated_symptoms(text: str) -> str:
+    """Append English equivalents when romanized Tamil symptom tokens are present."""
+    lower = text.lower()
+    extra = [en for rom, en in ROMANIZED_TA_TO_EN.items() if rom in lower]
+    if not extra:
+        return text
+    return text + " " + " ".join(extra)
+
 BILINGUAL_DISEASES = {
     "Malaria": "Malaria / मलेरिया",
     "Dengue": "Dengue / डेंगू",
@@ -243,7 +265,7 @@ def get_detailed_prediction(pred_class: str) -> str:
     return f"{friendly} - Reliable Advice: {advice}"
 
 def predict_disease_local(text: str) -> str:
-    clean = text.lower().strip()
+    clean = expand_transliterated_symptoms(text).lower().strip()
     rules = [
         ("Jaundice", ["jaundice", "yellow skin", "yellow eye", "dark urine", "peela", "peeli", "kavil"]),
         ("Anaemia", ["anemia", "anaemia", "weakness", "pale", "iron deficiency", "kamzori", "ratha sogai"]),
@@ -427,7 +449,7 @@ def make_prediction_response(disease_name: str, confidence: float, alternatives:
 # ── ENDPOINT 1: Disease Prediction ────────────────────────────────────────────
 @app.post("/predict/disease")
 async def predict_disease(data: SymptomInput):
-    text = data.symptoms.strip()
+    text = expand_transliterated_symptoms(data.symptoms.strip())
     if not text:
         raise HTTPException(status_code=400, detail="Symptoms text cannot be empty.")
 
