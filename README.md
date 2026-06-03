@@ -21,9 +21,8 @@
 > ### 📖 Technical Documentation & Codebase Index
 > Jump directly to the detailed architecture logs, code reference maps, and setup guides:
 > 
-> *   **🗄️ AWS Database Designs**: [docs/database_architecture.md](docs/database_architecture.md) — Aurora schema, DynamoDB GSI tables, and SQLite local/offline edge fallback.
+> *   **🏗️ System & Database Designs**: [docs/system_architecture.md](docs/system_architecture.md) — Visual Mermaid flowchart, Aurora schemas, DynamoDB composite tables, and local SQLite edge fallback.
 > *   **🔬 AI Architecture & Val**: [docs/ai_architecture.md](docs/ai_architecture.md) — PyTorch SymptomNet 5-Fold Stratified CV logs, metrics, and Sakhi RAG parameters.
-> *   **🏗️ High-Level System Flow**: [ARCHITECTURE.md](ARCHITECTURE.md) — Visual Mermaid flowchart mapping client, server, AI, and AWS database layers.
 > *   **⚙️ Setup & Dev Manual**: [docs/setup_guide.md](docs/setup_guide.md) — Docker Compose environments, env setups, and local dev guides.
 > *   **📁 Complete Repository Map**: Check the [Repository Directory Map](#-repository-structure) below for file references.
 > *   **📈 Build Changelog**: [CHANGELOG.md](CHANGELOG.md) — Chronological log of features, optimizations, and validations built during the hackathon.

@@ -1,6 +1,99 @@
-# 🗄️ AWS Database Architecture — Deliberate Design Decisions
+# 🏗️ System & Database Architecture — SwasthAI Guardian Platform
 
-Most apps use one database for everything. SwasthAI uses two in production with very different purposes, utilizing a local **SQLite** database as an offline edge node and local development fallback:
+This document describes the high-level system architecture and database design decisions of the SwasthAI Guardian Platform, illustrating how offline-first clients, backend APIs, relational databases, NoSQL event stores, and AI microservices interact.
+
+---
+
+## 🏗️ High-Level Architectural Flow
+
+The diagram below details the end-to-end data lifecycle, displaying how offline inputs sync dynamically and route to AWS databases:
+
+```mermaid
+graph TB
+    subgraph Client Layer [Client-Side App - Vercel / PWA / Android]
+        UI[React UI Page / Guided Mode]
+        LS[Local Storage & IndexedDB]
+        SQ[Offline Sync Queue]
+    end
+
+    subgraph CDN & Hosting Layer
+        Vercel[Vercel Serverless Hosting]
+    end
+
+    subgraph Application Backend [Render.com / AWS ECS Node.js API]
+        Express[Express.js App Router]
+        Auth[JWT / OTP Auth Middleware]
+        Audit[Audit Logging Middleware]
+        ED[EDA - Event Dispatcher]
+    end
+
+    subgraph AI Service [FastAPI Microservice]
+        SymptomNet[SymptomNet MLP Classifier]
+        RAG[Sakhi RAG Chatbot - Llama 3.3]
+        OutbreakAgent[Outbreak Agent Outbreak detection]
+    end
+
+    subgraph Data Layer [AWS Cloud Datastore]
+        Aurora[(Amazon Aurora PostgreSQL - Transactional SQL)]
+        Dynamo[(Amazon DynamoDB - High-Throughput NoSQL)]
+        S3[(AWS S3 - Skin Condition Images)]
+    end
+
+    %% Client and CDN Interactions
+    UI --> Vercel
+    UI --> LS
+    UI -->|Online| Express
+    LS --> SQ
+    SQ -->|Resumed Connection Replay| Express
+
+    %% Backend Router & Middlewares
+    Express --> Auth
+    Auth --> Audit
+    Audit -->|Async Write| Aurora
+    Express --> ED
+
+    %% Relational Queries
+    Express -->|Transactional CRUD| Aurora
+    ED -->|Maternal & Referral Events| Aurora
+
+    %% Telemetry & Streams
+    Express -->|Telemetry & Heartbeats| Dynamo
+    ED -->|Emergency Streams & Sync Logs| Dynamo
+
+    %% AI Service Interactions
+    Express -->|Symptom Inference / Speech Check| SymptomNet
+    Express -->|Conversational RAG request| RAG
+    OutbreakAgent -->|Read cluster telemetry| Dynamo
+    OutbreakAgent -->|Write detected outbreak alert| Aurora
+    OutbreakAgent -->|Push critical alerts| Express
+    
+    %% Skin Analyzer
+    Express -->|Analyze Skin Image| S3
+```
+
+---
+
+## 📦 Component Roles
+
+1. **Client Layer (Vercel / PWA / Android)**:
+   - Built with React & Vite, hosted on Vercel. 
+   - Uses an **Offline Event Replay Engine** powered by IndexedDB to log events (symptoms, pregnancies, emergencies) when offline and replay them automatically on reconnection.
+   - Leverages on-device image compression (shrinking high-res image inputs to `<200KB` on-the-fly) to support reliable uploads on slow 2G/EDGE networks.
+   
+2. **Backend API Service (Express.js)**:
+   - Handles route validation, auth checks, and asynchronous audit logs.
+   - Hosts the local **Event Dispatcher** which processes events like `symptom_submitted`, `emergency_triggered`, and `maternal_alert` out-of-band to keep route speeds fast.
+
+3. **AI Microservice (FastAPI + Python)**:
+   - **SymptomNet**: A multi-layered MLP Neural Network that evaluates symptom inputs with a heuristic local rules model acting as a fallback if the network is busy/offline.
+   - **Sakhi Chatbot**: A Retrieval-Augmented Generation (RAG) assistant running Llama-3.3-70B over an expanded 243-chunk multilingual clinical database.
+   - **Outbreak Agent**: An asynchronous process that scans DynamoDB telemetry logs, groups them by village cluster, and automatically issues outbreak alerts into Aurora Postgres.
+
+---
+
+## 🗄️ Database Strategy & AWS Design Decisions
+
+Most apps use one database for everything. SwasthAI uses a hybrid approach: a local **SQLite** database as an offline edge node and local development fallback, paired with a dual **AWS Cloud** configuration in production.
 
 ### The Local/Edge Database Strategy (SQLite Fallback)
 To ensure the app remains fully functional with zero initial setup for judges or developers, and to simulate offline client-side sync environments, SwasthAI utilizes an embedded **SQLite** engine. 
@@ -87,5 +180,7 @@ The relational database models the full lifecycle of a rural patient's health jo
 * **`ambulance_requests`** — SOS emergency event triggers with coordinate-based tracking and outcome logging.
 * **`vaccination_records`** — Mission Indradhanush immunization schedule and status tracking per child.
 * **`district_config`** — Per-district custom thresholds, emergency contact numbers, and automation parameters.
+
+---
 
 > **Why this matters to AWS Judges**: Rural health infrastructure cannot afford either data corruption or high cloud costs. By routing critical medical records to ACID-compliant **Aurora PostgreSQL** and streaming high-frequency alerts to **DynamoDB (on-demand)**, we guarantee 100% data durability and single-digit millisecond latency while keeping operating costs close to zero.
