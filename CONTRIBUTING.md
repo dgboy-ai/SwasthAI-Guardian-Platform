@@ -9,10 +9,10 @@ Built for the H0: Hack the Zero Stack hackathon | Track 2 B2B | AWS Databases + 
 
 ```
 SwasthAI Guardian/
-├── frontend/          React 18 + Vite + PWA (Vercel Edge)
-├── backend/           Node.js + Express + Cluster (Render/Railway)
-├── ai-service/        FastAPI + PyTorch + Groq (Python)
-└── outbreak_agent.py  Autonomous 30-min outbreak detection daemon
+├── frontend/    React 18 + Vite + PWA (Vercel Edge)
+├── backend/     Node.js + Express + Cluster (Render/Railway)
+└── ai-service/  FastAPI + PyTorch + Groq (Python)
+    └── outbreak_agent.py  Autonomous 30-min outbreak detection daemon
 ```
 
 **Two databases, two distinct purposes:**
@@ -154,7 +154,7 @@ cd frontend && npm run lint
 - All auth-protected routes use the `auth` middleware + `checkRole([])`
 
 **Frontend:**
-- Tailwind CSS utility classes only (no inline style blocks unless absolutely necessary)
+- Vanilla CSS classes mapped to the design system in index.css (no inline style blocks unless absolutely necessary)
 - Use `framer-motion` for all animated components
 - Mobile-first: all touch targets ≥ 44px (WCAG 2.5.5)
 - Add `SkeletonCard` while loading any data from the API

@@ -1,164 +1,172 @@
-# SwasthAI Guardian — Deployment Guide
+# 🚀 Production Deployment Guide: AWS + Vercel + Render
 
-> **Target audience**: District Health Officers, State IT Teams, NGO Technology Leads
-
-SwasthAI Guardian can be fully deployed for a district in under 2 hours using the AWS + Vercel stack.
+This document contains step-by-step instructions to configure Amazon Web Services (AWS), Vercel, and Render.com to deploy the complete **SwasthAI Guardian** production infrastructure under the **AWS Free Tier** (zero-cost to evaluate).
 
 ---
 
-## 🏗️ Architecture Overview
+## 🏗️ Deployment Architecture Overview
 
 ```
-Villager / ASHA Android → Vercel PWA → Render.com Backend API ─┬─ Amazon Aurora PostgreSQL
-                                                                  └─ Amazon DynamoDB
-                                         FastAPI AI Microservice ─── Groq Llama-3 API
++--------------------------+
+|  React PWA (Vercel)      | <-- Frontend hosting
++--------------------------+
+             |
+             v (API Calls)
++--------------------------+
+|  Node.js API (Render)    | <-- Backend server
++--------------------------+
+        /          \
+       v            v
++--------------+   +--------------+
+| RDS Postgres |   |  DynamoDB    | <-- AWS Cloud Database Layer
+| (Free Tier)  |   | (Free Tier)  |
++--------------+   +--------------+
 ```
-
-**Three AWS services, one Vercel deployment, one Render.com backend.**
 
 ---
 
-## For District Health Officers (Non-Technical)
+## Phase 1: AWS Database Provisioning (Free Tier)
 
-SwasthAI Guardian requires no local servers. It runs entirely on cloud infrastructure:
+### Step 1.1: Set up Amazon RDS (PostgreSQL Database)
+1. Sign in to the [AWS Management Console](https://aws.amazon.com/console/).
+2. In the search bar at the top, type **RDS** and click on the RDS service.
+3. Click the orange **Create database** button.
+4. Choose **Standard create** and select **PostgreSQL** as the Engine type.
+5. Under **Templates**, select **Free tier** (this is critical to ensure zero charges).
+6. Under **Settings**:
+   - **DB instance identifier**: `swasthai-db`
+   - **Master username**: `postgres`
+   - **Master password**: Set a strong password (write this down).
+7. Under **Connectivity**:
+   - **Publicly accessible**: Select **Yes** (required so Render/Vercel can connect).
+   - Under **VPC security group**, choose **Create new** and name it `swasthai-db-security-group`.
+8. Scroll to the bottom and click **Create database**.
+9. Once created (status changes to *Available*), click on the DB name and copy the **Endpoint** URL (e.g., `swasthai-db.xxxx.ap-south-1.rds.amazonaws.com`).
 
-1. **Your villagers** open the web app on their phone (no app store needed)
-2. **ASHA workers** log in with their phone number + OTP
-3. **You** (the district admin) log in to the command center dashboard
-4. **The system** monitors all 24/7 — outbreak detection runs automatically every 30 minutes
+#### Configure DB Security Group for Connections:
+1. In the database details panel, click on the active Security Group link.
+2. Under **Inbound rules**, click **Edit inbound rules**.
+3. Add a rule: Type = **PostgreSQL**, Port = `5432`, Source = **Anywhere-IPv4** (`0.0.0.0/0`). Save the rules.
 
-**Monthly cost estimate (AWS free tier + Render free tier):**
-- Aurora PostgreSQL db.t3.micro: ~₹0 (free tier for 12 months, then ~₹1,200/month)
-- DynamoDB PAY_PER_REQUEST: ~₹0 (25 GB + 25 WCU free forever)
-- Render.com backend: ₹0 (free tier, spins up on first request)
-- Vercel frontend: ₹0 (free tier, unlimited deploys)
-- **Total for pilot district: ₹0 for first year**
+Your PostgreSQL connection string (`DATABASE_URL`) will be:
+```
+postgresql://postgres:<your_password>@<your-rds-endpoint>:5432/postgres
+```
 
 ---
 
-## For State IT Teams
+### Step 1.2: Set up DynamoDB Tables
+1. Search for **DynamoDB** in the AWS console.
+2. Click **Create table** and set up the 4 tables in the **ap-south-1** (Mumbai) region exactly as configured:
 
-### Prerequisites
-- AWS account with IAM user (Access Key + Secret Key)
-- Vercel account (free)
-- Render.com account (free)
-- Node.js 18+ and Python 3.10+ for local testing
+#### 1. Outbreak Telemetry Table
+- **Table name**: `outbreak_telemetry`
+- **Partition key**: `villageId` (String)
+- **Sort key**: `detectedAt` (String)
+- Click **Create table**. Once created, select the table → **Indexes** tab → **Create local/global index**:
+  - **Index type**: Global secondary index
+  - **Partition key**: `disease` (String)
+  - **Sort key**: `detectedAt` (String)
+  - **Index name**: `disease-index`
 
-### Step 1: AWS Database Setup (30 minutes)
+#### 2. Sync Queues Table
+- **Table name**: `sync_queues`
+- **Partition key**: `deviceId` (String)
+- **Sort key**: `queuedAt` (String)
+- Once created, add GSI:
+  - **Partition key**: `status` (String)
+  - **Sort key**: `queuedAt` (String)
+  - **Index name**: `status-index`
 
-#### Amazon Aurora PostgreSQL
-```bash
-# Via AWS Console:
-# 1. Go to RDS → Create Database
-# 2. Engine: Amazon Aurora PostgreSQL-Compatible
-# 3. Template: Free tier (db.t3.micro)
-# 4. DB cluster ID: swasthai-district-[your-district]
-# 5. Master username: swasthai_admin
-# 6. Public access: Yes (for initial setup — restrict after)
-# 7. Initial database name: swasthai
-# 8. Copy the Cluster Endpoint (e.g., swasthai.cluster-xyz.ap-south-1.rds.amazonaws.com)
-```
+#### 3. Village Node State Table
+- **Table name**: `village_node_state`
+- **Partition key**: `villageId` (String)
+- Once created, scroll down to **Additional settings** → **Time to Live (TTL)** → Click **Turn on**:
+  - **TTL attribute**: `expiresAt`
 
-#### Amazon DynamoDB
-```bash
-# The backend auto-creates all 4 tables on first start:
-# - outbreak_telemetry  (villageId + detectedAt composite key, disease-index GSI)
-# - sync_queues         (deviceId + queuedAt composite key, status-index GSI)
-# - village_node_state  (villageId hash key, TTL 7-day auto-expire)
-# - emergency_streams   (districtId + streamId composite key, priority-index GSI)
-# No manual table creation needed.
-```
+#### 4. Emergency Streams Table
+- **Table name**: `emergency_streams`
+- **Partition key**: `districtId` (String)
+- **Sort key**: `streamId` (String)
+- Once created, add GSI:
+  - **Partition key**: `priority` (String)
+  - **Sort key**: `streamId` (String)
+  - **Index name**: `priority-index`
 
-### Step 2: Backend Deployment (30 minutes)
+---
 
-**Deploy to Render.com (recommended — free tier)**
+### Step 1.3: Generate IAM Access Credentials
+1. Search for **IAM** (Identity and Access Management) in the AWS console.
+2. Click **Users** → **Create user**.
+3. Set User name: `swasthai-app-user` and click **Next**.
+4. Choose **Attach policies directly** and select **AmazonDynamoDBFullAccess**. Click **Next** → **Create user**.
+5. Select the newly created user `swasthai-app-user`.
+6. Go to the **Security credentials** tab, scroll to **Access keys**, and click **Create access key**.
+7. Choose **Application running outside AWS**, click **Next**, set a description tag (e.g., `render-backend`), and click **Create access key**.
+8. Copy the **Access key ID** and **Secret access key** (save these securely).
 
-1. Fork this repository to your GitHub account
-2. Go to render.com → New → Web Service
-3. Connect your GitHub repo
-4. Set these environment variables in Render dashboard:
+---
 
-```env
-NODE_ENV=production
-PORT=5000
-JWT_SECRET=<generate: openssl rand -base64 32>
-GROQ_API_KEY=<your Groq API key from console.groq.com>
-AI_SERVICE_URL=<your FastAPI service URL>
-DATABASE_URL=postgresql://swasthai_admin:<password>@<aurora-endpoint>:5432/swasthai
-AWS_ACCESS_KEY_ID=<your IAM user access key>
-AWS_SECRET_ACCESS_KEY=<your IAM user secret key>
-AWS_REGION=ap-south-1
-ALLOWED_ORIGINS=https://your-app.vercel.app
-AGENT_SECRET=<generate: openssl rand -base64 16>
-```
+## Phase 2: Deploying the Backend API & AI Service (Render)
 
-5. Build command: `npm install`
-6. Start command: `node backend/server.js`
+We deploy the Node.js backend and Python FastAPI AI services on **Render.com** (which has a free tier for web services).
 
-### Step 3: Frontend Deployment (15 minutes)
+### Step 2.1: Deploy AI Service (FastAPI)
+1. Go to [Render.com](https://render.com/) and create a free account.
+2. Click **New +** → **Web Service**.
+3. Connect your GitHub repository.
+4. Set the following configurations:
+   - **Name**: `swasthai-ai-service`
+   - **Environment**: `Python3`
+   - **Root Directory**: `ai-service`
+   - **Build Command**: `pip install -r requirements.txt`
+   - **Start Command**: `uvicorn main:app --host 0.0.0.0 --port $PORT`
+5. Click **Advanced** and add these Environment Variables:
+   - `GROQ_API_KEY`: `<your_groq_api_key>`
+   - `AGENT_SECRET`: `<create_a_random_32_char_string>`
+6. Click **Create Web Service**. Copy the service URL (e.g., `https://swasthai-ai-service.onrender.com`).
 
-**Deploy to Vercel**
-
-1. Go to vercel.com → New Project → Import from GitHub
-2. Framework preset: **Vite**
-3. Root directory: `frontend`
-4. Set environment variable:
+### Step 2.2: Deploy Backend API (Node.js Express)
+1. Click **New +** → **Web Service** on Render.
+2. Select your repository.
+3. Set configurations:
+   - **Name**: `swasthai-backend`
+   - **Environment**: `Node`
+   - **Root Directory**: `backend`
+   - **Build Command**: `npm install`
+   - **Start Command**: `npm start`
+4. Click **Advanced** and add the following Environment Variables:
+   - `DATABASE_URL`: `postgresql://postgres:<your_password>@<your-rds-endpoint>:5432/postgres` (from RDS)
+   - `AWS_REGION`: `ap-south-1`
+   - `AWS_ACCESS_KEY_ID`: `<your_iam_access_key>`
+   - `AWS_SECRET_ACCESS_KEY`: `<your_iam_secret_key>`
+   - `GROQ_API_KEY`: `<your_groq_api_key>`
+   - `AI_SERVICE_URL`: `https://swasthai-ai-service.onrender.com` (from Step 2.1)
+   - `AGENT_SECRET`: `<the_same_random_string_from_step_2.1>`
+   - `JWT_SECRET`: `<create_a_random_32_char_string>`
+   - `AADHAAR_SALT`: `<create_a_random_32_char_string>`
+   - `NODE_ENV`: `production`
+   - `ALLOWED_ORIGINS`: `*` (or your vercel app domain once deployed)
+5. Click **Create Web Service**. Once running, run your DB seed by clicking the **Shell** tab on Render and executing:
+   ```bash
+   node seed.js
    ```
-   VITE_API_URL=https://your-backend.onrender.com
-   ```
-5. Click Deploy
-
-### Step 4: Verify Deployment
-
-Check these URLs after deployment:
-```
-https://your-backend.onrender.com/api/health          → should return { "status": "ok" }
-https://your-backend.onrender.com/api/health/detailed  → full AWS connection status
-https://your-app.vercel.app                            → login page loads
-```
 
 ---
 
-## Demo Credentials (After Seeding)
+## Phase 3: Deploying the Frontend (Vercel)
 
-The database seeding API populates demo data on first run.
+1. Sign in to your [Vercel](https://vercel.com/) account.
+2. Click **Add New** → **Project**.
+3. Import your GitHub repository.
+4. Set configurations:
+   - **Framework Preset**: `Vite`
+   - **Root Directory**: `frontend`
+5. Open the **Environment Variables** panel and add:
+   - **Key**: `VITE_API_URL`
+   - **Value**: `https://swasthai-backend.onrender.com` (from Step 2.2)
+6. Click **Deploy**.
 
-| Role | Login Method |
-|------|-------------|
-| Villager (Ramesh Kumar) | OTP mode → any phone number → OTP: `1234` |
-| ASHA Worker (Sita Devi) | OTP mode → any phone number → OTP: `1234` (select NGO) |
-| District Admin (CMO) | OTP mode → any phone number → OTP: `1234` (select Admin) |
+Vercel will build your static React App, optimize it as a Progressive Web App (PWA), and make it available under a production SSL URL (e.g. `https://swasthai-guardian.vercel.app`).
 
----
-
-## Security Checklist Before Going Live
-
-- [ ] Rotate `JWT_SECRET` from the default value
-- [ ] Rotate `AGENT_SECRET` from the default value  
-- [ ] Set `ALLOWED_ORIGINS` to your exact Vercel URL
-- [ ] Set Aurora PostgreSQL VPC security group to restrict public access
-- [ ] Enable AWS CloudTrail for audit logging
-- [ ] Enable S3 bucket versioning if storing health exports
-
----
-
-## Scaling for a Full District (10,000+ Villages)
-
-SwasthAI Guardian is designed to scale horizontally:
-
-| Component | Current (Free Tier) | Scaled (Full District) |
-|-----------|---------------------|------------------------|
-| Aurora | db.t3.micro (1 vCPU) | db.r6g.large (Multi-AZ) |
-| DynamoDB | PAY_PER_REQUEST | PAY_PER_REQUEST (auto-scales) |
-| Backend | 1 Render instance | Multiple instances behind ALB |
-| Frontend | Vercel CDN (global) | Same (Vercel scales automatically) |
-
-The DynamoDB tables use `PAY_PER_REQUEST` billing — they automatically handle 1 or 10 million write requests per day with zero configuration.
-
----
-
-## Support
-
-For deployment questions, raise a GitHub issue or contact the SwasthAI team.
-
-> *SwasthAI Guardian — Built for Bharat's villages, not just its cities.*
+You are now fully deployed on production-grade infrastructure!
