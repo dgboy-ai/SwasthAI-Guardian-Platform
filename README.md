@@ -37,6 +37,16 @@
 - ✅ **Secure & Idempotent Seeding** — Blocked demo seeds in production environment (`NODE_ENV === 'production'`), added `ON CONFLICT DO NOTHING` / `INSERT OR IGNORE` idempotency, structured database sequence order, and dynamically resolved foreign keys.
 - ✅ **RAM Optimization & Compatibility** — Configured lazy imports of `torch` and `sentence_transformers` (saving ~400MB RAM when deep model is disabled), resolved Windows unicode console crashes, and added backward-compatible conditional `BatchNorm1d` support to the MLP structure.
 - ✅ **Inclusive Skin Analysis CV Triage** — Replaced rigid RGB rules with a tone-inclusive HSV skin detector (supporting melanin-rich skin down to 5% brightness), upgraded saturation analysis via NumPy vectorization, and expanded output to 5 ISIC-aligned dermatological classifications.
+- ✅ **ASHA-to-PHC Referral Outcomes** — Integrated closed-loop tracking fields (`outcome`, `outcome_details`, `closed_at`) to monitor patient health outcomes.
+- ✅ **Mission Indradhanush Immunization** — Created a vaccine scheduling and status tracking system (`vaccination_records`) for child immunization.
+- ✅ **ASHA Performance Dashboard** — Exposed aggregated KPIs (completed referrals, pregnancies, vaccinations, emergency alerts) per worker for CMO district metrics.
+- ✅ **Security Audit Logging** — Built audit logging middleware (`backend/middleware/audit.js`) to capture and audit access/updates on sensitive endpoints.
+- ✅ **District Config Settings** — Added district-level configuration tables (`district_config`) allowing custom thresholds, contact numbers, and automation parameters.
+- ✅ **SQLite Auto-Migrations** — Implemented dynamic schema check and table alterations in SQLite initialization to allow smooth developer reboots without data loss.
+- ✅ **Mental Health PHQ-2 Screener** — Integrated a Patient Health Questionnaire-2 mental health triage system that auto-creates urgent ASHA referrals.
+- ✅ **Passwordless QR-Code Login** — Enabled quick aadhaar/village-card QR scanning for passwordless villager login in low-connectivity zones.
+- ✅ **Offline Sync-Health Logger** — Adds `POST /api/villager/sync-health` to track and write offline sync delays and telemetry to DynamoDB.
+
 
 ---
 
@@ -426,12 +436,14 @@ python calibrate_rag.py         # Runs 50-query grid search → writes optimal t
 | Feature | Details |
 |---|---|
 | **Symptom Checker** | Select symptoms or Voice Input → **Hybrid Neural AI** (64.6% acc) → Live Confidence Meter → Alternative Suggestions → **Safety Guardrail Protected** → If AI confidence is low, routes to Clinical Heuristic Fallback — zero hallucination, always returns ASHA-grounded advice in 7 languages. |
-| **Sakhi — Women's Health AI** | Memory-aware RAG chatbot. **243 chunks** from WHO/MoHFW/FOGSI/ASHA/UNICEF. Remembers conversation context across turns. Calibrated threshold 0.45 (F1=1.00). Voice output (press 🔊). Auto-speaks P1/P2 emergencies. Cites source with every answer. Groq falls back to KB chunk if API down. |
+| **Sakhi — Women's Health AI** | Memory-aware RAG chatbot. **243 knowledge chunks** from WHO/MoHFW/FOGSI/ASHA/UNICEF. Remembers conversation context across turns. Calibrated threshold 0.45 (F1=1.00). Voice output (press 🔊). Auto-speaks P1/P2 emergencies. Cites source with every answer. Groq falls back to KB chunk if API down. |
 | **Skin Disease Checker** | On-device JavaScript Canvas pixel analysis. No photo leaves the device. Camera + file upload. 3-question clinical confirmation. Image auto-compressed to <200KB for 2G networks. Downloadable `.txt` health report. |
 | **Emergency Ambulance** | One-tap SOS. Real GPS coordinates captured via `navigator.geolocation`. Voice-to-text for landmark description. Offline fallback shows `tel:108`. Writes to DynamoDB `emergency_streams` with `districtId` dynamically resolved from village. |
+| **PHQ-2 Mental Health Screener** | Triage screener (Patient Health Questionnaire-2) for depression risk. Scoring $\ge 3$ triggers advice, auto-logs to symptoms list, and auto-generates an urgent ASHA referral. |
+| **QR-Code Login** | Fast passwordless login on the field by scanning Aadhaar or custom Village Card QR codes. |
 | **Sanitary Pad Request** | Discreet ASHA delivery request — private, no names visible to others. |
 | **Health Profile** | Secure health ID, past AI predictions, village ID, name management. |
-| **Offline Mode** | All features degrade gracefully. Symptom check returns advisory message. Ambulance shows 108 call link. Sakhi returns KB-chunk answer. |
+| **Offline Mode** | All features degrade gracefully. Symptom check returns advisory message. Ambulance shows 108 call link. Sakhi returns KB-chunk answer. Offline sync log telemetry is compiled and reported directly to DynamoDB. |
 | **PWA Install** | "Add to Home Screen" on any Android or iOS — no app store needed. |
 
 ### 🏥 NGO / ASHA Dashboard (Field Health Workers)
@@ -440,6 +452,8 @@ python calibrate_rag.py         # Runs 50-query grid search → writes optimal t
 |---|---|
 | **Maternal Health Tracker** | WHO-protocol pregnancy risk AI. Form collects **real vitals**: Age, Systolic BP, Diastolic BP, Blood Sugar (mmol/L), Body Temp, and Heart Rate. Live-color-coded sliders with danger thresholds. Pulsing red MoHFW banner fires instantly when BP ≥ 160/110. |
 | **Child Nutrition Monitor** | Weight/height/age inputs. WHO Z-score + BMI calculation. NHM protocol referral advice. SAM/MAM classification. |
+| **Mission Indradhanush Immunization** | Track and schedule child vaccinations (`vaccination_records` table) monitoring completed vs scheduled doses per village. |
+| **Closed-Loop Referrals** | ASHA workers can review, track, and update patient referral outcomes (`outcome`, `outcome_details`, `closed_at`) to close the health loop cleanly. |
 | **Village Health Dashboard** | Population stats, pregnancy cases, malnutrition counts, pad request alerts per village. |
 | **Outbreak Alerts** | **Village-Targeted warnings** — utilizes context-aware filtering to notify the local ASHA worker only if the AI agent detects a surge within their specific assigned village. |
 | **Ambulance Feed** | Live emergency request log for NGO area. |
@@ -449,7 +463,9 @@ python calibrate_rag.py         # Runs 50-query grid search → writes optimal t
 | Feature | Details |
 |---|---|
 | **District Analytics** | Real-time KPI dashboard across all registered villages with Recharts visualizations. |
-| **Outbreak Radar** | Autonomous AI agent that auto-classifies symptom clusters every 30 minutes. **Sends village-specific alerts** if 5+ cases are detected in one node within 24 hours. Features Groq Llama-3.3-70b epidemiology reasoning. |
+| **ASHA Performance Dashboard** | Exposes aggregated KPIs (referrals completed, vaccinations, pregnancies, and SOS alerts) to rank and track worker performance. |
+| **District Config Settings** | CMO district settings page (`district_config`) allowing threshold parameters adjustments, custom contact numbers, and automation switches. |
+| **Outbreak Radar** | Autonomous AI agent that auto-classifies symptom clusters every 30 minutes. **Sends village-specific alerts** if 5+ cases are detected in one node within 24 hours. Features Groq Llama-3.3-70b epidemiology reasoning. Queryable via GSI outbreak query endpoints. |
 | **CSV Export** | Download full district health data as a spreadsheet. |
 | **Ambulance Management** | Full emergency request log with timestamps, GPS coordinates, and dynamically resolved `districtId`. |
 | **Village Registry** | Add/manage village records, ASHA contacts, population data. |
@@ -460,7 +476,8 @@ python calibrate_rag.py         # Runs 50-query grid search → writes optimal t
 | Feature | Details |
 |---|---|
 | **DISHA 2023 Compliance** | Consent modal on first login. Shows 4 privacy rights in bilingual Hindi/English. Cites Digital Information Security in Healthcare Act 2023 and IT Act 2008. Stored in `localStorage` — fires once per device. |
-| **Auth** | bcryptjs password hashing (10 salt rounds), JWT 7-day tokens. |
+| **Security Audit Logging** | Asynchronous audit logs (`backend/middleware/audit.js`) capture access, updates, and reads of patient records. |
+| **Auth** | bcryptjs password hashing (10 salt rounds), JWT 7-day tokens, plus passwordless Aadhaar QR code login. |
 | **OTP Login** | Phone-based OTP login fallback. Rate-limited to 15 attempts/15 min. |
 | **CORS** | Whitelist-only via `ALLOWED_ORIGINS` environment variable. |
 | **Role-Based Access** | Every sensitive route uses `checkRole()` middleware. Villagers cannot access NGO/admin data. |
