@@ -58,7 +58,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 input_dim = X_embeddings.shape[1]
 num_classes = len(label_encoder.classes_)
 
-model = SymptomNet(input_dim, num_classes).to(device)
+model = SymptomNet(input_dim, num_classes, use_batch_norm=True).to(device)
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
 

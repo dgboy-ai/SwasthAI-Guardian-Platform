@@ -3,9 +3,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import joblib
 import os
-import torch
-from model_def import SymptomNet
-from sentence_transformers import SentenceTransformer
 from skin_analyzer import analyze_skin_image
 import re
 from collections import Counter
@@ -357,18 +354,27 @@ disease_pipeline = None
 deep_model_bundle = None
 embedder = None
 
+ENABLE_DEEP_MODEL = os.getenv("ENABLE_DEEP_MODEL", "false").lower() == "true"
+
 try:
     # 1. Load Deep Learning Model (Primary)
-    if os.path.exists(DEEP_MODEL_PATH):
+    if ENABLE_DEEP_MODEL and os.path.exists(DEEP_MODEL_PATH):
         print("[...] Loading Deep Learning Disease Model...")
+        import torch
+        from sentence_transformers import SentenceTransformer
+        from model_def import SymptomNet
+
         deep_model_bundle = joblib.load(DEEP_MODEL_PATH)
         embedder = SentenceTransformer(deep_model_bundle['embedding_model'])
         
-        deep_model = SymptomNet(deep_model_bundle['input_dim'], deep_model_bundle['num_classes'])
+        has_bn = any("running_mean" in k for k in deep_model_bundle['model_state'].keys())
+        deep_model = SymptomNet(deep_model_bundle['input_dim'], deep_model_bundle['num_classes'], use_batch_norm=has_bn)
         deep_model.load_state_dict(deep_model_bundle['model_state'])
         deep_model.eval()
         deep_model_bundle['model'] = deep_model
         print("[OK] Deep Learning model loaded.")
+    elif os.path.exists(DEEP_MODEL_PATH):
+        print("[INFO] Deep Learning Model exists but is disabled (ENABLE_DEEP_MODEL=false).")
 
     # 2. Load Random Forest Model (Fallback)
     if os.path.exists(MODEL_PATH):
@@ -476,7 +482,8 @@ async def predict_disease(data: SymptomInput):
         }
 
     # A. Use Deep Learning Model if available
-    if deep_model_bundle and embedder:
+    if ENABLE_DEEP_MODEL and deep_model_bundle and embedder:
+        import torch
         with torch.no_grad():
             emb = embedder.encode([text])
             outputs = deep_model_bundle['model'](torch.FloatTensor(emb))

@@ -25,7 +25,7 @@ if not AGENT_SECRET:
     if os.getenv("NODE_ENV") == "production":
         raise RuntimeError("FATAL: AGENT_SECRET environment variable is required for OutbreakAgent in production.")
     else:
-        print("[AGENT] ⚠️  WARNING: AGENT_SECRET is not set. Outbreak agent will not be able to authenticate with backend.")
+        print("[AGENT] [!] WARNING: AGENT_SECRET is not set. Outbreak agent will not be able to authenticate with backend.")
 
 CHECK_INTERVAL_SECONDS = 30 * 60  # 30 minutes
 
