@@ -50,31 +50,23 @@ _session_store: dict[str, deque] = defaultdict(lambda: deque(maxlen=MAX_HISTORY)
 
 
 
-# ── Lazy-Loaded Embeddings (loaded once on first request) ──────────────────────
-_embedder      = None
-_kb_embeddings = None
+# ── Pre-Loaded Embeddings (Loaded on module startup to prevent request latency spikes) ──
+from sentence_transformers import SentenceTransformer
 
 # Pre-extract plain text for embedding
 _TEXTS = [chunk["text"] for chunk in HEALTH_KNOWLEDGE]
 print(f"[RAG] Knowledge base loaded: {len(HEALTH_KNOWLEDGE)} chunks (with 2-sentence overlap).")
 
+print("[RAG] Pre-loading multilingual embedding model at startup...")
+_embedder = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
+print("[RAG] Pre-computing knowledge base embeddings...")
+_kb_embeddings = _embedder.encode(_TEXTS, normalize_embeddings=True)
+print(f"[RAG] Embedding model and {len(HEALTH_KNOWLEDGE)} knowledge chunks pre-loaded successfully!")
 
 def _get_embedder():
-    global _embedder
-    if _embedder is None:
-        from sentence_transformers import SentenceTransformer
-        print("[RAG] Loading multilingual embedding model (one-time)...")
-        _embedder = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
-        print("[RAG] Embedding model loaded.")
     return _embedder
 
-
 def _get_kb_embeddings():
-    global _kb_embeddings
-    if _kb_embeddings is None:
-        embedder = _get_embedder()
-        _kb_embeddings = embedder.encode(_TEXTS, normalize_embeddings=True)
-        print(f"[RAG] Knowledge base embedded: {len(HEALTH_KNOWLEDGE)} chunks.")
     return _kb_embeddings
 
 
