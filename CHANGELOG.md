@@ -1,10 +1,10 @@
 # Changelog — SwasthAI Guardian Platform
 
-All notable changes and feature developments completed during the hackathon window are documented in this file.
+All notable changes and feature developments completed during the hackathon window are documented in this file chronologically.
 
 ---
 
-## [v2.5.0] - 2026-06-03
+## June 3, 2026
 ### Added
 - **ASHA-to-PHC Referral Outcomes**: Integrated closed-loop tracking fields (`outcome`, `outcome_details`, `closed_at`) to fully close the care referral loop.
 - **Mission Indradhanush Immunization Tracking**: Created a child vaccination tracking system (`vaccination_records` table) for monitoring scheduled vs administered shots.
@@ -23,7 +23,7 @@ All notable changes and feature developments completed during the hackathon wind
 
 ---
 
-## [v2.4.0] - 2026-06-02
+## June 2, 2026
 ### Added
 - **Pregnancy Tracking Reference**: Added `recorded_by` relation linking maternal records to registered ASHA users.
 - **OTP Retention Optimization**: Built daily background OTP deletion routines inside Express to automatically expire and prune older logs.
@@ -32,21 +32,21 @@ All notable changes and feature developments completed during the hackathon wind
 
 ---
 
-## [v2.3.0] - 2026-06-01
+## June 1, 2026
 ### Added
 - **SymptomNet Deep Learning Classifier**: Integrated deep-learning MLP classifier as the primary symptom evaluator.
 - **LLM Outbreak Processing**: Enabled Groq-powered LLaMA-3.3-70B model with strict JSON schema enforcement to classify symptom clusters into formatted output alerts.
 
 ---
 
-## [v2.2.0] - 2026-05-31
+## May 31, 2026
 ### Added
 - **Offline Event Replay Engine**: Designed IndexedDB queues on the client that replay write events automatically when internet connection resumes.
 - **District Simulation Observability**: Built live system charts illustrating local node heartbeat connectivity, queue sizes, and sync delays.
 
 ---
 
-## [v2.1.0] - 2026-05-30
+## May 30, 2026
 ### Added
 - **Dual-Database Layer (PostgreSQL + DynamoDB)**: Moved relational operational data to Amazon Aurora and event streams to Amazon DynamoDB.
 - **SSE Real-time Emergency Feed**: Enabled Server-Sent Events (SSE) from the Node.js backend to push incoming alerts instantly to admin dispatch monitors.
