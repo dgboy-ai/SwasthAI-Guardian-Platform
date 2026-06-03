@@ -175,7 +175,7 @@ export async function seedData(db, pool, usingSQLite, bcrypt) {
     if (!schemeCheck) {
       for (const s of GOVERNMENT_SCHEMES) {
         await db.run(
-          `INSERT INTO government_schemes
+          `INSERT OR IGNORE INTO government_schemes
            (name, name_hi, description, benefit, category, min_age, max_age,
             gender_eligibility, caste_eligibility, economic_status_eligibility,
             area_type_eligibility, required_documents, steps)
@@ -253,19 +253,19 @@ export async function seedDemoData(db, usingSQLite, bcrypt) {
   const ngoUserId = ngoAcc?.id || null;
 
   // 4. Seed dependent clinical/operational tables
-  await db.run('INSERT INTO pregnancy_data (name, age, trimester, "riskLevel", "dueDate", "villageId", recorded_by) VALUES (?, ?, ?, ?, ?, ?, ?)', ['Sunita Devi', 24, 3, 'High', '2026-08-15', 'v101', ngoUserId]);
-  await db.run('INSERT INTO pregnancy_data (name, age, trimester, "riskLevel", "dueDate", "villageId", recorded_by) VALUES (?, ?, ?, ?, ?, ?, ?)', ['Meena Kumari', 21, 2, 'Low', '2026-11-05', 'v101', ngoUserId]);
+  await db.run('INSERT OR IGNORE INTO pregnancy_data (name, age, trimester, "riskLevel", "dueDate", "villageId", recorded_by) VALUES (?, ?, ?, ?, ?, ?, ?)', ['Sunita Devi', 24, 3, 'High', '2026-08-15', 'v101', ngoUserId]);
+  await db.run('INSERT OR IGNORE INTO pregnancy_data (name, age, trimester, "riskLevel", "dueDate", "villageId", recorded_by) VALUES (?, ?, ?, ?, ?, ?, ?)', ['Meena Kumari', 21, 2, 'Low', '2026-11-05', 'v101', ngoUserId]);
 
-  await db.run('INSERT INTO malnutrition_data ("childName", "ageMonths", weight, height, status, "villageId") VALUES (?, ?, ?, ?, ?, ?)', ['Raju', 24, 11.2, 85.0, 'Moderate', 'v101']);
-  await db.run('INSERT INTO malnutrition_data ("childName", "ageMonths", weight, height, status, "villageId") VALUES (?, ?, ?, ?, ?, ?)', ['Priya', 36, 14.5, 95.0, 'Normal', 'v101']);
+  await db.run('INSERT OR IGNORE INTO malnutrition_data ("childName", "ageMonths", weight, height, status, "villageId") VALUES (?, ?, ?, ?, ?, ?)', ['Raju', 24, 11.2, 85.0, 'Moderate', 'v101']);
+  await db.run('INSERT OR IGNORE INTO malnutrition_data ("childName", "ageMonths", weight, height, status, "villageId") VALUES (?, ?, ?, ?, ?, ?)', ['Priya', 36, 14.5, 95.0, 'Normal', 'v101']);
 
   await db.run(
-    'INSERT INTO symptoms ("userId", "villageId", symptoms, prediction, disease, advice, confidence, model_used) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+    'INSERT OR IGNORE INTO symptoms ("userId", "villageId", symptoms, prediction, disease, advice, confidence, model_used) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
     [villagerUserId, 'v101', 'Fever, cough, body pain for 3 days', 'Mild Viral Infection - Maintain hydration, isolate, report if temp exceeds 102F', 'Mild Viral Infection', 'Maintain hydration, isolate, report if temp exceeds 102F', 0.90, 'Offline Rule Matcher']
   );
   
-  await db.run('INSERT INTO ambulance_requests (user_id, name, location, priority, type, request_type, symptoms, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', [villagerUserId, 'Ramesh Kumar', 'Rampur, Near Primary School', 'High', 'emergency', 'ambulance', 'Severe chest pain and difficulty breathing', 'pending']);
-  await db.run('INSERT INTO ambulance_requests (user_id, name, location, priority, type, request_type, symptoms, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', [villagerUserId, 'Sita Devi', 'ASHA Center रामपुर', 'Low', 'operation', 'pad_request', 'Confidential request for sanitary pads supply', 'pending']);
+  await db.run('INSERT OR IGNORE INTO ambulance_requests (user_id, name, location, priority, type, request_type, symptoms, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', [villagerUserId, 'Ramesh Kumar', 'Rampur, Near Primary School', 'High', 'emergency', 'ambulance', 'Severe chest pain and difficulty breathing', 'pending']);
+  await db.run('INSERT OR IGNORE INTO ambulance_requests (user_id, name, location, priority, type, request_type, symptoms, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', [villagerUserId, 'Sita Devi', 'ASHA Center रामपुर', 'Low', 'operation', 'pad_request', 'Confidential request for sanitary pads supply', 'pending']);
 
   await db.run(
     `INSERT OR IGNORE INTO district_config (district_id, outbreak_threshold, enable_auto_ambulance, emergency_contact_phone)
@@ -274,12 +274,12 @@ export async function seedDemoData(db, usingSQLite, bcrypt) {
   );
 
   await db.run(
-    `INSERT INTO vaccination_records (child_name, parent_phone, vaccine_name, scheduled_date, given_date, status, "villageId", recorded_by)
+    `INSERT OR IGNORE INTO vaccination_records (child_name, parent_phone, vaccine_name, scheduled_date, given_date, status, "villageId", recorded_by)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
     ['Aarav Kumar', '9876543210', 'BCG', '2026-06-01', '2026-06-02', 'given', 'v101', ngoUserId]
   );
   await db.run(
-    `INSERT INTO vaccination_records (child_name, parent_phone, vaccine_name, scheduled_date, given_date, status, "villageId", recorded_by)
+    `INSERT OR IGNORE INTO vaccination_records (child_name, parent_phone, vaccine_name, scheduled_date, given_date, status, "villageId", recorded_by)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
     ['Ananya Singh', '9876543220', 'OPV 1', '2026-06-15', null, 'scheduled', 'v101', ngoUserId]
   );
@@ -291,7 +291,7 @@ export async function seedDemoData(db, usingSQLite, bcrypt) {
   );
 
   await db.run(
-    `INSERT INTO referrals (patient_name, patient_phone, "villageId", referred_by, referred_to, reason, priority, notes, status, outcome, outcome_details, closed_at)
+    `INSERT OR IGNORE INTO referrals (patient_name, patient_phone, "villageId", referred_by, referred_to, reason, priority, notes, status, outcome, outcome_details, closed_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ${nowSql})`,
     ['Ramesh Kumar', '9876543200', 'v101', ngoUserId, 'District PHC', 'Chronic cough & fever', 'high', 'Suspected TB', 'completed', 'Diagnosed with Pulmonary TB', 'Referred to DOTS center, started on therapy.']
   );

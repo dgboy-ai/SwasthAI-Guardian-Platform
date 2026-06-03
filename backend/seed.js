@@ -155,7 +155,7 @@ async function seed() {
   console.log('🔧 Seeding district configurations...');
   await pool.query(
     `INSERT INTO district_config (district_id, outbreak_threshold, enable_auto_ambulance, emergency_contact_phone)
-     VALUES ($1, $2, $3, $4) ON CONFLICT(district_id) DO NOTHING`,
+     VALUES ($1, $2, $3, $4) ON CONFLICT (district_id) DO NOTHING`,
     ['varanasi_district', 3, true, '+91 94150 12345']
   );
   console.log('   ✅ Seeded district_config');
@@ -179,7 +179,7 @@ async function seed() {
   console.log('📈 Seeding ASHA performance benchmarks...');
   await pool.query(
     `INSERT INTO asha_performance (asha_id, month, referrals_count, pregnancies_tracked, vaccinations_completed, emergencies_reported)
-     VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT(asha_id, month) DO NOTHING`,
+     VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (asha_id, month) DO NOTHING`,
     [ashaId, '2026-06', 12, 5, 8, 2]
   );
   console.log('   ✅ Seeded asha_performance');
