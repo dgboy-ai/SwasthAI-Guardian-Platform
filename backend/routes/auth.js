@@ -5,6 +5,8 @@ import crypto from 'crypto';
 import rateLimit from 'express-rate-limit';
 import { z } from 'zod';
 import { auth } from '../middleware/auth.js';
+import { getAadhaarSalt, isDemoOtpAllowed } from '../config.js';
+
 
 const router = express.Router();
 
@@ -167,8 +169,7 @@ router.post('/login-otp', authLimiter, async (req, res) => {
   }
 
   const { phone, otp, role } = parseResult.data;
-  const isDev = process.env.NODE_ENV !== 'production';
-  const isDemoOtp = isDev && (otp === '1234');
+  const isDemoOtp = isDemoOtpAllowed(otp);
   
   if (!isDemoOtp) {
     let record;
@@ -315,7 +316,7 @@ router.post('/aadhaar-verify', auth, async (req, res) => {
     return res.status(400).send({ error: 'Invalid Aadhaar number (checksum failed). Please check and re-enter.' });
   }
   try {
-    const hash = crypto.createHash('sha256').update(aadhaar + (process.env.AADHAAR_SALT || 'swasthai_aadhaar_2026')).digest('hex');
+    const hash = crypto.createHash('sha256').update(aadhaar + getAadhaarSalt()).digest('hex');
     
     const existing = await db.get('SELECT id FROM users WHERE aadhaar_hash = ?', [hash]);
     if (existing && existing.id !== req.user.id) {
