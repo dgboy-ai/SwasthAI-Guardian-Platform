@@ -142,8 +142,18 @@ function predictDiseaseLocal(text) {
   return bestMatch;
 }
 
+// ── Helper: derive districtId from village_health or env fallback ─────────────
+async function getDistrictId(db, villageId) {
+  try {
+    const row = await db.get('SELECT "districtId" FROM village_health WHERE "villageId" = ?', [villageId]);
+    return row?.districtId || process.env.DISTRICT_NAME || 'district_main';
+  } catch (_) {
+    return process.env.DISTRICT_NAME || 'district_main';
+  }
+}
+
 router.post('/emergency-alert', auth, async (req, res) => {
-  const db = req.app.locals.db;
+  const db   = req.app.locals.db;
   const pool = req.app.locals.pool;
   const { alertType = 'menstrual_emergency', message = 'Emergency help needed' } = req.body;
   try {
@@ -151,6 +161,9 @@ router.post('/emergency-alert', auth, async (req, res) => {
     const userRecord = await db.get('SELECT name, "villageId" FROM users WHERE id = ?', [userId]);
     const userName = userRecord?.name || 'Unknown User';
     const villageId = userRecord?.villageId || 'v101';
+
+    // Fix 2: derive real districtId — no more 'district_main' hardcode
+    const districtId = await getDistrictId(db, villageId);
 
     let requestId;
     if (pool) {
@@ -167,13 +180,13 @@ router.post('/emergency-alert', auth, async (req, res) => {
       requestId = result.lastID;
     }
 
-    const timestamp = new Date().toISOString();
+    const timestamp  = new Date().toISOString();
     const requestObj = { requestId, userId, name: userName, location: villageId, priority: 'High', symptoms: message, status: 'pending', timestamp, type: alertType };
 
     await dynamoHelper.put('emergency_streams', {
-      districtId: 'district_main',
-      streamId:   `amb-${requestId}-${Date.now()}`,
-      priority:   'High',
+      districtId,
+      streamId: `amb-${requestId}-${Date.now()}`,
+      priority: 'High',
       ...requestObj
     });
 
@@ -312,10 +325,13 @@ router.post('/ambulance', auth, async (req, res) => {
     const timestamp  = new Date().toISOString();
     const requestObj = { requestId, userId, name, location, priority, symptoms: sxy, status: 'pending', timestamp };
 
+    // Fix 2: derive real districtId from the village's record in the DB
+    const districtId = await getDistrictId(db, req.user.villageId || location);
+
     await dynamoHelper.put('emergency_streams', {
-      districtId: 'district_main',
-      streamId:   `amb-${requestId}-${Date.now()}`,
-      priority:   priority || 'High',
+      districtId,
+      streamId: `amb-${requestId}-${Date.now()}`,
+      priority: priority || 'High',
       ...requestObj
     });
 
@@ -323,7 +339,7 @@ router.post('/ambulance', auth, async (req, res) => {
       req.app.locals.broadcastToAdmins('ambulance', requestObj);
     }
 
-    console.log(`[AMBULANCE] Request #${requestId} from user ${userId} — ${priority} at ${location} → SSE broadcast`);
+    console.log(`[AMBULANCE] Request #${requestId} from user ${userId} — ${priority} at ${location} (district: ${districtId}) → SSE broadcast`);
     res.status(201).json({ status: 'dispatched', eta: '14 mins', requestId });
   } catch (err) {
     console.error('[AMBULANCE ERROR]', err);

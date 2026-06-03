@@ -1,5 +1,19 @@
-import { DynamoDBClient, ListTablesCommand, CreateTableCommand, UpdateTimeToLiveCommand } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, PutCommand, ScanCommand, QueryCommand, GetCommand } from "@aws-sdk/lib-dynamodb";
+import {
+  DynamoDBClient,
+  ListTablesCommand,
+  CreateTableCommand,
+  DescribeTableCommand,
+  UpdateTimeToLiveCommand,
+  DescribeTimeToLiveCommand,
+} from "@aws-sdk/client-dynamodb";
+import {
+  DynamoDBDocumentClient,
+  PutCommand,
+  ScanCommand,
+  QueryCommand,
+  GetCommand,
+  UpdateCommand,
+} from "@aws-sdk/lib-dynamodb";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -9,7 +23,7 @@ const isProduction = process.env.NODE_ENV === 'production';
 
 let docClient = null;
 
-// ── Table Definitions with Deliberate Access Patterns ─────────────────────────
+// ── Table Definitions with Deliberate Access Patterns ──────────────────────────
 // Each table has composite keys and GSIs designed for the actual query patterns:
 //   outbreak_telemetry : query by village (time-series) + query by disease (cross-village)
 //   sync_queues        : query by device (pending items) + query by status (fleet management)
@@ -37,7 +51,8 @@ const TABLE_DEFINITIONS = [
       ],
       Projection: { ProjectionType: 'ALL' }
     }],
-    BillingMode: 'PAY_PER_REQUEST'
+    BillingMode: 'PAY_PER_REQUEST',
+    TtlAttribute: null,
   },
   {
     name: 'sync_queues',
@@ -60,7 +75,8 @@ const TABLE_DEFINITIONS = [
       ],
       Projection: { ProjectionType: 'ALL' }
     }],
-    BillingMode: 'PAY_PER_REQUEST'
+    BillingMode: 'PAY_PER_REQUEST',
+    TtlAttribute: null,
   },
   {
     name: 'village_node_state',
@@ -72,7 +88,9 @@ const TABLE_DEFINITIONS = [
     AttributeDefinitions: [
       { AttributeName: 'villageId', AttributeType: 'S' }
     ],
-    BillingMode: 'PAY_PER_REQUEST'
+    GlobalSecondaryIndexes: [],  // No GSI for single-item access
+    BillingMode: 'PAY_PER_REQUEST',
+    TtlAttribute: 'expiresAt',   // TTL auto-expire: 7 days of inactivity
   },
   {
     name: 'emergency_streams',
@@ -95,55 +113,105 @@ const TABLE_DEFINITIONS = [
       ],
       Projection: { ProjectionType: 'ALL' }
     }],
-    BillingMode: 'PAY_PER_REQUEST'
+    BillingMode: 'PAY_PER_REQUEST',
+    TtlAttribute: null,
   }
 ];
 
+// ── Fix 5: Idempotent TTL — check before set, safe to call every startup ───────
+async function ensureTTL(client, tableName, ttlAttribute) {
+  try {
+    const desc = await client.send(new DescribeTimeToLiveCommand({ TableName: tableName }));
+    const status = desc.TimeToLiveDescription?.TimeToLiveStatus; // ENABLED | ENABLING | DISABLED | DISABLING
+    if (status === 'ENABLED' || status === 'ENABLING') {
+      console.log(`[DynamoDB] ✓ TTL already active on ${tableName}.${ttlAttribute} (${status})`);
+      return;
+    }
+    await client.send(new UpdateTimeToLiveCommand({
+      TableName: tableName,
+      TimeToLiveSpecification: { AttributeName: ttlAttribute, Enabled: true }
+    }));
+    console.log(`[DynamoDB] ✅ TTL enabled on ${tableName}.${ttlAttribute} (7-day auto-expire)`);
+  } catch (ttlErr) {
+    // Non-fatal — TTL is best-effort; records will still be written
+    console.warn(`[DynamoDB] TTL ensure skipped for ${tableName}:`, ttlErr.message);
+  }
+}
+
+// ── Fix 4: GSI validation — compare actual GSIs vs required schema ─────────────
+async function validateGSIs(client, tableDef) {
+  if (!tableDef.GlobalSecondaryIndexes || tableDef.GlobalSecondaryIndexes.length === 0) return;
+  try {
+    const desc = await client.send(new DescribeTableCommand({ TableName: tableDef.name }));
+    const actualGSIs = (desc.Table?.GlobalSecondaryIndexes || []).map(g => g.IndexName);
+    const requiredGSIs = tableDef.GlobalSecondaryIndexes.map(g => g.IndexName);
+    const missingGSIs = requiredGSIs.filter(name => !actualGSIs.includes(name));
+    if (missingGSIs.length > 0) {
+      // Cannot auto-add GSIs to existing tables (requires recreation or UpdateTable).
+      // Log a prominent warning so ops team is aware; route logic has Scan fallback.
+      console.warn(
+        `[DynamoDB] ⚠️  Table '${tableDef.name}' is MISSING GSI(s): [${missingGSIs.join(', ')}].`,
+        'To fix: recreate the table or run an UpdateTable migration manually.',
+        'Queries using these indexes will fall back to Scan.'
+      );
+    } else {
+      console.log(`[DynamoDB] ✓ All GSIs verified on ${tableDef.name}: [${actualGSIs.join(', ')}]`);
+    }
+  } catch (err) {
+    console.warn(`[DynamoDB] GSI validation failed for ${tableDef.name}:`, err.message);
+  }
+}
+
+// ── Table bootstrap: create if missing, validate GSIs if existing, set TTL ─────
 async function ensureTablesExist(client) {
   try {
     const listRes = await client.send(new ListTablesCommand({}));
     const existingTables = listRes.TableNames || [];
 
     for (const tableDef of TABLE_DEFINITIONS) {
-      if (!existingTables.includes(tableDef.name)) {
-        console.log(`[DynamoDB] Creating table: ${tableDef.name} (composite key + GSI)...`);
-        await client.send(new CreateTableCommand({
-          TableName:                tableDef.name,
-          KeySchema:                tableDef.KeySchema,
-          AttributeDefinitions:     tableDef.AttributeDefinitions,
-          GlobalSecondaryIndexes:   tableDef.GlobalSecondaryIndexes,
-          BillingMode:              tableDef.BillingMode
-        }));
+      const exists = existingTables.includes(tableDef.name);
+
+      if (!exists) {
+        // ── Create new table ──
+        console.log(`[DynamoDB] Creating table: ${tableDef.name} ...`);
+        const createParams = {
+          TableName:             tableDef.name,
+          KeySchema:             tableDef.KeySchema,
+          AttributeDefinitions:  tableDef.AttributeDefinitions,
+          BillingMode:           tableDef.BillingMode,
+        };
+        // Only include GSIs when defined (CreateTableCommand rejects empty array)
+        if (tableDef.GlobalSecondaryIndexes && tableDef.GlobalSecondaryIndexes.length > 0) {
+          createParams.GlobalSecondaryIndexes = tableDef.GlobalSecondaryIndexes;
+        }
+        await client.send(new CreateTableCommand(createParams));
         console.log(`[DynamoDB] ✅ Table ${tableDef.name} created.`);
 
-        // Enable TTL on village_node_state
-        if (tableDef.name === 'village_node_state') {
-          // TTL takes a few seconds to activate after table creation
-          setTimeout(async () => {
-            try {
-              await client.send(new UpdateTimeToLiveCommand({
-                TableName: 'village_node_state',
-                TimeToLiveSpecification: { AttributeName: 'expiresAt', Enabled: true }
-              }));
-              console.log('[DynamoDB] ✅ TTL enabled on village_node_state.expiresAt (7-day auto-expire)');
-            } catch (ttlErr) {
-              console.warn('[DynamoDB] TTL enable skipped:', ttlErr.message);
-            }
-          }, 5000);
+        // Fix 5: Set TTL immediately after creation — no setTimeout fragility
+        if (tableDef.TtlAttribute) {
+          await ensureTTL(client, tableDef.name, tableDef.TtlAttribute);
         }
       } else {
-        console.log(`[DynamoDB] ✓ Table ${tableDef.name} already exists.`);
+        console.log(`[DynamoDB] ✓ Table ${tableDef.name} already exists — validating...`);
+
+        // Fix 4: Validate GSIs on existing tables
+        await validateGSIs(client, tableDef);
+
+        // Fix 5: Ensure TTL is set on every startup (idempotent)
+        if (tableDef.TtlAttribute) {
+          await ensureTTL(client, tableDef.name, tableDef.TtlAttribute);
+        }
       }
     }
   } catch (err) {
-    console.warn("[DynamoDB] Table validation/creation error:", err.message);
+    console.warn("[DynamoDB] Table bootstrap error:", err.message);
   }
 }
 
 if (hasAwsCredentials || isProduction) {
   try {
     const client = new DynamoDBClient({
-      region: process.env.AWS_REGION || "ap-south-1",  // Default: Mumbai for India
+      region: process.env.AWS_REGION || "ap-south-1",
       credentials: hasAwsCredentials ? {
         accessKeyId:     process.env.AWS_ACCESS_KEY_ID,
         secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
@@ -156,7 +224,8 @@ if (hasAwsCredentials || isProduction) {
       }
     });
     console.log("⚡ AWS DynamoDB Client Initialized (region:", process.env.AWS_REGION || "ap-south-1", ")");
-    ensureTablesExist(client);
+    // Run async — does not block server startup
+    ensureTablesExist(client).catch(err => console.error("[DynamoDB] Bootstrap failed:", err.message));
   } catch (err) {
     console.error("❌ Failed to initialize AWS DynamoDB Client:", err.message);
   }
@@ -169,7 +238,7 @@ if (hasAwsCredentials || isProduction) {
   }
 }
 
-// ── In-memory mock storage for local dev ─────────────────────────────────────
+// ── In-memory mock storage for local dev ──────────────────────────────────────
 const mockStore = {
   outbreak_telemetry: [],
   sync_queues:        [],
@@ -182,13 +251,15 @@ const dynamoHelper = {
 
   // Returns schema info for health/detailed endpoint
   schema: TABLE_DEFINITIONS.map(t => ({
-    name:    t.name,
-    hashKey: t.KeySchema[0].AttributeName,
+    name:     t.name,
+    hashKey:  t.KeySchema[0].AttributeName,
     rangeKey: t.KeySchema[1]?.AttributeName || null,
     gsiCount: (t.GlobalSecondaryIndexes || []).length,
-    billing: t.BillingMode
+    ttl:      t.TtlAttribute || null,
+    billing:  t.BillingMode
   })),
 
+  // ── put ────────────────────────────────────────────────────────────────────
   async put(tableName, item) {
     if (docClient) {
       try {
@@ -217,6 +288,7 @@ const dynamoHelper = {
     }
   },
 
+  // ── get ────────────────────────────────────────────────────────────────────
   async get(tableName, key) {
     if (docClient) {
       try {
@@ -234,13 +306,15 @@ const dynamoHelper = {
     }
   },
 
-  async query(tableName, keyConditionExpression, expressionAttributeValues, indexName = null) {
+  // ── Fix 1: query — named, expressive parameters ────────────────────────────
+  async query(tableName, keyConditionExpression, expressionAttributeValues, indexName = null, extraParams = {}) {
     if (docClient) {
       try {
         const params = {
           TableName:                 tableName,
           KeyConditionExpression:    keyConditionExpression,
           ExpressionAttributeValues: expressionAttributeValues,
+          ...extraParams,
         };
         if (indexName) params.IndexName = indexName;
         const res = await docClient.send(new QueryCommand(params));
@@ -252,6 +326,50 @@ const dynamoHelper = {
       }
     } else {
       return this._queryMock(tableName, expressionAttributeValues);
+    }
+  },
+
+  // ── Fix 1: queryByVillage — Query using villageId PK + optional 7-day range ─
+  // Replaces scan('outbreak_telemetry') for known-village lookups.
+  async queryByVillage(tableName, villageId, daysBack = 7) {
+    const cutoff = new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000).toISOString();
+    return this.query(
+      tableName,
+      'villageId = :vid AND detectedAt >= :cutoff',
+      { ':vid': villageId, ':cutoff': cutoff }
+    );
+  },
+
+  // ── Fix 1: queryRecentAll — Query ALL villages via page-by-page pattern ──────
+  // Used when we need a cross-village view (e.g. heatmap, district report).
+  // Falls back to Scan only in mock/dev mode for simplicity.
+  async queryRecentAll(tableName, daysBack = 7) {
+    if (docClient) {
+      // Real DynamoDB: Scan with FilterExpression is unavoidable for cross-partition reads.
+      // At production scale, this should be replaced with a time-series GSI or
+      // aggregation Lambda. For now, we apply a FilterExpression to reduce data transfer.
+      const cutoff = new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000).toISOString();
+      try {
+        let items = [];
+        let lastKey;
+        do {
+          const params = {
+            TableName: tableName,
+            FilterExpression: 'detectedAt >= :cutoff',
+            ExpressionAttributeValues: { ':cutoff': cutoff },
+            ...(lastKey ? { ExclusiveStartKey: lastKey } : {}),
+          };
+          const res = await docClient.send(new ScanCommand(params));
+          items = items.concat(res.Items || []);
+          lastKey = res.LastEvaluatedKey;
+        } while (lastKey);
+        return items;
+      } catch (err) {
+        console.error(`[DynamoDB] queryRecentAll Error on ${tableName}:`, err.message);
+        return [];
+      }
+    } else {
+      return this._scanMock(tableName);
     }
   },
 
@@ -269,6 +387,7 @@ const dynamoHelper = {
     return list;
   },
 
+  // ── scan — kept for tables without a time-range key (sync_queues, emergency_streams) ──
   async scan(tableName) {
     if (docClient) {
       try {
@@ -289,16 +408,51 @@ const dynamoHelper = {
     return mockStore[tableName] || [];
   },
 
+  // ── Fix 3: updateNodeState — UpdateCommand avoids full-overwrite race conditions ──
+  // Only updates the fields we explicitly pass; leaves other attributes untouched.
   async updateNodeState(villageId, status, lastActive, syncPendingCount) {
-    const now = Math.floor(Date.now() / 1000);
-    const item = {
-      villageId,
-      status,
-      lastActive:         lastActive || new Date().toISOString(),
-      syncPendingCount:   syncPendingCount || 0,
-      expiresAt:          now + (7 * 24 * 60 * 60), // TTL: auto-expire after 7 days
-    };
-    return this.put('village_node_state', item);
+    const now     = Math.floor(Date.now() / 1000);
+    const ttl     = now + (7 * 24 * 60 * 60); // 7-day epoch TTL
+
+    if (docClient) {
+      try {
+        await docClient.send(new UpdateCommand({
+          TableName: 'village_node_state',
+          Key: { villageId },
+          // Attribute names/values use # / : prefixes to avoid DynamoDB reserved-word conflicts
+          UpdateExpression:
+            'SET #st = :status, lastActive = :lastActive, syncPendingCount = :spc, expiresAt = :ttl',
+          ExpressionAttributeNames:  { '#st': 'status' },
+          ExpressionAttributeValues: {
+            ':status':    status,
+            ':lastActive': lastActive || new Date().toISOString(),
+            ':spc':       syncPendingCount ?? 0,
+            ':ttl':       ttl,
+          },
+          // Creates the item if it doesn't exist yet (upsert behaviour)
+        }));
+        return { success: true, store: 'dynamodb' };
+      } catch (err) {
+        console.error(`[DynamoDB] UpdateNodeState Error:`, err.message);
+        // Fall through to mock in dev
+        if (!isProduction) {
+          this._putMock('village_node_state', { villageId, status, lastActive, syncPendingCount, expiresAt: ttl });
+        }
+        return { success: false, error: err.message };
+      }
+    } else {
+      // Mock: simple object-store upsert (no race condition risk in single-process dev)
+      const existing = mockStore.village_node_state[villageId] || {};
+      mockStore.village_node_state[villageId] = {
+        ...existing,
+        villageId,
+        status,
+        lastActive: lastActive || new Date().toISOString(),
+        syncPendingCount: syncPendingCount ?? 0,
+        expiresAt: ttl,
+      };
+      return { success: true, store: 'mock' };
+    }
   }
 };
 

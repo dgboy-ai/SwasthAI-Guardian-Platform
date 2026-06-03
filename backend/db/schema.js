@@ -46,7 +46,10 @@ export async function initSchema(db, pool, usingSQLite) {
       malnutrition_cases INTEGER,
       asha_contact VARCHAR(20),
       "outbreakAlert" TEXT DEFAULT NULL,
-      "lastUpdated" TIMESTAMPTZ DEFAULT NULL
+      "lastUpdated" TIMESTAMPTZ DEFAULT NULL,
+      "districtId" VARCHAR(80) DEFAULT NULL,
+      lat DOUBLE PRECISION DEFAULT NULL,
+      lng DOUBLE PRECISION DEFAULT NULL
     );
     CREATE TABLE IF NOT EXISTS pregnancy_data (
       id SERIAL PRIMARY KEY,
@@ -119,17 +122,53 @@ export async function initSchema(db, pool, usingSQLite) {
       steps TEXT,
       created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
     );
+    CREATE TABLE IF NOT EXISTS referrals (
+      id SERIAL PRIMARY KEY,
+      patient_name VARCHAR(120) NOT NULL,
+      patient_phone VARCHAR(20),
+      "villageId" VARCHAR(60),
+      referred_by INTEGER,
+      referred_to VARCHAR(120),
+      reason TEXT,
+      priority VARCHAR(20) DEFAULT 'routine',
+      status VARCHAR(20) DEFAULT 'pending',
+      notes TEXT,
+      created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE TABLE IF NOT EXISTS village_bulk_uploads (
+      id SERIAL PRIMARY KEY,
+      filename VARCHAR(255),
+      uploaded_by INTEGER,
+      rows_inserted INTEGER DEFAULT 0,
+      rows_skipped INTEGER DEFAULT 0,
+      errors TEXT,
+      created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE TABLE IF NOT EXISTS twilio_receipts (
+      id SERIAL PRIMARY KEY,
+      message_sid VARCHAR(60) UNIQUE,
+      to_phone VARCHAR(20),
+      status VARCHAR(30),
+      error_code VARCHAR(20),
+      error_message TEXT,
+      received_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    );
     `);
 
     // ── PERFORMANCE INDEXES ──────────────────────────────────────────────────
     await pool.query(`
-      CREATE INDEX IF NOT EXISTS idx_symptoms_villageid ON symptoms("villageId");
-      CREATE INDEX IF NOT EXISTS idx_symptoms_userid    ON symptoms("userId");
-      CREATE INDEX IF NOT EXISTS idx_symptoms_createdat ON symptoms("createdAt");
-      CREATE INDEX IF NOT EXISTS idx_ambulance_userid   ON ambulance_requests(user_id);
-      CREATE INDEX IF NOT EXISTS idx_ambulance_status   ON ambulance_requests(status);
-      CREATE INDEX IF NOT EXISTS idx_pregnancy_village  ON pregnancy_data("villageId");
-      CREATE INDEX IF NOT EXISTS idx_malnut_village     ON malnutrition_data("villageId");
+      CREATE INDEX IF NOT EXISTS idx_symptoms_villageid    ON symptoms("villageId");
+      CREATE INDEX IF NOT EXISTS idx_symptoms_userid       ON symptoms("userId");
+      CREATE INDEX IF NOT EXISTS idx_symptoms_createdat    ON symptoms("createdAt");
+      CREATE INDEX IF NOT EXISTS idx_ambulance_userid      ON ambulance_requests(user_id);
+      CREATE INDEX IF NOT EXISTS idx_ambulance_status      ON ambulance_requests(status);
+      CREATE INDEX IF NOT EXISTS idx_pregnancy_village     ON pregnancy_data("villageId");
+      CREATE INDEX IF NOT EXISTS idx_malnut_village        ON malnutrition_data("villageId");
+      CREATE INDEX IF NOT EXISTS idx_referrals_village     ON referrals("villageId");
+      CREATE INDEX IF NOT EXISTS idx_referrals_status      ON referrals(status);
+      CREATE INDEX IF NOT EXISTS idx_bulkuploads_by        ON village_bulk_uploads(uploaded_by);
+      CREATE INDEX IF NOT EXISTS idx_twilio_sid            ON twilio_receipts(message_sid);
     `);
 
     // ── POSTGRESQL COLUMN AUTO-MIGRATION ───────────────────────────────────
@@ -159,6 +198,9 @@ export async function initSchema(db, pool, usingSQLite) {
     await addColIfMissing('users', 'aadhaar_hash', 'VARCHAR(64) DEFAULT NULL');
     await addColIfMissing('village_health', '"outbreakAlert"', 'TEXT DEFAULT NULL');
     await addColIfMissing('village_health', '"lastUpdated"', 'TIMESTAMPTZ DEFAULT NULL');
+    await addColIfMissing('village_health', '"districtId"', 'VARCHAR(80) DEFAULT NULL');
+    await addColIfMissing('village_health', 'lat', 'DOUBLE PRECISION DEFAULT NULL');
+    await addColIfMissing('village_health', 'lng', 'DOUBLE PRECISION DEFAULT NULL');
     await addColIfMissing('ambulance_requests', 'type', "VARCHAR(30) DEFAULT 'emergency'");
   } else {
     // ── SQLite Schema Auto-Creation & Demo Data Seeding ──────────────────────
@@ -208,7 +250,10 @@ export async function initSchema(db, pool, usingSQLite) {
         malnutrition_cases INTEGER,
         asha_contact TEXT,
         "outbreakAlert" TEXT DEFAULT NULL,
-        "lastUpdated" DATETIME DEFAULT NULL
+        "lastUpdated" DATETIME DEFAULT NULL,
+        "districtId" TEXT DEFAULT NULL,
+        lat REAL DEFAULT NULL,
+        lng REAL DEFAULT NULL
       );
       CREATE TABLE IF NOT EXISTS pregnancy_data (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -281,9 +326,43 @@ export async function initSchema(db, pool, usingSQLite) {
         steps TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
-      CREATE INDEX IF NOT EXISTS idx_sqlite_symptoms_villageid ON symptoms("villageId");
-      CREATE INDEX IF NOT EXISTS idx_sqlite_symptoms_createdat ON symptoms("createdAt");
-      CREATE INDEX IF NOT EXISTS idx_sqlite_ambulance_status   ON ambulance_requests(status);
+      CREATE TABLE IF NOT EXISTS referrals (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        patient_name TEXT NOT NULL,
+        patient_phone TEXT,
+        "villageId" TEXT,
+        referred_by INTEGER,
+        referred_to TEXT,
+        reason TEXT,
+        priority TEXT DEFAULT 'routine',
+        status TEXT DEFAULT 'pending',
+        notes TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE TABLE IF NOT EXISTS village_bulk_uploads (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        filename TEXT,
+        uploaded_by INTEGER,
+        rows_inserted INTEGER DEFAULT 0,
+        rows_skipped INTEGER DEFAULT 0,
+        errors TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE TABLE IF NOT EXISTS twilio_receipts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        message_sid TEXT UNIQUE,
+        to_phone TEXT,
+        status TEXT,
+        error_code TEXT,
+        error_message TEXT,
+        received_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE INDEX IF NOT EXISTS idx_sqlite_symptoms_villageid  ON symptoms("villageId");
+      CREATE INDEX IF NOT EXISTS idx_sqlite_symptoms_createdat  ON symptoms("createdAt");
+      CREATE INDEX IF NOT EXISTS idx_sqlite_ambulance_status    ON ambulance_requests(status);
+      CREATE INDEX IF NOT EXISTS idx_sqlite_referrals_village   ON referrals("villageId");
+      CREATE INDEX IF NOT EXISTS idx_sqlite_referrals_status    ON referrals(status);
     `);
   }
 }

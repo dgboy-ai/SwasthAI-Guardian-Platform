@@ -1,5 +1,6 @@
 import express from 'express';
 import axios from 'axios';
+import { z } from 'zod';
 import { auth, checkRole } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -160,6 +161,91 @@ router.put('/ambulances/:id/status', auth, checkRole(['ngo', 'admin']), async (r
     res.send({ success: true, status });
   } catch (err) {
     res.status(500).send({ error: 'Failed to update status.' });
+  }
+});
+
+// ── ASHA REFERRAL ─────────────────────────────────────────────────────────────
+const referralSchema = z.object({
+  patient_name:  z.string().min(1).max(120),
+  patient_phone: z.string().regex(/^\+?[0-9]{7,15}$/).optional(),
+  referred_to:   z.string().min(1).max(120),           // e.g. 'PHC Ambegaon', 'Civil Hospital Pune'
+  reason:        z.string().min(3).max(500),
+  priority:      z.enum(['routine', 'urgent', 'emergency']).default('routine'),
+  notes:         z.string().max(1000).optional(),
+});
+
+// POST /api/ngo/referral — ASHA submits a patient referral
+router.post('/referral', auth, checkRole(['ngo', 'admin']), async (req, res) => {
+  const db = req.app.locals.db;
+  const parsed = referralSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({
+      success: false,
+      error: { code: 'VALIDATION_ERROR', message: 'Invalid referral data', details: parsed.error.errors }
+    });
+  }
+
+  const { patient_name, patient_phone, referred_to, reason, priority, notes } = parsed.data;
+  const villageId   = req.user.villageId || 'unassigned';
+  const referred_by = req.user.id;
+
+  try {
+    const result = await db.run(
+      `INSERT INTO referrals (patient_name, patient_phone, "villageId", referred_by, referred_to, reason, priority, notes, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
+      [patient_name, patient_phone || null, villageId, referred_by, referred_to, reason, priority, notes || null]
+    );
+
+    res.status(201).json({
+      success: true,
+      referralId: result.lastID,
+      message: `Referral for ${patient_name} to ${referred_to} recorded.`,
+      data: { patient_name, referred_to, priority, villageId, status: 'pending' }
+    });
+  } catch (err) {
+    console.error('[REFERRAL] Insert error:', err.message);
+    res.status(500).json({ success: false, error: { code: 'REFERRAL_FAILED', message: 'Failed to create referral' } });
+  }
+});
+
+// GET /api/ngo/referrals — list referrals with keyset pagination
+router.get('/referrals', auth, checkRole(['ngo', 'admin']), async (req, res) => {
+  const db     = req.app.locals.db;
+  const limit  = Math.min(parseInt(req.query.limit) || 50, 100);
+  const lastId = parseInt(req.query.lastId) || null;
+  const status = req.query.status;  // optional filter
+
+  try {
+    let rows;
+    const statusFilter = status ? ` AND status = '${status.replace(/'/g, "''")}'` : '';
+    if (lastId) {
+      rows = await db.all(
+        `SELECT * FROM referrals WHERE id < ?${statusFilter} ORDER BY id DESC LIMIT ?`, [lastId, limit]
+      );
+    } else {
+      rows = await db.all(
+        `SELECT * FROM referrals WHERE 1=1${statusFilter} ORDER BY id DESC LIMIT ?`, [limit]
+      );
+    }
+    res.json({ referrals: rows, count: rows.length, nextLastId: rows.length === limit ? rows[rows.length - 1]?.id : null });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'REFERRALS_FETCH_FAILED', message: err.message } });
+  }
+});
+
+// PATCH /api/ngo/referrals/:id/status — update referral status
+const VALID_REFERRAL_STATUSES = ['pending', 'accepted', 'in_transit', 'completed', 'cancelled'];
+router.patch('/referrals/:id/status', auth, checkRole(['ngo', 'admin']), async (req, res) => {
+  const db     = req.app.locals.db;
+  const { status } = req.body;
+  if (!VALID_REFERRAL_STATUSES.includes(status)) {
+    return res.status(400).json({ success: false, error: { code: 'INVALID_STATUS', message: `Status must be one of: ${VALID_REFERRAL_STATUSES.join(', ')}` } });
+  }
+  try {
+    await db.run(`UPDATE referrals SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, [status, req.params.id]);
+    res.json({ success: true, status });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'REFERRAL_UPDATE_FAILED', message: err.message } });
   }
 });
 

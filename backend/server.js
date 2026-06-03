@@ -22,6 +22,7 @@ import authRouter from './routes/auth.js';
 import villagerRouter from './routes/villager.js';
 import ngoRouter from './routes/ngo.js';
 import adminRouter, { broadcastToAdmins } from './routes/admin.js';
+import webhookRouter from './routes/webhooks.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -59,6 +60,9 @@ if (isProduction && cluster.isPrimary) {
   const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://127.0.0.1:8000';
   if (process.env.NODE_ENV === 'production' && AI_SERVICE_URL === 'http://127.0.0.1:8000') {
     console.warn('⚠️ WARNING: AI_SERVICE_URL is running on local fallback in production environment!');
+  }
+  if (process.env.NODE_ENV === 'production' && !process.env.TWILIO_AUTH_TOKEN) {
+    console.warn('⚠️ WARNING: TWILIO_AUTH_TOKEN is not set — Twilio webhook signature validation will be skipped!');
   }
 
   // Security headers — Helmet.js (OWASP Top 10 compliant)
@@ -255,6 +259,7 @@ if (isProduction && cluster.isPrimary) {
   app.use('/api/auth', authRouter);
   app.use('/api/ngo', ngoRouter);
   app.use('/api/admin', adminRouter);
+  app.use('/api/webhooks', webhookRouter);
   app.use('/api', villagerRouter);
 
   // ── REQUEST WORKFLOW — DEPRECATED ROUTES ──────────────────────────────────
