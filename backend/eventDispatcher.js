@@ -13,36 +13,38 @@ export function initializeEventDispatcher(dbInstance) {
 eventEmitter.on("symptom_submitted", async (eventData) => {
   const { userId, villageId, symptoms, prediction, timestamp } = eventData;
   console.log(`[EVENT] symptom_submitted: User ${userId} in ${villageId}`);
-  
+  const now = timestamp || new Date().toISOString();
   await dynamoHelper.put("outbreak_telemetry", {
-    eventId: `EVT-SYM-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-    eventType: "symptom_submitted",
-    userId,
     villageId,
+    detectedAt:  now,             // Fix: required range key
+    eventId:     `EVT-SYM-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+    eventType:   "symptom_submitted",
+    userId,
     symptoms,
     prediction,
-    timestamp: timestamp || new Date().toISOString()
+    timestamp:   now,
   });
 
-  await dynamoHelper.updateNodeState(villageId, "online", new Date().toISOString(), 0);
+  await dynamoHelper.updateNodeState(villageId, "online", now, 0);
 });
 
 // 2. Listen for outbreak detections
 eventEmitter.on("outbreak_detected", async (eventData) => {
   const { villageId, disease, count, action, timestamp } = eventData;
   console.log(`[EVENT] outbreak_detected: Cluster in ${villageId} (${disease})`);
-
+  const now = timestamp || new Date().toISOString();
   await dynamoHelper.put("outbreak_telemetry", {
-    eventId: `EVT-OUT-${Date.now()}`,
-    eventType: "outbreak_detected",
     villageId,
-    disease,
-    casesCount: count,
+    detectedAt:  now,             // Fix: required range key
+    eventId:     `EVT-OUT-${Date.now()}`,
+    eventType:   "outbreak_detected",
+    disease:     disease || 'Unknown',
+    casesCount:  count,
     action,
-    timestamp: timestamp || new Date().toISOString()
+    timestamp:   now,
   });
 
-  await dynamoHelper.updateNodeState(villageId, "outbreak", new Date().toISOString(), 0);
+  await dynamoHelper.updateNodeState(villageId, "outbreak", now, 0);
 
   if (pgDb) {
     try {
@@ -50,7 +52,7 @@ eventEmitter.on("outbreak_detected", async (eventData) => {
         `UPDATE village_health
          SET "outbreakAlert" = $1, "lastUpdated" = $2
          WHERE "villageId" = $3`,
-        [`⚠️ Outbreak Alert: ${disease}. Action: ${action}`, new Date().toISOString(), villageId]
+        [`⚠️ Outbreak Alert: ${disease}. Action: ${action}`, now, villageId]
       );
     } catch (err) {
       console.error("Failed to update village_health on outbreak_detected event:", err.message);
@@ -62,17 +64,18 @@ eventEmitter.on("outbreak_detected", async (eventData) => {
 eventEmitter.on("sync_restored", async (eventData) => {
   const { villageId, recordCount, durationMs, timestamp } = eventData;
   console.log(`[EVENT] sync_restored: ${recordCount} records from ${villageId} synced in ${durationMs}ms`);
-
+  const now = timestamp || new Date().toISOString();
   await dynamoHelper.put("outbreak_telemetry", {
-    eventId: `EVT-SYNC-${Date.now()}`,
-    eventType: "sync_restored",
     villageId,
+    detectedAt:   now,            // Fix: required range key
+    eventId:      `EVT-SYNC-${Date.now()}`,
+    eventType:    "sync_restored",
     recordCount,
     durationMs,
-    timestamp: timestamp || new Date().toISOString()
+    timestamp:    now,
   });
 
-  await dynamoHelper.updateNodeState(villageId, "online", new Date().toISOString(), 0);
+  await dynamoHelper.updateNodeState(villageId, "online", now, 0);
 });
 
 // 4. Listen for emergency dispatches

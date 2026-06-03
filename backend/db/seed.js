@@ -148,16 +148,20 @@ export async function seedData(db, pool, usingSQLite, bcrypt) {
     const villageCheck = await db.get("SELECT id FROM village_health LIMIT 1");
     if (!villageCheck) {
       await db.run(
-        `INSERT OR IGNORE INTO village_health ("villageId", name, population, pregnant_women, children_under_5, malnutrition_cases, asha_contact, "lastUpdated")
-         VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
-        ['v101', 'Rampur', 1200, 14, 89, 7, '9876543211']
+        `INSERT OR IGNORE INTO village_health
+         ("villageId", name, population, pregnant_women, children_under_5,
+          malnutrition_cases, asha_contact, "districtId", lat, lng, "lastUpdated")
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
+        ['v101', 'Rampur', 1200, 14, 89, 7, '9876543211', 'varanasi_district', 25.3176, 82.9739]
       );
       await db.run(
-        `INSERT OR IGNORE INTO village_health ("villageId", name, population, pregnant_women, children_under_5, malnutrition_cases, asha_contact, "lastUpdated")
-         VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
-        ['v102', 'Mohanlal Ganj', 850, 9, 63, 4, '9876543213']
+        `INSERT OR IGNORE INTO village_health
+         ("villageId", name, population, pregnant_women, children_under_5,
+          malnutrition_cases, asha_contact, "districtId", lat, lng, "lastUpdated")
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
+        ['v102', 'Mohanlal Ganj', 850, 9, 63, 4, '9876543213', 'lucknow_district', 26.7606, 80.8893]
       );
-      console.log('   🏘️ Default SQLite villages seeded.');
+      console.log('   🏘️ Default SQLite villages seeded (with districtId + coords).');
     }
 
     // Seed default government schemes in SQLite if missing
@@ -196,8 +200,20 @@ export async function seedDemoData(db, usingSQLite, bcrypt) {
   await db.run('INSERT INTO users (phone, email, username, name, password, role, "villageId") VALUES (?, ?, ?, ?, ?, ?, ?)', ['9876543212', 'admin@swasthai.in', 'demo_admin', 'CMO Varanasi', hash, 'admin', null]);
 
   const nowSql = usingSQLite ? "datetime('now')" : "NOW()";
-  await db.run(`INSERT INTO village_health ("villageId", name, population, pregnant_women, children_under_5, malnutrition_cases, asha_contact, "lastUpdated") VALUES (?, ?, ?, ?, ?, ?, ?, ${nowSql})`, ['v101', 'Rampur', 1200, 14, 89, 7, '9876543211']);
-  await db.run(`INSERT INTO village_health ("villageId", name, population, pregnant_women, children_under_5, malnutrition_cases, asha_contact, "lastUpdated") VALUES (?, ?, ?, ?, ?, ?, ?, ${nowSql})`, ['v102', 'Mohanlal Ganj', 850, 9, 63, 4, '9876543213']);
+  await db.run(
+    `INSERT INTO village_health
+     ("villageId", name, population, pregnant_women, children_under_5,
+      malnutrition_cases, asha_contact, "districtId", lat, lng, "lastUpdated")
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ${nowSql})`,
+    ['v101', 'Rampur', 1200, 14, 89, 7, '9876543211', 'varanasi_district', 25.3176, 82.9739]
+  );
+  await db.run(
+    `INSERT INTO village_health
+     ("villageId", name, population, pregnant_women, children_under_5,
+      malnutrition_cases, asha_contact, "districtId", lat, lng, "lastUpdated")
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ${nowSql})`,
+    ['v102', 'Mohanlal Ganj', 850, 9, 63, 4, '9876543213', 'lucknow_district', 26.7606, 80.8893]
+  );
 
   await db.run('INSERT INTO pregnancy_data (name, age, trimester, "riskLevel", "dueDate", "villageId") VALUES (?, ?, ?, ?, ?, ?)', ['Sunita Devi', 24, 3, 'High', '2026-08-15', 'v101']);
   await db.run('INSERT INTO pregnancy_data (name, age, trimester, "riskLevel", "dueDate", "villageId") VALUES (?, ?, ?, ?, ?, ?)', ['Meena Kumari', 21, 2, 'Low', '2026-11-05', 'v101']);
