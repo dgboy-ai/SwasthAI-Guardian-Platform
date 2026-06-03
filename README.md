@@ -47,6 +47,7 @@
 - ✅ **Passwordless QR-Code Login** — Enabled quick aadhaar/village-card QR scanning for passwordless villager login in low-connectivity zones.
 - ✅ **Offline Sync-Health Logger** — Adds `POST /api/villager/sync-health` to track and write offline sync delays and telemetry to DynamoDB.
 
+
 ---
 
 ## 🗄️ AWS Database Architecture — Deliberate Design Decisions
@@ -106,6 +107,7 @@ Every 30 minutes →
   → Admin sees real-time Outbreak Radar update with AI reasoning trace
 ```
 
+
 ---
 
 ## 📊 Real-World Impact (Verified Statistics)
@@ -128,7 +130,7 @@ Every 30 minutes →
 GET https://swasthai-guardian.onrender.com/api/health/detailed
 
 # Live application
-https://swasthai-guardian.onrender.com
+https://your-app.vercel.app
 
 # Demo credentials: OTP mode → any phone → OTP: 1234
 # Roles: Villager (default) | NGO (select on login) | Admin (select on login)
@@ -538,28 +540,28 @@ User query (any language)
 Multilingual keyword matching (Hindi/Hinglish/Marathi/Tamil/Telugu/Bengali/English)
        ↓
 NumPy cosine similarity against 243 knowledge chunks
-    Calibrated threshold: 0.45 (was 0.28 — precision now 1.00)
-    Chunks organized with 2-sentence sliding-window overlap for context continuity
+   Calibrated threshold: 0.45 (was 0.28 — precision now 1.00)
+   Chunks organized with 2-sentence sliding-window overlap for context continuity
        ↓
 Top-3 chunks selected from 15+ clinical categories:
-    • WHO Reproductive Health Guidelines 2022
-    • MoHFW ASHA Training Module 6 & 7
-    • FOGSI Clinical Protocols 2023
-    • ICMR Anaemia & PCOS Guidelines
-    • UNICEF Maternal Nutrition Framework
-    • NHM India Menstrual Hygiene Scheme
-    • MoHFW Emergency Triage Guidelines
-    • NVBDCP / NTEP / NVBDCP disease protocols
-    • Government scheme eligibility (JSY, PMMVY, Ayushman Bharat)
-    • Emergency contacts (108, 102, ASHA hotlines)
+   • WHO Reproductive Health Guidelines 2022
+   • MoHFW ASHA Training Module 6 & 7
+   • FOGSI Clinical Protocols 2023
+   • ICMR Anaemia & PCOS Guidelines
+   • UNICEF Maternal Nutrition Framework
+   • NHM India Menstrual Hygiene Scheme
+   • MoHFW Emergency Triage Guidelines
+   • NVBDCP / NTEP / NVBDCP disease protocols
+   • Government scheme eligibility (JSY, PMMVY, Ayushman Bharat)
+   • Emergency contacts (108, 102, ASHA hotlines)
        ↓
 Conversation history injected (last 6 turns)
-    Priority: frontend localStorage → server session deque(maxlen=6)
+   Priority: frontend localStorage → server session deque(maxlen=6)
        ↓
 Groq Llama-3.3-70b-versatile
-    ├── Success → Structured answer with citation + urgency badge + history stored
-    └── Failure (Jitter) → Exponential retry (3 attempts: 1s, 2s, 4s backoff)
-    └── Full Outage → Top-1 KB chunk served directly as fallback (never silent failure)
+   ├── Success → Structured answer with citation + urgency badge + history stored
+   └── Failure (Jitter) → Exponential retry (3 attempts: 1s, 2s, 4s backoff)
+   └── Full Outage → Top-1 KB chunk served directly as fallback (never silent failure)
        ↓
 Response includes: answer · sources[] · urgency (P1/P2/P3/P4)
 Voice output via SpeechSynthesisUtterance (🔊 button per message)
@@ -743,9 +745,45 @@ SwasthAI-Guardian-Platform/
 │   ├── main.py                   # Hybrid Diagnostic Hub (70% Neural → RF → Heuristic Fallback)
 │   ├── model_def.py              # SymptomNet PyTorch Architecture
 │   ├── deep_disease_model.pkl    # Trained Neural Engine (64.6% accuracy)
-│   ├── disease_model.pkl         # Trained Random Forest Fallback (51.8% accuracy)
+│   ├── disease_model.pkl         # Random Forest Fallback (51.8% accuracy)
 │   ├── rag_service.py            # Sakhi RAG: 243 chunks, threshold=0.45, conversation memory
 │   ├── health_kb_data.py         # 243-chunk knowledge base (15+ categories, 2-sentence overlap)
 │   ├── rag_config.py             # Auto-generated: RAG_CALIBRATED_THRESHOLD = 0.45
-│   └── calibrate_rag.py          # 50-query precision/recall grid search for threshold tuning
+│   ├── calibrate_rag.py          # 50-query precision/recall grid search for threshold tuning
+│   ├── outbreak_agent.py         # Autonomous 30-min epidemic scanner
+│   ├── skin_analyzer.py          # On-device PIL pixel analysis
+│   ├── train_deep_model.py       # Neural network training script
+│   ├── train_disease_model.py    # RF model training script (800+ samples)
+│   ├── test_guardrail.py         # Safety validation suite
+│   ├── test_rural.py             # Rural stress testing script
+│   └── requirements.txt
+│
+├── infra/
+│   └── dynamodb-tables.md        # DynamoDB table schema reference
+│
+└── README.md
 ```
+
+---
+
+## 📄 License
+
+This project is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0) - see the [LICENSE](LICENSE) file for details.
+
+## 📜 Compliance & Standards
+
+| Standard | Implementation |
+|---|---|
+| **DISHA 2023** | Digital Information Security in Healthcare Act — consent modal |
+| **IT Act 2008** | Sensitive Personal Data Rules — JWT + role-based access |
+| **WHO Guidelines** | Maternal, reproductive, malnutrition — cited in 243 RAG chunks |
+| **MoHFW Protocols** | ASHA training modules — integrated into Sakhi knowledge base |
+| **WCAG 2.5.5** | 44×44px minimum tap targets for accessibility |
+| **NHM India** | National Health Mission protocols for menstrual hygiene and child nutrition |
+| **FOGSI** | Reproductive health clinical protocols for PCOS, AUB, dysmenorrhoea |
+| **NVBDCP / NTEP** | Vector-borne + TB disease management protocols in RAG knowledge base |
+
+---
+
+> *SwasthAI Guardian — Built for Bharat's villages, not just its cities.*
+> *"We didn't build AI for doctors. We built it for the 600,000 villages that don't have one."*
