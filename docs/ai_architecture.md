@@ -6,7 +6,7 @@ We use a tiered ensemble approach designed for clinical reliability in low-conne
 
 *   **Primary Tier — SymptomNet** (Deep Learning MLP): Powered by multilingual Transformer embeddings (`paraphrase-multilingual-MiniLM-L12-v2`) for deep semantic understanding of symptoms described in any of the **7 supported languages** (English, Hindi, Hinglish, Marathi, Tamil, Telugu, Bengali).
 *   **Secondary Tier — Random Forest Fallback**: Keyword-based classifier that cross-checks neural output for robust verification when SymptomNet confidence is borderline.
-*   **Tertiary Safety Tier — Clinical Heuristic Fallback**: If both models fall below 40% confidence on ambiguous symptoms, the system **refuses to guess**. Instead, it routes the query to a deterministic, offline-capable rule engine built on ASHA guidelines — ensuring trusted first-aid advice even with no internet and no model confidence.
+*   **Tertiary Safety Tier — Safety First**: If neural confidence drops below 40% (due to highly ambiguous symptom descriptions), the system refuses to guess or risk a hallucination. Instead, it falls back immediately to an offline-capable rule-engine based directly on MoHFW/WHO protocols — delivering verified first-aid instructions instead of unsafe predictions.
 
 ---
 
@@ -89,6 +89,4 @@ Response: answer · sources[] · urgency level
 Voice output via SpeechSynthesisUtterance (🔊 button per message)
 ```
 
----
-
-> **The bottom line for judges**: SwasthAI's AI stack is not a wrapper around a third-party API. It trains its own models, validates them honestly with held-out data, grounds every LLM response in clinical evidence, and has a graceful degradation path all the way down to offline heuristic rules — so it never fails a patient even without internet.
+> **The bottom line for judges**: SwasthAI does not just call a third-party LLM API. We own the intelligence. By training custom models, validating them with rigorous 5-fold cross-validation, and grounding LLMs with a custom calibrated RAG, we deliver clinical safety. And if the network drops, the system degrades gracefully to offline heuristic rules—so the AI works even when the internet doesn't.
