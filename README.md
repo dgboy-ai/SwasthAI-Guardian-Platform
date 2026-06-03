@@ -25,6 +25,7 @@
 > *   **🔬 AI Architecture & Val**: [docs/ai_architecture.md](docs/ai_architecture.md) — PyTorch SymptomNet 5-Fold Stratified CV logs, metrics, and Sakhi RAG parameters.
 > *   **⚙️ Setup & Dev Manual**: [docs/setup_guide.md](docs/setup_guide.md) — Docker Compose environments, env setups, and local dev guides.
 > *   **📁 Complete Repository Map**: Check the [Repository Directory Map](#-repository-structure) below for file references.
+> *   **📈 Build Changelog**: [CHANGELOG.md](CHANGELOG.md) — Chronological log of features, optimizations, and validations built during the hackathon.
 
 ---
 
