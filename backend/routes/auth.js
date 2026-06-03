@@ -332,4 +332,37 @@ router.post('/aadhaar-verify', auth, async (req, res) => {
   }
 });
 
+// POST /auth/qr-login — Passwordless Villager Card QR code login
+router.post('/qr-login', authLimiter, async (req, res) => {
+  const db = req.app.locals.db;
+  const { qrPayload } = req.body;
+
+  if (!qrPayload) {
+    return res.status(400).json({ error: 'qrPayload is required.' });
+  }
+
+  try {
+    const user = await db.get(
+      'SELECT * FROM users WHERE (phone = ? OR username = ? OR aadhaar_hash = ?) AND role = ?',
+      [qrPayload, qrPayload, qrPayload, 'villager']
+    );
+
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid or unregistered Village Card QR.' });
+    }
+
+    const token = jwt.sign({ id: user.id, role: user.role, villageId: user.villageId }, process.env.JWT_SECRET, { expiresIn: '15m' });
+    const refreshToken = await generateRefreshToken(db, user.id);
+
+    res.send({ 
+      token, 
+      refreshToken,
+      user: { id: user.id, name: user.name, username: user.username, role: user.role, villageId: user.villageId } 
+    });
+  } catch (err) {
+    console.error('QR Login Error:', err.message);
+    res.status(500).json({ error: 'Internal server error during QR authentication.' });
+  }
+});
+
 export default router;

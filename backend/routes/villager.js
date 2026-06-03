@@ -612,4 +612,68 @@ CRITICAL CLINICAL & TRANSLATION SAFEGUARDS:
   }
 });
 
+// POST /villager/sync-health — Telemetry recorder on client IndexedDB queue replay
+router.post('/villager/sync-health', auth, async (req, res) => {
+  const { recordCount, durationMs } = req.body;
+  try {
+    const deviceId = req.headers['x-device-id'] || 'unknown-device';
+    const logItem = {
+      deviceId,
+      queuedAt: new Date().toISOString(),
+      status: 'synced',
+      recordCount: Number(recordCount || 0),
+      durationMs: Number(durationMs || 0),
+      userId: req.user.id
+    };
+
+    await dynamoHelper.put('sync_queues', logItem);
+    console.log(`[SYNC REPLAY] Successful drainage of ${recordCount} items from device ${deviceId} in ${durationMs}ms`);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('[SYNC REPLAY ERROR]', err.message);
+    res.status(500).json({ error: 'Failed to record sync telemetry.' });
+  }
+});
+
+// POST /villager/phq2 — Patient Health Questionnaire-2 mental health triage screener
+router.post('/villager/phq2', auth, logAudit('evaluate_mental_health', 'symptoms'), async (req, res) => {
+  const db = req.app.locals.db;
+  const { interest_score, mood_score } = req.body;
+
+  if (interest_score === undefined || mood_score === undefined) {
+    return res.status(400).json({ error: 'interest_score and mood_score are required (range: 0-3).' });
+  }
+
+  const score = Number(interest_score) + Number(mood_score);
+  const positiveScreen = score >= 3;
+  const advice = positiveScreen 
+    ? 'Your responses suggest you might be experiencing depression. We advise consulting a doctor or mental health professional. An alert has been sent to your local ASHA worker.'
+    : 'Your responses suggest a low risk. Continue prioritizing sleep, exercise, and social connections.';
+
+  try {
+    const villageId = req.user.villageId || 'unassigned';
+    await db.run(
+      `INSERT INTO symptoms ("userId", "villageId", symptoms, prediction, disease, advice, confidence, model_used)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [req.user.id, villageId, `PHQ-2 score: ${score} (Interest: ${interest_score}, Mood: ${mood_score})`, advice, 'Depression Screen (PHQ-2)', advice, 1.0, 'PHQ-2 Screener']
+    );
+
+    if (positiveScreen) {
+      const userName = req.user.name || 'Anonymous Villager';
+      const userPhone = req.user.phone || null;
+      
+      await db.run(
+        `INSERT INTO referrals (patient_name, patient_phone, "villageId", referred_by, referred_to, reason, priority, notes, status)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
+        [userName, userPhone, villageId, req.user.id, 'Mental Health Center / PHC', `Positive PHQ-2 Screen (Score: ${score}/6)`, 'urgent', 'Auto-generated via PHQ-2 Screening']
+      );
+    }
+
+    res.json({ success: true, score, positiveScreen, advice });
+  } catch (err) {
+    console.error('[PHQ2 ERROR]', err.message);
+    res.status(500).json({ error: 'Failed to process PHQ-2 screening.' });
+  }
+});
+
 export default router;

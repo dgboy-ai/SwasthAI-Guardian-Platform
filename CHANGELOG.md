@@ -12,6 +12,10 @@ All notable changes and feature developments completed during the hackathon wind
 - **Security Audit Logging**: Created asynchronous Express middleware (`backend/middleware/audit.js`) to capture access and updates on sensitive database endpoints.
 - **District Config Settings**: Created a per-district threshold override database (`district_config`) allowing CMOs to toggles auto-ambulances and override contact numbers.
 - **SQLite Database Auto-Migrations**: Implemented SQLite-specific dynamic column check and alter migrations in `backend/db/schema.js` to ensure older local development sqlite databases auto-update cleanly on reboot.
+- **DynamoDB GSI Query Route**: Built `GET /api/admin/outbreaks/disease-search` executing QueryCommand against `disease-index` GSI.
+- **Offline Sync-Health Logger**: Added `POST /api/villager/sync-health` logging sync telemetry to DynamoDB.
+- **Mental Health PHQ-2 Screener**: Added `POST /api/villager/phq2` triage screener that auto-creates urgent ASHA referrals on depression risk.
+- **QR-Code Scan Login**: Added passwordless `POST /api/auth/qr-login` allowing auth by scanning Aadhaar or Village Card QR payloads.
 
 ---
 

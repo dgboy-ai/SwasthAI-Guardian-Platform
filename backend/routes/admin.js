@@ -805,4 +805,25 @@ router.get('/audit-logs', auth, checkRole(['admin']), async (req, res) => {
   }
 });
 
+// GET /outbreaks/disease-search — Query outbreaks by disease GSI (disease-index)
+router.get('/outbreaks/disease-search', auth, checkRole(['admin']), async (req, res) => {
+  const { disease, days = 7 } = req.query;
+  if (!disease) {
+    return sendError(res, 400, 'MISSING_DISEASE', 'disease query parameter is required.');
+  }
+
+  const cutoff = new Date(Date.now() - parseInt(days) * 24 * 60 * 60 * 1000).toISOString();
+  try {
+    const outbreaks = await dynamoHelper.query(
+      'outbreak_telemetry',
+      'disease = :disease AND detectedAt >= :cutoff',
+      { ':disease': disease, ':cutoff': cutoff },
+      'disease-index'
+    );
+    res.json({ success: true, count: outbreaks.length, outbreaks });
+  } catch (err) {
+    sendError(res, 500, 'GSI_QUERY_FAILED', err.message);
+  }
+});
+
 export default router;
