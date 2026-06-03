@@ -150,7 +150,7 @@ https://your-app.vercel.app
 
 | Architectural Core | Legacy Concept | Production Architecture Stack |
 | :--- | :--- | :--- |
-| **Hybrid Diagnostic Engine (DL + ML)** | Basic Random Forest (RF) keyword engine (~88% accuracy). | Integrated **SymptomNet** (Deep Learning model powered by multilingual Transformer embeddings: `paraphrase-multilingual-MiniLM-L12-v2`) with a **Random Forest fallback** for robust verification. Accuracy is now **64.6%** (exceptionally high given the 101-class complexity and 0.99% baseline), supporting semantic understanding of Hindi/Marathi/Tamil/Telugu/Bengali. |
+| **Hybrid Diagnostic Engine (DL + ML)** | Basic Random Forest (RF) keyword engine (~88% accuracy). | Integrated **SymptomNet** (Deep Learning model powered by multilingual Transformer embeddings: `paraphrase-multilingual-MiniLM-L12-v2`) with a **Random Forest fallback** for robust verification. Test accuracy is now **64.6%** (strong given the 101-class complexity and ~1% random baseline), supporting semantic understanding of Hindi/Marathi/Tamil/Telugu/Bengali. |
 | **Sakhi RAG (Retrieval-Augmented Generation)** | Generic LLM chatbot (prone to hallucinations). 35 inline knowledge chunks, no memory. | Upgraded to a **Grounded RAG system** with **243 knowledge chunks** (2-sentence sliding-window overlap), **calibrated threshold 0.45** (F1=1.00), **conversation memory** (dual-track: frontend history + server session cache), and model persistence to `.model_cache/`. |
 | **Hardened Offline-First Sync** | Basic local storage (required active connection). | **Offline-First Capabilities Enabled**:<br><br>• **Offline Login**: Authenticate locally using pre-seeded credential hashes in zero-signal zones. Uses **IndexedDB + Service Worker** for persistent caching.<br><br>• **Offline Maternal & Child Support**: NGO/ASHA workers can register maternal pregnancy vitals and child nutrition assessments in zero-signal zones. Computes risk and growth status instantly client-side using local clinical heuristic engines (WHO blood pressure criteria / BMI Z-score indices) and caches records inside local queues with visual "Sync Pending" indicators. Silently uploads to the server database as soon as the browser is back online. |
 | **Multilingual Voice I/O** | English only, text-only interaction. | Full speech-to-text and text-to-speech support for 7 Indian languages, removing literacy barriers. |
@@ -367,7 +367,8 @@ We utilize a tiered ensemble approach for clinical reliability in rural settings
 | **Fallback Engine** | Random Forest + Gradient Boosting Ensemble |
 | **Dataset Size** | 52,900 high-quality samples (7 languages) |
 | **Inference Latency** | < 2.5s on standard CPU |
-| **Accuracy** | **64.6%** (SymptomNet) \| **51.8%** (Fallback) |
+| **Evaluation Method** | 5-Fold Stratified CV + 15% independent hold-out |
+| **Hold-out Accuracy** | **64.6%** (SymptomNet) \| **51.8%** (RF Fallback) |
 
 #### 📋 Supported Disease Classes (101)
 
@@ -384,11 +385,22 @@ We utilize a tiered ensemble approach for clinical reliability in rural settings
 
 #### 🧪 Model Evaluation Methodology & Validation
 
-SymptomNet and our ensemble fallbacks are validated under a strict clinical evaluation framework:
-- **Evaluation Split**: The dataset of 52,900 samples was split into an **85% training set** and a **15% independent validation set** (stratified across all 101 disease classes to prevent class imbalance skew).
-- **Cross-Validation**: We applied **5-Fold Stratified Cross-Validation** to guarantee high generalizeability across multi-lingual inputs:
-  - **SymptomNet Neural Engine**: Achieved a cross-validated **accuracy of 64.6%**, demonstrating high diagnostic robustness for a 101-class layout.
-  - **Random Forest Fallback**: Achieved a cross-validated **accuracy of 50.6%** with a test accuracy of **51.8%**.
+Both models are validated under a rigorous, two-stage clinical evaluation framework:
+
+- **Stage 1 — 5-Fold Stratified Cross-Validation** (the primary statistical measure):
+  - Dataset split across 5 folds with `StratifiedKFold(n_splits=5, shuffle=True, random_state=42)` — every class appears in every fold's validation set.
+  - For **SymptomNet**: multilingual embeddings are pre-computed once; only the MLP trains 5× (fold results logged to `deep_model_accuracy.txt` on every run).
+  - For **Random Forest**: full TF-IDF + classifier pipeline re-fit per fold via `cross_val_score`.
+  - CV scores reported as **mean ± std** across all 5 folds.
+
+- **Stage 2 — Independent Hold-Out Test** (15% stratified split, `random_state=42`):
+  - A completely unseen 15% slice (~7,935 samples) used for final benchmark.
+  - **SymptomNet**: **64.6% hold-out accuracy** (random baseline ~1% across 101 classes).
+  - **Random Forest Fallback**: **51.8% hold-out accuracy**.
+  - Full per-class precision/recall/F1 reports saved to `deep_model_accuracy.txt` and `model_accuracy.txt`.
+
+> **Reproducibility**: Run `python train_deep_model.py` to regenerate CV + hold-out metrics. Use `--no-cv` to skip CV for faster iteration.
+
 - **Double-Uncertainty Gate**:
   - If the neural prediction confidence score is **< 70%**, the secondary Random Forest Fallback is triggered.
   - If the Random Forest confidence score is **< 40%**, or if any `is_uncertain` indicator is true, the system gracefully bypasses the neural predictors completely and executes the **Clinical Heuristic Fallback** — safely returning zero-hallucination, ASHA-grounded first-aid advice.
@@ -412,7 +424,8 @@ SwasthAI Guardian provides two independent AI systems for health diagnostics:
 To retrain the high-performance **Neural Engine (SymptomNet)**:
 ```bash
 cd ai-service
-python train_deep_model.py     # Generates deep_disease_model.pkl (64.6% Accuracy)
+python train_deep_model.py          # Full 5-fold CV + final model → deep_disease_model.pkl
+python train_deep_model.py --no-cv  # Skip CV for faster iteration (hold-out only)
 ```
 
 To retrain the **Random Forest Fallback**:
