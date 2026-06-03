@@ -67,9 +67,9 @@
 
 ---
 
-## 🚀 Production Infrastructure Upgrades (V1 vs. V2)
+## 🚀 Production Infrastructure Upgrades (Initial Baseline vs. Current Upgrades)
 
-| Architectural Core | Legacy Baseline | Production Architecture Stack |
+| Architectural Core | Pre-Submission Baseline | Production Upgrades |
 | :--- | :--- | :--- |
 | **Hybrid Diagnostic Engine (DL + ML)** | Simple Random Forest on a 50-class, English-only dataset (~88% accuracy on that simpler task). | **SymptomNet** (Transformer-based Deep Learning) + Random Forest fallback — evaluated on **101 disease classes** across 7 languages. Hold-out accuracy: **64.6%** (SymptomNet) \| **51.8%** (RF). For context, random chance across 101 classes = ~1%. |
 | **Sakhi RAG (Retrieval-Augmented)** | Generic LLM chatbot prone to hallucinations. 35 inline knowledge chunks, no memory across turns. | **Grounded RAG system** with **243 clinical knowledge chunks** (2-sentence sliding-window overlap), calibrated retrieval threshold **0.45** (F1=1.00), and full 6-turn conversation memory. |
