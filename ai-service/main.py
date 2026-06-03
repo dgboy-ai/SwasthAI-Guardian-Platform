@@ -416,6 +416,8 @@ class MalnutritionInput(BaseModel):
 
 class ChatInput(BaseModel):
     message: str
+    session_id: str = "default"           # unique user/session identifier
+    history: list[dict] | None = None     # [{role: 'user'|'assistant', content: str}, ...]
 
 def make_prediction_response(disease_name: str, confidence: float, alternatives: list, model_name: str, accuracy_str: str) -> dict:
     meta = {}
@@ -592,23 +594,35 @@ async def predict_skin(file: UploadFile = File(...)):
     result = analyze_skin_image(contents)
     return {**result, "filename": file.filename, "engine": "Pixel-Feature-Extractor (Pillow)"}
 
-# ── ENDPOINT 5: RAG-Powered Sakhi Chat (NEW) ──────────────────────────────────
+# ── ENDPOINT 5: RAG-Powered Sakhi Chat ────────────────────────────────────────
 @app.post("/ai/rag-chat")
 async def rag_sakhi_chat(data: ChatInput):
     """
-    RAG-enhanced health chat. Retrieves verified WHO/ASHA guidelines
-    before calling Groq — prevents hallucination on medical facts.
+    RAG-enhanced health chat with conversation memory.
+
+    Accepts:
+      message     — current user message
+      session_id  — unique user/session ID (used for server-side memory cache)
+      history     — optional list of {role, content} from frontend localStorage
+                    (preferred source; survives server restarts)
+
+    Memory priority: frontend history → in-memory server session cache → stateless.
     """
     groq_key = os.getenv("GROQ_API_KEY")
     if not groq_key:
         raise HTTPException(status_code=503, detail="GROQ_API_KEY not configured.")
     try:
-        result  = rag_chat(data.message, groq_key)
+        result = rag_chat(
+            data.message,
+            groq_key,
+            session_id=data.session_id,
+            frontend_history=data.history,
+        )
         return {
             "reply":   result["answer"],
             "sources": result["sources"],   # e.g. ["WHO ANC Guidelines 2016", ...]
             "urgency": result["urgency"],   # P1 / P2 / P3 / P4
-            "engine":  "RAG-Groq (Llama-3.1)",
+            "engine":  "RAG-Groq (Llama-3.3-70b)",
             "grounded": True,
         }
     except Exception as e:
@@ -629,5 +643,12 @@ def health_check():
         "active_modules": 6,
         "modules": ["disease_prediction", "pregnancy_risk", "malnutrition", "skin_analysis", "rag_sakhi", "agentic_outbreak_monitor"],
         "disease_classes": list(disease_pipeline.classes_) if disease_pipeline else [],
-        "model_accuracy": "91.3%"
+        "model_accuracy": {
+            "symptomnet_dl":   "64.6% (101 diseases, 7 languages)",
+            "random_forest":   "51.8% (fallback)",
+            "rag_threshold":   0.45,
+            "rag_chunks":      243,
+            "rag_f1":          1.00,
+            "rag_memory":      "dual-track: frontend history + server session deque(maxlen=6)"
+        }
     }

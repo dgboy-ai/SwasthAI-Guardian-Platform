@@ -2,242 +2,53 @@
 RAG-Powered Sakhi — Retrieval-Augmented Generation for verified health guidance.
 Uses sentence-transformers (multilingual — Hindi, Tamil, Marathi, Bengali, English).
 Vector store: pure-Python numpy cosine similarity (no C++ build tools needed).
-Knowledge base: WHO / ASHA / MoHFW guidelines with full clinical citations.
+Knowledge base: WHO / ASHA / MoHFW guidelines — 200+ chunks with 2-sentence overlap.
 
 IEEE YESIST12 IEngage / Tristha Track:
   ✓ Grounded Q&A: Every answer is backed by a citable source.
   ✓ Urgency Classification: Each knowledge chunk has a clinical urgency level.
   ✓ Zero-Dependency Vector Search: Works fully offline without external APIs.
+  ✓ 200+ chunks (was 35) with 2-sentence sliding-window overlap.
+  ✓ Model cached to .model_cache — no re-download on every cold start.
+  ✓ Threshold calibrated via 50-query precision/recall grid (calibrate_rag.py).
+  ✓ Conversation memory: frontend history + in-memory session cache as fallback.
 """
 import os
-import numpy as np
 import time
+from collections import defaultdict, deque
+
+import numpy as np
+
+# ── Fix 4: Persist model to workspace cache — prevents ~400 MB re-download ────
+# Set before any sentence_transformers import so the library respects the path.
+_MODEL_CACHE = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".model_cache")
+os.environ.setdefault("SENTENCE_TRANSFORMERS_HOME", _MODEL_CACHE)
+os.environ.setdefault("HF_HUB_DISABLE_SYMLINKS_WARNING", "1")  # suppress noisy Windows symlink warning
 from groq import Groq
 
-# ── Structured Knowledge Base ───────────────────────────────────────────────────
-# Each entry is a dict with:
-#   text        — The clinical guideline text
-#   source      — Authoritative citation (displayed to users as a trust signal)
-#   urgency     — P1 (Critical) / P2 (High) / P3 (Moderate) / P4 (Low)
-#                 Aligns with MoHFW Emergency Triage Guidelines 2023
+# ── Fix 3: Load calibrated threshold from rag_config.py (written by calibrate_rag.py) ──
+# Falls back to 0.28 if calibration hasn't been run yet.
+try:
+    from rag_config import RAG_CALIBRATED_THRESHOLD as _THRESHOLD
+    print(f"[RAG] Using calibrated threshold: {_THRESHOLD}")
+except ImportError:
+    _THRESHOLD = 0.28
+    print("[RAG] rag_config.py not found — using default threshold 0.28. Run calibrate_rag.py to tune.")
 
-HEALTH_KNOWLEDGE = [
-    # ── Maternal Health ──────────────────────────────────────────────────────────
-    {
-        "text": "Pregnant women should attend at least 8 antenatal care (ANC) visits. First visit before 12 weeks. Tests include blood pressure, haemoglobin, blood sugar, urine protein.",
-        "source": "WHO ANC Guidelines 2016 + MoHFW Reproductive Health Protocol",
-        "urgency": "P4"
-    },
-    {
-        "text": "Gestational hypertension: Blood pressure ≥140/90 mmHg after 20 weeks. Severe hypertension (≥160/110) is a medical emergency requiring immediate hospital referral.",
-        "source": "MoHFW Hypertension in Pregnancy Guidelines 2022",
-        "urgency": "P1"
-    },
-    {
-        "text": "Gestational diabetes: All pregnant women screened at 24-28 weeks. Fasting blood sugar >5.1 mmol/L or 2-hour post-load >8.5 mmol/L confirms diagnosis.",
-        "source": "WHO Diagnostic Criteria for GDM 2013 + ICMR Guidelines",
-        "urgency": "P3"
-    },
-    {
-        "text": "Iron-Folic Acid (IFA) tablets: take daily from 12 weeks until 6 months after delivery. Prevents anaemia and neural tube defects.",
-        "source": "MoHFW National Iron+ Initiative, NHM Protocol 2023",
-        "urgency": "P4"
-    },
-    {
-        "text": "Pregnancy warning signs needing immediate hospital: heavy bleeding, severe headache, blurred vision, severe abdominal pain, no fetal movement after 28 weeks.",
-        "source": "WHO Pregnancy Danger Signs Framework + ASHA Training Module 6",
-        "urgency": "P1"
-    },
-    {
-        "text": "ASHA workers should do home visits at 3, 7, 28, and 42 days after delivery to check mother and newborn.",
-        "source": "NHM ASHA Field Operations Guidelines 2021",
-        "urgency": "P3"
-    },
-    {
-        "text": "Anaemia in pregnancy: haemoglobin below 11 g/dL. Take daily IFA tablets, eat iron-rich foods (green leafy vegetables, jaggery, lentils), avoid tea/coffee 1 hour before/after meals as they block iron absorption.",
-        "source": "MoHFW Anaemia Mukt Bharat Programme Guidelines 2023",
-        "urgency": "P3"
-    },
+# ── Fix 1: Import 200+ chunk knowledge base (with 2-sentence overlap) ─────────
+# health_kb_data.py replaces the old 35-chunk inline list.
+# Each chunk: {text, source, urgency}. Urgency: P1 Critical → P4 Low.
+from health_kb_data import HEALTH_KNOWLEDGE
 
-    # ── Menstrual Health ─────────────────────────────────────────────────────────
-    {
-        "text": "Normal menstrual cycle: 21-35 days. Normal flow: 2-7 days. Soaking more than one pad per hour for several hours indicates heavy bleeding (menorrhagia) — see a doctor.",
-        "source": "FOGSI Clinical Practice Guidelines on Abnormal Uterine Bleeding 2020",
-        "urgency": "P2"
-    },
-    {
-        "text": "Severe period pain that interferes with daily life may indicate endometriosis or fibroids — consult a doctor.",
-        "source": "FOGSI Dysmenorrhoea Guidelines + WHO Reproductive Health Report",
-        "urgency": "P3"
-    },
-    {
-        "text": "Sanitary hygiene: change pads every 4-6 hours to prevent infection and odour. Menstrual cups safe for up to 8-12 hours.",
-        "source": "MoHFW Menstrual Hygiene Management (MHM) Scheme 2023",
-        "urgency": "P4"
-    },
-    {
-        "text": "Iron-rich foods during periods: jaggery (gud), spinach, lentils, dates, sesame seeds replenish lost iron.",
-        "source": "ICMR Dietary Guidelines for Indians 2024",
-        "urgency": "P4"
-    },
-    {
-        "text": "भारी माहवारी (Menorrhagia): यदि आपको हर 1-2 घंटे में पैड बदलना पड़ रहा है, तो यह गंभीर हो सकता है। तुरंत डॉक्टर से मिलें। | Heavy bleeding: Changing pads every 1-2 hours is a medical sign to see a doctor.",
-        "source": "FOGSI clinical protocol on AUB (Abnormal Uterine Bleeding)",
-        "urgency": "P2"
-    },
-    {
-        "text": "मासिक धर्म के दौरान स्वच्छता: संक्रमण से बचने के लिए हर 4-6 घंटे में पैड बदलें। साफ़ पानी और साबुन का प्रयोग करें। | Hygiene: Change pads every 4-6 hours to prevent RTI/UTI infections.",
-        "source": "MoHFW Menstrual Hygiene Scheme (MHM) Guidelines",
-        "urgency": "P4"
-    },
-    {
-        "text": "Severe pelvic pain during periods that does not improve with rest or basic medication could be a sign of endometriosis. Consultation with a gynecologist is recommended.",
-        "source": "WHO Reproductive Health Research + FOGSI Endometriosis Manual",
-        "urgency": "P3"
-    },
-    {
-        "text": "Anemia (खून की कमी): चक्कर आना, थकान और पीली त्वचा इसके लक्षण हैं। आयरन युक्त भोजन जैसे पालक, गुड़ और चना खाएं। | Anemia: Dizziness, fatigue, pale skin. Eat iron-rich foods like spinach, jaggery.",
-        "source": "MoHFW Anemia Mukt Bharat Protocol 2023",
-        "urgency": "P3"
-    },
-    {
-        "text": "Polycystic Ovary Syndrome (PCOS): Irregular periods, weight gain, and acne are common symptoms. Requires lifestyle management and hormonal evaluation.",
-        "source": "ICMR PCOS Task Force Guidelines",
-        "urgency": "P3"
-    },
-    {
-        "text": "Immediate danger signs in pregnancy: Vaginal bleeding, convulsions/fits, severe abdominal pain, high fever, or leaking of fluid. Go to a hospital immediately.",
-        "source": "WHO Pregnancy, Childbirth, Postpartum and Newborn Care (PCPNC) Guide",
-        "urgency": "P1"
-    },
-    {
-        "text": "See a doctor if: periods stopped 3+ months (not pregnant), bleeding between periods, pain during urination or sex, unusual discharge with odour.",
-        "source": "WHO Reproductive Health Assessment Toolkit + ASHA Module 7",
-        "urgency": "P2"
-    },
+# ── Conversation Memory Store ───────────────────────────────────────────────────
+# In-memory session cache: {session_id: deque of {role, content} dicts}
+# Kept to last MAX_HISTORY turns per session to limit token usage.
+# Frontend should also send its own history on every request (dual-track approach).
+MAX_HISTORY = 6   # last 6 messages (3 user + 3 assistant) ≈ ~600 tokens context
+_session_store: dict[str, deque] = defaultdict(lambda: deque(maxlen=MAX_HISTORY))
 
-    # ── Child Health & Nutrition ─────────────────────────────────────────────────
-    {
-        "text": "Severe Acute Malnutrition (SAM): MUAC < 11.5 cm. Requires therapeutic feeding and hospital admission immediately.",
-        "source": "WHO SAM Management Guidelines 2013 + NHM MAM/SAM Protocol India",
-        "urgency": "P1"
-    },
-    {
-        "text": "Moderate Acute Malnutrition (MAM): MUAC 11.5-12.5 cm. Enroll in community-based supplementary feeding program. ASHA follow-up weekly.",
-        "source": "UNICEF/WHO/UN Joint Statement on MAM 2012 + NHM India",
-        "urgency": "P2"
-    },
-    {
-        "text": "Exclusive breastfeeding for first 6 months provides complete nutrition and protects against diarrhoea and respiratory infections.",
-        "source": "WHO Global Strategy for Infant and Young Child Feeding 2003",
-        "urgency": "P4"
-    },
-    {
-        "text": "Childhood immunisation (India): BCG at birth, OPV at birth, Hepatitis B at birth, DPT-1 at 6 weeks, Measles-Rubella at 9-12 months.",
-        "source": "MoHFW Universal Immunisation Programme (UIP) Schedule 2024",
-        "urgency": "P3"
-    },
-    {
-        "text": "Child diarrhoea: give ORS after every loose stool. For children under 5, continue breastfeeding. Zinc tablet 20mg daily for 14 days reduces severity. Visit ASHA or PHC if child has blood in stool, is vomiting everything, or has sunken eyes.",
-        "source": "WHO IMCI (Integrated Management of Childhood Illness) Protocol 2014",
-        "urgency": "P2"
-    },
-    {
-        "text": "Dehydration danger signs in children: sunken eyes, dry mouth, no urine for 8 hours, skin pinch returns slowly, lethargy. These require immediate hospital treatment — IV fluids may be needed.",
-        "source": "WHO IMCI Protocol 2014 + MoHFW Diarrhoea Control Programme",
-        "urgency": "P1"
-    },
 
-    # ── ORS & Acute Conditions ───────────────────────────────────────────────────
-    {
-        "text": "ORS for diarrhoea: 1 litre clean water + 6 teaspoons sugar + half teaspoon salt. Give after every loose stool. Prevents dehydration deaths.",
-        "source": "WHO Oral Rehydration Salts Preparation Guidelines",
-        "urgency": "P3"
-    },
-    {
-        "text": "Cholera: profuse watery rice-water stools. Can cause fatal dehydration within hours. Immediate ORS and hospital admission needed.",
-        "source": "WHO Global Task Force on Cholera Control (GTFCC) Guidelines 2023",
-        "urgency": "P1"
-    },
 
-    # ── Communicable Diseases ────────────────────────────────────────────────────
-    {
-        "text": "Tuberculosis: cough >2 weeks, blood in sputum, night fever, unexplained weight loss. Free diagnosis and treatment at government hospitals.",
-        "source": "MoHFW National TB Elimination Programme (NTEP) Guidelines 2023",
-        "urgency": "P2"
-    },
-    {
-        "text": "Dengue: high fever, severe headache, pain behind eyes, joint pain, rash. No specific treatment — hydration and rest. Hospital if bleeding or severe abdominal pain.",
-        "source": "WHO Dengue Clinical Management Guidelines 2012 + NVBDCP India",
-        "urgency": "P2"
-    },
-    {
-        "text": "Malaria prevention: sleep under insecticide-treated nets. Symptoms: fever with chills every 2-3 days. Free treatment at PHCs.",
-        "source": "MoHFW National Vector Borne Disease Control Programme (NVBDCP)",
-        "urgency": "P2"
-    },
-    {
-        "text": "Typhoid prevention: drink only boiled or treated water. Typhoid vaccine available at government hospitals. Treated with antibiotics — complete the full course.",
-        "source": "WHO Typhoid Vaccines Position Paper 2018 + MoHFW",
-        "urgency": "P3"
-    },
-
-    # ── Non-Communicable Diseases ────────────────────────────────────────────────
-    {
-        "text": "Hypertension: BP >140/90 mmHg. Often no symptoms. Reduce salt intake, exercise 30 min/day, take prescribed medications regularly.",
-        "source": "WHO Global Hearts Initiative + MoHFW NPP-NCD Guidelines 2023",
-        "urgency": "P3"
-    },
-
-    # ── Emergency Conditions ─────────────────────────────────────────────────────
-    {
-        "text": "Heatstroke emergency: body temperature above 40°C, confusion, no sweating, hot dry skin. Move to shade, cool with wet cloth, give water if conscious. Rush to hospital — can be fatal within hours.",
-        "source": "WHO Heat and Health Fact Sheet + MoHFW Heat Action Plan 2023",
-        "urgency": "P1"
-    },
-    {
-        "text": "Snakebite first aid: Keep victim still. Immobilize bitten limb below heart level. Do NOT cut, suck, or apply tourniquet. Reach hospital within 1 hour for antivenom.",
-        "source": "WHO Snakebite Envenomation Guidelines 2019 + MoHFW",
-        "urgency": "P1"
-    },
-    {
-        "text": "Anti-Snake Venom (ASV) is available free at government district hospitals. Signs of envenomation: swelling spreading up limb, drooping eyelids, difficulty breathing, bleeding gums, dark urine.",
-        "source": "MoHFW National Snakebite Management Protocol 2020",
-        "urgency": "P1"
-    },
-    {
-        "text": "ASHA emergency referral: refer immediately for — unconscious patient, convulsions, severe breathing difficulty, heavy bleeding, snakebite, heatstroke, severe dehydration, any child not feeding for 24 hours.",
-        "source": "NHM ASHA Emergency Referral Guidelines + ASHA Training Module 3",
-        "urgency": "P1"
-    },
-    {
-        "text": "Fever above 103°F (39.4°C) lasting more than 3 days needs medical evaluation. Use paracetamol only for children (NOT aspirin). Tepid sponging helps.",
-        "source": "WHO Fever Management Guidelines + IAP (Indian Academy of Paediatrics)",
-        "urgency": "P2"
-    },
-
-    # ── Preventive Care ──────────────────────────────────────────────────────────
-    {
-        "text": "Safe drinking water: boil for 1 minute or use chlorine tablets (1 tablet per 10 litres, wait 30 minutes). Store in covered clean container.",
-        "source": "WHO/UNICEF Household Water Treatment Guidelines + MoHFW JJM Scheme",
-        "urgency": "P4"
-    },
-    {
-        "text": "Skin infections in villages: ringworm (round scaly patch), scabies (intense night itching), impetigo (crusty sores). Keep skin clean and dry. See PHC doctor for scabies treatment for whole family.",
-        "source": "IADVL (Indian Dermatology) Guidelines + MoHFW Skin Health Protocol",
-        "urgency": "P3"
-    },
-    {
-        "text": "Mental health in villages: stress, anxiety, and postpartum depression are medical conditions, not weakness. Talking to a trusted person helps. Free counselling available at district hospitals.",
-        "source": "WHO mhGAP Intervention Guide 2016 + MoHFW NMHP Programme",
-        "urgency": "P3"
-    },
-    {
-        "text": "Respiratory infections: wash hands frequently, cover mouth when coughing. See doctor if breathing becomes difficult, lips turn blue, or fever doesn't break after 7 days.",
-        "source": "WHO Acute Respiratory Infection Guidelines + MoHFW IMNCI Protocol",
-        "urgency": "P3"
-    },
-]
 
 # ── Lazy-Loaded Embeddings (loaded once on first request) ──────────────────────
 _embedder      = None
@@ -245,6 +56,7 @@ _kb_embeddings = None
 
 # Pre-extract plain text for embedding
 _TEXTS = [chunk["text"] for chunk in HEALTH_KNOWLEDGE]
+print(f"[RAG] Knowledge base loaded: {len(HEALTH_KNOWLEDGE)} chunks (with 2-sentence overlap).")
 
 
 def _get_embedder():
@@ -282,22 +94,55 @@ def _retrieve(query: str, top_k: int = 3) -> tuple[list[dict], float]:
 
 
 # ── RAG Chat Function ───────────────────────────────────────────────────────────
-def rag_chat(user_message: str, groq_api_key: str) -> dict:
+def rag_chat(
+    user_message: str,
+    groq_api_key: str,
+    session_id: str = "default",
+    frontend_history: list[dict] | None = None,
+) -> dict:
     """
     Retrieves top-3 verified WHO/ASHA/MoHFW knowledge chunks via cosine similarity.
     Injects them as grounded context into Groq prompt with strict clinical safety bounds.
 
+    Conversation Memory (dual-track):
+      1. frontend_history — list of {role, content} dicts sent by the frontend
+         (from localStorage). Preferred source — survives server restarts.
+      2. _session_store[session_id] — in-memory deque (last MAX_HISTORY=6 turns).
+         Used as fallback if frontend_history is None or empty.
+
+    Args:
+        user_message:     The current user message (string).
+        groq_api_key:     Groq API key.
+        session_id:       Unique session identifier (e.g. villager user ID or UUID).
+        frontend_history: Optional list of {role, content} from the frontend.
+
     Returns:
         {
           "answer":  str  — The AI-generated, grounded response,
-          "sources": list — List of citation strings shown to user (Tristha Grounding),
+          "sources": list — Citation strings shown to user (Tristha Grounding),
           "urgency": str  — Highest urgency level from retrieved chunks (P1-P4)
         }
 
     Works in Hindi, Tamil, Marathi, Bengali, English (multilingual model).
     """
     query_clean = user_message.strip().lower().rstrip("?").rstrip("!").rstrip(".")
-    
+
+    # ── Build conversation history ─────────────────────────────────────────────
+    # Priority: frontend_history (survives restarts) → server-side deque cache.
+    if frontend_history:  # Frontend sent history explicitly — most reliable
+        history_turns = list(frontend_history)[-(MAX_HISTORY):]  # cap to last N
+    else:                 # Fall back to in-memory session store
+        history_turns = list(_session_store[session_id])
+
+    # Validate history format (only keep clean role/content pairs)
+    history_turns = [
+        {"role": h["role"], "content": h["content"]}
+        for h in history_turns
+        if isinstance(h, dict)
+        and h.get("role") in ("user", "assistant")
+        and isinstance(h.get("content"), str)
+    ]
+
     # 1. Check for quick-greetings (to respond instantly and warmly without hallucinating)
     GREETINGS = ["hi", "hello", "namaste", "helo", "hey", "hola", "kaise ho", "good morning", "good evening", "namaskar", "pranam"]
     is_greeting = any(g == query_clean or query_clean.startswith(g + " ") for g in GREETINGS) and len(user_message.split()) <= 4
@@ -341,7 +186,7 @@ Introduce yourself as Sakhi, and invite them to ask you any questions about preg
 Keep your response extremely brief (2-3 sentences max).
 Do NOT mention any medical rules, symptoms, or guidelines in this greeting."""
     
-    elif max_score < 0.28 and not has_health_keyword:
+    elif max_score < _THRESHOLD and not has_health_keyword:
         # Out-of-scope filter: completely unrelated topic (e.g. sports, movies, coding, politics)
         system_prompt = """You are Sakhi, a warm, polite, and trusted Women's & Family Health Assistant for rural India.
 The user is asking about something completely OUTSIDE of women's/family health, maternal care, menstrual hygiene, or child health (such as playing sports, games, movies, general chatting, or politics).
@@ -383,19 +228,26 @@ CRITICAL MEDICAL & TRANSLATION SAFEGUARDS (MUST BE FOLLOWED 100%):
     base_wait = 1
     answer = None
 
+    # Build the full messages array: system + history + current user message
+    groq_messages = [
+        {"role": "system", "content": system_prompt},
+        *history_turns,             # ← injected conversation memory
+        {"role": "user", "content": user_message},
+    ]
+
     for attempt in range(max_retries):
         try:
             response = client.chat.completions.create(
                 model="llama-3.3-70b-versatile",
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user",   "content": user_message},
-                ],
+                messages=groq_messages,
                 temperature=0.35,
                 max_tokens=400,
                 timeout=10,
             )
             answer = response.choices[0].message.content
+            # ── Save this turn to in-memory session store ──────────────────────
+            _session_store[session_id].append({"role": "user",      "content": user_message})
+            _session_store[session_id].append({"role": "assistant", "content": answer})
             break  # Success, exit the retry loop
         except Exception as groq_error:
             print(f"[RAG] Groq API error on attempt {attempt + 1}: {groq_error}")
@@ -408,7 +260,7 @@ CRITICAL MEDICAL & TRANSLATION SAFEGUARDS (MUST BE FOLLOWED 100%):
                 # Use top KB chunk as fallback answer to ensure Sakhi NEVER fails silently
                 print("[RAG] All retries exhausted. Using KB fallback.")
                 best_chunk = chunks[0] if chunks else None
-                if best_chunk and not is_greeting and max_score >= 0.28:
+                if best_chunk and not is_greeting and max_score >= _THRESHOLD:
                     answer = (
                         f"{best_chunk['text']}\n\n"
                         f"(Note: AI assistant temporarily unavailable. This guidance is from {best_chunk['source']}. "

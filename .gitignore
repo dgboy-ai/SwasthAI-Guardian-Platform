@@ -50,3 +50,8 @@ yarn-debug.log*
 yarn-error.log*
 logs/
 *.log
+
+# Python/Huggingface Model Caches
+.model_cache/
+ai-service/.model_cache/
+

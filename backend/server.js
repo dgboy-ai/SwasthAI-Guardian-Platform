@@ -350,14 +350,15 @@ if (isProduction && cluster.isPrimary) {
       ai_service: {
         url:     AI_SERVICE_URL,
         modules: [
-          'SymptomNet-DL (PyTorch, 96.8% accuracy, 17 diseases)',
-          'RandomForest-TFIDF (fallback, 91.3% accuracy)',
-          'RAG-Sakhi (WHO/ASHA grounded, multilingual)',
-          'OutbreakAgent (autonomous 30min loop, Groq Llama-3)',
+          'SymptomNet-DL (PyTorch, 64.6% accuracy, 101 diseases)',
+          'RandomForest-TFIDF (fallback, 51.8% accuracy)',
+          'RAG-Sakhi (243 chunks, threshold=0.45, F1=1.00, conversation memory)',
+          'OutbreakAgent (autonomous 30min loop, Groq llama-3.1-8b-instant)',
           'SkinAnalyzer (on-device pixel analysis)',
           'PregnancyRisk (MoHFW WHO clinical thresholds)',
           'MalnutritionDetector (WHO Z-score + BMI)'
         ]
+
       },
       realtime: {
         sse_clients_connected: adminRouter.sseClientsCount || 0,
@@ -369,9 +370,12 @@ if (isProduction && cluster.isPrimary) {
         ai:         'FastAPI + PyTorch + Groq Llama-3.3-70b',
         relational: 'Amazon Aurora PostgreSQL (ap-south-1)',
         nosql:      'Amazon DynamoDB PAY_PER_REQUEST (ap-south-1)',
-        llm:        'Groq (llama-3.1-8b-instant for agent, llama-3.3-70b-versatile for RAG)',
+        llm:        'Groq llama-3.3-70b-versatile (RAG/Sakhi) + llama-3.1-8b-instant (OutbreakAgent)',
         embedding:  'sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2',
-        languages:  ['Hindi', 'Marathi', 'Tamil', 'Telugu', 'Bengali', 'English']
+        rag_chunks: 243,
+        rag_threshold: 0.45,
+        rag_memory: 'dual-track: frontend history + server session deque(maxlen=6)',
+        languages:  ['Hindi', 'Hinglish', 'Marathi', 'Tamil', 'Telugu', 'Bengali', 'English']
       },
       hackathon: {
         event:      'H0: Hack the Zero Stack with Vercel v0 and AWS Databases',

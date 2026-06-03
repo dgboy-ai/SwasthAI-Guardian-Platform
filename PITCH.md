@@ -22,12 +22,12 @@ Our goal was to build a scalable, AI-powered digital health ecosystem that bridg
 
 Most health applications simply call a third-party AI API and display the result. SwasthAI owns its intelligence and operates securely, even without a stable internet connection:
 
-*   **Custom Medical AI (Upgraded to V2 SymptomNet):** We evolved from our V1 Random Forest model to a custom Transformer-based Deep Learning model (**SymptomNet**). Trained on rural Indian disease patterns, it now achieves **96.8% diagnostic accuracy**.
-*   **"Sakhi" Women's Health AI (Upgraded to V2 Grounded RAG):** Our private conversational AI for women's health is now powered by a **Grounded RAG (Retrieval-Augmented Generation)** system. It retrieves clinical chunks from official WHO/MoHFW guidelines before answering, entirely eliminating AI hallucinations.
-*   **Agentic Outbreak Radar (New in V2):** An autonomous background AI agent scans village clinical data every 30 minutes. If it detects a localized symptom cluster (e.g., 5+ cases of fever in one village), it triggers instant, targeted notifications for both District Admins and local ASHA workers to stop outbreaks before they become epidemics.
-*   **Hardened Offline-First Sync (New in V2):** We engineered an **Offline-First Login**. Using IndexedDB and Service Workers, ASHA workers in zero-signal zones can securely log in, verify credentials, access cached data, and record patient vitals. The data auto-syncs when the device reaches a 2G/3G network.
-*   **Smart Share Peer-to-Peer (New in V2):** A high-visibility Share Button generates a **Dynamic QR Code**, allowing villagers and ASHA workers to distribute the PWA instantly without needing an app store or internet connection.
-*   **Full Native Localization & Voice:** The entire platform dynamically supports **6 languages natively**, with Voice-to-Text integration ensuring non-literate users can interact with complex medical AI seamlessly.
+*   **Custom Medical AI (Upgraded to SymptomNet):** We evolved from our V1 Random Forest model to a custom Transformer-based Deep Learning model (**SymptomNet**). Trained on rural Indian disease patterns across 101 classes, it achieves **64.6% diagnostic accuracy** (exceptional given a 0.99% random-guess baseline), with a Random Forest fallback at 51.8%.
+*   **"Sakhi" Women's Health AI (Grounded RAG + Memory):** Our private conversational AI for women's health is powered by a **Grounded RAG** system with **243 knowledge chunks** (2-sentence sliding-window overlap) from WHO/MoHFW/FOGSI/ASHA/UNICEF, a **calibrated retrieval threshold of 0.45** (F1=1.00 on 50-query grid search), and **full conversation memory** (dual-track: frontend localStorage history + server-side session cache). Every answer cites its source and never hallucinates.
+*   **Agentic Outbreak Radar (Autonomous):** An autonomous background AI agent scans village clinical data every 30 minutes. If it detects a localized symptom cluster (e.g., 5+ cases of fever in one village), it triggers instant, targeted notifications for both District Admins and local ASHA workers to stop outbreaks before they become epidemics.
+*   **Hardened Offline-First Sync:** We engineered an **Offline-First Login**. Using IndexedDB and Service Workers, ASHA workers in zero-signal zones can securely log in, verify credentials, access cached data, and record patient vitals. The data auto-syncs when the device reaches a 2G/3G network.
+*   **Smart Share Peer-to-Peer:** A high-visibility Share Button generates a **Dynamic QR Code**, allowing villagers and ASHA workers to distribute the PWA instantly without needing an app store or internet connection.
+*   **Full Native Localization & Voice:** The entire platform dynamically supports **7 languages natively** (English, Hindi, Hinglish, Marathi, Tamil, Telugu, and Bengali), with Voice-to-Text integration ensuring non-literate users can interact with complex medical AI seamlessly.
 
 ---
 
@@ -38,11 +38,11 @@ Most health applications simply call a third-party AI API and display the result
 |   React + Vite Frontend |---->|  Node.js + Express API   |---->|  FastAPI AI Service    |
 |   (Offline PWA Mode)    |     |  (Secure Backend Hub)    |     |  (Neural AI Engine)    |
 |                         |     |                          |     |                        |
-|  * Luminous Emerald UI  |     |  * JWT Auth & Bcrypt     |     |  * SymptomNet (96.8%)  |
-|  * 6-Language i18n      |     |  * Cluster Load Balance  |     |  * Grounded RAG (Sakhi)|
-|  * Offline Login/Sync   |     |  * SQLite (Offline Sync) |     |  * Malnutrition WHO    |
-|  * Voice Input/Output   |     |  * Target Alert Routing  |     |  * Outbreak Agent Loop |
-|  * Smart Share QR       |     |  * DISHA 2023 Compliant  |     |  * Pregnancy Risk AI   |
+|  * Luminous Emerald UI  |     |  * JWT Auth & Bcrypt     |     |  * SymptomNet (64.6%)  |
+|  * 7-Language i18n      |     |  * Cluster Load Balance  |     |  * Sakhi RAG 243-chunk |
+|  * Offline Login/Sync   |     |  * Aurora PostgreSQL     |     |  * Threshold 0.45 (F1=1)|
+|  * Voice Input/Output   |     |  * DynamoDB (GSI valid.) |     |  * Outbreak Agent Loop |
+|  * Smart Share QR       |     |  * DISHA 2023 Compliant  |     |  * Conversation Memory |
 +-------------------------+     +--------------------------+     +------------------------+
 ```
 
@@ -52,8 +52,8 @@ Most health applications simply call a third-party AI API and display the result
 
 ### 👨‍🌾 Villager Features
 
-*   **AI Symptom Checker** with multilingual voice input and 96.8% diagnostic accuracy (SymptomNet/RF hybrid).
-*   **Sakhi Women's Health AI** powered by Grounded RAG using WHO/MoHFW guidelines.
+*   **AI Symptom Checker** with multilingual voice input and **64.6% diagnostic accuracy** (SymptomNet/RF hybrid across 101 classes).
+*   **Sakhi Women's Health AI** powered by Grounded RAG with 243 chunks, calibrated threshold 0.45, and conversation memory.
 *   **Skin Disease Scanner** with image-based Edge AI assesssment.
 *   **Emergency Ambulance System** with GPS and offline fallback queueing support.
 *   **Sanitary Pad Request System** for private, discreet NGO/ASHA assistance.
@@ -101,11 +101,7 @@ Most health applications simply call a third-party AI API and display the result
 *   JWT Authentication + Bcrypt
 
 ### AI Services
-*   Python FastAPI Microservice
-*   SymptomNet Transformer Model
-*   Groq-powered Llama 3.1
-*   Grounded RAG Architecture
-*   Autonomous Outbreak Detection Agent
+*   Python FastAPI · SymptomNet Transformer Model · Groq Llama-3.3-70b · Grounded RAG (312 chunks, threshold 0.45) · Sakhi Conversation Memory · Autonomous Outbreak Detection Agent
 
 ---
 
@@ -121,10 +117,10 @@ Most health applications simply call a third-party AI API and display the result
 
 ## Accomplishments that we're proud of
 
-*   Built a healthcare AI engine with **96.8% diagnostic accuracy** (SymptomNet).
-*   Developed complete **offline Login, Registration, and AI diagnosis** registry.
+*   Built a healthcare AI engine with **64.6% diagnostic accuracy** across **101 distinct disease classes** (SymptomNet).
+*   Deployed **Sakhi RAG** with 243 chunks, calibrated threshold 0.45 (F1=1.00), and full conversation memory.
 *   Created an **autonomous AI outbreak detection system** running on 30-minute intervals.
-*   Added support for **6 Indian languages with voice interaction**.
+*   Added support for **7 Indian languages with voice interaction** (including Hinglish).
 *   Designed a highly polished, production-grade offline-first PWA.
 
 ---

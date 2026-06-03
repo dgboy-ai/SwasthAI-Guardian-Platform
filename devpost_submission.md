@@ -26,13 +26,13 @@ Most health applications simply call a third-party AI API and display the result
 | :--- | :--- | :--- |
 | **Custom Medical AI & Input Guardrails** | Evolved from our V1 Random Forest model. | We evolved from our V1 Random Forest model to a custom Deep Learning MLP (**SymptomNet**) powered by multilingual Transformer embeddings (paraphrase-multilingual-MiniLM-L12-v2), achieving **64.6% diagnostic accuracy across 101 classes** (exceptional given a 0.99% random guess baseline), while retaining our Random Forest model (51.8% accuracy) as a secondary fallback. More importantly, we implemented **under-the-hood clinical text guardrails** that detect and block keyboard mashing, repeated character spam, and off-topic conversations in English, Hindi, and Tamil, utilizing a **Double-Uncertainty Safety Gate** to prevent hallucinated diagnoses. |
 | **Deterministic Clinical Heuristic Fallback** | Standard AI endpoint prone to clinical hallucinations under high uncertainty. | If the neural models are uncertain (< 40% confidence) due to ambiguous symptoms, the system absolutely refuses to guess or hallucinate. Instead, it routes the query to a deterministic, offline-capable rule engine built on ASHA guidelines. It safely maps known rural symptom clusters (e.g. weakness + dizziness) to highly accurate first-aid advice, and if undetermined, gracefully advises the villager to consult their local ASHA worker. This zero-hallucination approach maximizes patient trust and ensures no false information is provided. |
-| **"Sakhi" Women's Health AI** | Generic conversational LLM chatbot. | Our private conversational AI for women's health is now powered by a **Grounded RAG (Retrieval-Augmented Generation)** system. It retrieves clinical guidelines from 38 official WHO/MoHFW sources before answering, citing its sources, supporting voice output, and failing over to local knowledge base chunks if the primary AI API is unreachable. |
+| **"Sakhi" Women's Health AI** | Generic conversational LLM chatbot. | Our private conversational AI for women's health is now powered by a **Grounded RAG** system with **243 knowledge chunks** (2-sentence sliding-window overlap, 15+ clinical categories) from WHO/MoHFW/FOGSI/ASHA/UNICEF sources. The retrieval threshold is **calibrated to 0.45** via a 50-query precision/recall grid search (F1=1.00). Sakhi now has **full conversation memory** — dual-track (frontend localStorage history + server-side session cache), so she remembers context across turns. Every answer cites its source and fails over to the top KB chunk if Groq is unavailable. |
 | **Under-the-Hood Offline Sync (Maternal & Child Health)** | Required active internet connection for patient registrations. | NGO/ASHA workers can now register maternal pregnancy vitals and child nutrition assessments in zero-signal zones. The app computes risk levels and growth status instantly client-side using **local clinical heuristic engines** (WHO blood pressure criteria and BMI Z-score indexes), queuing records locally with visual **"Sync Pending"** indicators, and silently uploading them as soon as the browser detects an internet signal. |
 | **Edge Visual Guardrails & Image Compression** | Standard high-resolution photo uploads, prone to failure on spotty connections. | Before analyzing skin photos, a **browser-side JavaScript Canvas analysis layer** downscales the image to a 16x16 grid in sub-milliseconds to verify skin tone presence, standard deviation (blank checks), and structural edge density (blur checks). A server-side Pillow validator provides a secondary confirmation pass. If passed, the image is compressed from 5MB+ down to less than 200KB on-the-fly using the browser-image-compression library to guarantee successful uploads over 2G/3G connections. |
 | **Agentic Outbreak Radar** | None / Manual epidemiology reporting. | An autonomous background AI agent scans village clinical data every 30 minutes. If it detects a localized symptom cluster (e.g., 5+ cases of fever in one village within 24 hours), it triggers instant, targeted notifications for both District Admins and local ASHA workers to stop outbreaks before they become epidemics. |
 | **Hardened Offline-First Login** | Required active network signal to log in. | We engineered an **Offline-First Login**. Demo credentials are pre-seeded into a local credential cache on the very first page load. ASHA workers in zero-signal zones can authenticate locally against this cache using either password or demo OTP 1234. The system automatically detects reconnection status to refresh the session cache, and displays a visible **Offline Mode Active** banner to inform users of their connectivity state. |
 | **Smart Share Peer-to-Peer** | Standard app store or download link distribution. | A high-visibility Share Button generates a **Dynamic QR Code**, allowing villagers and ASHA workers to distribute the PWA instantly without needing an app store or internet connection. |
-| **Full Native Localization & Voice** | Basic English-only, text-only interface. | The entire platform dynamically supports **6 languages natively** (English, Hindi, Marathi, Tamil, Telugu, and Bengali) with 100% translation key synchronization (366 unique keys) and Voice-to-Text integration ensuring non-literate users can interact with complex medical AI seamlessly. |
+| **Full Native Localization & Voice** | Basic English-only, text-only interface. | The entire platform dynamically supports **7 languages natively** (English, Hindi, Hinglish, Marathi, Tamil, Telugu, and Bengali) with Voice-to-Text integration ensuring non-literate users can interact with complex medical AI seamlessly. |
 
 ---
 
@@ -163,8 +163,9 @@ This architecture means **clinical data is never lost** — it accumulates local
 - Transformer Embeddings + SymptomNet Neural Network
 - Random Forest Fallback Model (Tier 2 Safety)
 - FastAPI Test Suite
-- Groq-powered Llama 3.3
-- Grounded RAG Architecture (38 WHO/MoHFW sources)
+- Groq-powered Llama 3.3-70b (RAG) + Llama-3.1-8b-instant (Outbreak Agent)
+- Grounded RAG Architecture (**243 chunks**, calibrated threshold 0.45, F1=1.00)
+- Sakhi **Conversation Memory** (frontend localStorage + server session cache)
 - Autonomous Outbreak Detection Agent (30-min scan interval)
 - 52,900 samples multilingual dataset generator across 101 classes
 
@@ -188,7 +189,7 @@ This architecture means **clinical data is never lost** — it accumulates local
 *   Developed **under-the-hood text and image guardrails** that protect the model against noise.
 *   Developed complete **offline Login, Registration, and maternal/child sync** registry.
 *   Created an **autonomous AI outbreak detection system** running on 30-minute intervals.
-*   Achieved **100% multilingual translation key synchronization (366 unique keys)** across 6 Indian languages with voice interaction.
+*   Achieved **100% multilingual translation key synchronization (366 unique keys)** across **7 Indian languages** (including Hinglish) with voice interaction.
 *   Designed a highly polished, production-grade offline-first PWA.
 *   Built a **V2 Clinical Heuristic Fallback** — zero-hallucination AI that always returns trusted ASHA-grounded advice even when models are uncertain.
 
