@@ -1,8 +1,15 @@
 # 🗄️ AWS Database Architecture — Deliberate Design Decisions
 
-### Why Two Databases? (Not Just One)
+Most apps use one database for everything. SwasthAI uses two in production with very different purposes, utilizing a local **SQLite** database as an offline edge node and local development fallback:
 
-Most apps use one database for everything. SwasthAI uses two — by design — because the data types have fundamentally different requirements:
+### The Local/Edge Database Strategy (SQLite Fallback)
+To ensure the app remains fully functional with zero initial setup for judges or developers, and to simulate offline client-side sync environments, SwasthAI utilizes an embedded **SQLite** engine. 
+* **Local Dev & Evaluation**: When run locally without AWS credentials, the backend automatically boots with SQLite, using the exact same schema structure as our production Aurora database.
+* **Production**: When deployed to cloud environments, the backend dynamically connects to **Amazon Aurora PostgreSQL** via the `DATABASE_URL` connection pool.
+
+---
+
+### The AWS Production Database Strategy (Aurora + DynamoDB)
 
 | | Amazon Aurora PostgreSQL | Amazon DynamoDB |
 |---|---|---|

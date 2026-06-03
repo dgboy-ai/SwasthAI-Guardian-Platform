@@ -21,7 +21,7 @@
 > ### 📖 Technical Documentation & Codebase Index
 > Jump directly to the detailed architecture logs, code reference maps, and setup guides:
 > 
-> *   **🗄️ AWS Database Designs**: [docs/database_architecture.md](docs/database_architecture.md) — Aurora schema, DynamoDB GSI tables, and query hardening models.
+> *   **🗄️ AWS Database Designs**: [docs/database_architecture.md](docs/database_architecture.md) — Aurora schema, DynamoDB GSI tables, and SQLite local/offline edge fallback.
 > *   **🔬 AI Architecture & Val**: [docs/ai_architecture.md](docs/ai_architecture.md) — PyTorch SymptomNet 5-Fold Stratified CV logs, metrics, and Sakhi RAG parameters.
 > *   **⚙️ Setup & Dev Manual**: [docs/setup_guide.md](docs/setup_guide.md) — Docker Compose environments, env setups, and local dev guides.
 > *   **📁 Complete Repository Map**: Check the [Repository Directory Map](#-repository-structure) below for file references.
