@@ -85,13 +85,14 @@ Table: emergency_streams
 ```
 Every 30 minutes →
   OutbreakAgent queries Aurora for village symptom clusters
-  → Calls Groq Llama-3.3-70b with WHO epidemiological thresholds
-  → If confidence ≥ 70%: classified as real outbreak
-  → POST to /api/admin/outbreak-alert
+  → Calls Groq Llama-3.3-70b with JSON mode & 3-attempt exponential backoff
+  → If confidence ≥ 70%: checks DynamoDB to ensure no duplicate alert was sent for this village in the last 24h
+  → POST to /api/admin/outbreak-alert (fails loudly on startup if AGENT_SECRET is missing in production)
   → Backend writes to DynamoDB outbreak_telemetry (composite key: villageId + detectedAt)
   → SSE broadcast to all connected admin dashboards
   → Admin sees real-time Outbreak Radar update with AI reasoning trace
 ```
+
 
 ---
 
