@@ -2,40 +2,6 @@ export async function initSchema(db, pool, usingSQLite) {
   if (pool) {
     // ── SCHEMA CREATION (Aurora PostgreSQL) ──────────────────────────────────
     await pool.query(`
-    CREATE TABLE IF NOT EXISTS users (
-      id SERIAL PRIMARY KEY,
-      phone VARCHAR(20) UNIQUE,
-      email VARCHAR(120) UNIQUE,
-      username VARCHAR(80),
-      name VARCHAR(120),
-      password VARCHAR(255),
-      role VARCHAR(20),
-      "villageId" VARCHAR(60),
-      gender VARCHAR(20) DEFAULT NULL,
-      age INTEGER DEFAULT NULL,
-      economic_status VARCHAR(10) DEFAULT NULL,
-      caste VARCHAR(20) DEFAULT NULL,
-      area_type VARCHAR(10) DEFAULT NULL,
-      aadhaar_masked VARCHAR(20) DEFAULT NULL,
-      aadhaar_hash VARCHAR(64) DEFAULT NULL
-    );
-    CREATE TABLE IF NOT EXISTS otps (
-      id SERIAL PRIMARY KEY,
-      phone VARCHAR(20),
-      otp VARCHAR(10),
-      "createdAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-    );
-    CREATE TABLE IF NOT EXISTS refresh_tokens (
-      id SERIAL PRIMARY KEY,
-      "userId" INTEGER,
-      token TEXT UNIQUE NOT NULL,
-      "expiresAt" TIMESTAMPTZ NOT NULL,
-      "createdAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-    );
-    CREATE TABLE IF NOT EXISTS revoked_tokens (
-      token TEXT PRIMARY KEY,
-      "createdAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-    );
     CREATE TABLE IF NOT EXISTS village_health (
       id SERIAL PRIMARY KEY,
       "villageId" VARCHAR(60) UNIQUE,
@@ -49,8 +15,54 @@ export async function initSchema(db, pool, usingSQLite) {
       "lastUpdated" TIMESTAMPTZ DEFAULT NULL,
       "districtId" VARCHAR(80) DEFAULT NULL,
       lat DOUBLE PRECISION DEFAULT NULL,
-      lng DOUBLE PRECISION DEFAULT NULL
+      lng DOUBLE PRECISION DEFAULT NULL,
+      created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
     );
+
+    CREATE TABLE IF NOT EXISTS users (
+      id SERIAL PRIMARY KEY,
+      phone VARCHAR(20) UNIQUE,
+      email VARCHAR(120) UNIQUE,
+      username VARCHAR(80),
+      name VARCHAR(120),
+      password VARCHAR(255),
+      role VARCHAR(20),
+      "villageId" VARCHAR(60) REFERENCES village_health("villageId") ON DELETE SET NULL,
+      gender VARCHAR(20) DEFAULT NULL,
+      age INTEGER DEFAULT NULL,
+      economic_status VARCHAR(10) DEFAULT NULL,
+      caste VARCHAR(20) DEFAULT NULL,
+      area_type VARCHAR(10) DEFAULT NULL,
+      aadhaar_masked VARCHAR(20) DEFAULT NULL,
+      aadhaar_hash VARCHAR(64) DEFAULT NULL,
+      created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS otps (
+      id SERIAL PRIMARY KEY,
+      phone VARCHAR(20),
+      otp VARCHAR(10),
+      "createdAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS refresh_tokens (
+      id SERIAL PRIMARY KEY,
+      "userId" INTEGER,
+      token TEXT UNIQUE NOT NULL,
+      "expiresAt" TIMESTAMPTZ NOT NULL,
+      "createdAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS revoked_tokens (
+      token TEXT PRIMARY KEY,
+      "createdAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    );
+
     CREATE TABLE IF NOT EXISTS pregnancy_data (
       id SERIAL PRIMARY KEY,
       name VARCHAR(120),
@@ -58,8 +70,12 @@ export async function initSchema(db, pool, usingSQLite) {
       trimester INTEGER,
       "dueDate" VARCHAR(30),
       "riskLevel" VARCHAR(20),
-      "villageId" VARCHAR(60)
+      "villageId" VARCHAR(60),
+      recorded_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
     );
+
     CREATE TABLE IF NOT EXISTS malnutrition_data (
       id SERIAL PRIMARY KEY,
       "childName" VARCHAR(120),
@@ -67,16 +83,25 @@ export async function initSchema(db, pool, usingSQLite) {
       weight DOUBLE PRECISION,
       height DOUBLE PRECISION,
       status VARCHAR(50),
-      "villageId" VARCHAR(60)
+      "villageId" VARCHAR(60),
+      created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
     );
+
     CREATE TABLE IF NOT EXISTS symptoms (
       id SERIAL PRIMARY KEY,
       "userId" INTEGER,
       "villageId" VARCHAR(60),
       symptoms TEXT,
       prediction TEXT,
-      "createdAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+      disease VARCHAR(120),
+      advice TEXT,
+      confidence REAL,
+      model_used VARCHAR(50),
+      "createdAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
     );
+
     CREATE TABLE IF NOT EXISTS skin_logs (
       id SERIAL PRIMARY KEY,
       "userId" INTEGER,
@@ -85,8 +110,10 @@ export async function initSchema(db, pool, usingSQLite) {
       severity VARCHAR(20),
       "rednessPercent" INTEGER,
       "irregularPercent" INTEGER,
-      "createdAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+      "createdAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
     );
+
     CREATE TABLE IF NOT EXISTS ambulance_requests (
       id SERIAL PRIMARY KEY,
       user_id INTEGER,
@@ -94,17 +121,23 @@ export async function initSchema(db, pool, usingSQLite) {
       location VARCHAR(255),
       priority VARCHAR(30),
       type VARCHAR(30) DEFAULT 'emergency',
+      request_type VARCHAR(30) DEFAULT 'ambulance',
       symptoms TEXT,
       status VARCHAR(20) DEFAULT 'pending',
-      created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+      created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
     );
+
     CREATE TABLE IF NOT EXISTS ngo_reports (
       id SERIAL PRIMARY KEY,
       title VARCHAR(255),
       content TEXT,
       "villageId" VARCHAR(60),
-      date VARCHAR(30)
+      date VARCHAR(30),
+      created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
     );
+
     CREATE TABLE IF NOT EXISTS government_schemes (
       id SERIAL PRIMARY KEY,
       name VARCHAR(255) NOT NULL,
@@ -120,8 +153,10 @@ export async function initSchema(db, pool, usingSQLite) {
       area_type_eligibility VARCHAR(10) DEFAULT 'all',
       required_documents TEXT,
       steps TEXT,
-      created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+      created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
     );
+
     CREATE TABLE IF NOT EXISTS referrals (
       id SERIAL PRIMARY KEY,
       patient_name VARCHAR(120) NOT NULL,
@@ -136,6 +171,7 @@ export async function initSchema(db, pool, usingSQLite) {
       created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
     );
+
     CREATE TABLE IF NOT EXISTS village_bulk_uploads (
       id SERIAL PRIMARY KEY,
       filename VARCHAR(255),
@@ -143,8 +179,10 @@ export async function initSchema(db, pool, usingSQLite) {
       rows_inserted INTEGER DEFAULT 0,
       rows_skipped INTEGER DEFAULT 0,
       errors TEXT,
-      created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+      created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
     );
+
     CREATE TABLE IF NOT EXISTS twilio_receipts (
       id SERIAL PRIMARY KEY,
       message_sid VARCHAR(60) UNIQUE,
@@ -152,8 +190,63 @@ export async function initSchema(db, pool, usingSQLite) {
       status VARCHAR(30),
       error_code VARCHAR(20),
       error_message TEXT,
-      received_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+      received_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
     );
+
+    CREATE OR REPLACE FUNCTION update_updated_at_column()
+    RETURNS TRIGGER AS $$
+    BEGIN
+        NEW.updated_at = NOW();
+        RETURN NEW;
+    END;
+    $$ language 'plpgsql';
+
+    -- Setup modtime triggers
+    DROP TRIGGER IF EXISTS update_users_modtime ON users;
+    CREATE TRIGGER update_users_modtime BEFORE UPDATE ON users FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+    DROP TRIGGER IF EXISTS update_otps_modtime ON otps;
+    CREATE TRIGGER update_otps_modtime BEFORE UPDATE ON otps FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+    DROP TRIGGER IF EXISTS update_refresh_tokens_modtime ON refresh_tokens;
+    CREATE TRIGGER update_refresh_tokens_modtime BEFORE UPDATE ON refresh_tokens FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+    DROP TRIGGER IF EXISTS update_revoked_tokens_modtime ON revoked_tokens;
+    CREATE TRIGGER update_revoked_tokens_modtime BEFORE UPDATE ON revoked_tokens FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+    DROP TRIGGER IF EXISTS update_village_health_modtime ON village_health;
+    CREATE TRIGGER update_village_health_modtime BEFORE UPDATE ON village_health FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+    DROP TRIGGER IF EXISTS update_pregnancy_data_modtime ON pregnancy_data;
+    CREATE TRIGGER update_pregnancy_data_modtime BEFORE UPDATE ON pregnancy_data FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+    DROP TRIGGER IF EXISTS update_malnutrition_data_modtime ON malnutrition_data;
+    CREATE TRIGGER update_malnutrition_data_modtime BEFORE UPDATE ON malnutrition_data FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+    DROP TRIGGER IF EXISTS update_symptoms_modtime ON symptoms;
+    CREATE TRIGGER update_symptoms_modtime BEFORE UPDATE ON symptoms FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+    DROP TRIGGER IF EXISTS update_skin_logs_modtime ON skin_logs;
+    CREATE TRIGGER update_skin_logs_modtime BEFORE UPDATE ON skin_logs FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+    DROP TRIGGER IF EXISTS update_ambulance_requests_modtime ON ambulance_requests;
+    CREATE TRIGGER update_ambulance_requests_modtime BEFORE UPDATE ON ambulance_requests FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+    DROP TRIGGER IF EXISTS update_ngo_reports_modtime ON ngo_reports;
+    CREATE TRIGGER update_ngo_reports_modtime BEFORE UPDATE ON ngo_reports FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+    DROP TRIGGER IF EXISTS update_government_schemes_modtime ON government_schemes;
+    CREATE TRIGGER update_government_schemes_modtime BEFORE UPDATE ON government_schemes FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+    DROP TRIGGER IF EXISTS update_referrals_modtime ON referrals;
+    CREATE TRIGGER update_referrals_modtime BEFORE UPDATE ON referrals FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+    DROP TRIGGER IF EXISTS update_village_bulk_uploads_modtime ON village_bulk_uploads;
+    CREATE TRIGGER update_village_bulk_uploads_modtime BEFORE UPDATE ON village_bulk_uploads FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+    DROP TRIGGER IF EXISTS update_twilio_receipts_modtime ON twilio_receipts;
+    CREATE TRIGGER update_twilio_receipts_modtime BEFORE UPDATE ON twilio_receipts FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
     `);
 
     // ── PERFORMANCE INDEXES ──────────────────────────────────────────────────
@@ -169,6 +262,7 @@ export async function initSchema(db, pool, usingSQLite) {
       CREATE INDEX IF NOT EXISTS idx_referrals_status      ON referrals(status);
       CREATE INDEX IF NOT EXISTS idx_bulkuploads_by        ON village_bulk_uploads(uploaded_by);
       CREATE INDEX IF NOT EXISTS idx_twilio_sid            ON twilio_receipts(message_sid);
+      CREATE INDEX IF NOT EXISTS idx_otps_createdat        ON otps("createdAt");
     `);
 
     // ── POSTGRESQL COLUMN AUTO-MIGRATION ───────────────────────────────────
@@ -206,40 +300,6 @@ export async function initSchema(db, pool, usingSQLite) {
     // ── SQLite Schema Auto-Creation & Demo Data Seeding ──────────────────────
     console.log('📦 Initializing SQLite database schema and indexing...');
     await db.exec(`
-      CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        phone TEXT UNIQUE,
-        email TEXT UNIQUE,
-        username TEXT,
-        name TEXT,
-        password TEXT,
-        role TEXT,
-        "villageId" TEXT,
-        gender TEXT DEFAULT NULL,
-        age INTEGER DEFAULT NULL,
-        economic_status TEXT DEFAULT NULL,
-        caste TEXT DEFAULT NULL,
-        area_type TEXT DEFAULT NULL,
-        aadhaar_masked TEXT DEFAULT NULL,
-        aadhaar_hash TEXT DEFAULT NULL
-      );
-      CREATE TABLE IF NOT EXISTS otps (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        phone TEXT,
-        otp TEXT,
-        "createdAt" DATETIME DEFAULT CURRENT_TIMESTAMP
-      );
-      CREATE TABLE IF NOT EXISTS refresh_tokens (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        "userId" INTEGER,
-        token TEXT UNIQUE NOT NULL,
-        "expiresAt" DATETIME NOT NULL,
-        "createdAt" DATETIME DEFAULT CURRENT_TIMESTAMP
-      );
-      CREATE TABLE IF NOT EXISTS revoked_tokens (
-        token TEXT PRIMARY KEY,
-        "createdAt" DATETIME DEFAULT CURRENT_TIMESTAMP
-      );
       CREATE TABLE IF NOT EXISTS village_health (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         "villageId" TEXT UNIQUE,
@@ -253,8 +313,54 @@ export async function initSchema(db, pool, usingSQLite) {
         "lastUpdated" DATETIME DEFAULT NULL,
         "districtId" TEXT DEFAULT NULL,
         lat REAL DEFAULT NULL,
-        lng REAL DEFAULT NULL
+        lng REAL DEFAULT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
+
+      CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        phone TEXT UNIQUE,
+        email TEXT UNIQUE,
+        username TEXT,
+        name TEXT,
+        password TEXT,
+        role TEXT,
+        "villageId" TEXT REFERENCES village_health("villageId") ON DELETE SET NULL,
+        gender TEXT DEFAULT NULL,
+        age INTEGER DEFAULT NULL,
+        economic_status TEXT DEFAULT NULL,
+        caste TEXT DEFAULT NULL,
+        area_type TEXT DEFAULT NULL,
+        aadhaar_masked TEXT DEFAULT NULL,
+        aadhaar_hash TEXT DEFAULT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS otps (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        phone TEXT,
+        otp TEXT,
+        "createdAt" DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS refresh_tokens (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        "userId" INTEGER,
+        token TEXT UNIQUE NOT NULL,
+        "expiresAt" DATETIME NOT NULL,
+        "createdAt" DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS revoked_tokens (
+        token TEXT PRIMARY KEY,
+        "createdAt" DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+
       CREATE TABLE IF NOT EXISTS pregnancy_data (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT,
@@ -262,8 +368,12 @@ export async function initSchema(db, pool, usingSQLite) {
         trimester INTEGER,
         "dueDate" TEXT,
         "riskLevel" TEXT,
-        "villageId" TEXT
+        "villageId" TEXT,
+        recorded_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
+
       CREATE TABLE IF NOT EXISTS malnutrition_data (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         "childName" TEXT,
@@ -271,16 +381,25 @@ export async function initSchema(db, pool, usingSQLite) {
         weight REAL,
         height REAL,
         status TEXT,
-        "villageId" TEXT
+        "villageId" TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
+
       CREATE TABLE IF NOT EXISTS symptoms (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         "userId" INTEGER,
         "villageId" TEXT,
         symptoms TEXT,
         prediction TEXT,
-        "createdAt" DATETIME DEFAULT CURRENT_TIMESTAMP
+        disease TEXT,
+        advice TEXT,
+        confidence REAL,
+        model_used TEXT,
+        "createdAt" DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
+
       CREATE TABLE IF NOT EXISTS skin_logs (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         "userId" INTEGER,
@@ -289,8 +408,10 @@ export async function initSchema(db, pool, usingSQLite) {
         severity TEXT,
         "rednessPercent" INTEGER,
         "irregularPercent" INTEGER,
-        "createdAt" DATETIME DEFAULT CURRENT_TIMESTAMP
+        "createdAt" DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
+
       CREATE TABLE IF NOT EXISTS ambulance_requests (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER,
@@ -298,17 +419,23 @@ export async function initSchema(db, pool, usingSQLite) {
         location TEXT,
         priority TEXT,
         type TEXT DEFAULT 'emergency',
+        request_type TEXT DEFAULT 'ambulance',
         symptoms TEXT,
         status TEXT DEFAULT 'pending',
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
+
       CREATE TABLE IF NOT EXISTS ngo_reports (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         title TEXT,
         content TEXT,
         "villageId" TEXT,
-        date TEXT
+        date TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
+
       CREATE TABLE IF NOT EXISTS government_schemes (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
@@ -324,8 +451,10 @@ export async function initSchema(db, pool, usingSQLite) {
         area_type_eligibility TEXT DEFAULT 'all',
         required_documents TEXT,
         steps TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
+
       CREATE TABLE IF NOT EXISTS referrals (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         patient_name TEXT NOT NULL,
@@ -340,6 +469,7 @@ export async function initSchema(db, pool, usingSQLite) {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
+
       CREATE TABLE IF NOT EXISTS village_bulk_uploads (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         filename TEXT,
@@ -347,8 +477,10 @@ export async function initSchema(db, pool, usingSQLite) {
         rows_inserted INTEGER DEFAULT 0,
         rows_skipped INTEGER DEFAULT 0,
         errors TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
+
       CREATE TABLE IF NOT EXISTS twilio_receipts (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         message_sid TEXT UNIQUE,
@@ -356,13 +488,57 @@ export async function initSchema(db, pool, usingSQLite) {
         status TEXT,
         error_code TEXT,
         error_message TEXT,
-        received_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        received_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
+
       CREATE INDEX IF NOT EXISTS idx_sqlite_symptoms_villageid  ON symptoms("villageId");
       CREATE INDEX IF NOT EXISTS idx_sqlite_symptoms_createdat  ON symptoms("createdAt");
       CREATE INDEX IF NOT EXISTS idx_sqlite_ambulance_status    ON ambulance_requests(status);
       CREATE INDEX IF NOT EXISTS idx_sqlite_referrals_village   ON referrals("villageId");
       CREATE INDEX IF NOT EXISTS idx_sqlite_referrals_status    ON referrals(status);
+      CREATE INDEX IF NOT EXISTS idx_sqlite_otps_createdat      ON otps("createdAt");
+
+      -- Triggers for auto-updating updated_at columns in SQLite
+      CREATE TRIGGER IF NOT EXISTS update_users_modtime AFTER UPDATE ON users FOR EACH ROW
+      BEGIN
+        UPDATE users SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id;
+      END;
+
+      CREATE TRIGGER IF NOT EXISTS update_village_health_modtime AFTER UPDATE ON village_health FOR EACH ROW
+      BEGIN
+        UPDATE village_health SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id;
+      END;
+
+      CREATE TRIGGER IF NOT EXISTS update_pregnancy_data_modtime AFTER UPDATE ON pregnancy_data FOR EACH ROW
+      BEGIN
+        UPDATE pregnancy_data SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id;
+      END;
+
+      CREATE TRIGGER IF NOT EXISTS update_malnutrition_data_modtime AFTER UPDATE ON malnutrition_data FOR EACH ROW
+      BEGIN
+        UPDATE malnutrition_data SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id;
+      END;
+
+      CREATE TRIGGER IF NOT EXISTS update_symptoms_modtime AFTER UPDATE ON symptoms FOR EACH ROW
+      BEGIN
+        UPDATE symptoms SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id;
+      END;
+
+      CREATE TRIGGER IF NOT EXISTS update_skin_logs_modtime AFTER UPDATE ON skin_logs FOR EACH ROW
+      BEGIN
+        UPDATE skin_logs SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id;
+      END;
+
+      CREATE TRIGGER IF NOT EXISTS update_ambulance_requests_modtime AFTER UPDATE ON ambulance_requests FOR EACH ROW
+      BEGIN
+        UPDATE ambulance_requests SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id;
+      END;
+
+      CREATE TRIGGER IF NOT EXISTS update_referrals_modtime AFTER UPDATE ON referrals FOR EACH ROW
+      BEGIN
+        UPDATE referrals SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id;
+      END;
     `);
   }
 }

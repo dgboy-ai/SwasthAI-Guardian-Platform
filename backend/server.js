@@ -250,6 +250,22 @@ if (isProduction && cluster.isPrimary) {
       await initSchema(db, pool, usingSQLite);
       await seedData(db, pool, usingSQLite, bcrypt);
       initializeEventDispatcher(db, usingSQLite);
+      
+      // Start daily OTP cleanup job (runs once every 24 hours)
+      setInterval(async () => {
+        try {
+          console.log('[CLEANUP] Running scheduled OTP database cleanup...');
+          if (usingSQLite) {
+            await db.run("DELETE FROM otps WHERE \"createdAt\" < datetime('now', '-1 day')");
+          } else {
+            await pool.query("DELETE FROM otps WHERE \"createdAt\" < NOW() - INTERVAL '1 day'");
+          }
+          console.log('[CLEANUP] Daily OTP database cleanup completed successfully.');
+        } catch (err) {
+          console.error('[CLEANUP] Daily OTP database cleanup failed:', err.message);
+        }
+      }, 24 * 60 * 60 * 1000);
+      
     } catch (err) {
       console.error('Database setup/seeding failed:', err);
     }

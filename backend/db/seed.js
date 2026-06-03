@@ -215,12 +215,21 @@ export async function seedDemoData(db, usingSQLite, bcrypt) {
     ['v102', 'Mohanlal Ganj', 850, 9, 63, 4, '9876543213', 'lucknow_district', 26.7606, 80.8893]
   );
 
-  await db.run('INSERT INTO pregnancy_data (name, age, trimester, "riskLevel", "dueDate", "villageId") VALUES (?, ?, ?, ?, ?, ?)', ['Sunita Devi', 24, 3, 'High', '2026-08-15', 'v101']);
-  await db.run('INSERT INTO pregnancy_data (name, age, trimester, "riskLevel", "dueDate", "villageId") VALUES (?, ?, ?, ?, ?, ?)', ['Meena Kumari', 21, 2, 'Low', '2026-11-05', 'v101']);
+  // Query demo ASHA/NGO worker ID for pregnancy recorded_by reference
+  const ngoAcc = await db.get("SELECT id FROM users WHERE username = 'demo_asha'");
+  const ngoUserId = ngoAcc?.id || null;
+
+  await db.run('INSERT INTO pregnancy_data (name, age, trimester, "riskLevel", "dueDate", "villageId", recorded_by) VALUES (?, ?, ?, ?, ?, ?, ?)', ['Sunita Devi', 24, 3, 'High', '2026-08-15', 'v101', ngoUserId]);
+  await db.run('INSERT INTO pregnancy_data (name, age, trimester, "riskLevel", "dueDate", "villageId", recorded_by) VALUES (?, ?, ?, ?, ?, ?, ?)', ['Meena Kumari', 21, 2, 'Low', '2026-11-05', 'v101', ngoUserId]);
 
   await db.run('INSERT INTO malnutrition_data ("childName", "ageMonths", weight, height, status, "villageId") VALUES (?, ?, ?, ?, ?, ?)', ['Raju', 24, 11.2, 85.0, 'Moderate', 'v101']);
   await db.run('INSERT INTO malnutrition_data ("childName", "ageMonths", weight, height, status, "villageId") VALUES (?, ?, ?, ?, ?, ?)', ['Priya', 36, 14.5, 95.0, 'Normal', 'v101']);
 
-  await db.run('INSERT INTO symptoms ("userId", "villageId", symptoms, prediction) VALUES (1, ?, ?, ?)', ['v101', 'Fever, cough, body pain for 3 days', 'Mild Viral Infection - Maintain hydration, isolate, report if temp exceeds 102F']);
-  await db.run('INSERT INTO ambulance_requests (user_id, name, location, priority, type, symptoms, status) VALUES (1, ?, ?, ?, ?, ?, ?)', ['Ramesh Kumar', 'Rampur, Near Primary School', 'High', 'emergency', 'Severe chest pain and difficulty breathing', 'pending']);
+  await db.run(
+    'INSERT INTO symptoms ("userId", "villageId", symptoms, prediction, disease, advice, confidence, model_used) VALUES (1, ?, ?, ?, ?, ?, ?, ?)',
+    ['v101', 'Fever, cough, body pain for 3 days', 'Mild Viral Infection - Maintain hydration, isolate, report if temp exceeds 102F', 'Mild Viral Infection', 'Maintain hydration, isolate, report if temp exceeds 102F', 0.90, 'Offline Rule Matcher']
+  );
+  
+  await db.run('INSERT INTO ambulance_requests (user_id, name, location, priority, type, request_type, symptoms, status) VALUES (1, ?, ?, ?, ?, ?, ?, ?)', ['Ramesh Kumar', 'Rampur, Near Primary School', 'High', 'emergency', 'ambulance', 'Severe chest pain and difficulty breathing', 'pending']);
+  await db.run('INSERT INTO ambulance_requests (user_id, name, location, priority, type, request_type, symptoms, status) VALUES (1, ?, ?, ?, ?, ?, ?, ?)', ['Sita Devi', 'ASHA Center रामपुर', 'Low', 'operation', 'pad_request', 'Confidential request for sanitary pads supply', 'pending']);
 }

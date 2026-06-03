@@ -49,6 +49,10 @@ async function seed() {
     console.log(`   ✅ Seeded user ${acc.username} (${acc.role})`);
   }
 
+  // Get demo ASHA / NGO worker ID for pregnancy recorded_by reference
+  const ashaRes = await pool.query("SELECT id FROM users WHERE role = 'ngo' LIMIT 1");
+  const ashaId = ashaRes.rows[0]?.id || null;
+
   // Get demo villager ID for symptoms mapping
   const villagerRes = await pool.query('SELECT id FROM users WHERE username = $1', ['demo_villager']);
   const villagerId = villagerRes.rows[0]?.id || 1;
@@ -79,9 +83,9 @@ async function seed() {
   console.log('🤰 Seeding pregnancy tracking records...');
   for (const p of pregnancies) {
     await pool.query(
-      `INSERT INTO pregnancy_data (name, age, trimester, "riskLevel", "dueDate", "villageId")
-       VALUES ($1, $2, $3, $4, $5, $6)`,
-      [p.name, p.age, p.trimester, p.risk, p.dueDate, p.villageId]
+      `INSERT INTO pregnancy_data (name, age, trimester, "riskLevel", "dueDate", "villageId", recorded_by)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [p.name, p.age, p.trimester, p.risk, p.dueDate, p.villageId, ashaId]
     );
   }
   console.log('   ✅ Seeded pregnancy_data');
@@ -105,32 +109,32 @@ async function seed() {
 
   // 6. Seed Symptom Reports
   const symptoms = [
-    { userId: villagerId, villageId: 'v101', symptoms: 'Fever, cough, body pain for 3 days', prediction: 'Mild Viral Infection - Maintain hydration, isolate, report if temp exceeds 102F' },
-    { userId: villagerId, villageId: 'v101', symptoms: 'Severe dehydration, vomiting, diarrhoea', prediction: 'Moderate Gastroenteritis - Advise ORS and Zinc, monitor urine output' }
+    { userId: villagerId, villageId: 'v101', symptoms: 'Fever, cough, body pain for 3 days', prediction: 'Mild Viral Infection - Maintain hydration, isolate, report if temp exceeds 102F', disease: 'Mild Viral Infection', advice: 'Maintain hydration, isolate, report if temp exceeds 102F', confidence: 0.90, model_used: 'Offline Rule Matcher' },
+    { userId: villagerId, villageId: 'v101', symptoms: 'Severe dehydration, vomiting, diarrhoea', prediction: 'Moderate Gastroenteritis - Advise ORS and Zinc, monitor urine output', disease: 'Moderate Gastroenteritis', advice: 'Advise ORS and Zinc, monitor urine output', confidence: 0.85, model_used: 'Offline Rule Matcher' }
   ];
 
   console.log('🩺 Seeding symptom prediction logs...');
   for (const s of symptoms) {
     await pool.query(
-      `INSERT INTO symptoms ("userId", "villageId", symptoms, prediction)
-       VALUES ($1, $2, $3, $4)`,
-      [s.userId, s.villageId, s.symptoms, s.prediction]
+      `INSERT INTO symptoms ("userId", "villageId", symptoms, prediction, disease, advice, confidence, model_used)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [s.userId, s.villageId, s.symptoms, s.prediction, s.disease, s.advice, s.confidence, s.model_used]
     );
   }
   console.log('   ✅ Seeded symptoms');
 
   // 7. Seed Ambulance & Operations Requests
   const requests = [
-    { user_id: villagerId, name: 'Ramesh Kumar', location: 'Rampur, Near Primary School', priority: 'High', type: 'emergency', symptoms: 'Severe chest pain and difficulty breathing', status: 'pending' },
-    { user_id: villagerId, name: 'Sita Devi', location: 'ASHA Center रामपुर', priority: 'Pad Request', type: 'operation', symptoms: 'Confidential request for sanitary pads supply', status: 'pending' }
+    { user_id: villagerId, name: 'Ramesh Kumar', location: 'Rampur, Near Primary School', priority: 'High', type: 'emergency', request_type: 'ambulance', symptoms: 'Severe chest pain and difficulty breathing', status: 'pending' },
+    { user_id: villagerId, name: 'Sita Devi', location: 'ASHA Center रामपुर', priority: 'Low', type: 'operation', request_type: 'pad_request', symptoms: 'Confidential request for sanitary pads supply', status: 'pending' }
   ];
 
   console.log('🚨 Seeding operational & ambulance requests...');
   for (const r of requests) {
     await pool.query(
-      `INSERT INTO ambulance_requests (user_id, name, location, priority, type, symptoms, status)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-      [r.user_id, r.name, r.location, r.priority, r.type, r.symptoms, r.status]
+      `INSERT INTO ambulance_requests (user_id, name, location, priority, type, request_type, symptoms, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [r.user_id, r.name, r.location, r.priority, r.type, r.request_type, r.symptoms, r.status]
     );
   }
   console.log('   ✅ Seeded ambulance_requests');

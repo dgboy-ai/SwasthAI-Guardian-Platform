@@ -124,13 +124,13 @@ router.get('/summary', auth, checkRole(['admin']), async (req, res) => {
       sanitaryReqs = await db.get('SELECT COUNT(*) as c FROM requests WHERE type = "sanitary_pad"');
     } catch (e) { /* ignore if table missing */ }
 
-    const emergencyReqs = await db.get('SELECT COUNT(*) as c FROM ambulance_requests');
-    const padReqs = await db.get('SELECT COUNT(*) as c FROM ambulance_requests WHERE priority = "Pad Request"');
+    const emergencyReqs = await db.get("SELECT COUNT(*) as c FROM ambulance_requests WHERE request_type = 'ambulance'");
+    const padReqs = await db.get("SELECT COUNT(*) as c FROM ambulance_requests WHERE request_type = 'pad_request'");
 
     res.send({
       totalUsers: totalUsers?.c || 0,
       totalNgos: totalNgos?.c || 0,
-      totalRequests: (totalReqs?.c || 0) + (emergencyReqs?.c || 0),
+      totalRequests: (totalReqs?.c || 0) + (emergencyReqs?.c || 0) + (padReqs?.c || 0),
       emergencyCount: emergencyReqs?.c || 0,
       sanitaryCount: (sanitaryReqs?.c || 0) + (padReqs?.c || 0)
     });

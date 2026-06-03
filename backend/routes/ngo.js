@@ -86,7 +86,7 @@ router.post('/maternal', auth, checkRole(['ngo', 'admin']), async (req, res) => 
     console.error('AI Service Error (Maternal Risk):', err.message);
     return res.status(503).send({ error: 'Maternal Risk AI is currently unavailable. Please consult a doctor immediately if you notice warning signs.' });
   }
-  await db.run('INSERT INTO pregnancy_data (name, age, trimester, "dueDate", "riskLevel", "villageId") VALUES (?, ?, ?, ?, ?, ?)', [name, age, trimester, dueDate, riskLevel, villageId]);
+  await db.run('INSERT INTO pregnancy_data (name, age, trimester, "dueDate", "riskLevel", "villageId", recorded_by) VALUES (?, ?, ?, ?, ?, ?, ?)', [name, age, trimester, dueDate, riskLevel, villageId, req.user.id]);
   res.send({ riskLevel, villageId });
 });
 
@@ -128,7 +128,7 @@ router.get('/ambulances', auth, checkRole(['ngo', 'admin']), async (req, res) =>
   try {
     const limit = parseInt(req.query.limit) || 100;
     const offset = (parseInt(req.query.page || 1) - 1) * limit;
-    const rows = await db.all("SELECT * FROM ambulance_requests WHERE priority != 'Pad Request' ORDER BY id DESC LIMIT ? OFFSET ?", [limit, offset]);
+    const rows = await db.all("SELECT * FROM ambulance_requests WHERE request_type = 'ambulance' ORDER BY id DESC LIMIT ? OFFSET ?", [limit, offset]);
     res.send(rows);
   } catch (err) {
     console.error(err);
@@ -141,7 +141,7 @@ router.get('/pads', auth, checkRole(['ngo', 'admin']), async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 100;
     const offset = (parseInt(req.query.page || 1) - 1) * limit;
-    const rows = await db.all("SELECT * FROM ambulance_requests WHERE priority = 'Pad Request' ORDER BY id DESC LIMIT ? OFFSET ?", [limit, offset]);
+    const rows = await db.all("SELECT * FROM ambulance_requests WHERE request_type = 'pad_request' ORDER BY id DESC LIMIT ? OFFSET ?", [limit, offset]);
     res.send(rows);
   } catch (err) {
     console.error(err);

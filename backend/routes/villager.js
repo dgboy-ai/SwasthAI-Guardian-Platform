@@ -247,7 +247,10 @@ router.post('/symptoms', auth, aiLimiter, checkRole(['villager', 'ngo', 'admin']
     prediction = `${matchedName} - Reliable Advice: ${advice}`;
   }
 
-  await db.run('INSERT INTO symptoms ("userId", "villageId", symptoms, prediction) VALUES (?, ?, ?, ?)', [userId, villageId, text, prediction]);
+  await db.run(
+    'INSERT INTO symptoms ("userId", "villageId", symptoms, prediction, disease, advice, confidence, model_used) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+    [userId, villageId, text, prediction, disease, advice, confidence, model]
+  );
 
   const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
   const logs = await db.all(
@@ -317,8 +320,8 @@ router.post('/ambulance', auth, async (req, res) => {
     }
 
     const result = await db.run(
-      'INSERT INTO ambulance_requests (user_id, name, location, priority, symptoms, status) VALUES (?, ?, ?, ?, ?, ?)',
-      [userId, name, location, priority, sxy, 'pending']
+      'INSERT INTO ambulance_requests (user_id, name, location, priority, request_type, symptoms, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [userId, name, location, priority, 'ambulance', sxy, 'pending']
     );
 
     const requestId  = result.lastID;
@@ -453,8 +456,8 @@ router.post('/villager/pad-request', auth, async (req, res) => {
     const userRecord = await db.get('SELECT name FROM users WHERE id = ?', [req.user.id]);
     const userName = userRecord?.name || 'Unknown Villager';
 
-    await db.run('INSERT INTO ambulance_requests (user_id, name, location, priority, symptoms, status) VALUES (?, ?, ?, ?, ?, ?)',
-      [req.user.id, userName, village, 'Pad Request', 'Requires Sanitary Pads delivered to village.', 'pending']
+    await db.run('INSERT INTO ambulance_requests (user_id, name, location, priority, request_type, symptoms, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [req.user.id, userName, village, 'Low', 'pad_request', 'Requires Sanitary Pads delivered to village.', 'pending']
     );
     res.send({ success: true });
   } catch (err) {
