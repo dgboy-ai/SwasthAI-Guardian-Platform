@@ -106,6 +106,12 @@ export const GOVERNMENT_SCHEMES = [
 ];
 
 export async function seedData(db, pool, usingSQLite, bcrypt) {
+  // Prevent any seeding execution in production
+  if (process.env.NODE_ENV === 'production') {
+    console.warn('⚠️ Seeding data blocked in production environment.');
+    return;
+  }
+
   if (pool) {
     const schemeCount = await pool.query('SELECT COUNT(*) FROM government_schemes');
     if (parseInt(schemeCount.rows[0].count) === 0) {
@@ -125,26 +131,7 @@ export async function seedData(db, pool, usingSQLite, bcrypt) {
       console.log('Seeded government schemes into Aurora PostgreSQL.');
     }
   } else {
-    // Seed default demo accounts in SQLite if missing
-    const hash = await bcrypt.hash('Demo@1234', 10);
-    const adminCheck = await db.get("SELECT id FROM users WHERE role = 'admin'");
-    if (!adminCheck) {
-      await db.run(
-        'INSERT OR IGNORE INTO users (phone, email, username, name, password, role, "villageId") VALUES (?, ?, ?, ?, ?, ?, ?)',
-        ['9876543210', 'villager@swasthai.in', 'demo_villager', 'Ramesh Kumar', hash, 'villager', 'v101']
-      );
-      await db.run(
-        'INSERT OR IGNORE INTO users (phone, email, username, name, password, role, "villageId") VALUES (?, ?, ?, ?, ?, ?, ?)',
-        ['9876543211', 'asha@swasthai.in', 'demo_asha', 'Sita Devi (ASHA)', hash, 'ngo', 'v101']
-      );
-      await db.run(
-        'INSERT OR IGNORE INTO users (phone, email, username, name, password, role, "villageId") VALUES (?, ?, ?, ?, ?, ?, ?)',
-        ['9876543212', 'admin@swasthai.in', 'demo_admin', 'CMO Varanasi', hash, 'admin', null]
-      );
-      console.log('   👤 Default SQLite demo accounts seeded.');
-    }
-
-    // Seed standard villages in SQLite if missing
+    // Seed default villages in SQLite first (Dependency order requirement)
     const villageCheck = await db.get("SELECT id FROM village_health LIMIT 1");
     if (!villageCheck) {
       await db.run(
@@ -162,6 +149,25 @@ export async function seedData(db, pool, usingSQLite, bcrypt) {
         ['v102', 'Mohanlal Ganj', 850, 9, 63, 4, '9876543213', 'lucknow_district', 26.7606, 80.8893]
       );
       console.log('   🏘️ Default SQLite villages seeded (with districtId + coords).');
+    }
+
+    // Seed default demo accounts in SQLite next (references village_health)
+    const hash = await bcrypt.hash('Demo@1234', 10);
+    const adminCheck = await db.get("SELECT id FROM users WHERE role = 'admin'");
+    if (!adminCheck) {
+      await db.run(
+        'INSERT OR IGNORE INTO users (phone, email, username, name, password, role, "villageId") VALUES (?, ?, ?, ?, ?, ?, ?)',
+        ['9876543210', 'villager@swasthai.in', 'demo_villager', 'Ramesh Kumar', hash, 'villager', 'v101']
+      );
+      await db.run(
+        'INSERT OR IGNORE INTO users (phone, email, username, name, password, role, "villageId") VALUES (?, ?, ?, ?, ?, ?, ?)',
+        ['9876543211', 'asha@swasthai.in', 'demo_asha', 'Sita Devi (ASHA)', hash, 'ngo', 'v101']
+      );
+      await db.run(
+        'INSERT OR IGNORE INTO users (phone, email, username, name, password, role, "villageId") VALUES (?, ?, ?, ?, ?, ?, ?)',
+        ['9876543212', 'admin@swasthai.in', 'demo_admin', 'CMO Varanasi', hash, 'admin', null]
+      );
+      console.log('   👤 Default SQLite demo accounts seeded.');
     }
 
     // Seed default government schemes in SQLite if missing
@@ -197,44 +203,56 @@ export async function seedData(db, pool, usingSQLite, bcrypt) {
 }
 
 export async function seedDemoData(db, usingSQLite, bcrypt) {
+  // Prevent any seeding execution in production
+  if (process.env.NODE_ENV === 'production') {
+    console.warn('⚠️ Seeding demo data blocked in production environment.');
+    return;
+  }
+
   const hash = await bcrypt.hash('Demo@1234', 10);
   
-  await db.run("DELETE FROM users WHERE username IN ('demo_villager', 'demo_asha', 'demo_admin')");
-  await db.run("DELETE FROM village_health WHERE \"villageId\" IN ('v101', 'v102')");
-  await db.run("DELETE FROM pregnancy_data WHERE \"villageId\" IN ('v101', 'v102')");
-  await db.run("DELETE FROM malnutrition_data WHERE \"villageId\" IN ('v101', 'v102')");
-  await db.run("DELETE FROM symptoms WHERE \"villageId\" IN ('v101', 'v102')");
-  await db.run("DELETE FROM ambulance_requests WHERE priority IN ('High', 'Medium', 'Low', 'Pad Request')");
+  // Clean in dependent order (child records first, parent records last)
   await db.run("DELETE FROM referrals WHERE \"villageId\" IN ('v101', 'v102')");
   await db.run("DELETE FROM vaccination_records WHERE \"villageId\" IN ('v101', 'v102')");
   await db.run("DELETE FROM asha_performance");
   await db.run("DELETE FROM audit_logs");
   await db.run("DELETE FROM district_config");
+  await db.run("DELETE FROM symptoms WHERE \"villageId\" IN ('v101', 'v102')");
+  await db.run("DELETE FROM malnutrition_data WHERE \"villageId\" IN ('v101', 'v102')");
+  await db.run("DELETE FROM pregnancy_data WHERE \"villageId\" IN ('v101', 'v102')");
+  await db.run("DELETE FROM ambulance_requests WHERE priority IN ('High', 'Medium', 'Low', 'Pad Request')");
+  await db.run("DELETE FROM users WHERE username IN ('demo_villager', 'demo_asha', 'demo_admin')");
+  await db.run("DELETE FROM village_health WHERE \"villageId\" IN ('v101', 'v102')");
 
-  await db.run('INSERT INTO users (phone, email, username, name, password, role, "villageId") VALUES (?, ?, ?, ?, ?, ?, ?)', ['9876543210', 'villager@swasthai.in', 'demo_villager', 'Ramesh Kumar', hash, 'villager', 'v101']);
-  await db.run('INSERT INTO users (phone, email, username, name, password, role, "villageId") VALUES (?, ?, ?, ?, ?, ?, ?)', ['9876543211', 'asha@swasthai.in', 'demo_asha', 'Sita Devi (ASHA)', hash, 'ngo', 'v101']);
-  await db.run('INSERT INTO users (phone, email, username, name, password, role, "villageId") VALUES (?, ?, ?, ?, ?, ?, ?)', ['9876543212', 'admin@swasthai.in', 'demo_admin', 'CMO Varanasi', hash, 'admin', null]);
-
+  // 1. Seed village_health first
   const nowSql = usingSQLite ? "datetime('now')" : "NOW()";
   await db.run(
-    `INSERT INTO village_health
+    `INSERT OR IGNORE INTO village_health
      ("villageId", name, population, pregnant_women, children_under_5,
       malnutrition_cases, asha_contact, "districtId", lat, lng, "lastUpdated")
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ${nowSql})`,
     ['v101', 'Rampur', 1200, 14, 89, 7, '9876543211', 'varanasi_district', 25.3176, 82.9739]
   );
   await db.run(
-    `INSERT INTO village_health
+    `INSERT OR IGNORE INTO village_health
      ("villageId", name, population, pregnant_women, children_under_5,
       malnutrition_cases, asha_contact, "districtId", lat, lng, "lastUpdated")
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ${nowSql})`,
     ['v102', 'Mohanlal Ganj', 850, 9, 63, 4, '9876543213', 'lucknow_district', 26.7606, 80.8893]
   );
 
-  // Query demo ASHA/NGO worker ID for pregnancy recorded_by reference
+  // 2. Seed users next (referencing villageId)
+  await db.run('INSERT OR IGNORE INTO users (phone, email, username, name, password, role, "villageId") VALUES (?, ?, ?, ?, ?, ?, ?)', ['9876543210', 'villager@swasthai.in', 'demo_villager', 'Ramesh Kumar', hash, 'villager', 'v101']);
+  await db.run('INSERT OR IGNORE INTO users (phone, email, username, name, password, role, "villageId") VALUES (?, ?, ?, ?, ?, ?, ?)', ['9876543211', 'asha@swasthai.in', 'demo_asha', 'Sita Devi (ASHA)', hash, 'ngo', 'v101']);
+  await db.run('INSERT OR IGNORE INTO users (phone, email, username, name, password, role, "villageId") VALUES (?, ?, ?, ?, ?, ?, ?)', ['9876543212', 'admin@swasthai.in', 'demo_admin', 'CMO Varanasi', hash, 'admin', null]);
+
+  // 3. Resolve user IDs dynamically to avoid hardcoded Foreign Key breaks
+  const villagerAcc = await db.get("SELECT id FROM users WHERE username = 'demo_villager'");
+  const villagerUserId = villagerAcc?.id || null;
   const ngoAcc = await db.get("SELECT id FROM users WHERE username = 'demo_asha'");
   const ngoUserId = ngoAcc?.id || null;
 
+  // 4. Seed dependent clinical/operational tables
   await db.run('INSERT INTO pregnancy_data (name, age, trimester, "riskLevel", "dueDate", "villageId", recorded_by) VALUES (?, ?, ?, ?, ?, ?, ?)', ['Sunita Devi', 24, 3, 'High', '2026-08-15', 'v101', ngoUserId]);
   await db.run('INSERT INTO pregnancy_data (name, age, trimester, "riskLevel", "dueDate", "villageId", recorded_by) VALUES (?, ?, ?, ?, ?, ?, ?)', ['Meena Kumari', 21, 2, 'Low', '2026-11-05', 'v101', ngoUserId]);
 
@@ -242,16 +260,15 @@ export async function seedDemoData(db, usingSQLite, bcrypt) {
   await db.run('INSERT INTO malnutrition_data ("childName", "ageMonths", weight, height, status, "villageId") VALUES (?, ?, ?, ?, ?, ?)', ['Priya', 36, 14.5, 95.0, 'Normal', 'v101']);
 
   await db.run(
-    'INSERT INTO symptoms ("userId", "villageId", symptoms, prediction, disease, advice, confidence, model_used) VALUES (1, ?, ?, ?, ?, ?, ?, ?)',
-    ['v101', 'Fever, cough, body pain for 3 days', 'Mild Viral Infection - Maintain hydration, isolate, report if temp exceeds 102F', 'Mild Viral Infection', 'Maintain hydration, isolate, report if temp exceeds 102F', 0.90, 'Offline Rule Matcher']
+    'INSERT INTO symptoms ("userId", "villageId", symptoms, prediction, disease, advice, confidence, model_used) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+    [villagerUserId, 'v101', 'Fever, cough, body pain for 3 days', 'Mild Viral Infection - Maintain hydration, isolate, report if temp exceeds 102F', 'Mild Viral Infection', 'Maintain hydration, isolate, report if temp exceeds 102F', 0.90, 'Offline Rule Matcher']
   );
   
-  await db.run('INSERT INTO ambulance_requests (user_id, name, location, priority, type, request_type, symptoms, status) VALUES (1, ?, ?, ?, ?, ?, ?, ?)', ['Ramesh Kumar', 'Rampur, Near Primary School', 'High', 'emergency', 'ambulance', 'Severe chest pain and difficulty breathing', 'pending']);
-  await db.run('INSERT INTO ambulance_requests (user_id, name, location, priority, type, request_type, symptoms, status) VALUES (1, ?, ?, ?, ?, ?, ?, ?)', ['Sita Devi', 'ASHA Center रामपुर', 'Low', 'operation', 'pad_request', 'Confidential request for sanitary pads supply', 'pending']);
+  await db.run('INSERT INTO ambulance_requests (user_id, name, location, priority, type, request_type, symptoms, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', [villagerUserId, 'Ramesh Kumar', 'Rampur, Near Primary School', 'High', 'emergency', 'ambulance', 'Severe chest pain and difficulty breathing', 'pending']);
+  await db.run('INSERT INTO ambulance_requests (user_id, name, location, priority, type, request_type, symptoms, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', [villagerUserId, 'Sita Devi', 'ASHA Center रामपुर', 'Low', 'operation', 'pad_request', 'Confidential request for sanitary pads supply', 'pending']);
 
-  // B2B Seeding for SQLite Demo Data
   await db.run(
-    `INSERT INTO district_config (district_id, outbreak_threshold, enable_auto_ambulance, emergency_contact_phone)
+    `INSERT OR IGNORE INTO district_config (district_id, outbreak_threshold, enable_auto_ambulance, emergency_contact_phone)
      VALUES (?, ?, ?, ?)`,
     ['varanasi_district', 3, 1, '+91 94150 12345']
   );
@@ -268,7 +285,7 @@ export async function seedDemoData(db, usingSQLite, bcrypt) {
   );
 
   await db.run(
-    `INSERT INTO asha_performance (asha_id, month, referrals_count, pregnancies_tracked, vaccinations_completed, emergencies_reported)
+    `INSERT OR IGNORE INTO asha_performance (asha_id, month, referrals_count, pregnancies_tracked, vaccinations_completed, emergencies_reported)
      VALUES (?, ?, ?, ?, ?, ?)`,
     [ngoUserId, '2026-06', 12, 5, 8, 2]
   );
