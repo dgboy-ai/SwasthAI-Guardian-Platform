@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import rateLimit from 'express-rate-limit';
+import { z } from 'zod';
 import { auth } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -13,6 +14,49 @@ const authLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many login attempts. Please try again in 15 minutes.' },
+});
+
+// Zod Input Validation Schemas
+const RegisterSchema = z.object({
+  phone: z.string().regex(/^\d{10}$/, 'Phone number must be exactly 10 digits').optional().nullable(),
+  email: z.string().email('Invalid email address').optional().nullable(),
+  username: z.string().min(3, 'Username must be at least 3 characters'),
+  name: z.string().min(1, 'Name is required'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+  role: z.enum(['villager', 'ngo', 'admin']),
+  villageId: z.string().optional().nullable(),
+  gender: z.string().optional().nullable(),
+  age: z.number().int().min(0).max(125).optional().nullable(),
+  economic_status: z.string().optional().nullable(),
+  caste: z.string().optional().nullable(),
+  area_type: z.string().optional().nullable()
+});
+
+const RequestOtpSchema = z.object({
+  phone: z.string().regex(/^\d{10}$/, 'Phone number must be exactly 10 digits')
+});
+
+const LoginOtpSchema = z.object({
+  phone: z.string().regex(/^\d{10}$/, 'Phone number must be exactly 10 digits'),
+  otp: z.string().min(4).max(6),
+  role: z.enum(['villager', 'ngo', 'admin'])
+});
+
+const LoginPasswordSchema = z.object({
+  identifier: z.string().min(1, 'Identifier is required'),
+  password: z.string().min(1, 'Password is required'),
+  role: z.enum(['villager', 'ngo', 'admin'])
+});
+
+const ProfileUpdateSchema = z.object({
+  name: z.string().min(1, 'Name cannot be empty').optional(),
+  username: z.string().min(3, 'Username must be at least 3 characters').optional()
+}).refine(data => data.name || data.username, {
+  message: 'Name or username is required for updates'
+});
+
+const AadhaarVerifySchema = z.object({
+  aadhaar: z.string().regex(/^\d{12}$/, 'Aadhaar must be exactly 12 digits')
 });
 
 function verhoeffCheck(num) {
@@ -46,9 +90,42 @@ function verhoeffCheck(num) {
   return c === 0;
 }
 
+// Helper to generate Refresh Token
+async function generateRefreshToken(db, userId) {
+  const token = crypto.randomBytes(40).toString('hex');
+  const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(); // 30 days
+  await db.run(
+    'INSERT INTO refresh_tokens ("userId", token, "expiresAt") VALUES (?, ?, ?)',
+    [userId, token, expiresAt]
+  );
+  return token;
+}
+
+// Clean up expired OTPs and expired tokens
+async function runCleanup(db, usingSQLite) {
+  try {
+    if (usingSQLite) {
+      await db.run(`DELETE FROM otps WHERE "createdAt" < datetime('now', '-10 minutes')`);
+      await db.run(`DELETE FROM refresh_tokens WHERE "expiresAt" < datetime('now')`);
+      await db.run(`DELETE FROM revoked_tokens WHERE "createdAt" < datetime('now', '-7 days')`);
+    } else {
+      await db.run(`DELETE FROM otps WHERE "createdAt" < NOW() - INTERVAL '10 minutes'`);
+      await db.run(`DELETE FROM refresh_tokens WHERE "expiresAt" < NOW()`);
+      await db.run(`DELETE FROM revoked_tokens WHERE "createdAt" < NOW() - INTERVAL '7 days'`);
+    }
+  } catch (err) {
+    console.error('[Cleanup Error]', err.message);
+  }
+}
+
 router.post('/register', async (req, res) => {
   const db = req.app.locals.db;
-  const { phone, email, username, name, password, role, villageId, gender, age, economic_status, caste, area_type } = req.body;
+  const parseResult = RegisterSchema.safeParse(req.body);
+  if (!parseResult.success) {
+    return res.status(400).json({ error: parseResult.error.errors[0].message });
+  }
+
+  const { phone, email, username, name, password, role, villageId, gender, age, economic_status, caste, area_type } = parseResult.data;
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
     const result = await db.run(
@@ -64,19 +141,35 @@ router.post('/register', async (req, res) => {
 
 router.post('/request-otp', async (req, res) => {
   const db = req.app.locals.db;
-  const { phone } = req.body;
+  const usingSQLite = req.app.locals.usingSQLite;
+  const parseResult = RequestOtpSchema.safeParse(req.body);
+  if (!parseResult.success) {
+    return res.status(400).json({ error: parseResult.error.errors[0].message });
+  }
+
+  const { phone } = parseResult.data;
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
   await db.run('INSERT INTO otps (phone, otp) VALUES (?, ?)', [phone, otp]);
   console.log(`[MOCK OTP] Sent to ${phone}: ${otp}`);
+  
+  // Clean up old records on a new OTP request
+  runCleanup(db, usingSQLite).catch(() => {});
+
   res.send({ message: 'OTP sent successfully (Check server logs)' });
 });
 
 router.post('/login-otp', authLimiter, async (req, res) => {
   const db = req.app.locals.db;
   const usingSQLite = req.app.locals.usingSQLite;
-  const { phone, otp, role } = req.body;
+  const parseResult = LoginOtpSchema.safeParse(req.body);
+  if (!parseResult.success) {
+    return res.status(400).json({ error: parseResult.error.errors[0].message });
+  }
+
+  const { phone, otp, role } = parseResult.data;
   const isDev = process.env.NODE_ENV !== 'production';
   const isDemoOtp = isDev && (otp === '1234');
+  
   if (!isDemoOtp) {
     let record;
     if (usingSQLite) {
@@ -91,16 +184,33 @@ router.post('/login-otp', authLimiter, async (req, res) => {
       );
     }
     if (!record) return res.status(401).send({ error: 'Invalid or expired OTP.' });
+    
+    // Delete OTP after successful use to prevent reuse
+    await db.run('DELETE FROM otps WHERE phone = ?', [phone]);
   }
+
   const user = await db.get('SELECT * FROM users WHERE phone = ? AND role = ?', [phone, role]);
   if (!user) return res.status(404).send({ error: 'No account found with this phone number for the selected role.' });
-  const token = jwt.sign({ id: user.id, role: user.role, villageId: user.villageId }, process.env.JWT_SECRET, { expiresIn: '7d' });
-  res.send({ token, user: { id: user.id, name: user.name, username: user.username, role: user.role, villageId: user.villageId } });
+  
+  // Access Token expires in 15m; Refresh Token expires in 30 days
+  const token = jwt.sign({ id: user.id, role: user.role, villageId: user.villageId }, process.env.JWT_SECRET, { expiresIn: '15m' });
+  const refreshToken = await generateRefreshToken(db, user.id);
+
+  res.send({ 
+    token, 
+    refreshToken,
+    user: { id: user.id, name: user.name, username: user.username, role: user.role, villageId: user.villageId } 
+  });
 });
 
 router.post('/login-password', authLimiter, async (req, res) => {
   const db = req.app.locals.db;
-  const { identifier, password, role } = req.body;
+  const parseResult = LoginPasswordSchema.safeParse(req.body);
+  if (!parseResult.success) {
+    return res.status(400).json({ error: parseResult.error.errors[0].message });
+  }
+
+  const { identifier, password, role } = parseResult.data;
   const user = await db.get('SELECT * FROM users WHERE (email = ? OR phone = ?) AND role = ?', [identifier, identifier, role]);
 
   if (!user) return res.status(401).send({ error: 'Invalid credentials.' });
@@ -108,14 +218,73 @@ router.post('/login-password', authLimiter, async (req, res) => {
   const passwordMatch = await bcrypt.compare(password, user.password);
   if (!passwordMatch) return res.status(401).send({ error: 'Invalid credentials.' });
 
-  const token = jwt.sign({ id: user.id, role: user.role, villageId: user.villageId }, process.env.JWT_SECRET, { expiresIn: '7d' });
-  res.send({ token, user: { id: user.id, name: user.name, username: user.username, role: user.role, villageId: user.villageId } });
+  // Access Token expires in 15m; Refresh Token expires in 30 days
+  const token = jwt.sign({ id: user.id, role: user.role, villageId: user.villageId }, process.env.JWT_SECRET, { expiresIn: '15m' });
+  const refreshToken = await generateRefreshToken(db, user.id);
+
+  res.send({ 
+    token, 
+    refreshToken,
+    user: { id: user.id, name: user.name, username: user.username, role: user.role, villageId: user.villageId } 
+  });
+});
+
+// Refresh Token Exchange Endpoint
+router.post('/refresh', async (req, res) => {
+  const db = req.app.locals.db;
+  const { refreshToken } = req.body;
+  if (!refreshToken) return res.status(400).send({ error: 'Refresh token is required.' });
+
+  try {
+    const record = await db.get(
+      'SELECT * FROM refresh_tokens WHERE token = ? AND "expiresAt" > ?',
+      [refreshToken, new Date().toISOString()]
+    );
+    if (!record) return res.status(401).send({ error: 'Invalid or expired refresh token.' });
+
+    const user = await db.get('SELECT * FROM users WHERE id = ?', [record.userId]);
+    if (!user) return res.status(404).send({ error: 'User not found.' });
+
+    // Rotate refresh token
+    await db.run('DELETE FROM refresh_tokens WHERE token = ?', [refreshToken]);
+    const newRefreshToken = await generateRefreshToken(db, user.id);
+    const newToken = jwt.sign({ id: user.id, role: user.role, villageId: user.villageId }, process.env.JWT_SECRET, { expiresIn: '15m' });
+
+    res.send({ token: newToken, refreshToken: newRefreshToken });
+  } catch (err) {
+    console.error('Refresh token error:', err);
+    res.status(500).send({ error: 'Failed to refresh token.' });
+  }
+});
+
+// Logout (Revoke tokens)
+router.post('/logout', auth, async (req, res) => {
+  const db = req.app.locals.db;
+  const { refreshToken } = req.body;
+  const token = req.header('Authorization')?.replace('Bearer ', '');
+
+  try {
+    if (refreshToken) {
+      await db.run('DELETE FROM refresh_tokens WHERE token = ?', [refreshToken]);
+    }
+    if (token) {
+      await db.run('INSERT OR IGNORE INTO revoked_tokens (token) VALUES (?)', [token]);
+    }
+    res.send({ success: true, message: 'Logged out successfully.' });
+  } catch (err) {
+    console.error('Logout error:', err);
+    res.status(500).send({ error: 'Failed to log out.' });
+  }
 });
 
 router.put('/profile', auth, async (req, res) => {
   const db = req.app.locals.db;
-  const { name, username } = req.body;
-  if (!name && !username) return res.status(400).send({ error: 'Name or username is required.' });
+  const parseResult = ProfileUpdateSchema.safeParse(req.body);
+  if (!parseResult.success) {
+    return res.status(400).json({ error: parseResult.error.errors[0].message });
+  }
+
+  const { name, username } = parseResult.data;
   try {
     const updates = [];
     const values = [];
@@ -136,10 +305,12 @@ router.put('/profile', auth, async (req, res) => {
 
 router.post('/aadhaar-verify', auth, async (req, res) => {
   const db = req.app.locals.db;
-  const { aadhaar } = req.body;
-  if (!aadhaar || !/^\d{12}$/.test(aadhaar)) {
-    return res.status(400).send({ error: 'Aadhaar number must be exactly 12 digits.' });
+  const parseResult = AadhaarVerifySchema.safeParse(req.body);
+  if (!parseResult.success) {
+    return res.status(400).json({ error: parseResult.error.errors[0].message });
   }
+
+  const { aadhaar } = parseResult.data;
   if (!verhoeffCheck(aadhaar)) {
     return res.status(400).send({ error: 'Invalid Aadhaar number (checksum failed). Please check and re-enter.' });
   }

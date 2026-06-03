@@ -39,7 +39,9 @@ if (!process.env.JWT_SECRET) {
   }
 }
 
-if (cluster.isPrimary) {
+const isProduction = process.env.NODE_ENV === 'production';
+
+if (isProduction && cluster.isPrimary) {
   const numCPUs = os.cpus().length;
   console.log(`Primary ${process.pid} is running. Forking ${numCPUs} workers for load balancing...`);
 
@@ -81,13 +83,11 @@ if (cluster.isPrimary) {
     },
     credentials: true,
   }));
-  app.use(express.json({ limit: '100kb' }));
+  app.use(express.json({ limit: '10kb' })); // JSON-only APIs; image uploads go through AI service directly
 
-  const recentRequests = [];
   const ragTraces = [];
 
   // Expose variables via app.locals so they can be accessed inside routers/middlewares
-  app.locals.recentRequests = recentRequests;
   app.locals.ragTraces = ragTraces;
   app.locals.AI_SERVICE_URL = AI_SERVICE_URL;
   app.locals.broadcastToAdmins = broadcastToAdmins;
@@ -112,15 +112,21 @@ if (cluster.isPrimary) {
     const startTime = Date.now();
     res.on('finish', () => {
       const duration = Date.now() - startTime;
-      recentRequests.push({
+      const requestLog = {
+        deviceId: 'server-telemetry',
+        queuedAt: new Date().toISOString(),
+        status: 'telemetry',
         traceId: req.traceId,
         method: req.method,
         path: req.path,
-        status: res.statusCode,
-        duration,
-        timestamp: new Date().toISOString()
+        resStatus: res.statusCode,
+        duration
+      };
+      
+      dynamoHelper.put('sync_queues', requestLog).catch(err => {
+        console.error('[Telemetry Sync Error]', err.message);
       });
-      if (recentRequests.length > 8) recentRequests.shift();
+      
       req.log('info', 'Request processed', { status: res.statusCode, durationMs: duration });
     });
     
@@ -261,7 +267,25 @@ if (cluster.isPrimary) {
   app.put('/api/requests/:id/status', _removedTableHandler);
 
   // ── Health check — used by docker-compose, load balancers, monitoring ────
-  app.get('/api/health', (req, res) => {
+  app.get('/api/health', async (req, res) => {
+    let recentRequests = [];
+    try {
+      const logs = await dynamoHelper.query('sync_queues', 'deviceId = :dev', { ':dev': 'server-telemetry' });
+      recentRequests = (logs || [])
+        .sort((a, b) => b.queuedAt.localeCompare(a.queuedAt))
+        .slice(0, 8)
+        .map(r => ({
+          traceId: r.traceId,
+          method: r.method,
+          path: r.path,
+          status: r.resStatus,
+          duration: r.duration,
+          timestamp: r.queuedAt
+        }));
+    } catch (e) {
+      console.error('[Health Telemetry Fetch Error]', e.message);
+    }
+
     res.json({
       status: 'ok',
       service: 'SwasthAI Guardian Backend',

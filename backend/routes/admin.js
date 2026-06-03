@@ -8,6 +8,15 @@ import { seedDemoData } from '../db/seed.js';
 const router = express.Router();
 
 const adminSseClients = new Map(); // clientId → res
+const MAX_SSE_CLIENTS = 20;
+
+// Structured Error helper
+const sendError = (res, statusCode, code, message, details = null) => {
+  return res.status(statusCode).json({
+    success: false,
+    error: { code, message, details }
+  });
+};
 
 Object.defineProperty(router, 'sseClientsCount', {
   get: () => adminSseClients.size
@@ -15,8 +24,12 @@ Object.defineProperty(router, 'sseClientsCount', {
 
 export function broadcastToAdmins(eventType, data) {
   const payload = `event: ${eventType}\ndata: ${JSON.stringify(data)}\n\n`;
-  adminSseClients.forEach((res) => {
-    try { res.write(payload); } catch (_) { /* client disconnected */ }
+  adminSseClients.forEach((res, clientId) => {
+    try { 
+      res.write(payload); 
+    } catch (_) { 
+      adminSseClients.delete(clientId);
+    }
   });
   console.log(`[SSE] Broadcast '${eventType}' to ${adminSseClients.size} admin client(s)`);
 }
@@ -33,7 +46,7 @@ router.post('/seed-demo-data', auth, checkRole(['admin']), async (req, res) => {
     res.send({ success: true, message: 'Database reset and preloaded with mock data!' });
   } catch (err) {
     console.error(err);
-    res.status(500).send({ error: 'Seeding failed: ' + err.message });
+    sendError(res, 500, 'SEED_FAILED', 'Database seeding failed', err.message);
   }
 });
 
@@ -61,26 +74,40 @@ router.get('/analytics', auth, checkRole(['admin']), async (req, res) => {
       today_symptoms: alerts.length
     });
   } catch (err) {
-    res.status(500).send({ error: err.message });
+    sendError(res, 500, 'ANALYTICS_FAILED', err.message);
   }
 });
 
+// Keyset pagination on ambulance requests
 router.get('/ambulances', auth, checkRole(['admin']), async (req, res) => {
   const db = req.app.locals.db;
   try {
-    const rows = await db.all('SELECT * FROM ambulance_requests ORDER BY id DESC LIMIT 50');
+    const limit = Math.min(parseInt(req.query.limit) || 50, 100);
+    const lastId = parseInt(req.query.lastId) || null;
+    
+    let rows;
+    if (lastId) {
+      rows = await db.all('SELECT * FROM ambulance_requests WHERE id < ? ORDER BY id DESC LIMIT ?', [lastId, limit]);
+    } else {
+      rows = await db.all('SELECT * FROM ambulance_requests ORDER BY id DESC LIMIT ?', [limit]);
+    }
+    
     res.send(rows);
   } catch (err) {
-    res.status(500).send({ error: 'Failed to fetch ambulance records.' });
+    sendError(res, 500, 'FETCH_AMBULANCE_FAILED', 'Failed to fetch ambulance records.');
   }
 });
 
 router.get('/village/:id', auth, checkRole(['admin', 'ngo']), async (req, res) => {
   const db = req.app.locals.db;
-  const village = await db.get('SELECT * FROM village_health WHERE "villageId" = ?', [req.params.id]);
-  if (!village) return res.status(404).send({ error: 'Node Not Found' });
-  const pregnancies = await db.all('SELECT * FROM pregnancy_data WHERE "villageId" = ?', [req.params.id]);
-  res.send({ village, pregnancies });
+  try {
+    const village = await db.get('SELECT * FROM village_health WHERE "villageId" = ?', [req.params.id]);
+    if (!village) return sendError(res, 404, 'NODE_NOT_FOUND', 'Node Not Found');
+    const pregnancies = await db.all('SELECT * FROM pregnancy_data WHERE "villageId" = ?', [req.params.id]);
+    res.send({ village, pregnancies });
+  } catch (err) {
+    sendError(res, 500, 'FETCH_VILLAGE_FAILED', err.message);
+  }
 });
 
 router.get('/summary', auth, checkRole(['admin']), async (req, res) => {
@@ -108,9 +135,21 @@ router.get('/summary', auth, checkRole(['admin']), async (req, res) => {
     });
   } catch (err) {
     console.error('Summary fetch error:', err);
-    res.status(500).send({ error: 'Failed to fetch admin summary' });
+    sendError(res, 500, 'SUMMARY_FAILED', 'Failed to fetch admin summary');
   }
 });
+
+// CSV Injection mitigation helper
+const sanitizeCsvCell = (val) => {
+  if (val === null || val === undefined) return '';
+  let str = String(val);
+  // Mitigate CSV injection (cell starting with =, +, -, @)
+  if (/^[=\+\-\@]/.test(str)) {
+    str = `'${str}`;
+  }
+  // Escape quotes
+  return str.replace(/"/g, '""');
+};
 
 router.get('/report', auth, checkRole(['admin']), async (req, res) => {
   const db = req.app.locals.db;
@@ -120,13 +159,13 @@ router.get('/report', auth, checkRole(['admin']), async (req, res) => {
     let csv = 'Record ID,Type,Patient Name/ID,Location/Priority,Status,Date\n';
 
     ambulances.forEach(a => {
-      csv += `AMB-${a.id},${a.type || 'ambulance'},"${a.name || 'User ' + a.user_id}","${a.location || ''} (${a.priority || ''})",${a.status},${a.created_at}\n`;
+      csv += `AMB-${sanitizeCsvCell(a.id)},${sanitizeCsvCell(a.type || 'ambulance')},"${sanitizeCsvCell(a.name || 'User ' + a.user_id)}","${sanitizeCsvCell(a.location || '')} (${sanitizeCsvCell(a.priority || '')})",${sanitizeCsvCell(a.status)},${sanitizeCsvCell(a.created_at)}\n`;
     });
 
     try {
       const padReqs = await db.all('SELECT * FROM requests ORDER BY id DESC');
       padReqs.forEach(r => {
-        csv += `REQ-${r.id},${r.type},User ${r.user_id},N/A,${r.status},${r.created_at}\n`;
+        csv += `REQ-${sanitizeCsvCell(r.id)},${sanitizeCsvCell(r.type)},User ${sanitizeCsvCell(r.user_id)},N/A,${sanitizeCsvCell(r.status)},${sanitizeCsvCell(r.created_at)}\n`;
       });
     } catch (e) { /* ignore if table missing */ }
 
@@ -135,18 +174,26 @@ router.get('/report', auth, checkRole(['admin']), async (req, res) => {
     return res.send(csv);
   } catch (err) {
     console.error('Report generation error:', err);
-    res.status(500).send({ error: 'Failed to generate report' });
+    sendError(res, 500, 'REPORT_FAILED', 'Failed to generate report');
   }
 });
 
+// Clusters protected by IP allowlist + agent secret check
 router.get('/clusters', async (req, res) => {
   const db = req.app.locals.db;
   const usingSQLite = req.app.locals.usingSQLite;
+
+  const remoteIp = req.socket.remoteAddress;
+  const isLocal = ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(remoteIp);
+  
   const agentSecret = req.headers['x-agent-secret'];
   const expectedSecret = process.env.AGENT_SECRET;
-  if (!expectedSecret || agentSecret !== expectedSecret) {
-    return res.status(403).send({ error: 'Forbidden' });
+  const isSecretValid = expectedSecret && agentSecret === expectedSecret;
+
+  if (!isLocal && !isSecretValid) {
+    return sendError(res, 403, 'FORBIDDEN', 'Access Denied: Internal use or secret required');
   }
+
   try {
     const rows = await db.all(
       usingSQLite
@@ -167,7 +214,7 @@ router.get('/clusters', async (req, res) => {
     );
     res.send(rows);
   } catch (err) {
-    res.status(500).send({ error: err.message });
+    sendError(res, 500, 'CLUSTERS_FAILED', err.message);
   }
 });
 
@@ -175,7 +222,7 @@ router.post('/outbreak-alert', async (req, res) => {
   const db = req.app.locals.db;
   const agentSecret = req.headers['x-agent-secret'];
   if (!process.env.AGENT_SECRET || agentSecret !== process.env.AGENT_SECRET) {
-    return res.status(403).send({ error: 'Forbidden' });
+    return sendError(res, 403, 'FORBIDDEN', 'Forbidden');
   }
 
   const {
@@ -184,7 +231,7 @@ router.post('/outbreak-alert', async (req, res) => {
   } = req.body;
 
   if (!villageId || !disease) {
-    return res.status(400).json({ error: 'villageId and disease are required' });
+    return sendError(res, 400, 'INVALID_INPUT', 'villageId and disease are required');
   }
 
   const timestamp = detectedAt || new Date().toISOString();
@@ -210,7 +257,7 @@ router.post('/outbreak-alert', async (req, res) => {
          ON CONFLICT("villageId") DO UPDATE
            SET "outbreakAlert" = excluded."outbreakAlert",
                "lastUpdated" = excluded."lastUpdated"`,
-        [villageId, `${disease}: ${action}`, timestamp]
+         [villageId, `${disease}: ${action}`, timestamp]
       );
     } catch (auroraSyncErr) {
       console.warn(`[OUTBREAK] Aurora sync skipped: ${auroraSyncErr.message}`);
@@ -234,7 +281,7 @@ router.post('/outbreak-alert', async (req, res) => {
     res.status(201).json({ status: 'stored', store: 'dynamodb', sseClients: 0 });
   } catch (err) {
     console.error('[OUTBREAK] Error:', err.message);
-    res.status(500).json({ error: 'Failed to store outbreak alert', detail: err.message });
+    sendError(res, 500, 'OUTBREAK_STORAGE_FAILED', 'Failed to store outbreak alert', err.message);
   }
 });
 
@@ -249,7 +296,7 @@ router.get('/outbreaks-dynamo', async (req, res) => {
       isAuthed = true;
     } catch (_) {}
   }
-  if (!isAgent && !isAuthed) return res.status(403).json({ error: 'Forbidden' });
+  if (!isAgent && !isAuthed) return sendError(res, 403, 'FORBIDDEN', 'Forbidden');
 
   try {
     const outbreaks = await dynamoHelper.scan('outbreak_telemetry');
@@ -257,7 +304,7 @@ router.get('/outbreaks-dynamo', async (req, res) => {
     const limit = parseInt(req.query.limit) || 20;
     res.json({ outbreaks: outbreaks.slice(0, limit), total: outbreaks.length, store: dynamoHelper.isMock ? 'mock' : 'dynamodb' });
   } catch (err) {
-    res.status(500).json({ outbreaks: [], error: err.message });
+    sendError(res, 500, 'DYNAMO_OUTBREAKS_FAILED', err.message);
   }
 });
 
@@ -267,7 +314,7 @@ router.get('/outbreaks', auth, checkRole(['admin', 'ngo']), async (req, res) => 
     outbreaks.sort((a, b) => (b.detectedAt || '').localeCompare(a.detectedAt || ''));
     res.json({ outbreaks: outbreaks.slice(0, 20), store: dynamoHelper.isMock ? 'mock' : 'dynamodb' });
   } catch (err) {
-    res.status(503).json({ outbreaks: [], message: err.message });
+    sendError(res, 503, 'OUTBREAKS_TEMPORARILY_UNAVAILABLE', err.message);
   }
 });
 
@@ -292,7 +339,7 @@ router.get('/dynamo-feed', auth, async (req, res) => {
     });
   } catch (err) {
     console.error('DynamoDB feed error:', err.message);
-    res.status(500).json({ error: 'Failed to fetch DynamoDB feed', isMock: dynamoHelper.isMock });
+    sendError(res, 500, 'DYNAMO_FEED_FAILED', 'Failed to fetch DynamoDB feed', err.message);
   }
 });
 
@@ -302,11 +349,22 @@ router.get('/live-feed', (req, res) => {
     const headerToken = req.header('Authorization')?.replace('Bearer ', '');
     const queryToken  = req.query.token;
     const token = headerToken || queryToken;
-    if (!token) return res.status(401).json({ error: 'Auth Required' });
+    if (!token) return sendError(res, 401, 'AUTH_REQUIRED', 'Auth Required');
     decoded = jwt.verify(token, process.env.JWT_SECRET);
-    if (decoded.role !== 'admin') return res.status(403).json({ error: 'Admin access only' });
+    if (decoded.role !== 'admin') return sendError(res, 403, 'ADMIN_ACCESS_ONLY', 'Admin access only');
   } catch (_) {
-    return res.status(401).json({ error: 'Invalid Token' });
+    return sendError(res, 401, 'INVALID_TOKEN', 'Invalid Token');
+  }
+
+  // Max SSE client cap & stale client eviction
+  if (adminSseClients.size >= MAX_SSE_CLIENTS) {
+    const oldestClientId = adminSseClients.keys().next().value;
+    const oldestRes = adminSseClients.get(oldestClientId);
+    try { 
+      oldestRes.write('event: evicted\ndata: connection closed due to client limit\n\n');
+      oldestRes.end(); 
+    } catch (_) {}
+    adminSseClients.delete(oldestClientId);
   }
 
   res.setHeader('Content-Type', 'text/event-stream');
@@ -322,7 +380,12 @@ router.get('/live-feed', (req, res) => {
   res.write(`event: connected\ndata: ${JSON.stringify({ clientId, timestamp: new Date().toISOString() })}\n\n`);
 
   const heartbeat = setInterval(() => {
-    try { res.write(`event: ping\ndata: ${Date.now()}\n\n`); } catch (_) { clearInterval(heartbeat); }
+    try { 
+      res.write(`event: ping\ndata: ${Date.now()}\n\n`); 
+    } catch (_) { 
+      clearInterval(heartbeat); 
+      adminSseClients.delete(clientId);
+    }
   }, 30000);
 
   req.on('close', () => {

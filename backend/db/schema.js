@@ -25,6 +25,17 @@ export async function initSchema(db, pool, usingSQLite) {
       otp VARCHAR(10),
       "createdAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
     );
+    CREATE TABLE IF NOT EXISTS refresh_tokens (
+      id SERIAL PRIMARY KEY,
+      "userId" INTEGER,
+      token TEXT UNIQUE NOT NULL,
+      "expiresAt" TIMESTAMPTZ NOT NULL,
+      "createdAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE TABLE IF NOT EXISTS revoked_tokens (
+      token TEXT PRIMARY KEY,
+      "createdAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    );
     CREATE TABLE IF NOT EXISTS village_health (
       id SERIAL PRIMARY KEY,
       "villageId" VARCHAR(60) UNIQUE,
@@ -174,6 +185,17 @@ export async function initSchema(db, pool, usingSQLite) {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         phone TEXT,
         otp TEXT,
+        "createdAt" DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE TABLE IF NOT EXISTS refresh_tokens (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        "userId" INTEGER,
+        token TEXT UNIQUE NOT NULL,
+        "expiresAt" DATETIME NOT NULL,
+        "createdAt" DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE TABLE IF NOT EXISTS revoked_tokens (
+        token TEXT PRIMARY KEY,
         "createdAt" DATETIME DEFAULT CURRENT_TIMESTAMP
       );
       CREATE TABLE IF NOT EXISTS village_health (
