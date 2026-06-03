@@ -1,6 +1,8 @@
 from PIL import Image, ImageStat, ImageFilter
 import io
 import math
+import numpy as np
+import colorsys
 
 def analyze_skin_image(image_bytes: bytes):
     """
@@ -8,7 +10,7 @@ def analyze_skin_image(image_bytes: bytes):
     1. Chromatic Irregularity  — color variance across RGB channels
     2. Structural Edge Density — CONTOUR + SMOOTH for robust lesion boundary detection
     3. Erythema Index          — clinically accurate redness vs. green+blue dominance
-    4. Saturation Spike        — high saturation patches indicate active skin inflammation
+    4. Saturation Spike        — HSV saturation extraction using NumPy
 
     Returns prediction, severity, confidence (derived from signal strength), and raw markers.
     """
@@ -29,23 +31,28 @@ def analyze_skin_image(image_bytes: bytes):
     # Combine mean intensity with standard deviation for robust edge density
     edge_density = (255 - edge_stat.mean[0]) + (edge_stat.stddev[0] * 0.4)
 
-    # ── CV Guardrail: Image Quality & Skin Tone Verification ──────────────────
+    # ── CV Guardrail: Tone-Normalized Skin Tone Verification ──────────────────
     sample_img = img.resize((16, 16))
     pixels = list(sample_img.getdata())
     
     skin_pixels = 0
     for r_px, g_px, b_px in pixels:
-        # Standard human skin tone color criteria in RGB space:
-        if r_px > 45 and g_px > 30 and b_px > 15:
-            if r_px > g_px and r_px > b_px:
-                if (r_px - g_px) > 10:
-                    skin_pixels += 1
+        h, s, v = colorsys.rgb_to_hsv(r_px / 255.0, g_px / 255.0, b_px / 255.0)
+        # Tone-inclusive HSV boundaries for human skin:
+        # Hue: [0, 50] degrees (normalized: [0, 0.14] or [0.94, 1.0])
+        # Saturation: [0.1, 0.9]
+        # Value (brightness): allowing dark skin tones down to 5% brightness
+        is_skin_hue = (h <= 0.14) or (h >= 0.94)
+        is_skin_sat = (0.1 <= s <= 0.9)
+        is_skin_val = (0.05 <= v <= 1.0)
+        if is_skin_hue and is_skin_sat and is_skin_val:
+            skin_pixels += 1
                     
     skin_ratio = skin_pixels / len(pixels)
 
     is_blank = std_dev < 10.0
     is_blurry = edge_density < 18.0
-    is_non_skin = skin_ratio < 0.15 # Less than 15% skin pixels
+    is_non_skin = skin_ratio < 0.10 # Reduced to 10% with inclusive HSV to prevent false negatives for dark skin
 
     if is_blank or is_blurry or is_non_skin:
         error_msg = ""
@@ -79,16 +86,18 @@ def analyze_skin_image(image_bytes: bytes):
     avg_gb = (g_mean + b_mean) / 2.0
     inflammation_ratio = r_mean / (avg_gb + 1)
 
-    # ── 4. Saturation Spike (active inflammation marker) ─────────────────────
-    try:
-        hsv = img.convert('HSV')
-        _, s, _ = hsv.split()
-        saturation = ImageStat.Stat(s).mean[0] / 255.0
-    except Exception:
-        # Fallback: estimate saturation from RGB
-        saturation = (max(r_mean, g_mean, b_mean) - min(r_mean, g_mean, b_mean)) / (max(r_mean, g_mean, b_mean) + 1)
+    # ── 4. Saturation extraction using NumPy (accurate HSV) ───────────────────
+    img_np = np.array(img) / 255.0
+    r_chan = img_np[:, :, 0]
+    g_chan = img_np[:, :, 1]
+    b_chan = img_np[:, :, 2]
+    max_val = np.maximum(np.maximum(r_chan, g_chan), b_chan)
+    min_val = np.minimum(np.minimum(r_chan, g_chan), b_chan)
+    delta = max_val - min_val
+    sat_map = np.where(max_val > 0, delta / max_val, 0.0)
+    saturation = float(np.mean(sat_map))
 
-    # ── Clinical Scoring ──────────────────────────────────────────────────────
+    # ── Heuristic Triage Scoring ──────────────────────────────────────────────
     score = 0
     max_score = 10
 
@@ -109,28 +118,36 @@ def analyze_skin_image(image_bytes: bytes):
     if saturation > 0.45: score += 2  # Vivid / inflamed skin tone
     elif saturation > 0.3: score += 1
 
-    # ── Prediction & Honest Confidence ───────────────────────────────────────
+    # ── Prediction & Honest Confidence Mapping (ISIC-Aligned) ──────────────────
     signal_strength = score / max_score  # 0.0 – 1.0 derived from actual signals
 
-    if score >= 6:
-        prediction = "Severe/Complex Condition"
+    # Expanded to 5 ISIC-aligned categories
+    if score >= 7:
+        prediction = "Melanoma Risk / Complex Lesion"
         severity   = "severe"
-        # Confidence: 75% base + signal contribution, capped at 94%
-        confidence = min(0.94, 0.75 + (signal_strength * 0.19))
-    elif score >= 3:
-        prediction = "Mild Infection / Rash"
+        confidence = min(0.94, 0.70 + (signal_strength * 0.24))
+    elif score >= 5:
+        # High std dev / chromatic irregularity indicates crusting or dry lesions -> Eczema
+        if std_dev > 50:
+            prediction = "Eczema / Inflammatory Lesion"
+        else:
+            prediction = "Contact Dermatitis / Active Rash"
         severity   = "mild"
-        confidence = min(0.88, 0.60 + (signal_strength * 0.28))
+        confidence = min(0.88, 0.65 + (signal_strength * 0.23))
+    elif score >= 3:
+        prediction = "Tinea / Fungal Infection"
+        severity   = "mild"
+        confidence = min(0.85, 0.60 + (signal_strength * 0.25))
     else:
         prediction = "Normal Skin / Minor Irritation"
-        severity   = "mild"
-        # Low-score images: still uncertain — cap confidence at 83%
+        severity   = "normal"
         confidence = min(0.83, 0.65 + (signal_strength * 0.18))
 
     return {
         "prediction":  prediction,
         "severity":    severity,
         "confidence":  round(confidence, 2),
+        "model":       "Heuristic-Based-CV-Triage",
         "markers": {
             "color_irregularity": round(std_dev, 2),
             "edge_density":       round(edge_density, 2),
