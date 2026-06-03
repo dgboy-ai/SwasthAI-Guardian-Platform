@@ -33,6 +33,10 @@
 - ✅ **RAG threshold calibrated** — grid-searched 50 queries; optimal threshold **0.45** (F1=1.00)
 - ✅ **Model cache** — `SENTENCE_TRANSFORMERS_HOME` persisted to `.model_cache/` (no ~400MB re-download)
 - ✅ **Conversation memory** — Sakhi now remembers context across turns (dual-track: frontend history + server session cache)
+- ✅ **Resilient Event Dispatcher** — Added database null-guards, automated 3-attempt retries for telemetry writes, and sanitized partition keys for emergencies.
+- ✅ **Secure & Idempotent Seeding** — Blocked demo seeds in production environment (`NODE_ENV === 'production'`), added `ON CONFLICT DO NOTHING` / `INSERT OR IGNORE` idempotency, structured database sequence order, and dynamically resolved foreign keys.
+- ✅ **RAM Optimization & Compatibility** — Configured lazy imports of `torch` and `sentence_transformers` (saving ~400MB RAM when deep model is disabled), resolved Windows unicode console crashes, and added backward-compatible conditional `BatchNorm1d` support to the MLP structure.
+- ✅ **Inclusive Skin Analysis CV Triage** — Replaced rigid RGB rules with a tone-inclusive HSV skin detector (supporting melanin-rich skin down to 5% brightness), upgraded saturation analysis via NumPy vectorization, and expanded output to 5 ISIC-aligned dermatological classifications.
 
 ---
 

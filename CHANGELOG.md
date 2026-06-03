@@ -16,6 +16,10 @@ All notable changes and feature developments completed during the hackathon wind
 - **Offline Sync-Health Logger**: Added `POST /api/villager/sync-health` logging sync telemetry to DynamoDB.
 - **Mental Health PHQ-2 Screener**: Added `POST /api/villager/phq2` triage screener that auto-creates urgent ASHA referrals on depression risk.
 - **QR-Code Scan Login**: Added passwordless `POST /api/auth/qr-login` allowing auth by scanning Aadhaar or Village Card QR payloads.
+- **Resilient Event Dispatcher**: Hardened with relational database null-guards during startup, automated 3-attempt retries for telemetry writes, and sanitized partition key values for emergency streams.
+- **Secure & Idempotent Database Seeding**: Blocked demo seeds in production environment (`NODE_ENV === 'production'`), added SQL `ON CONFLICT DO NOTHING` / `INSERT OR IGNORE` constraints to inserts, structured table dependencies (villages -> users -> clinical tables), and queried user IDs dynamically.
+- **AI RAM Optimization & Windows Port Compatibility**: Integrated lazy imports of `torch` and `sentence_transformers` (saving ~400MB RAM when deep model is disabled), resolved Windows Unicode console logging crashes, and added backward-compatible conditional `BatchNorm1d` support to the MLP structure.
+- **Inclusive Skin Analysis CV Triage**: Refactored the skin CV pipeline to use a tone-inclusive HSV skin tone detector (supporting melanin-rich skin down to 5% brightness), upgraded saturation analysis via NumPy, and expanded outputs to 5 ISIC-aligned dermatological classifications (Melanoma Risk, Eczema, Tinea, Contact Dermatitis, Normal).
 
 ---
 
