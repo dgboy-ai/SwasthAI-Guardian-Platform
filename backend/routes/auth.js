@@ -75,12 +75,13 @@ router.post('/login-otp', authLimiter, async (req, res) => {
   const db = req.app.locals.db;
   const usingSQLite = req.app.locals.usingSQLite;
   const { phone, otp, role } = req.body;
-  const isDemoOtp = (otp === '1234');
+  const isDev = process.env.NODE_ENV !== 'production';
+  const isDemoOtp = isDev && (otp === '1234');
   if (!isDemoOtp) {
     let record;
     if (usingSQLite) {
       record = await db.get(
-        `SELECT * FROM otps WHERE phone = ? AND otp = ? AND createdAt >= datetime('now', '-5 minutes') ORDER BY createdAt DESC LIMIT 1`,
+        `SELECT * FROM otps WHERE phone = ? AND otp = ? AND "createdAt" >= datetime('now', '-5 minutes') ORDER BY "createdAt" DESC LIMIT 1`,
         [phone, otp]
       );
     } else {
@@ -89,7 +90,7 @@ router.post('/login-otp', authLimiter, async (req, res) => {
         [phone, otp]
       );
     }
-    if (!record) return res.status(401).send({ error: 'Invalid OTP. Use OTP: 1234 for demo.' });
+    if (!record) return res.status(401).send({ error: 'Invalid or expired OTP.' });
   }
   const user = await db.get('SELECT * FROM users WHERE phone = ? AND role = ?', [phone, role]);
   if (!user) return res.status(404).send({ error: 'No account found with this phone number for the selected role.' });

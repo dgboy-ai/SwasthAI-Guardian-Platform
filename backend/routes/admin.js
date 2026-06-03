@@ -44,7 +44,14 @@ router.get('/analytics', auth, checkRole(['admin']), async (req, res) => {
     const pCount = await db.get('SELECT COUNT(*) as c FROM pregnancy_data');
     const mCount = await db.get(`SELECT COUNT(*) as c FROM malnutrition_data WHERE status != 'Normal'`);
     const aCount = await db.get('SELECT COUNT(*) as c FROM ambulance_requests');
-    const alerts = await db.all(`SELECT id FROM symptoms WHERE "createdAt" >= NOW() - INTERVAL '1 day'`).catch(() => []);
+    const usingSQLite = req.app.locals.usingSQLite;
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const alerts = await db.all(
+      usingSQLite
+        ? `SELECT id FROM symptoms WHERE "createdAt" >= ?`
+        : `SELECT id FROM symptoms WHERE "createdAt" >= NOW() - INTERVAL '1 day'`,
+      usingSQLite ? [oneDayAgo] : []
+    ).catch(() => []);
 
     res.send({
       villages: parseInt(vCount?.c || vCount?.count || 0),

@@ -27,7 +27,7 @@ router.get('/malnutrition', auth, checkRole(['ngo', 'admin']), async (req, res) 
     const limit = parseInt(req.query.limit) || 50;
     const offset = (parseInt(req.query.page || 1) - 1) * limit;
     const records = await db.all(
-      'SELECT id, childName, ageMonths, weight, height, status, villageId FROM malnutrition_data ORDER BY id DESC LIMIT ? OFFSET ?',
+      'SELECT id, "childName", "ageMonths", weight, height, status, "villageId" FROM malnutrition_data ORDER BY id DESC LIMIT ? OFFSET ?',
       [limit, offset]
     );
     res.send(records);
