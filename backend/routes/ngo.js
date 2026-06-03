@@ -2,6 +2,7 @@ import express from 'express';
 import axios from 'axios';
 import { z } from 'zod';
 import { auth, checkRole } from '../middleware/auth.js';
+import { logAudit } from '../middleware/audit.js';
 
 const router = express.Router();
 
@@ -60,7 +61,7 @@ router.post('/village', auth, checkRole(['ngo', 'admin']), async (req, res) => {
   }
 });
 
-router.post('/maternal', auth, checkRole(['ngo', 'admin']), async (req, res) => {
+router.post('/maternal', auth, checkRole(['ngo', 'admin']), logAudit('create', 'pregnancy_data'), async (req, res) => {
   const db = req.app.locals.db;
   const AI_SERVICE_URL = req.app.locals.AI_SERVICE_URL;
   const { name, age, trimester, dueDate, vitals } = req.body;
@@ -175,7 +176,7 @@ const referralSchema = z.object({
 });
 
 // POST /api/ngo/referral — ASHA submits a patient referral
-router.post('/referral', auth, checkRole(['ngo', 'admin']), async (req, res) => {
+router.post('/referral', auth, checkRole(['ngo', 'admin']), logAudit('create', 'referrals'), async (req, res) => {
   const db = req.app.locals.db;
   const parsed = referralSchema.safeParse(req.body);
   if (!parsed.success) {
@@ -246,6 +247,98 @@ router.patch('/referrals/:id/status', auth, checkRole(['ngo', 'admin']), async (
     res.json({ success: true, status });
   } catch (err) {
     res.status(500).json({ success: false, error: { code: 'REFERRAL_UPDATE_FAILED', message: err.message } });
+  }
+});
+
+// PUT /referrals/:id/outcome and PUT /referral/:id/outcome — close referral loop
+const handleReferralOutcome = async (req, res) => {
+  const db = req.app.locals.db;
+  const { id } = req.params;
+  const { outcome, outcome_details, status = 'completed' } = req.body;
+
+  if (!outcome) {
+    return res.status(400).json({ success: false, error: { code: 'INVALID_INPUT', message: 'Outcome is required.' } });
+  }
+
+  try {
+    const closedAt = new Date().toISOString();
+    await db.run(
+      `UPDATE referrals 
+       SET outcome = ?, outcome_details = ?, status = ?, closed_at = ?, updated_at = CURRENT_TIMESTAMP 
+       WHERE id = ?`,
+      [outcome, outcome_details || null, status, closedAt, id]
+    );
+
+    res.json({ success: true, message: 'Referral outcome recorded successfully.', data: { id, outcome, outcome_details, status, closed_at: closedAt } });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'REFERRAL_OUTCOME_FAILED', message: err.message } });
+  }
+};
+
+router.put('/referral/:id/outcome', auth, checkRole(['ngo', 'admin']), logAudit('update_outcome', 'referrals'), handleReferralOutcome);
+router.put('/referrals/:id/outcome', auth, checkRole(['ngo', 'admin']), logAudit('update_outcome', 'referrals'), handleReferralOutcome);
+
+// POST /vaccinations — register child vaccination record
+router.post('/vaccinations', auth, checkRole(['ngo', 'admin']), logAudit('create', 'vaccination_records'), async (req, res) => {
+  const db = req.app.locals.db;
+  const { child_name, parent_phone, vaccine_name, scheduled_date, given_date, status = 'scheduled', villageId } = req.body;
+
+  if (!child_name || !vaccine_name) {
+    return res.status(400).json({ success: false, error: { code: 'INVALID_INPUT', message: 'child_name and vaccine_name are required.' } });
+  }
+
+  const userVillageId = villageId || req.user.villageId || 'unassigned';
+  const recordedBy = req.user.id;
+
+  try {
+    const result = await db.run(
+      `INSERT INTO vaccination_records (child_name, parent_phone, vaccine_name, scheduled_date, given_date, status, "villageId", recorded_by)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [child_name, parent_phone || null, vaccine_name, scheduled_date || null, given_date || null, status, userVillageId, recordedBy]
+    );
+
+    res.status(201).json({
+      success: true,
+      vaccinationId: result.lastID,
+      message: `Vaccination record for ${child_name} registered successfully.`
+    });
+  } catch (err) {
+    console.error('[VACCINATION] Insert error:', err.message);
+    res.status(500).json({ success: false, error: { code: 'VACCINATION_FAILED', message: 'Failed to record vaccination' } });
+  }
+});
+
+// GET /vaccinations — fetch child vaccination list with query filters
+router.get('/vaccinations', auth, checkRole(['ngo', 'admin']), async (req, res) => {
+  const db = req.app.locals.db;
+  const { villageId, status, child_name, limit = 50, page = 1 } = req.query;
+  const parsedLimit = Math.min(parseInt(limit) || 50, 100);
+  const offset = (Math.max(parseInt(page) || 1, 1) - 1) * parsedLimit;
+
+  try {
+    let query = 'SELECT * FROM vaccination_records WHERE 1=1';
+    const params = [];
+
+    if (villageId) {
+      query += ' AND "villageId" = ?';
+      params.push(villageId);
+    }
+    if (status) {
+      query += ' AND status = ?';
+      params.push(status);
+    }
+    if (child_name) {
+      query += ' AND child_name LIKE ?';
+      params.push(`%${child_name}%`);
+    }
+
+    query += ' ORDER BY id DESC LIMIT ? OFFSET ?';
+    params.push(parsedLimit, offset);
+
+    const rows = await db.all(query, params);
+    res.json({ success: true, vaccinations: rows, count: rows.length });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'VACCINATIONS_FETCH_FAILED', message: err.message } });
   }
 });
 

@@ -4,6 +4,7 @@ import rateLimit from 'express-rate-limit';
 import { auth, checkRole } from '../middleware/auth.js';
 import dynamoHelper from '../dynamodb.js';
 import eventEmitter from '../eventDispatcher.js';
+import { logAudit } from '../middleware/audit.js';
 
 const router = express.Router();
 
@@ -201,7 +202,7 @@ router.post('/emergency-alert', auth, async (req, res) => {
   }
 });
 
-router.post('/symptoms', auth, aiLimiter, checkRole(['villager', 'ngo', 'admin']), async (req, res) => {
+router.post('/symptoms', auth, aiLimiter, checkRole(['villager', 'ngo', 'admin']), logAudit('evaluate_symptoms', 'symptoms'), async (req, res) => {
   const db = req.app.locals.db;
   const AI_SERVICE_URL = req.app.locals.AI_SERVICE_URL;
   const text = sanitize(req.body.symptoms);
@@ -291,7 +292,7 @@ router.post('/skin-log', auth, async (req, res) => {
   }
 });
 
-router.post('/ambulance', auth, async (req, res) => {
+router.post('/ambulance', auth, logAudit('request_ambulance', 'ambulance_requests'), async (req, res) => {
   const db = req.app.locals.db;
   const usingSQLite = req.app.locals.usingSQLite;
   const name     = sanitize(req.body.name);
@@ -448,7 +449,7 @@ router.get('/schemes/:id', auth, async (req, res) => {
   }
 });
 
-router.post('/villager/pad-request', auth, async (req, res) => {
+router.post('/villager/pad-request', auth, logAudit('request_pads', 'ambulance_requests'), async (req, res) => {
   const db = req.app.locals.db;
   const { village } = req.body;
   if (!village) return res.status(400).send({ error: 'Village name is required.' });

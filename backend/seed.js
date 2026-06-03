@@ -32,6 +32,11 @@ async function seed() {
   await pool.query('DELETE FROM malnutrition_data WHERE "villageId" IN ($1, $2)', ['v101', 'v102']);
   await pool.query('DELETE FROM symptoms WHERE "villageId" IN ($1, $2)', ['v101', 'v102']);
   await pool.query('DELETE FROM ambulance_requests WHERE priority IN ($1, $2, $3, $4)', ['High', 'Medium', 'Low', 'Pad Request']);
+  await pool.query('DELETE FROM referrals WHERE "villageId" IN ($1, $2)', ['v101', 'v102']);
+  await pool.query('DELETE FROM vaccination_records WHERE "villageId" IN ($1, $2)', ['v101', 'v102']);
+  await pool.query('DELETE FROM asha_performance');
+  await pool.query('DELETE FROM audit_logs');
+  await pool.query('DELETE FROM district_config');
 
   // 2. Seed Users
   const accounts = [
@@ -138,6 +143,48 @@ async function seed() {
     );
   }
   console.log('   ✅ Seeded ambulance_requests');
+
+  // 8. Seed District Configuration
+  console.log('🔧 Seeding district configurations...');
+  await pool.query(
+    `INSERT INTO district_config (district_id, outbreak_threshold, enable_auto_ambulance, emergency_contact_phone)
+     VALUES ($1, $2, $3, $4) ON CONFLICT(district_id) DO NOTHING`,
+    ['varanasi_district', 3, true, '+91 94150 12345']
+  );
+  console.log('   ✅ Seeded district_config');
+
+  // 9. Seed Child Vaccinations (Mission Indradhanush)
+  console.log('👶 Seeding child vaccination records...');
+  const vaccinations = [
+    { child_name: 'Aarav Kumar', parent_phone: '9876543210', vaccine_name: 'BCG', scheduled_date: '2026-06-01', given_date: '2026-06-02', status: 'given', villageId: 'v101' },
+    { child_name: 'Ananya Singh', parent_phone: '9876543220', vaccine_name: 'OPV 1', scheduled_date: '2026-06-15', given_date: null, status: 'scheduled', villageId: 'v101' }
+  ];
+  for (const v of vaccinations) {
+    await pool.query(
+      `INSERT INTO vaccination_records (child_name, parent_phone, vaccine_name, scheduled_date, given_date, status, "villageId", recorded_by)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [v.child_name, v.parent_phone, v.vaccine_name, v.scheduled_date, v.given_date, v.status, v.villageId, ashaId]
+    );
+  }
+  console.log('   ✅ Seeded vaccination_records');
+
+  // 10. Seed ASHA Performance
+  console.log('📈 Seeding ASHA performance benchmarks...');
+  await pool.query(
+    `INSERT INTO asha_performance (asha_id, month, referrals_count, pregnancies_tracked, vaccinations_completed, emergencies_reported)
+     VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT(asha_id, month) DO NOTHING`,
+    [ashaId, '2026-06', 12, 5, 8, 2]
+  );
+  console.log('   ✅ Seeded asha_performance');
+
+  // 11. Seed referrals with outcomes
+  console.log('📋 Seeding referrals outcome data...');
+  await pool.query(
+    `INSERT INTO referrals (patient_name, patient_phone, "villageId", referred_by, referred_to, reason, priority, notes, status, outcome, outcome_details, closed_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())`,
+    ['Ramesh Kumar', '9876543200', 'v101', ashaId, 'District PHC', 'Chronic cough & fever', 'high', 'Suspected TB', 'completed', 'Diagnosed with Pulmonary TB', 'Referred to DOTS center, started on therapy.', new Date()]
+  );
+  console.log('   ✅ Seeded referrals outcome');
 
   await pool.end();
 

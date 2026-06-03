@@ -5,6 +5,7 @@ import jwt from 'jsonwebtoken';
 import { auth, checkRole } from '../middleware/auth.js';
 import dynamoHelper from '../dynamodb.js';
 import { seedDemoData } from '../db/seed.js';
+import { logAudit } from '../middleware/audit.js';
 
 const router = express.Router();
 
@@ -710,6 +711,98 @@ router.get('/live-feed', (req, res) => {
     adminSseClients.delete(clientId);
     console.log(`[SSE] Admin ${decoded.id} disconnected (${adminSseClients.size} remaining)`);
   });
+});
+
+// GET /asha-performance — ASHA worker KPIs for CMO Dashboard
+router.get('/asha-performance', auth, checkRole(['admin']), async (req, res) => {
+  const db = req.app.locals.db;
+  try {
+    const query = `
+      SELECT 
+        u.id as asha_id,
+        u.name,
+        u.phone,
+        u."villageId",
+        COALESCE(ap.month, 'overall') as month,
+        COALESCE(ap.referrals_count, (SELECT COUNT(*) FROM referrals WHERE referred_by = u.id)) as referrals_count,
+        COALESCE(ap.pregnancies_tracked, (SELECT COUNT(*) FROM pregnancy_data WHERE recorded_by = u.id)) as pregnancies_tracked,
+        COALESCE(ap.vaccinations_completed, (SELECT COUNT(*) FROM vaccination_records WHERE recorded_by = u.id AND status = 'given')) as vaccinations_completed,
+        COALESCE(ap.emergencies_reported, (SELECT COUNT(*) FROM ambulance_requests WHERE user_id = u.id AND type = 'emergency')) as emergencies_reported
+      FROM users u
+      LEFT JOIN asha_performance ap ON u.id = ap.asha_id
+      WHERE u.role = 'ngo'
+    `;
+    const performanceData = await db.all(query);
+    res.json({ success: true, performance: performanceData });
+  } catch (err) {
+    console.error('[PERFORMANCE] Fetch error:', err.message);
+    res.status(500).json({ success: false, error: { code: 'PERFORMANCE_FETCH_FAILED', message: err.message } });
+  }
+});
+
+// GET /district-config/:id — Fetch specific district configurations
+router.get('/district-config/:id', auth, checkRole(['admin', 'ngo']), async (req, res) => {
+  const db = req.app.locals.db;
+  const { id } = req.params;
+  try {
+    const config = await db.get('SELECT * FROM district_config WHERE district_id = ?', [id]);
+    if (!config) {
+      return res.json({
+        success: true,
+        config: {
+          district_id: id,
+          outbreak_threshold: 3,
+          enable_auto_ambulance: true,
+          emergency_contact_phone: null
+        }
+      });
+    }
+    config.enable_auto_ambulance = !!config.enable_auto_ambulance;
+    res.json({ success: true, config });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'CONFIG_FETCH_FAILED', message: err.message } });
+  }
+});
+
+// PUT /district-config/:id — Update specific district configurations
+router.put('/district-config/:id', auth, checkRole(['admin']), logAudit('update', 'district_config'), async (req, res) => {
+  const db = req.app.locals.db;
+  const { id } = req.params;
+  const { outbreak_threshold, enable_auto_ambulance, emergency_contact_phone } = req.body;
+
+  try {
+    await db.run(
+      `INSERT INTO district_config (district_id, outbreak_threshold, enable_auto_ambulance, emergency_contact_phone)
+       VALUES (?, ?, ?, ?)
+       ON CONFLICT(district_id) DO UPDATE SET
+         outbreak_threshold = EXCLUDED.outbreak_threshold,
+         enable_auto_ambulance = EXCLUDED.enable_auto_ambulance,
+         emergency_contact_phone = EXCLUDED.emergency_contact_phone,
+         updated_at = CURRENT_TIMESTAMP`,
+      [id, outbreak_threshold !== undefined ? Number(outbreak_threshold) : 3, enable_auto_ambulance ? 1 : 0, emergency_contact_phone || null]
+    );
+
+    res.json({ success: true, message: `District configurations for ${id} updated.` });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'CONFIG_UPDATE_FAILED', message: err.message } });
+  }
+});
+
+// GET /audit-logs — Fetch audit logs list (restricted to admins)
+router.get('/audit-logs', auth, checkRole(['admin']), async (req, res) => {
+  const db = req.app.locals.db;
+  const limit = Math.min(parseInt(req.query.limit) || 50, 100);
+  const offset = (Math.max(parseInt(req.query.page) || 1, 1) - 1) * limit;
+
+  try {
+    const logs = await db.all(
+      `SELECT * FROM audit_logs ORDER BY id DESC LIMIT ? OFFSET ?`,
+      [limit, offset]
+    );
+    res.json({ success: true, logs, count: logs.length });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'AUDIT_LOGS_FETCH_FAILED', message: err.message } });
+  }
 });
 
 export default router;

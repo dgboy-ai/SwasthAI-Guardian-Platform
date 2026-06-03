@@ -182,6 +182,17 @@ export async function seedData(db, pool, usingSQLite, bcrypt) {
       }
       console.log('   📜 8 Government schemes seeded into SQLite.');
     }
+
+    // Seed default district configs in SQLite if missing
+    const configCheck = await db.get("SELECT id FROM district_config LIMIT 1");
+    if (!configCheck) {
+      await db.run(
+        `INSERT OR IGNORE INTO district_config (district_id, outbreak_threshold, enable_auto_ambulance, emergency_contact_phone)
+         VALUES (?, ?, ?, ?)`,
+        ['varanasi_district', 3, 1, '+91 94150 12345']
+      );
+      console.log('   🔧 Default SQLite district config seeded.');
+    }
   }
 }
 
@@ -194,6 +205,11 @@ export async function seedDemoData(db, usingSQLite, bcrypt) {
   await db.run("DELETE FROM malnutrition_data WHERE \"villageId\" IN ('v101', 'v102')");
   await db.run("DELETE FROM symptoms WHERE \"villageId\" IN ('v101', 'v102')");
   await db.run("DELETE FROM ambulance_requests WHERE priority IN ('High', 'Medium', 'Low', 'Pad Request')");
+  await db.run("DELETE FROM referrals WHERE \"villageId\" IN ('v101', 'v102')");
+  await db.run("DELETE FROM vaccination_records WHERE \"villageId\" IN ('v101', 'v102')");
+  await db.run("DELETE FROM asha_performance");
+  await db.run("DELETE FROM audit_logs");
+  await db.run("DELETE FROM district_config");
 
   await db.run('INSERT INTO users (phone, email, username, name, password, role, "villageId") VALUES (?, ?, ?, ?, ?, ?, ?)', ['9876543210', 'villager@swasthai.in', 'demo_villager', 'Ramesh Kumar', hash, 'villager', 'v101']);
   await db.run('INSERT INTO users (phone, email, username, name, password, role, "villageId") VALUES (?, ?, ?, ?, ?, ?, ?)', ['9876543211', 'asha@swasthai.in', 'demo_asha', 'Sita Devi (ASHA)', hash, 'ngo', 'v101']);
@@ -232,4 +248,34 @@ export async function seedDemoData(db, usingSQLite, bcrypt) {
   
   await db.run('INSERT INTO ambulance_requests (user_id, name, location, priority, type, request_type, symptoms, status) VALUES (1, ?, ?, ?, ?, ?, ?, ?)', ['Ramesh Kumar', 'Rampur, Near Primary School', 'High', 'emergency', 'ambulance', 'Severe chest pain and difficulty breathing', 'pending']);
   await db.run('INSERT INTO ambulance_requests (user_id, name, location, priority, type, request_type, symptoms, status) VALUES (1, ?, ?, ?, ?, ?, ?, ?)', ['Sita Devi', 'ASHA Center रामपुर', 'Low', 'operation', 'pad_request', 'Confidential request for sanitary pads supply', 'pending']);
+
+  // B2B Seeding for SQLite Demo Data
+  await db.run(
+    `INSERT INTO district_config (district_id, outbreak_threshold, enable_auto_ambulance, emergency_contact_phone)
+     VALUES (?, ?, ?, ?)`,
+    ['varanasi_district', 3, 1, '+91 94150 12345']
+  );
+
+  await db.run(
+    `INSERT INTO vaccination_records (child_name, parent_phone, vaccine_name, scheduled_date, given_date, status, "villageId", recorded_by)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    ['Aarav Kumar', '9876543210', 'BCG', '2026-06-01', '2026-06-02', 'given', 'v101', ngoUserId]
+  );
+  await db.run(
+    `INSERT INTO vaccination_records (child_name, parent_phone, vaccine_name, scheduled_date, given_date, status, "villageId", recorded_by)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    ['Ananya Singh', '9876543220', 'OPV 1', '2026-06-15', null, 'scheduled', 'v101', ngoUserId]
+  );
+
+  await db.run(
+    `INSERT INTO asha_performance (asha_id, month, referrals_count, pregnancies_tracked, vaccinations_completed, emergencies_reported)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+    [ngoUserId, '2026-06', 12, 5, 8, 2]
+  );
+
+  await db.run(
+    `INSERT INTO referrals (patient_name, patient_phone, "villageId", referred_by, referred_to, reason, priority, notes, status, outcome, outcome_details, closed_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ${nowSql})`,
+    ['Ramesh Kumar', '9876543200', 'v101', ngoUserId, 'District PHC', 'Chronic cough & fever', 'high', 'Suspected TB', 'completed', 'Diagnosed with Pulmonary TB', 'Referred to DOTS center, started on therapy.']
+  );
 }

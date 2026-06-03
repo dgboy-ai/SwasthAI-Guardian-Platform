@@ -168,6 +168,9 @@ export async function initSchema(db, pool, usingSQLite) {
       priority VARCHAR(20) DEFAULT 'routine',
       status VARCHAR(20) DEFAULT 'pending',
       notes TEXT,
+      outcome VARCHAR(120) DEFAULT NULL,
+      outcome_details TEXT DEFAULT NULL,
+      closed_at TIMESTAMPTZ DEFAULT NULL,
       created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
     );
@@ -191,6 +194,54 @@ export async function initSchema(db, pool, usingSQLite) {
       error_code VARCHAR(20),
       error_message TEXT,
       received_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS vaccination_records (
+      id SERIAL PRIMARY KEY,
+      child_name VARCHAR(120) NOT NULL,
+      parent_phone VARCHAR(20),
+      vaccine_name VARCHAR(120) NOT NULL,
+      scheduled_date VARCHAR(30),
+      given_date VARCHAR(30) DEFAULT NULL,
+      status VARCHAR(20) DEFAULT 'scheduled',
+      "villageId" VARCHAR(60) REFERENCES village_health("villageId") ON DELETE SET NULL,
+      recorded_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS asha_performance (
+      id SERIAL PRIMARY KEY,
+      asha_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+      month VARCHAR(10) NOT NULL,
+      referrals_count INTEGER DEFAULT 0,
+      pregnancies_tracked INTEGER DEFAULT 0,
+      vaccinations_completed INTEGER DEFAULT 0,
+      emergencies_reported INTEGER DEFAULT 0,
+      created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(asha_id, month)
+    );
+
+    CREATE TABLE IF NOT EXISTS audit_logs (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER,
+      action VARCHAR(120) NOT NULL,
+      resource VARCHAR(120) NOT NULL,
+      resource_id VARCHAR(120) DEFAULT NULL,
+      ip_address VARCHAR(45) DEFAULT NULL,
+      user_agent TEXT DEFAULT NULL,
+      created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS district_config (
+      id SERIAL PRIMARY KEY,
+      district_id VARCHAR(80) UNIQUE NOT NULL,
+      outbreak_threshold INTEGER DEFAULT 3,
+      enable_auto_ambulance BOOLEAN DEFAULT TRUE,
+      emergency_contact_phone VARCHAR(20) DEFAULT NULL,
+      created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
     );
 
@@ -247,6 +298,15 @@ export async function initSchema(db, pool, usingSQLite) {
 
     DROP TRIGGER IF EXISTS update_twilio_receipts_modtime ON twilio_receipts;
     CREATE TRIGGER update_twilio_receipts_modtime BEFORE UPDATE ON twilio_receipts FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+    DROP TRIGGER IF EXISTS update_vaccination_records_modtime ON vaccination_records;
+    CREATE TRIGGER update_vaccination_records_modtime BEFORE UPDATE ON vaccination_records FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+    DROP TRIGGER IF EXISTS update_asha_performance_modtime ON asha_performance;
+    CREATE TRIGGER update_asha_performance_modtime BEFORE UPDATE ON asha_performance FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+    DROP TRIGGER IF EXISTS update_district_config_modtime ON district_config;
+    CREATE TRIGGER update_district_config_modtime BEFORE UPDATE ON district_config FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
     `);
 
     // ── PERFORMANCE INDEXES ──────────────────────────────────────────────────
@@ -296,6 +356,21 @@ export async function initSchema(db, pool, usingSQLite) {
     await addColIfMissing('village_health', 'lat', 'DOUBLE PRECISION DEFAULT NULL');
     await addColIfMissing('village_health', 'lng', 'DOUBLE PRECISION DEFAULT NULL');
     await addColIfMissing('ambulance_requests', 'type', "VARCHAR(30) DEFAULT 'emergency'");
+    await addColIfMissing('ambulance_requests', 'request_type', "VARCHAR(30) DEFAULT 'ambulance'");
+    await addColIfMissing('ambulance_requests', 'updated_at', 'TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP');
+    await addColIfMissing('users', 'created_at', 'TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP');
+    await addColIfMissing('users', 'updated_at', 'TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP');
+    await addColIfMissing('pregnancy_data', 'recorded_by', 'INTEGER REFERENCES users(id) ON DELETE SET NULL');
+    await addColIfMissing('pregnancy_data', 'updated_at', 'TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP');
+    await addColIfMissing('symptoms', 'disease', 'VARCHAR(120) DEFAULT NULL');
+    await addColIfMissing('symptoms', 'advice', 'TEXT DEFAULT NULL');
+    await addColIfMissing('symptoms', 'confidence', 'REAL DEFAULT NULL');
+    await addColIfMissing('symptoms', 'model_used', 'VARCHAR(50) DEFAULT NULL');
+    await addColIfMissing('symptoms', 'updated_at', 'TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP');
+    await addColIfMissing('referrals', 'outcome', 'VARCHAR(120) DEFAULT NULL');
+    await addColIfMissing('referrals', 'outcome_details', 'TEXT DEFAULT NULL');
+    await addColIfMissing('referrals', 'closed_at', 'TIMESTAMPTZ DEFAULT NULL');
+    await addColIfMissing('referrals', 'updated_at', 'TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP');
   } else {
     // ── SQLite Schema Auto-Creation & Demo Data Seeding ──────────────────────
     console.log('📦 Initializing SQLite database schema and indexing...');
@@ -466,6 +541,9 @@ export async function initSchema(db, pool, usingSQLite) {
         priority TEXT DEFAULT 'routine',
         status TEXT DEFAULT 'pending',
         notes TEXT,
+        outcome TEXT DEFAULT NULL,
+        outcome_details TEXT DEFAULT NULL,
+        closed_at DATETIME DEFAULT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
@@ -489,6 +567,54 @@ export async function initSchema(db, pool, usingSQLite) {
         error_code TEXT,
         error_message TEXT,
         received_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS vaccination_records (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        child_name TEXT NOT NULL,
+        parent_phone TEXT,
+        vaccine_name TEXT NOT NULL,
+        scheduled_date TEXT,
+        given_date TEXT DEFAULT NULL,
+        status TEXT DEFAULT 'scheduled',
+        "villageId" TEXT REFERENCES village_health("villageId") ON DELETE SET NULL,
+        recorded_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS asha_performance (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        asha_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        month TEXT NOT NULL,
+        referrals_count INTEGER DEFAULT 0,
+        pregnancies_tracked INTEGER DEFAULT 0,
+        vaccinations_completed INTEGER DEFAULT 0,
+        emergencies_reported INTEGER DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(asha_id, month)
+      );
+
+      CREATE TABLE IF NOT EXISTS audit_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER,
+        action TEXT NOT NULL,
+        resource TEXT NOT NULL,
+        resource_id TEXT DEFAULT NULL,
+        ip_address TEXT DEFAULT NULL,
+        user_agent TEXT DEFAULT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS district_config (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        district_id TEXT UNIQUE NOT NULL,
+        outbreak_threshold INTEGER DEFAULT 3,
+        enable_auto_ambulance BOOLEAN DEFAULT 1,
+        emergency_contact_phone TEXT DEFAULT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
 
@@ -539,6 +665,70 @@ export async function initSchema(db, pool, usingSQLite) {
       BEGIN
         UPDATE referrals SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id;
       END;
+
+      CREATE TRIGGER IF NOT EXISTS update_vaccination_records_modtime AFTER UPDATE ON vaccination_records FOR EACH ROW
+      BEGIN
+        UPDATE vaccination_records SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id;
+      END;
+
+      CREATE TRIGGER IF NOT EXISTS update_asha_performance_modtime AFTER UPDATE ON asha_performance FOR EACH ROW
+      BEGIN
+        UPDATE asha_performance SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id;
+      END;
+
+      CREATE TRIGGER IF NOT EXISTS update_district_config_modtime AFTER UPDATE ON district_config FOR EACH ROW
+      BEGIN
+        UPDATE district_config SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id;
+      END;
     `);
+
+    // ── SQLite COLUMN AUTO-MIGRATION ───────────────────────────────────────
+    const addSQLiteColIfMissing = async (table, col, colType) => {
+      try {
+        const info = await db.all(`PRAGMA table_info(${table})`);
+        const exists = info.some(c => c.name === col.replace(/"/g, ''));
+        if (!exists) {
+          await db.exec(`ALTER TABLE ${table} ADD COLUMN ${col} ${colType}`);
+          console.log(`[SQLite MIGRATION] Added column ${col} to ${table}`);
+        }
+      } catch (err) {
+        console.error(`SQLite migration error (${table}.${col}):`, err.message);
+      }
+    };
+
+    await addSQLiteColIfMissing('users', 'gender', 'TEXT DEFAULT NULL');
+    await addSQLiteColIfMissing('users', 'age', 'INTEGER DEFAULT NULL');
+    await addSQLiteColIfMissing('users', 'economic_status', 'TEXT DEFAULT NULL');
+    await addSQLiteColIfMissing('users', 'caste', 'TEXT DEFAULT NULL');
+    await addSQLiteColIfMissing('users', 'area_type', 'TEXT DEFAULT NULL');
+    await addSQLiteColIfMissing('users', 'aadhaar_masked', 'TEXT DEFAULT NULL');
+    await addSQLiteColIfMissing('users', 'aadhaar_hash', 'TEXT DEFAULT NULL');
+    await addSQLiteColIfMissing('users', 'created_at', 'DATETIME DEFAULT NULL');
+    await addSQLiteColIfMissing('users', 'updated_at', 'DATETIME DEFAULT NULL');
+
+    await addSQLiteColIfMissing('village_health', '"outbreakAlert"', 'TEXT DEFAULT NULL');
+    await addSQLiteColIfMissing('village_health', '"lastUpdated"', 'DATETIME DEFAULT NULL');
+    await addSQLiteColIfMissing('village_health', '"districtId"', 'TEXT DEFAULT NULL');
+    await addSQLiteColIfMissing('village_health', 'lat', 'REAL DEFAULT NULL');
+    await addSQLiteColIfMissing('village_health', 'lng', 'REAL DEFAULT NULL');
+    await addSQLiteColIfMissing('village_health', 'updated_at', 'DATETIME DEFAULT NULL');
+
+    await addSQLiteColIfMissing('ambulance_requests', 'type', "TEXT DEFAULT 'emergency'");
+    await addSQLiteColIfMissing('ambulance_requests', 'request_type', "TEXT DEFAULT 'ambulance'");
+    await addSQLiteColIfMissing('ambulance_requests', 'updated_at', 'DATETIME DEFAULT NULL');
+
+    await addSQLiteColIfMissing('pregnancy_data', 'recorded_by', 'INTEGER REFERENCES users(id) ON DELETE SET NULL');
+    await addSQLiteColIfMissing('pregnancy_data', 'updated_at', 'DATETIME DEFAULT NULL');
+
+    await addSQLiteColIfMissing('symptoms', 'disease', 'TEXT DEFAULT NULL');
+    await addSQLiteColIfMissing('symptoms', 'advice', 'TEXT DEFAULT NULL');
+    await addSQLiteColIfMissing('symptoms', 'confidence', 'REAL DEFAULT NULL');
+    await addSQLiteColIfMissing('symptoms', 'model_used', 'TEXT DEFAULT NULL');
+    await addSQLiteColIfMissing('symptoms', 'updated_at', 'DATETIME DEFAULT NULL');
+
+    await addSQLiteColIfMissing('referrals', 'outcome', 'TEXT DEFAULT NULL');
+    await addSQLiteColIfMissing('referrals', 'outcome_details', 'TEXT DEFAULT NULL');
+    await addSQLiteColIfMissing('referrals', 'closed_at', 'DATETIME DEFAULT NULL');
+    await addSQLiteColIfMissing('referrals', 'updated_at', 'DATETIME DEFAULT NULL');
   }
 }
