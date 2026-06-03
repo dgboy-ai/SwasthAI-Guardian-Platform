@@ -1,5 +1,14 @@
 # ⚙️ Installation, Setup & Local Development Guide
 
+> **For judges who just want to evaluate**: The live app is already deployed.
+> ```
+> https://swasthai-guardian.onrender.com
+> ```
+> Login: select any role → enter any phone number → OTP: `1234`
+> Full AWS health status: `GET https://swasthai-guardian.onrender.com/api/health/detailed`
+
+---
+
 ### 🐳 Docker Deployment (Recommended — One Command)
 
 ```bash
@@ -10,20 +19,20 @@ cp .env.example .env
 docker-compose up --build
 ```
 
-Services start in order: **AI Service → Backend → Frontend**
+Services start in dependency order: **AI Service → Backend → Frontend**
 
 | URL | Service |
 |---|---|
-| `http://localhost` | React Frontend (Nginx) |
-| `http://localhost:5000` | Node.js Backend API |
+| `http://localhost` | React + Vite PWA (served via Nginx) |
+| `http://localhost:5000` | Node.js Express Backend API |
 | `http://localhost:8000` | FastAPI AI Microservice |
 
-**Docker files created:**
-* `docker-compose.yml`: Orchestrates all 3 services with health checks.
-* `backend/Dockerfile`: Multi-stage Node.js build, runs as non-root user.
-* `ai-service/Dockerfile`: Python + baked ML model, non-root user.
-* `frontend/Dockerfile`: Vite build → Nginx with SPA fallback + security headers.
-* `.dockerignore`: Prevents secrets and node_modules from entering images.
+**Docker files included:**
+* `docker-compose.yml` — Orchestrates all 3 services with readiness health checks.
+* `backend/Dockerfile` — Multi-stage Node.js build, runs as non-root user.
+* `ai-service/Dockerfile` — Python + pre-baked ML models, non-root user.
+* `frontend/Dockerfile` — Vite production build served via Nginx with SPA fallback + security headers.
+* `.dockerignore` — Prevents secrets and `node_modules` from entering images.
 
 ---
 
@@ -34,25 +43,26 @@ Services start in order: **AI Service → Backend → Frontend**
 - Python 3.10+
 - pip
 
-#### 1. AI Service (start first)
+#### Database Note
+In local development, the backend uses **SQLite** automatically (no setup needed). In production, it connects to **Amazon Aurora PostgreSQL** via the `DATABASE_URL` environment variable. The schema and migrations are identical — the backend detects which driver to use at startup.
+
+#### 1. AI Service (start first — models must be trained before backend boots)
 ```bash
 cd ai-service
 pip install -r requirements.txt
-python train_disease_model.py        # trains Random Forest fallback
-python train_deep_model.py           # trains Deep Learning engine (requires ~500MB RAM)
-python calibrate_rag.py              # calibrates RAG threshold (writes rag_config.py)
+python train_disease_model.py        # trains the Random Forest fallback (~2 min)
+python train_deep_model.py           # trains SymptomNet MLP (~500MB RAM required)
+python calibrate_rag.py              # calibrates RAG threshold → writes rag_config.py
 uvicorn main:app --reload --port 8000
 ```
 
 #### 2. Backend API
 ```bash
 cd backend
-cp .env.example .env                 # set GROQ_API_KEY, JWT_SECRET, ALLOWED_ORIGINS
+cp .env.example .env                 # fill in GROQ_API_KEY, JWT_SECRET, ALLOWED_ORIGINS
 npm install
-npm run dev                          # starts on port 5000
+npm run dev                          # starts on port 5000; SQLite auto-initializes
 ```
-
-> Local SQLite / PostgreSQL database is initialized and accessed automatically on start.
 
 #### 3. Frontend
 ```bash
@@ -61,12 +71,45 @@ npm install
 npm run dev                          # opens http://localhost:5173
 ```
 
+---
+
 ### Environment Variables (`.env`)
+
+Copy `.env.example` to `.env` and fill in the values below.
+
 ```env
+# ── Core Backend ──────────────────────────────────────────────────────────────
 PORT=5000
-JWT_SECRET=your_jwt_secret_here
-GROQ_API_KEY=your_groq_api_key_here
+JWT_SECRET=<random 32-char string — signs all auth tokens>
+GROQ_API_KEY=<your Groq API key — powers Sakhi RAG and the Outbreak Agent>
 AI_SERVICE_URL=http://127.0.0.1:8000
+
+# ── CORS ──────────────────────────────────────────────────────────────────────
+# Comma-separated. In production, Vercel domains are auto-allowed via *.vercel.app.
 ALLOWED_ORIGINS=http://localhost:5173
-AGENT_SECRET=your_agent_secret_here
+
+# ── Outbreak Agent Auth ───────────────────────────────────────────────────────
+# The OutbreakAgent uses this secret as a Bearer token when POSTing alerts to
+# /api/admin/outbreak-alert. Prevents unauthorized alert injection. Required in
+# production — server refuses to start without it.
+AGENT_SECRET=<random 32-char string>
+
+# ── Aadhaar Hashing ───────────────────────────────────────────────────────────
+# Salt used when hashing Aadhaar IDs before storage. Never stored in plaintext.
+AADHAAR_SALT=<random 32-char string>
+
+# ── AWS (required for DynamoDB + Aurora in production) ───────────────────────
+AWS_REGION=ap-south-1
+AWS_ACCESS_KEY_ID=<your IAM key>
+AWS_SECRET_ACCESS_KEY=<your IAM secret>
+# Aurora PostgreSQL connection string (overrides local SQLite when set)
+DATABASE_URL=postgresql://user:password@your-aurora-cluster.ap-south-1.rds.amazonaws.com:5432/swasthai
+
+# ── Performance ───────────────────────────────────────────────────────────────
+# Use 1 on Render/Fargate free tier to stay within memory limits
+NODE_CLUSTER_WORKERS=1
+
+# ── Development Only ──────────────────────────────────────────────────────────
+# Enables OTP 1234 for demo/testing. NEVER enable in production.
+# ALLOW_DEMO_OTP=true
 ```
