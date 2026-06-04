@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ShieldAlert, Activity, Wifi, WifiOff, Users, MapPin, 
@@ -6,29 +6,44 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import api from '../services/api';
+import adminService from '../services/adminService';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 
-const NODE_LAYOUT = {
-  v101: { x: 140, y: 110 },
-  v102: { x: 320, y: 130 },
-  v103: { x: 200, y: 240 },
-  v104: { x: 90, y: 210 },
-  v105: { x: 360, y: 260 },
+const VILLAGE_COORDS = {
+  v101: [25.3300, 82.9500],
+  v102: [25.3500, 83.0200],
+  v103: [25.2900, 82.9800],
+  v104: [25.3100, 82.9200],
+  v105: [25.3400, 83.0800],
+};
+
+const getVillageCoords = (villageId, index) => {
+  if (VILLAGE_COORDS[villageId]) return VILLAGE_COORDS[villageId];
+  // Deterministic coordinate within Varanasi area for dynamically uploaded villages
+  const hash = Array.from(villageId || 'unknown').reduce((a, c) => a + c.charCodeAt(0), 0);
+  const lat = 25.28 + (hash % 100) / 1000 + (index % 3) * 0.02;
+  const lng = 82.90 + (hash % 150) / 1000 + Math.floor(index / 3) * 0.02;
+  return [lat, lng];
 };
 
 const DEFAULT_NODES = [
-  { id: 'v101', name: 'Rameshwar / रामेश्वर', x: 140, y: 110, population: 4200, pregnant: 68, children: 290, cases: 2, asha: '+91 94150 12345', status: 'normal', latestAlert: null },
-  { id: 'v102', name: 'Shivpur / शिवपुर', x: 320, y: 130, population: 5800, pregnant: 92, children: 410, cases: 12, asha: '+91 94500 54321', status: 'outbreak', latestAlert: '⚠️ Dengue Spike: 8 cases in 48h' },
-  { id: 'v103', name: 'Kharela / खरेला', x: 200, y: 240, population: 3100, pregnant: 45, children: 195, cases: 1, asha: '+91 94310 98765', status: 'normal', latestAlert: null },
-  { id: 'v104', name: 'Babatpur / बाबतपुर', x: 90, y: 210, population: 4900, pregnant: 73, children: 330, cases: 0, asha: '+91 98890 11223', status: 'emergency', latestAlert: '🚨 Active SOS: Pregnancy referral dispatch' },
-  { id: 'v105', name: 'Chiraigaon / चिरईगाँव', x: 360, y: 260, population: 6200, pregnant: 110, children: 480, cases: 4, asha: '+91 99190 44556', status: 'normal', latestAlert: null },
+  { id: 'v101', name: 'Rampur / रामपुर', population: 4200, pregnant: 68, children: 290, cases: 2, asha: '+91 94150 12345', status: 'normal', latestAlert: null },
+  { id: 'v102', name: 'Shivpur / शिवपुर', population: 5800, pregnant: 92, children: 410, cases: 12, asha: '+91 94500 54321', status: 'outbreak', latestAlert: '⚠️ Dengue Spike: 8 cases in 48h' },
+  { id: 'v103', name: 'Kharela / खरेला', population: 3100, pregnant: 45, children: 195, cases: 1, asha: '+91 94310 98765', status: 'normal', latestAlert: null },
+  { id: 'v104', name: 'Babatpur / बाबतपुर', population: 4900, pregnant: 73, children: 330, cases: 0, asha: '+91 98890 11223', status: 'emergency', latestAlert: '🚨 Active SOS: Pregnancy referral dispatch' },
+  { id: 'v105', name: 'Chiraigaon / चिरईगाँव', population: 6200, pregnant: 110, children: 480, cases: 4, asha: '+91 99190 44556', status: 'normal', latestAlert: null },
 ];
 
 export default function DistrictOutbreakMap({ onNodeSelect, activeVillageId = null }) {
   const { lang } = useLanguage();
-  const [hoveredNode, setHoveredNode] = useState(null);
   const [selectedNode, setSelectedNode] = useState(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [nodes, setNodes] = useState(DEFAULT_NODES);
+  
+  const mapContainerRef = useRef(null);
+  const mapInstanceRef = useRef(null);
+  const markersLayerRef = useRef(null);
 
   useEffect(() => {
     const goOnline = () => setIsOnline(true);
@@ -41,40 +56,154 @@ export default function DistrictOutbreakMap({ onNodeSelect, activeVillageId = nu
     };
   }, []);
 
+  // Initialize Leaflet Map
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token || token === 'offline-mock-token') return;
+    if (!mapContainerRef.current) return;
+    if (mapInstanceRef.current) return;
 
+    // Centered around Varanasi
+    const map = L.map(mapContainerRef.current, {
+      center: [25.32, 82.98],
+      zoom: 11,
+      minZoom: 10,
+      maxZoom: 14,
+      zoomControl: false,
+    });
+
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; OpenStreetMap &copy; CARTO'
+    }).addTo(map);
+
+    // GeoJSON district boundary for Varanasi
+    const varanasiBoundary = {
+      "type": "Feature",
+      "properties": { "name": "Varanasi" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [82.80, 25.42],
+          [83.18, 25.42],
+          [83.18, 25.20],
+          [82.80, 25.20],
+          [82.80, 25.42]
+        ]]
+      }
+    };
+
+    L.geoJSON(varanasiBoundary, {
+      style: {
+        color: '#10b981',
+        weight: 1.5,
+        fillColor: '#10b981',
+        fillOpacity: 0.04,
+        dashArray: '4, 6'
+      }
+    }).addTo(map);
+
+    const markersLayer = L.layerGroup().addTo(map);
+    markersLayerRef.current = markersLayer;
+    mapInstanceRef.current = map;
+
+    return () => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove();
+        mapInstanceRef.current = null;
+      }
+    };
+  }, []);
+
+  // Load live villages from DB
+  useEffect(() => {
     const loadVillages = async () => {
       try {
-        const res = await api.get('/ngo/villages');
-        const villages = Array.isArray(res.data) ? res.data : [];
+        const data = await adminService.getVillages();
+        const villages = Array.isArray(data) ? data : [];
         if (!villages.length) return;
 
         setNodes(villages.map((v, i) => {
-          const pos = NODE_LAYOUT[v.villageId] || { x: 80 + (i % 3) * 120, y: 100 + Math.floor(i / 3) * 80 };
           const alert = v.outbreakAlert || v.outbreakalert;
           return {
             id: v.villageId,
             name: v.name || v.villageId,
-            x: pos.x,
-            y: pos.y,
             population: v.population ?? 0,
             pregnant: v.pregnant_women ?? 0,
             children: v.children_under_5 ?? 0,
             cases: v.malnutrition_cases ?? 0,
-            asha: v.asha_contact || '—',
+            asha: v.asha_phone || v.asha_contact || '—',
             status: alert ? 'outbreak' : 'normal',
             latestAlert: alert,
           };
         }));
       } catch (_) {
-        /* keep default demo layout */
+        /* Keep default/mock nodes on failure or offline mode */
       }
     };
 
     loadVillages();
   }, []);
+
+  // Sync markers onto Leaflet Layer
+  useEffect(() => {
+    if (!mapInstanceRef.current || !markersLayerRef.current) return;
+    markersLayerRef.current.clearLayers();
+
+    nodes.forEach((n, index) => {
+      const coords = getVillageCoords(n.id, index);
+      const isSelected = selectedNode?.id === n.id;
+
+      let markerHtml = '';
+      if (n.status === 'outbreak') {
+        markerHtml = `
+          <div class="relative flex items-center justify-center">
+            <span class="absolute inline-flex h-10 w-10 animate-ping rounded-full bg-rose-500 opacity-60"></span>
+            <span class="relative inline-flex rounded-full h-4 w-4 bg-rose-500 border border-slate-900 shadow"></span>
+          </div>
+        `;
+      } else if (n.status === 'emergency') {
+        markerHtml = `
+          <div class="relative flex items-center justify-center">
+            <span class="absolute inline-flex h-8 w-8 animate-pulse rounded-full bg-amber-500 opacity-60"></span>
+            <span class="relative inline-flex rounded-full h-4 w-4 bg-amber-500 border border-slate-900 shadow"></span>
+          </div>
+        `;
+      } else {
+        markerHtml = `
+          <div class="relative flex items-center justify-center">
+            <span class="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500 border border-slate-900 shadow"></span>
+          </div>
+        `;
+      }
+
+      if (isSelected) {
+        markerHtml = `
+          <div class="relative flex items-center justify-center">
+            <span class="absolute inline-flex h-12 w-12 rounded-full border-2 border-emerald-400 animate-pulse"></span>
+            ${markerHtml}
+          </div>
+        `;
+      }
+
+      const customIcon = L.divIcon({
+        html: markerHtml,
+        className: 'custom-div-icon',
+        iconSize: [24, 24],
+        iconAnchor: [12, 12]
+      });
+
+      const marker = L.marker(coords, { icon: customIcon });
+      marker.on('click', () => {
+        handleNodeClick(n);
+      });
+
+      marker.bindTooltip(n.name.split(' / ')[0], {
+        permanent: false,
+        direction: 'top',
+        className: 'leaflet-tooltip-custom bg-slate-950 text-slate-200 border border-slate-800 font-black text-[10px] rounded px-2.5 py-1.5 shadow-xl'
+      });
+
+      markersLayerRef.current.addLayer(marker);
+    });
+  }, [nodes, selectedNode]);
 
   // Keep synced with parent selection if provided
   useEffect(() => {
@@ -82,7 +211,19 @@ export default function DistrictOutbreakMap({ onNodeSelect, activeVillageId = nu
       const match = nodes.find(n => n.id === activeVillageId);
       if (match) setSelectedNode(match);
     }
-  }, [activeVillageId]);
+  }, [activeVillageId, nodes]);
+
+  // Center view on selected node coordinates
+  useEffect(() => {
+    if (selectedNode && mapInstanceRef.current) {
+      const match = nodes.find(n => n.id === selectedNode.id);
+      if (match) {
+        const index = nodes.indexOf(match);
+        const coords = getVillageCoords(match.id, index);
+        mapInstanceRef.current.setView(coords, 12, { animate: true });
+      }
+    }
+  }, [selectedNode, nodes]);
 
   // Listen to local outbreak simulations (custom events triggered by MonitoringDashboard)
   useEffect(() => {
@@ -95,7 +236,6 @@ export default function DistrictOutbreakMap({ onNodeSelect, activeVillageId = nu
         return node;
       }));
       
-      // Auto select the simulated node to show alert
       const match = nodes.find(n => n.id === villageId);
       if (match) {
         setSelectedNode({ ...match, status, latestAlert: alert });
@@ -111,22 +251,52 @@ export default function DistrictOutbreakMap({ onNodeSelect, activeVillageId = nu
     if (onNodeSelect) onNodeSelect(node.id);
   };
 
-  const getStatusColor = (status) => {
-    if (status === 'outbreak') return 'stroke-rose-500 fill-rose-500';
-    if (status === 'emergency') return 'stroke-amber-500 fill-amber-500';
-    return 'stroke-emerald-500 fill-emerald-500';
+  const handleRePollTelemetry = async () => {
+    if (!selectedNode) return;
+    try {
+      const statusData = await adminService.getVillageStatus(selectedNode.id);
+      setNodes(prev => prev.map(n => {
+        if (n.id === selectedNode.id) {
+          const alert = statusData.outbreakAlert;
+          return {
+            ...n,
+            population: statusData.population ?? n.population,
+            pregnant: statusData.pregnant_women ?? n.pregnant,
+            children: statusData.children_under_5 ?? n.children,
+            cases: statusData.malnutrition_cases ?? n.cases,
+            status: statusData.nodeState?.status || (alert ? 'outbreak' : 'normal'),
+            latestAlert: alert,
+          };
+        }
+        return n;
+      }));
+      setSelectedNode(prev => {
+        const alert = statusData.outbreakAlert;
+        return {
+          ...prev,
+          population: statusData.population ?? prev.population,
+          pregnant: statusData.pregnant_women ?? prev.pregnant,
+          children: statusData.children_under_5 ?? prev.children,
+          cases: statusData.malnutrition_cases ?? prev.cases,
+          status: statusData.nodeState?.status || (alert ? 'outbreak' : 'normal'),
+          latestAlert: alert,
+        };
+      });
+    } catch (err) {
+      console.error("Failed to re-poll telemetry:", err);
+    }
   };
 
   return (
     <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm p-6 sm:p-8 relative overflow-hidden flex flex-col lg:flex-row gap-6">
       
-      {/* MAP SVG CONTAINER */}
-      <div className="flex-1 flex flex-col justify-between relative min-h-[320px] bg-slate-950 rounded-[2rem] overflow-hidden p-6 border border-slate-900 shadow-inner">
-        {/* MAP WATERMARK BACKGROUND */}
-        <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#10b981_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none" />
+      {/* MAP CONTAINER */}
+      <div className="flex-1 flex flex-col justify-between relative min-h-[320px] bg-slate-950 rounded-[2rem] overflow-hidden border border-slate-900 shadow-inner">
+        {/* Leaflet DOM attachment */}
+        <div ref={mapContainerRef} className="absolute inset-0 z-10 w-full h-full" style={{ minHeight: '320px' }} />
         
         {/* NETWORK & OFFLINE INDICATOR */}
-        <div className="absolute top-4 left-4 z-10 flex items-center gap-2 px-3 py-1.5 bg-black/60 backdrop-blur-md rounded-full border border-white/10">
+        <div className="absolute top-4 left-4 z-20 flex items-center gap-2 px-3 py-1.5 bg-black/60 backdrop-blur-md rounded-full border border-white/10">
           {isOnline ? (
             <Wifi className="w-3.5 h-3.5 text-emerald-400" />
           ) : (
@@ -138,96 +308,14 @@ export default function DistrictOutbreakMap({ onNodeSelect, activeVillageId = nu
         </div>
 
         {/* MAP TITLE Watermark */}
-        <div className="absolute bottom-4 left-4 z-10 flex flex-col leading-none pointer-events-none">
-          <span className="text-xl font-black text-slate-800 tracking-tighter uppercase">Varanasi Division</span>
-          <span className="text-[8px] font-black text-slate-600 uppercase tracking-widest mt-1">SwasthAI Node Network Map</span>
+        <div className="absolute bottom-4 left-4 z-20 flex flex-col leading-none pointer-events-none">
+          <span className="text-xl font-black text-slate-400 opacity-60 tracking-tighter uppercase">Varanasi Division</span>
+          <span className="text-[8px] font-black text-slate-500 opacity-60 uppercase tracking-widest mt-1">SwasthAI Node Network Map</span>
         </div>
-
-        {/* MAIN SVG CANVAS */}
-        <svg viewBox="0 0 450 320" className="w-full h-full relative z-10 select-none">
-          {/* STYLIZED DISTRICT OUTLINE PATH (Varanasi division layout mock) */}
-          <path 
-            d="M 40,60 Q 120,30 200,40 T 380,50 Q 420,120 400,200 T 360,280 Q 240,310 140,280 T 30,160 Z" 
-            fill="none" 
-            stroke="#1e293b" 
-            strokeWidth="2" 
-            strokeDasharray="4 6"
-          />
-
-          {/* ROAD/ROUTING CONNECTION DASHES BETWEEN VILLAGE NODES */}
-          <g opacity="0.3">
-            <line x1="140" y1="110" x2="320" y2="130" stroke="#10b981" strokeWidth="1.5" strokeDasharray="3 3" />
-            <line x1="140" y1="110" x2="200" y2="240" stroke="#10b981" strokeWidth="1.5" strokeDasharray="3 3" />
-            <line x1="200" y1="240" x2="320" y2="130" stroke="#10b981" strokeWidth="1.5" strokeDasharray="3 3" />
-            <line x1="90" y1="210" x2="200" y2="240" stroke="#10b981" strokeWidth="1.5" strokeDasharray="3 3" />
-            <line x1="320" y1="130" x2="360" y2="260" stroke="#10b981" strokeWidth="1.5" strokeDasharray="3 3" />
-            <line x1="200" y1="240" x2="360" y2="260" stroke="#10b981" strokeWidth="1.5" strokeDasharray="3 3" />
-          </g>
-
-          {/* VILLAGE NODE DOTS & HOT PULSES */}
-          {nodes.map(n => {
-            const isSelected = selectedNode?.id === n.id;
-            const isHovered = hoveredNode?.id === n.id;
-            
-            return (
-              <g 
-                key={n.id} 
-                className="cursor-pointer" 
-                onClick={() => handleNodeClick(n)}
-                onMouseEnter={() => setHoveredNode(n)}
-                onMouseLeave={() => setHoveredNode(null)}
-              >
-                {/* Outbreak / Emergency Pulse Ring */}
-                {n.status !== 'normal' && (
-                  <circle
-                    cx={n.x}
-                    cy={n.y}
-                    r={isSelected ? 22 : 16}
-                    fill="none"
-                    className={`stroke-2 ${n.status === 'outbreak' ? 'stroke-rose-500/60 animate-ping' : 'stroke-amber-500/60 animate-pulse'}`}
-                  />
-                )}
-
-                {/* Outer halo */}
-                <circle 
-                  cx={n.x} 
-                  cy={n.y} 
-                  r={isSelected ? 16 : isHovered ? 12 : 8} 
-                  fill="none" 
-                  stroke={isSelected ? '#34d399' : '#1e293b'} 
-                  strokeWidth="2"
-                  className="transition-all duration-300"
-                />
-
-                {/* Core Node Center */}
-                <circle 
-                  cx={n.x} 
-                  cy={n.y} 
-                  r={isSelected ? 8 : 6} 
-                  className={`transition-all duration-300 ${
-                    n.status === 'outbreak' ? 'fill-rose-500 animate-pulse' :
-                    n.status === 'emergency' ? 'fill-amber-500' : 'fill-emerald-500'
-                  }`}
-                />
-
-                {/* Village Tag */}
-                <text
-                  x={n.x}
-                  y={n.y - (isSelected ? 22 : 14)}
-                  textAnchor="middle"
-                  fill={isSelected ? '#34d399' : '#94a3b8'}
-                  className="text-[9px] font-black tracking-tight"
-                >
-                  {n.name.split(' / ')[0]}
-                </text>
-              </g>
-            );
-          })}
-        </svg>
       </div>
 
       {/* FLOAT SIDE CARD (REAL-TIME INFORMATION PANEL) */}
-      <div className="w-full lg:w-[260px] flex flex-col justify-between shrink-0">
+      <div className="w-full lg:w-[260px] flex flex-col justify-between shrink-0 z-20">
         <AnimatePresence mode="wait">
           {selectedNode ? (
             <motion.div
@@ -243,7 +331,7 @@ export default function DistrictOutbreakMap({ onNodeSelect, activeVillageId = nu
                     {selectedNode.name.split(' / ')[0]}
                   </h3>
                   <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">
-                    {selectedNode.name.split(' / ')[1]}
+                    {selectedNode.name.split(' / ')[1] || 'Varanasi'}
                   </p>
                 </div>
                 <span className={`w-3 h-3 rounded-full ${
@@ -314,14 +402,13 @@ export default function DistrictOutbreakMap({ onNodeSelect, activeVillageId = nu
 
         {/* RE-POOL ALL DATA ACTION */}
         <button
-          onClick={() => {
-            const list = ['v101', 'v102', 'v103', 'v104', 'v105'];
-            const rand = list[Math.floor(Math.random() * list.length)];
-            // trigger a mock sync re-pool
-            const match = nodes.find(n => n.id === rand);
-            if (match) setSelectedNode(match);
-          }}
-          className="mt-4 w-full py-4 bg-slate-900 hover:bg-emerald-600 text-white rounded-xl font-black uppercase text-[10px] tracking-[0.2em] transition-all flex items-center justify-center gap-2 border border-slate-900 hover:border-emerald-600"
+          onClick={handleRePollTelemetry}
+          disabled={!selectedNode}
+          className={`mt-4 w-full py-4 rounded-xl font-black uppercase text-[10px] tracking-[0.2em] transition-all flex items-center justify-center gap-2 border ${
+            selectedNode 
+              ? 'bg-slate-900 hover:bg-emerald-600 text-white border-slate-900 hover:border-emerald-600 cursor-pointer' 
+              : 'bg-slate-100 text-slate-400 border-slate-100 cursor-not-allowed'
+          }`}
           style={{ minHeight: '48px' }}
         >
           <RefreshCw className="w-3.5 h-3.5" /> Re-poll Telemetry

@@ -11,6 +11,7 @@ import {
 import adminService from '../services/adminService';
 import api from '../services/api';
 import SkeletonCard from '../components/SkeletonCard';
+import { VERSION, COPYRIGHT_YEAR } from '../constants/version';
 
 /* ─── Sidebar nav ─────────────────────────────────────────────────────────── */
 const NAV_ITEMS = [
@@ -424,7 +425,7 @@ export default function AdminDashboard() {
 
         {/* Version */}
         <div className="px-4 py-3 border-t border-white/10">
-          <p className="text-[9px] text-white/30 font-medium">SwasthAI Guardian v2.0 · © 2025</p>
+          <p className="text-[9px] text-white/30 font-medium">SwasthAI Guardian {VERSION} · © {COPYRIGHT_YEAR}</p>
         </div>
       </aside>
 
@@ -1206,12 +1207,12 @@ export default function AdminDashboard() {
         <footer className="bg-white border-t border-slate-200 px-5 py-2.5 shrink-0">
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-3 text-[9px] font-bold text-slate-400">
-              <span className="flex items-center gap-1.5"><HeartPulse className="w-3 h-3 text-emerald-500" /> SwasthAI Guardian v2.0</span>
+              <span className="flex items-center gap-1.5"><HeartPulse className="w-3 h-3 text-emerald-500" /> SwasthAI Guardian {VERSION}</span>
               <span className="border-l border-slate-200 pl-3">Offline-First Healthcare</span>
               <span className="border-l border-slate-200 pl-3 hidden sm:block">6 Indian Languages Supported</span>
               <span className="border-l border-slate-200 pl-3 hidden md:block">Voice + AI + RAG</span>
             </div>
-            <span className="text-[9px] text-slate-300 font-medium">© 2025 SwasthAI Guardian. All rights reserved.</span>
+            <span className="text-[9px] text-slate-300 font-medium">© {COPYRIGHT_YEAR} SwasthAI Guardian. All rights reserved.</span>
           </div>
         </footer>
       </div>

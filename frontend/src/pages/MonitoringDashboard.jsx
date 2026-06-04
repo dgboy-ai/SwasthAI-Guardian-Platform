@@ -433,6 +433,14 @@ export default function MonitoringDashboard() {
         await new Promise(r => setTimeout(r, 80));
       }
 
+      window.dispatchEvent(new CustomEvent('outbreak_simulation_trigger', {
+        detail: {
+          villageId: `v10${i + 1}`,
+          status: 'outbreak',
+          alert: `⚠️ ${symptom} Spike: ${count} cases in 48h`
+        }
+      }));
+
       setSimProgress(Math.round(((i + 1) / villages.length) * 100));
       addEvent('OUTBREAK', `${count} cases in ${village}`, 'error');
       await new Promise(r => setTimeout(r, 600));

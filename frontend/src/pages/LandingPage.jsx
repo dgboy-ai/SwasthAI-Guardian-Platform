@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { VERSION, COPYRIGHT_YEAR } from '../constants/version';
 import { 
   HeartPulse, Activity, Shield, Users, ArrowRight, BrainCircuit, 
   Truck, Globe, Zap, CheckCircle, MapPin, PhoneCall, WifiOff, Mic, ShieldCheck, Play,
@@ -68,10 +69,10 @@ const FLOW_STEPS = [
 ];
 
 function ArchitectureFlow() {
-  const [active, setActive] = React.useState(0);
-  const [isOffline, setIsOffline] = React.useState(false);
+  const [active, setActive] = useState(0);
+  const [isOffline, setIsOffline] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const t = setInterval(() => {
       setActive(prev => (prev + 1) % FLOW_STEPS.length);
     }, 1400);
@@ -296,14 +297,16 @@ export default function LandingPage() {
             >
                <button 
                  onClick={() => navigate('/symptoms')}
-                 className="w-full py-4 sm:py-6 bg-emerald-600 text-white rounded-full font-black uppercase tracking-widest shadow-2xl hover:bg-emerald-700 transition-all flex items-center justify-center gap-4 text-[11px] sm:text-sm group"
+                 aria-label="Start Symptoms Health Check"
+                 className="w-full py-4 sm:py-6 bg-emerald-600 text-white rounded-full font-black uppercase tracking-widest shadow-2xl hover:bg-emerald-700 focus-visible:ring-4 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 outline-none transition-all flex items-center justify-center gap-4 text-[11px] sm:text-sm group"
                >
                   {t.nav?.check_symptoms || 'Start Health Check'}
                   <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-2 transition-transform" />
                </button>
                <button 
                  onClick={() => navigate('/ambulance')}
-                 className="w-full py-4 sm:py-6 bg-red-600 text-white rounded-full font-black uppercase tracking-widest shadow-2xl hover:bg-red-700 transition-all flex items-center justify-center gap-4 text-[11px] sm:text-sm pulse-button"
+                 aria-label="Request Emergency Ambulance Help"
+                 className="w-full py-4 sm:py-6 bg-red-600 text-white rounded-full font-black uppercase tracking-widest shadow-2xl hover:bg-red-700 focus-visible:ring-4 focus-visible:ring-red-500 focus-visible:ring-offset-2 outline-none transition-all flex items-center justify-center gap-4 text-[11px] sm:text-sm pulse-button"
                >
                   {t.nav?.ambulance || 'Emergency Help'}
                </button>
@@ -422,8 +425,9 @@ export default function LandingPage() {
             <p className="text-indigo-200 text-sm mt-1">5 districts, 100+ cases, real-time event dispatch — no backend required.</p>
           </div>
           <button
-            onClick={() => window.location.href = '/monitor'}
-            className="shrink-0 px-8 py-4 bg-white text-indigo-700 rounded-full font-black uppercase tracking-wide text-sm shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-3"
+            onClick={() => navigate('/monitor')}
+            aria-label="Open Observability Dashboard"
+            className="shrink-0 px-8 py-4 bg-white text-indigo-700 rounded-full font-black uppercase tracking-wide text-sm shadow-xl hover:scale-105 active:scale-95 focus-visible:ring-4 focus-visible:ring-white focus-visible:ring-offset-2 outline-none transition-all flex items-center gap-3"
           >
             <Play className="w-4 h-4" /> Open Dashboard
           </button>
@@ -437,7 +441,8 @@ export default function LandingPage() {
             <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px] sm:text-sm mb-8 sm:mb-12 px-6">Take the first step towards better health today.</p>
             <button 
               onClick={() => navigate('/intro')}
-              className="px-10 py-5 sm:px-16 sm:py-8 bg-emerald-600 text-white rounded-full font-black uppercase tracking-[0.3em] text-sm sm:text-lg shadow-2xl shadow-emerald-200 hover:scale-105 active:scale-95 transition-all"
+              aria-label="Get Started with SwasthAI"
+              className="px-10 py-5 sm:px-16 sm:py-8 bg-emerald-600 text-white rounded-full font-black uppercase tracking-[0.3em] text-sm sm:text-lg shadow-2xl shadow-emerald-200 hover:scale-105 active:scale-95 focus-visible:ring-4 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 outline-none transition-all"
             >
                Get Started
             </button>
@@ -446,7 +451,7 @@ export default function LandingPage() {
 
       {/* FOOTER */}
       <footer className="bg-slate-50 py-12 border-t border-slate-100 text-center font-black uppercase text-[10px] text-slate-300 tracking-[0.4em]">
-         <p>© 2026 SwasthAI Guardian · Rural Health Sovereignty</p>
+         <p>© {COPYRIGHT_YEAR} SwasthAI Guardian {VERSION} · Rural Health Sovereignty</p>
       </footer>
 
       <style dangerouslySetInnerHTML={{ __html: `

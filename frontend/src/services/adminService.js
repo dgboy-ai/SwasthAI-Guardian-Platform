@@ -1,6 +1,24 @@
 import api from './api';
 
 const adminService = {
+  getVillages: async () => {
+    try {
+      const res = await api.get('/admin/villages');
+      return res.data;
+    } catch (error) {
+      throw error.response?.data?.error || 'Failed to fetch villages';
+    }
+  },
+
+  getVillageStatus: async (villageId) => {
+    try {
+      const res = await api.get(`/admin/village-status?villageId=${villageId}`);
+      return res.data;
+    } catch (error) {
+      throw error.response?.data?.error || 'Failed to fetch village status';
+    }
+  },
+
   // User Management
   getAllUsers: async () => {
     try {

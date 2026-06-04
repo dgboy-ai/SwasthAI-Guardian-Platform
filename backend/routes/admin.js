@@ -100,6 +100,56 @@ router.get('/ambulances', auth, checkRole(['admin']), async (req, res) => {
   }
 });
 
+router.get('/villages', auth, checkRole(['admin', 'ngo']), async (req, res) => {
+  const db = req.app.locals.db;
+  try {
+    const villages = await db.all(
+      `SELECT v.*, u.phone AS asha_phone, u.name AS asha_name
+       FROM village_health v
+       LEFT JOIN users u ON u."villageId" = v."villageId" AND u.role = 'ngo'`
+    );
+    res.send(villages);
+  } catch (err) {
+    sendError(res, 500, 'FETCH_VILLAGES_FAILED', err.message);
+  }
+});
+
+router.get('/village-status', auth, checkRole(['admin', 'ngo']), async (req, res) => {
+  const { villageId } = req.query;
+  if (!villageId) {
+    return sendError(res, 400, 'MISSING_VILLAGE_ID', 'villageId is required');
+  }
+  const db = req.app.locals.db;
+  try {
+    const village = await db.get('SELECT * FROM village_health WHERE "villageId" = ?', [villageId]);
+    if (!village) return sendError(res, 404, 'VILLAGE_NOT_FOUND', 'Village not found');
+    
+    // Fetch latest telemetry from DynamoDB village_node_state
+    const nodeState = await dynamoHelper.get('village_node_state', { villageId }) || {};
+    
+    // Fetch recent outbreaks
+    const outbreaks = await dynamoHelper.queryByVillage('outbreak_telemetry', villageId, 7) || [];
+    
+    res.json({
+      villageId,
+      name: village.name,
+      population: village.population,
+      pregnant_women: village.pregnant_women,
+      children_under_5: village.children_under_5,
+      malnutrition_cases: village.malnutrition_cases,
+      outbreakAlert: village.outbreakAlert,
+      nodeState: {
+        status: nodeState.status || (village.outbreakAlert ? 'outbreak' : 'normal'),
+        lastActive: nodeState.lastActive || new Date().toISOString(),
+        syncPendingCount: nodeState.syncPendingCount || 0
+      },
+      recentOutbreaks: outbreaks
+    });
+  } catch (err) {
+    sendError(res, 500, 'FETCH_STATUS_FAILED', err.message);
+  }
+});
+
 router.get('/village/:id', auth, checkRole(['admin', 'ngo']), async (req, res) => {
   const db = req.app.locals.db;
   try {

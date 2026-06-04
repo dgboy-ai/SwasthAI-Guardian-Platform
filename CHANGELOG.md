@@ -21,6 +21,15 @@ All notable changes and feature developments completed during the hackathon wind
 - **Notification Panel Dropdown**: Configured the header notification Bell icon to toggle a slide-in dropdown panel listing active outbreak alerts on click, providing intuitive user feedback.
 - **Full API Clients Expansion**: Expanded `adminService.js` and `villagerService.js` to expose full client wrappers for all backend endpoints (outbreak telemetry, RAG traces, demo seeding, symptom history, government schemes, PHQ-2, and chat assistants), ensuring robust module coverage.
 - **Optimistic UI Status Updates**: Refactored `NGODashboard.jsx` status updates with an optimistic update pattern that immediately reflects status changes in local state, falling back and rolling back state cleanly if the backend request fails.
+- **Dynamic Village Map with Leaflet.js**: Replaced the static SVG district map in `DistrictOutbreakMap.jsx` with an interactive Leaflet.js map centered on Varanasi, rendering a dark-themed CartoDB tile layer and a stylized GeoJSON district boundary polygon.
+- **Live Village Nodes from Backend**: Added `GET /api/admin/villages` endpoint on the backend that queries `village_health` table joined with `users` (role `ngo`) to return dynamic village nodes including real ASHA contact phone numbers — replacing all hardcoded `DEFAULT_NODES` and placeholder numbers.
+- **Telemetry Re-poll API**: Added `GET /api/admin/village-status?villageId=X` endpoint aggregating SQLite village metrics with DynamoDB `village_node_state` node telemetry and recent `outbreak_telemetry` records, wired to the **Re-poll Telemetry** button in the map panel.
+- **Outbreak Simulation Map Sync**: Wired `window.dispatchEvent(new CustomEvent('outbreak_simulation_trigger', ...))` inside `MonitoringDashboard.jsx`'s `runOutbreakSurge()` so that running the outbreak simulation live-updates map node status without requiring a page reload.
+- **Centralized Version Constants**: Created `frontend/src/constants/version.js` with `VERSION` and `COPYRIGHT_YEAR` exports; updated `LandingPage.jsx`, `AdminDashboard.jsx`, and `DemoPage.jsx` to import these constants, resolving the version year mismatch (2025 vs 2026) across the application.
+- **Normalized React Hook Imports in ArchitectureFlow**: Fixed inconsistent `React.useState` / `React.useEffect` usage inside the `ArchitectureFlow` sub-component, replacing them with directly imported `useState` / `useEffect` hooks to match the rest of the codebase.
+- **React Router Navigation Fix**: Replaced `window.location.href = '/monitor'` in the landing page simulation CTA with `navigate('/monitor')` to prevent full-page reloads and preserve SPA navigation state.
+- **Hero CTA Keyboard Accessibility**: Added `aria-label` attributes and `focus-visible:ring-4` focus rings to the hero CTA buttons (Start Health Check, Emergency Help, Open Dashboard, Get Started) to meet WCAG keyboard accessibility requirements.
+- **Open Graph & Twitter Meta Tags**: Added `og:type`, `og:title`, `og:description`, `og:image`, `twitter:card`, and `twitter:image` meta tags to `index.html` so social media share previews display a title and image.
 
 ---
 

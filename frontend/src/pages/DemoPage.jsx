@@ -6,6 +6,7 @@ import {
   Database, Stethoscope
 } from 'lucide-react';
 import api from '../services/api';
+import { VERSION } from '../constants/version';
 
 const ROLES = [
   {
@@ -251,7 +252,7 @@ export default function DemoPage() {
         {/* Footer CTA */}
         <div className="text-center">
           <p className="text-slate-500 text-[11px] font-medium mb-4">
-            Built for H0: Hack the Zero Stack with Vercel v0 and AWS Databases · Track 2 B2B · SwasthAI Guardian v2.0
+            Built for H0: Hack the Zero Stack with Vercel v0 and AWS Databases · Track 2 B2B · SwasthAI Guardian {VERSION}
           </p>
           <div className="flex items-center justify-center gap-4">
             <Link to="/login" className="px-8 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-black text-[13px] uppercase tracking-wider transition-colors shadow-lg">
