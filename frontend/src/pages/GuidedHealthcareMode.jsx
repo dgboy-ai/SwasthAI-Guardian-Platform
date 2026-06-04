@@ -99,7 +99,7 @@ export default function GuidedHealthcareMode() {
   const navigate = useNavigate();
   
   const [activeTab, setActiveTab] = useState('menu'); // 'menu', 'fever', 'pregnancy', 'emergency', 'sakhi', 'child'
-  const [voiceEnabled, setVoiceEnabled] = useState(true);
+  const [voiceEnabled, setVoiceEnabled] = useState(false); // OFF by default — user must tap to enable
 
   // Fallback bilingual aligned text dictionary
   const dict = {
