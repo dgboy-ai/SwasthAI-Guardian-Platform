@@ -4,6 +4,17 @@ All notable changes and feature developments completed during the hackathon wind
 
 ---
 
+## June 4, 2026
+### Added
+- **Scoped Outbreak Alerts Route**: Added `GET /api/ngo/outbreaks` route supporting server-side `villageId` filtering, securing local outbreak telemetry access and eliminating the need for `admin` level roles on the NGO dashboard.
+- **Client-Side Image Compression & Camera Capture**: Integrated `navigator.mediaDevices.getUserMedia` for live camera capture on the Symptom Checker, alongside canvas-based compression (downscaling and compressing to ≤200KB) to prevent high-payload Express body parser limit failures.
+- **Audio Context Optimization**: Refactored the dashboard's emergency buzzer to use a single `AudioContext` instance, avoiding browser-enforced resource limits.
+- **Refined Status Updates**: Optimized dashboard requests to selectively re-fetch only the modified list (triage vs resources), preventing redundant network overhead.
+- **Sakhi Chatbot Persistence & Offline Triage**: Enabled `sessionStorage` chat history caching, refactored offline clinical keyword triage to matching local tips, and dynamically scaled voice synthesis length according to triage urgency levels.
+- **Speech Recognition Lang-Chain Fallback**: Implemented an automated fallback language chain (e.g., Hindi -> English -> Tamil etc.) for the browser Web Speech API to maximize transcription compatibility on rural devices.
+
+---
+
 ## June 3, 2026
 ### Added
 - **ASHA-to-PHC Referral Outcomes**: Integrated closed-loop tracking fields (`outcome`, `outcome_details`, `closed_at`) to fully close the care referral loop.
