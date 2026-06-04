@@ -177,7 +177,7 @@ export async function syncAllQueues() {
     const ambulances = await getPendingAmbulance();
     for (const r of ambulances) {
       try {
-        await api.post('/villager/ambulance', {
+        await api.post('/ambulance', {
           name: r.name,
           location: r.location,
           priority: r.priority,
@@ -196,7 +196,7 @@ export async function syncAllQueues() {
     const symptoms = await getPendingSymptoms();
     for (const s of symptoms) {
       try {
-        await api.post('/villager/symptoms', {
+        await api.post('/symptoms', {
           symptoms: s.symptoms,
           villageId: s.villageId
         });

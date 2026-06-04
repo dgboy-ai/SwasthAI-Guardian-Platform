@@ -37,7 +37,7 @@ export default function UserProfile() {
     if (!user) return;
     setHistoryLoading(true);
     import('../services/api').then(({ default: api }) => {
-      api.get('/villager/my-history')
+      api.get('/my-history')
         .then(r => setHistory(r.data))
         .catch(() => setHistory({ symptoms: [], ambulances: [] }))
         .finally(() => setHistoryLoading(false));

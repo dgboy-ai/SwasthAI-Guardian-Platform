@@ -213,7 +213,7 @@ function EmergencyModal({ onClose, t }) {
     setAlertState('sending');
     setErrorMsg('');
     try {
-      await api.post('/villager/emergency-alert', {
+      await api.post('/emergency-alert', {
         alertType: 'menstrual_emergency',
         message:   "Villager pressed Emergency Help button in Women's Health section.",
       });

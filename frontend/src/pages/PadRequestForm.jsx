@@ -65,7 +65,24 @@ export default function PadRequestForm() {
       await api.post('/villager/pad-request', { village });
       setSuccess(true);
     } catch (err) {
-      setError(err.response?.data?.error || 'No Internet? Please tell your ASHA worker directly if you need pads immediately.');
+      const status = err.response?.status;
+      const serverMsg = err.response?.data?.error;
+
+      if (status === 401) {
+        setError('Session expired. Please log in again and retry.');
+        localStorage.removeItem('token');
+      } else if (serverMsg) {
+        setError(serverMsg);
+      } else if (localStorage.getItem('simulated_network_state') === 'offline') {
+        setError('Demo offline mode is on (Monitoring Dashboard). Turn it off, or tell your ASHA worker directly.');
+      } else if (!navigator.onLine) {
+        setError(t.menstrual?.offline_pad_help || 'No Internet? Please tell your ASHA worker directly if you need pads immediately.');
+      } else {
+        setError(
+          'Could not reach the server. Ensure the backend is running (npm run dev), then try again. '
+          + 'Or tell your ASHA worker directly if you need pads immediately.'
+        );
+      }
     } finally {
       setLoading(false);
     }

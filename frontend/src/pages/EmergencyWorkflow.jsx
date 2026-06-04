@@ -117,7 +117,7 @@ export default function EmergencyWorkflow({ onBack, lang, voiceEnabled }) {
     }
 
     try {
-      await api.post('/villager/ambulance', {
+      await api.post('/ambulance', {
         name: 'Citizens Guided Mode SOS',
         location: 'Current GPS / Village Node',
         priority: 'Critical',

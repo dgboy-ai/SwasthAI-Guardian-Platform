@@ -119,7 +119,7 @@ function ErrorBanner({ message }) {
       <div>
         <p className="text-xs font-black text-red-800">Failed to load data</p>
         <p className="text-xs text-red-600 mt-0.5">{message}</p>
-        <p className="text-[10px] text-red-400 mt-1">Make sure the backend server is running on port 5000 and you are logged in as an NGO/ASHA account.</p>
+        <p className="text-[10px] text-red-400 mt-1">Run <code className="font-mono">npm run dev</code> in the project folder, log in as ASHA/NGO, then click Refresh.</p>
       </div>
     </div>
   );
@@ -165,31 +165,6 @@ export default function NGODashboard() {
     const t = setInterval(fetchPads, 15000);
     return () => clearInterval(t);
   }, [activeTab]);
-
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token || token === 'offline-mock-token') return;
-
-    const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace(/\/+$/, '');
-    const sseUrl = `${API_BASE}/ngo/live-feed?token=${encodeURIComponent(token)}`;
-
-    let sse;
-    try {
-      sse = new EventSource(sseUrl);
-      sse.addEventListener('ambulance', () => fetchAmbulances());
-      sse.addEventListener('outbreak', (e) => {
-        try {
-          const outbreak = JSON.parse(e.data);
-          if (!user?.villageId || outbreak.villageId === user.villageId) {
-            setOutbreaks((prev) => [outbreak, ...prev].slice(0, 20));
-          }
-        } catch (_) {}
-      });
-      sse.onerror = () => sse?.close();
-    } catch (_) {}
-
-    return () => { if (sse) sse.close(); };
-  }, [user?.villageId]);
 
   const fetchOutbreaks = async () => {
     setLoadingOutbreaks(true);

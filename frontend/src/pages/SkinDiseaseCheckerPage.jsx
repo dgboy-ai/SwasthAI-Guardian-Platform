@@ -305,7 +305,7 @@ export default function SkinDiseaseCheckerPage() {
 
       // Silently sync the offline result to the backend history
       try {
-        await api.post('/villager/skin-log', {
+        await api.post('/skin-log', {
           condition: condition,
           severity: severity,
           rednessPercent: pData.rednessPercent,

@@ -1,10 +1,8 @@
 import axios from 'axios';
 
-// Uses VITE_API_URL in production (set in Vercel dashboard), falls back to localhost for local dev
-// Use relative path in production to work with unified deployment, fallback to localhost for dev
-const BASE_URL = import.meta.env.MODE === 'production' 
-  ? '/api' 
-  : (import.meta.env.VITE_API_URL || 'http://localhost:5000/api');
+// Default /api — Vite dev proxy and unified Render deploy both forward to the backend.
+// Override with VITE_API_URL only for split deploy (e.g. Vercel frontend + Render API).
+const BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 const api = axios.create({
   baseURL: BASE_URL,
@@ -47,8 +45,9 @@ api.interceptors.response.use(
       // Timeout — likely 2G/poor connectivity
       error.message = 'Network too slow. Using offline mode.';
     } else if (!error.response) {
-      // No network
-      error.message = 'No internet connection. Offline mode active.';
+      error.message = navigator.onLine
+        ? 'Could not reach server. Check that the backend is running.'
+        : 'No internet connection. Offline mode active.';
     }
     return Promise.reject(error);
   }

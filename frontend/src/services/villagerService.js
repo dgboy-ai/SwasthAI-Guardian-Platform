@@ -158,7 +158,7 @@ const villagerService = {
   // Family Health Sync (Backward compatibility)
   syncFamilyData: async (familyId) => {
     try {
-      const res = await api.get(`/villager/family/${familyId}`);
+      const res = await api.get('/my-history');
       return res.data;
     } catch (error) {
       throw error.response?.data?.error || 'Family sync failed';

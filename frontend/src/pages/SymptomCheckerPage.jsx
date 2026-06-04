@@ -239,7 +239,7 @@ export default function SymptomCheckerPage() {
         return;
       }
 
-      const res = await api.post('/villager/symptoms', {
+      const res = await api.post('/symptoms', {
         symptoms: fullText,
         villageId: user?.villageId || 'v101',
         userId: user?.id || null,

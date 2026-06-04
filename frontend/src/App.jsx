@@ -3,7 +3,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AnimatePresence } from 'framer-motion';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { LanguageProvider } from './context/LanguageContext';
-import DiSHAConsentModal, { useConsentGiven } from './components/DiSHAConsentModal';
+import DiSHAConsentModal from './components/DiSHAConsentModal';
+import { useConsentGiven } from './utils/consent';
 
 // Pages — critical path (eager loaded for instant auth routing)
 import LoginPage from './pages/LoginPage';
@@ -63,7 +64,7 @@ const ProtectedRoute = ({ children, allowedRole }) => {
 // Shows DISHA consent modal once per device after first login
 function ConsentGate({ children }) {
   const { user } = useAuth();
-  const [consented, setConsented] = useState(useConsentGiven);
+  const [consented, setConsented] = useState(useConsentGiven());
   const needsConsent = user && !consented;
   return (
     <>

@@ -202,13 +202,13 @@ export default function SymptomChecker() {
       return;
     }
 
-    // --- SYMPTOM CHECKBOXES: call real backend /villager/symptoms ---
+    // --- SYMPTOM CHECKBOXES: call real backend POST /api/symptoms ---
     const symptomText = selectedSymptoms
       .map((id) => symptomList.find((s) => s.id === id)?.label || id)
       .join(', ');
 
     try {
-      const res = await api.post('/villager/symptoms', { symptoms: symptomText });
+      const res = await api.post('/symptoms', { symptoms: symptomText });
       const { prediction, confidence, alert: outbreakAlert, alternatives, model, accuracy } = res.data;
       const isSevere = selectedSymptoms.some((id) => symptomList.find((s) => s.id === id)?.severe);
       setResult({

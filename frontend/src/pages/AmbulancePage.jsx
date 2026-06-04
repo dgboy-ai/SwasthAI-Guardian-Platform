@@ -112,7 +112,7 @@ export default function AmbulancePage() {
         location = (lat !== 'Unknown')
           ? `SOS: ${humanAddress} (GPS: ${lat}, ${lng})`
           : 'SOS: Location unavailable — please call user directly';
-        const res = await api.post('/villager/ambulance', {
+        const res = await api.post('/ambulance', {
           name: user?.name || 'SOS User',
           location,
           priority: 'Critical',
@@ -173,7 +173,7 @@ export default function AmbulancePage() {
     setLoading(true);
     try {
       const selectedType = emergencyTypes.find(t => t.id === formData.emergencyType);
-      const response = await api.post('/villager/ambulance', {
+      const response = await api.post('/ambulance', {
         name: formData.patientName,
         location: getLocationString(),
         priority: selectedType?.priority || 'High',
@@ -187,7 +187,7 @@ export default function AmbulancePage() {
       // Start status polling every 10 seconds
       pollRef.current = setInterval(async () => {
         try {
-          const r = await api.get('/villager/ambulance-status');
+          const r = await api.get('/ambulance-status');
           setLiveStatus(r.data?.status || 'pending');
           if (r.data?.status === 'completed') clearInterval(pollRef.current);
         } catch { /* polling failure is non-critical */ }

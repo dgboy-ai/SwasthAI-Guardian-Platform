@@ -10,6 +10,12 @@ import { getAadhaarSalt, isDemoOtpAllowed } from '../config.js';
 
 const router = express.Router();
 
+/** Zod v4 uses `issues`; older code used `errors`. */
+function zodErrorMessage(parseResult) {
+  const issue = parseResult.error?.issues?.[0] ?? parseResult.error?.errors?.[0];
+  return issue?.message || 'Invalid request data';
+}
+
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 15,
@@ -125,7 +131,7 @@ router.post('/register', async (req, res) => {
   const db = req.app.locals.db;
   const parseResult = RegisterSchema.safeParse(req.body);
   if (!parseResult.success) {
-    return res.status(400).json({ error: parseResult.error.errors[0].message });
+    return res.status(400).json({ error: zodErrorMessage(parseResult) });
   }
 
   const { phone, email, username, name, password, role, villageId, gender, age, economic_status, caste, area_type, passcode } = parseResult.data;
@@ -155,7 +161,7 @@ router.post('/request-otp', async (req, res) => {
   const usingSQLite = req.app.locals.usingSQLite;
   const parseResult = RequestOtpSchema.safeParse(req.body);
   if (!parseResult.success) {
-    return res.status(400).json({ error: parseResult.error.errors[0].message });
+    return res.status(400).json({ error: zodErrorMessage(parseResult) });
   }
 
   const { phone } = parseResult.data;
@@ -174,7 +180,7 @@ router.post('/login-otp', authLimiter, async (req, res) => {
   const usingSQLite = req.app.locals.usingSQLite;
   const parseResult = LoginOtpSchema.safeParse(req.body);
   if (!parseResult.success) {
-    return res.status(400).json({ error: parseResult.error.errors[0].message });
+    return res.status(400).json({ error: zodErrorMessage(parseResult) });
   }
 
   const { phone, otp, role } = parseResult.data;
@@ -217,7 +223,7 @@ router.post('/login-password', authLimiter, async (req, res) => {
   const db = req.app.locals.db;
   const parseResult = LoginPasswordSchema.safeParse(req.body);
   if (!parseResult.success) {
-    return res.status(400).json({ error: parseResult.error.errors[0].message });
+    return res.status(400).json({ error: zodErrorMessage(parseResult) });
   }
 
   const { identifier, password, role } = parseResult.data;
@@ -291,7 +297,7 @@ router.put('/profile', auth, async (req, res) => {
   const db = req.app.locals.db;
   const parseResult = ProfileUpdateSchema.safeParse(req.body);
   if (!parseResult.success) {
-    return res.status(400).json({ error: parseResult.error.errors[0].message });
+    return res.status(400).json({ error: zodErrorMessage(parseResult) });
   }
 
   const { name, username } = parseResult.data;
@@ -317,7 +323,7 @@ router.post('/aadhaar-verify', auth, async (req, res) => {
   const db = req.app.locals.db;
   const parseResult = AadhaarVerifySchema.safeParse(req.body);
   if (!parseResult.success) {
-    return res.status(400).json({ error: parseResult.error.errors[0].message });
+    return res.status(400).json({ error: zodErrorMessage(parseResult) });
   }
 
   const { aadhaar } = parseResult.data;

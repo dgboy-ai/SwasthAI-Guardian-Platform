@@ -178,7 +178,7 @@ export default function FeverWorkflow({ onBack, lang, voiceEnabled }) {
 
     try {
       const summaryText = `[Guided Mode Fever Flow] highFever:${finalAnswers.highFever ? 'Y' : 'N'} shiver:${finalAnswers.shiver ? 'Y' : 'N'} jointPain:${finalAnswers.jointPain ? 'Y' : 'N'} rash:${finalAnswers.rash ? 'Y' : 'N'}`;
-      await api.post('/villager/symptoms', { symptoms: summaryText });
+      await api.post('/symptoms', { symptoms: summaryText });
     } catch (err) {
       console.warn('Offline or error logging symptom check to backend:', err.message);
       try {

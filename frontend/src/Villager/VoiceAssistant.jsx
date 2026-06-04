@@ -57,7 +57,7 @@ export default function VoiceAssistant({ onResult }) {
 
   const handleVoiceSubmit = async (text) => {
     try {
-      const res = await api.post('/villager/symptoms', { symptoms: text });
+      const res = await api.post('/symptoms', { symptoms: text });
       const prediction = res.data.prediction;
       if (onResult) onResult({ text, prediction });
       speak(prediction);
