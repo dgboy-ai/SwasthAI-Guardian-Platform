@@ -76,6 +76,15 @@ const adminService = {
     }
   },
 
+  getDiseaseTrends: async (disease, days = 7) => {
+    try {
+      const res = await api.get(`/admin/disease-trends?disease=${encodeURIComponent(disease)}&days=${days}`);
+      return res.data;
+    } catch (error) {
+      throw error.response?.data?.error || 'Failed to fetch disease trends';
+    }
+  },
+
   issueOutbreakAlert: async (data) => {
     try {
       const res = await api.post('/admin/outbreak-alert', data);

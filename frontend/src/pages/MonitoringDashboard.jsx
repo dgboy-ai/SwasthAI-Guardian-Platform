@@ -900,6 +900,83 @@ export default function MonitoringDashboard() {
         </div>
       </div>
 
+      {/* ── GSI Disease Trends Query & Proactive Outbreak Predictor (NEW DEMO AXIS) */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(350px,1fr))', gap: 20, marginBottom: 20 }}>
+        
+        {/* Panel A: GSI Disease Trends */}
+        <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 16, padding: 20 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#9ca3af', marginBottom: 14 }}>🔍 GSI Disease Trends Query (DynamoDB 'disease-index')</div>
+          <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
+            <input 
+              type="text" 
+              placeholder="e.g. Malaria, Cholera, Dengue..." 
+              id="disease-query-input"
+              style={{ flex: 1, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '8px 12px', color: '#fff', fontSize: 12 }}
+            />
+            <button 
+              onClick={async () => {
+                const queryVal = document.getElementById('disease-query-input').value;
+                if (!queryVal) return alert('Please enter a disease name');
+                try {
+                  const res = await api.get(`/admin/disease-trends?disease=${encodeURIComponent(queryVal)}`);
+                  document.getElementById('disease-query-results').innerText = JSON.stringify(res.data, null, 2);
+                } catch (err) {
+                  document.getElementById('disease-query-results').innerText = 'Error: ' + (err.response?.data?.error || err.message);
+                }
+              }}
+              style={{ background: '#10b981', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
+            >
+              Query Index
+            </button>
+          </div>
+          <pre id="disease-query-results" style={{ background: 'rgba(0,0,0,0.4)', borderRadius: 10, padding: 12, fontSize: 11, color: '#10b981', fontFamily: 'monospace', maxHeight: 150, overflowY: 'auto', border: '1px solid rgba(16,185,129,0.15)' }}>
+            No query executed yet.
+          </pre>
+        </div>
+
+        {/* Panel B: Proactive Outbreak Risk Predictor */}
+        <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 16, padding: 20 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#9ca3af', marginBottom: 14 }}>🔮 Proactive Outbreak Risk Predictor (AI Service)</div>
+          <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
+            <select 
+              id="risk-village-select"
+              style={{ flex: 1, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '8px 12px', color: '#fff', fontSize: 12 }}
+            >
+              <option value="v101">Rampur (v101)</option>
+              <option value="v102">Mohanlal Ganj (v102)</option>
+            </select>
+            <select 
+              id="risk-month-select"
+              style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '8px 12px', color: '#fff', fontSize: 12 }}
+              defaultValue={new Date().getMonth() + 1}
+            >
+              {Array.from({ length: 12 }, (_, idx) => (
+                <option key={idx+1} value={idx+1}>{new Date(2000, idx).toLocaleString('default', { month: 'long' })}</option>
+              ))}
+            </select>
+            <button 
+              onClick={async () => {
+                const village = document.getElementById('risk-village-select').value;
+                const month = document.getElementById('risk-month-select').value;
+                try {
+                  const res = await api.get(`/predict/seasonal-risk?villageId=${village}&month=${month}`);
+                  document.getElementById('risk-predictor-results').innerText = JSON.stringify(res.data, null, 2);
+                } catch (err) {
+                  document.getElementById('risk-predictor-results').innerText = 'Error: ' + (err.response?.data?.error || err.message);
+                }
+              }}
+              style={{ background: '#f59e0b', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
+            >
+              Predict Risk
+            </button>
+          </div>
+          <pre id="risk-predictor-results" style={{ background: 'rgba(0,0,0,0.4)', borderRadius: 10, padding: 12, fontSize: 11, color: '#f59e0b', fontFamily: 'monospace', maxHeight: 150, overflowY: 'auto', border: '1px solid rgba(245,158,11,0.15)' }}>
+            No prediction executed yet.
+          </pre>
+        </div>
+
+      </div>
+
       {/* ── District Simulation Panel */}
       <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 16, padding: 20 }}>
         <div style={{ fontSize: 13, fontWeight: 700, color: '#9ca3af', marginBottom: 16 }}>🎛️ District Simulation Mode</div>

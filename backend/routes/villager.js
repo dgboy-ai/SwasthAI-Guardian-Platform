@@ -676,4 +676,20 @@ router.post('/villager/phq2', auth, logAudit('evaluate_mental_health', 'symptoms
   }
 });
 
+router.get('/predict/seasonal-risk', auth, async (req, res) => {
+  const AI_SERVICE_URL = req.app.locals.AI_SERVICE_URL;
+  const villageId = req.query.villageId || 'v101';
+  const month = req.query.month;
+  try {
+    const url = month 
+      ? `${AI_SERVICE_URL}/predict/seasonal-risk?villageId=${encodeURIComponent(villageId)}&month=${encodeURIComponent(month)}`
+      : `${AI_SERVICE_URL}/predict/seasonal-risk?villageId=${encodeURIComponent(villageId)}`;
+    const aiRes = await axios.get(url);
+    res.json(aiRes.data);
+  } catch (err) {
+    console.error('AI Service Error (Seasonal Risk):', err.message);
+    res.status(503).json({ error: 'Seasonal risk prediction AI is currently unavailable.' });
+  }
+});
+
 export default router;

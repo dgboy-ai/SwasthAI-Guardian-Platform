@@ -6,6 +6,11 @@ All notable changes and feature developments completed during the hackathon wind
 
 ## June 4, 2026
 ### Added
+- **LoginPage/DemoPage Credential Mismatch Fix**: Resolved offline login session issues by integrating `setUser` state propagation and correcting the localStorage key to `'user'` on offline fallback login.
+- **WHO Z-score Calculator Alignment**: Aligned FastAPI AI service and offline frontend calculations using the official WHO Weight-for-Height Z-score (WHZ) table lookup and linear interpolation, categorizing SAM, MAM, and underweight cases correctly.
+- **Admin /monitor Route**: Added a protected `/monitor` routing path for administrative access to the Monitoring Dashboard in the SPA router.
+- **Interactive Disease Trends GSI & Proactive Risk Predictor**: Added a `/api/admin/disease-trends` GSI endpoint for querying `disease-index` on DynamoDB, a `/predict/seasonal-risk` proactive outbreak risk predictor using Indian seasonal trends, and constructed dedicated interactive controls inside the Monitoring Dashboard UI.
+- **Project Architecture Documentation**: Created `ARCHITECTURE.md` detailing cross-tier data flows and including a Mermaid diagram mapping frontend PWAs, hybrid databases, and Python AI models.
 - **Scoped Outbreak Alerts Route**: Added `GET /api/ngo/outbreaks` route supporting server-side `villageId` filtering, securing local outbreak telemetry access and eliminating the need for `admin` level roles on the NGO dashboard.
 - **Client-Side Image Compression & Camera Capture**: Integrated `navigator.mediaDevices.getUserMedia` for live camera capture on the Symptom Checker, alongside canvas-based compression (downscaling and compressing to ≤200KB) to prevent high-payload Express body parser limit failures.
 - **Audio Context Optimization**: Refactored the dashboard's emergency buzzer to use a single `AudioContext` instance, avoiding browser-enforced resource limits.

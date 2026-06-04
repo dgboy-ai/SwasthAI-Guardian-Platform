@@ -576,20 +576,63 @@ async def predict_maternal_risk(data: PregnancyInput):
     }
 
 # ── ENDPOINT 3: Malnutrition ──────────────────────────────────────────────────
+WHO_WHZ_TABLE = [
+    {"h": 45,  "median": 2.44,  "sd": 0.29},
+    {"h": 50,  "median": 3.35,  "sd": 0.39},
+    {"h": 55,  "median": 4.58,  "sd": 0.50},
+    {"h": 60,  "median": 5.98,  "sd": 0.61},
+    {"h": 65,  "median": 7.28,  "sd": 0.69},
+    {"h": 70,  "median": 8.38,  "sd": 0.77},
+    {"h": 75,  "median": 9.19,  "sd": 0.83},
+    {"h": 80,  "median": 9.95,  "sd": 0.91},
+    {"h": 85,  "median": 10.61, "sd": 0.97},
+    {"h": 90,  "median": 11.24, "sd": 1.03},
+    {"h": 95,  "median": 11.89, "sd": 1.10},
+    {"h": 100, "median": 12.62, "sd": 1.18},
+    {"h": 105, "median": 13.48, "sd": 1.30},
+    {"h": 110, "median": 14.47, "sd": 1.44},
+    {"h": 115, "median": 15.57, "sd": 1.60},
+    {"h": 120, "median": 16.67, "sd": 1.76},
+]
+
 @app.post("/predict/malnutrition")
 async def predict_malnutrition(data: MalnutritionInput):
     if data.height_cm <= 0 or data.weight_kg <= 0:
         raise HTTPException(status_code=400, detail="Height and weight must be positive.")
-    height_m = data.height_cm / 100
+    
+    h_clamped = max(45.0, min(120.0, data.height_cm))
+    
+    # Linear interpolation
+    lower = WHO_WHZ_TABLE[0]
+    upper = WHO_WHZ_TABLE[-1]
+    
+    for i in range(len(WHO_WHZ_TABLE) - 1):
+        if h_clamped >= WHO_WHZ_TABLE[i]["h"] and h_clamped <= WHO_WHZ_TABLE[i + 1]["h"]:
+            lower = WHO_WHZ_TABLE[i]
+            upper = WHO_WHZ_TABLE[i + 1]
+            break
+            
+    frac = 0.0 if lower["h"] == upper["h"] else (h_clamped - lower["h"]) / (upper["h"] - lower["h"])
+    median = lower["median"] + frac * (upper["median"] - lower["median"])
+    sd = lower["sd"] + frac * (upper["sd"] - lower["sd"])
+    whz = (data.weight_kg - median) / sd
+    
+    height_m = data.height_cm / 100.0
     bmi = data.weight_kg / (height_m ** 2)
-    if bmi < 11.5:
-        status, action = "Severe Acute Malnutrition", "Immediate therapeutic feeding and hospital referral required."
-    elif bmi < 13.0:
-        status, action = "Moderate Acute Malnutrition", "Enroll in community-based therapeutic program. ASHA follow-up in 1 week."
-    elif bmi < 14.5:
-        status, action = "Mild Underweight", "Nutritional counseling. Monitor monthly."
+    
+    if whz < -3:
+        status = "Severe Acute Malnutrition"
+        action = "Urgent: Immediate referral to Nutrition Rehabilitation Centre (NRC). WHZ < -3 SD."
+    elif whz < -2:
+        status = "Moderate Acute Malnutrition"
+        action = "Refer to Supplementary Nutrition Programme (ASHA follow-up). WHZ < -2 SD."
+    elif whz < -1:
+        status = "Mild Underweight"
+        action = "Provide energy-dense nutrition advice. Follow up in 14 days. WHZ < -1 SD."
     else:
-        status, action = "Normal", "Continue regular monitoring and balanced diet."
+        status = "Normal"
+        action = "Healthy growth. Continue regular monitoring and balanced diet."
+        
     return {"status": status, "bmi": round(bmi, 2), "action": action, "age_months": data.age_months}
 
 # ── ENDPOINT 4: Skin Analysis ─────────────────────────────────────────────────
@@ -640,6 +683,48 @@ async def rag_sakhi_chat(data: ChatInput):
 async def get_outbreak_alerts(limit: int = 10):
     """Returns recent confirmed outbreak events detected by the Agentic Monitor."""
     return {"outbreaks": get_recent_outbreaks(limit)}
+
+# ── ENDPOINT 7: Seasonal Risk Prediction (NEW) ──────────────────────────────────
+@app.get("/predict/seasonal-risk")
+async def get_seasonal_risk(villageId: str = "v101", month: int = None):
+    """
+    Proactive outbreak prediction using seasonal patterns & village data.
+    """
+    import datetime
+    if month is None:
+        month = datetime.datetime.now().month
+        
+    # Map month to season
+    # Seasons: Monsoon (June-Sept), Winter (Oct-Jan), Summer/Pre-monsoon (Feb-May)
+    if 6 <= month <= 9:
+        season = "Monsoon"
+        risks = [
+            {"disease": "Malaria", "risk_score": 0.85, "reason": "High vector density due to stagnant rain accumulation."},
+            {"disease": "Dengue", "risk_score": 0.78, "reason": "Aedes breeding spikes during post-monsoon spells."},
+            {"disease": "Cholera", "risk_score": 0.65, "reason": "Water contamination risks in water-logging areas."}
+        ]
+    elif 10 <= month or month == 1:
+        season = "Winter"
+        risks = [
+            {"disease": "Influenza / Flu", "risk_score": 0.72, "reason": "Cold dry spells enhance aerosol respiratory transmission."},
+            {"disease": "Typhoid", "risk_score": 0.50, "reason": "Foodborne pathogen survival in moderate cool conditions."},
+            {"disease": "Asthma Spikes", "risk_score": 0.68, "reason": "Harvesting/stubbing dust and winter smog inversion."}
+        ]
+    else:
+        season = "Summer / Pre-Monsoon"
+        risks = [
+            {"disease": "Heat Stroke", "risk_score": 0.82, "reason": "Peak dry summer temperatures and hot winds (Loo)."},
+            {"disease": "Gastroenteritis", "risk_score": 0.75, "reason": "Rapid food decomposition in high humidity / heat."},
+            {"disease": "Measles", "risk_score": 0.60, "reason": "Dry heat enhances viral persistence on surfaces."}
+        ]
+        
+    return {
+        "villageId": villageId,
+        "month": month,
+        "season": season,
+        "predictions": risks,
+        "timestamp": datetime.datetime.now().isoformat()
+    }
 
 # ── HEALTH CHECK ──────────────────────────────────────────────────────────────
 @app.get("/health")

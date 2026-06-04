@@ -340,6 +340,17 @@ const dynamoHelper = {
     );
   },
 
+  // ── queryByDisease — Query using GSI 'disease-index' ──────────────────────
+  async queryByDisease(tableName, disease, daysBack = 7) {
+    const cutoff = new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000).toISOString();
+    return this.query(
+      tableName,
+      'disease = :disease AND detectedAt >= :cutoff',
+      { ':disease': disease, ':cutoff': cutoff },
+      'disease-index'
+    );
+  },
+
   // ── Fix 1: queryRecentAll — Query ALL villages via page-by-page pattern ──────
   // Used when we need a cross-village view (e.g. heatmap, district report).
   // Falls back to Scan only in mock/dev mode for simplicity.

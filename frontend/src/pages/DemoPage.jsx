@@ -17,9 +17,10 @@ const ROLES = [
     bg: 'bg-emerald-50',
     iconColor: 'text-emerald-700',
     path: '/login',
-    credentials: { identifier: 'villager@swasthai.in', password: 'Demo@1234' },
+    // Matches LoginPage DEMO_CREDENTIALS — use Password mode on login page
+    credentials: { identifier: '9876543210', password: 'Demo@1234' },
     features: [
-      'AI Symptom Diagnosis (17 diseases, 6 languages)',
+      'AI Symptom Diagnosis (101 diseases, 7 languages)',
       'Skin Disease Detection via camera',
       'Ambulance SOS dispatch',
       'Menstrual health & cycle tracker',
@@ -35,7 +36,8 @@ const ROLES = [
     bg: 'bg-rose-50',
     iconColor: 'text-rose-700',
     path: '/login',
-    credentials: { identifier: 'asha@swasthai.in', password: 'Demo@1234' },
+    // Matches LoginPage DEMO_CREDENTIALS — use Password mode on login page
+    credentials: { identifier: '9876543211', password: 'Demo@1234' },
     features: [
       'Maternal risk assessment (WHO thresholds)',
       'Child malnutrition WHO Z-score monitor',
@@ -166,8 +168,11 @@ export default function DemoPage() {
                 {/* Credentials */}
                 <div className={`${bg} border ${border} rounded-xl p-3 space-y-2`}>
                   <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Demo Login</p>
+                  <p className="text-[8px] font-black text-amber-600 uppercase tracking-widest mb-1.5 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1">
+                    ⚠ Use <span className="underline">Password</span> mode on login page
+                  </p>
                   {[
-                    { label: 'Email', val: credentials.identifier },
+                    { label: 'Phone / Email', val: credentials.identifier },
                     { label: 'Password', val: credentials.password },
                   ].map(({ label, val }) => (
                     <div key={label} className="flex items-center justify-between gap-2">

@@ -41,23 +41,60 @@ function NutritionForm({ onSave, onClose }) {
         return;
       }
 
-      // Compute local growth status using the offline fallback heuristic
+      // ── WHO Weight-for-Height Z-score (WHZ) — Offline Fallback ────────────────
+      // Source: WHO Child Growth Standards (2006), combined sex reference.
+      // WHZ = (observed_weight - median_weight_at_height) / SD_at_height
+      // SAM: WHZ < -3 | MAM: -3 ≤ WHZ < -2 | At-Risk: -2 ≤ WHZ < -1 | Normal: ≥ -1
+      const WHO_WHZ_TABLE = [
+        { h: 45,  median: 2.44,  sd: 0.29 },
+        { h: 50,  median: 3.35,  sd: 0.39 },
+        { h: 55,  median: 4.58,  sd: 0.50 },
+        { h: 60,  median: 5.98,  sd: 0.61 },
+        { h: 65,  median: 7.28,  sd: 0.69 },
+        { h: 70,  median: 8.38,  sd: 0.77 },
+        { h: 75,  median: 9.19,  sd: 0.83 },
+        { h: 80,  median: 9.95,  sd: 0.91 },
+        { h: 85,  median: 10.61, sd: 0.97 },
+        { h: 90,  median: 11.24, sd: 1.03 },
+        { h: 95,  median: 11.89, sd: 1.10 },
+        { h: 100, median: 12.62, sd: 1.18 },
+        { h: 105, median: 13.48, sd: 1.30 },
+        { h: 110, median: 14.47, sd: 1.44 },
+        { h: 115, median: 15.57, sd: 1.60 },
+        { h: 120, median: 16.67, sd: 1.76 },
+      ];
+
       const w = Number(form.weight);
       const h = Number(form.height);
-      const bmiVal = Number((w / ((h / 100) * (h / 100))).toFixed(2));
+      const hClamped = Math.max(45, Math.min(120, h));
+
+      // Linear interpolation for heights between table entries
+      let lower = WHO_WHZ_TABLE[0], upper = WHO_WHZ_TABLE[WHO_WHZ_TABLE.length - 1];
+      for (let i = 0; i < WHO_WHZ_TABLE.length - 1; i++) {
+        if (hClamped >= WHO_WHZ_TABLE[i].h && hClamped <= WHO_WHZ_TABLE[i + 1].h) {
+          lower = WHO_WHZ_TABLE[i];
+          upper = WHO_WHZ_TABLE[i + 1];
+          break;
+        }
+      }
+      const frac      = lower.h === upper.h ? 0 : (hClamped - lower.h) / (upper.h - lower.h);
+      const median    = lower.median + frac * (upper.median - lower.median);
+      const sd        = lower.sd    + frac * (upper.sd    - lower.sd);
+      const whz       = (w - median) / sd;
+      const bmiVal    = Number((w / ((h / 100) * (h / 100))).toFixed(2)); // display only
 
       let localStatus = 'Normal';
       let localAction = 'Healthy growth. Continue optimal feeding practices.';
 
-      if (bmiVal < 12) {
+      if (whz < -3) {
         localStatus = 'Severe Acute Malnutrition';
-        localAction = 'Urgent: Immediate referral to Nutrition Rehabilitation Centre (NRC).';
-      } else if (bmiVal >= 12 && bmiVal < 13.5) {
+        localAction = 'Urgent: Immediate referral to Nutrition Rehabilitation Centre (NRC). WHZ < -3 SD.';
+      } else if (whz < -2) {
         localStatus = 'Moderate Acute Malnutrition';
-        localAction = 'Refer to Supplementary Nutrition Programme (ASHA follow-up).';
-      } else if (bmiVal >= 13.5 && bmiVal < 15) {
+        localAction = 'Refer to Supplementary Nutrition Programme (ASHA follow-up). WHZ < -2 SD.';
+      } else if (whz < -1) {
         localStatus = 'Mild Underweight';
-        localAction = 'Provide energy-dense nutrition advice. Follow up in 14 days.';
+        localAction = 'Provide energy-dense nutrition advice. Follow up in 14 days. WHZ < -1 SD.';
       }
 
       const offlineRecord = {

@@ -374,6 +374,21 @@ router.get('/outbreaks', auth, checkRole(['admin', 'ngo']), async (req, res) => 
   }
 });
 
+router.get('/disease-trends', auth, checkRole(['admin', 'ngo']), async (req, res) => {
+  try {
+    const disease = req.query.disease;
+    if (!disease) {
+      return sendError(res, 400, 'BAD_REQUEST', 'Disease query parameter is required');
+    }
+    const daysBack = parseInt(req.query.days) || 7;
+    const outbreaks = await dynamoHelper.queryByDisease('outbreak_telemetry', disease, daysBack);
+    outbreaks.sort((a, b) => (b.detectedAt || '').localeCompare(a.detectedAt || ''));
+    res.json({ disease, outbreaks, store: dynamoHelper.isMock ? 'mock' : 'dynamodb', daysBack });
+  } catch (err) {
+    sendError(res, 503, 'OUTBREAKS_TEMPORARILY_UNAVAILABLE', err.message);
+  }
+});
+
 router.get('/dynamo-feed', auth, async (req, res) => {
   try {
     // Fix 1: outbreak_telemetry uses queryRecentAll (has detectedAt range key)

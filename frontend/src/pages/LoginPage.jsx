@@ -68,7 +68,7 @@ export default function LoginPage() {
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [usedOfflineFallback, setUsedOfflineFallback] = useState(false);
 
-  const { loginPassword, loginOTP } = useAuth();
+  const { loginPassword, loginOTP, setUser } = useAuth();
   const navigate = useNavigate();
 
   // Seed demo credential cache and listen for network changes
@@ -121,13 +121,15 @@ export default function LoginPage() {
           // Build a minimal local session so the app recognises the user
           const offlineToken = `offline_session_${offlineUser.role}_${Date.now()}`;
           localStorage.setItem('token', offlineToken);
-          localStorage.setItem('offline_user', JSON.stringify({
-            id: `offline_${offlineUser.role}`,
+          const userPayload = {
+            id: offlineUser.id || `offline_${offlineUser.role}`,
             name: offlineUser.name,
             role: offlineUser.role,
             villageId: 'v101',
             isOfflineSession: true
-          }));
+          };
+          localStorage.setItem('user', JSON.stringify(userPayload));
+          setUser(userPayload);
           setUsedOfflineFallback(true);
           setIsLoading(false);
           // Small delay so the user sees the success state

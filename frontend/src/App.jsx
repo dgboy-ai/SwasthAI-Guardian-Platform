@@ -180,6 +180,11 @@ export default function App() {
                    <ErrorBoundary><AdminDashboard /></ErrorBoundary>
                 </ProtectedRoute>
               } />
+              <Route path="/monitor" element={
+                <ProtectedRoute allowedRole="admin">
+                   <LayoutWrapper><ErrorBoundary><MonitoringDashboard /></ErrorBoundary></LayoutWrapper>
+                </ProtectedRoute>
+              } />
               <Route path="/monitoring" element={
                 <ProtectedRoute allowedRole="admin">
                    <LayoutWrapper><ErrorBoundary><MonitoringDashboard /></ErrorBoundary></LayoutWrapper>
