@@ -342,4 +342,24 @@ router.get('/vaccinations', auth, checkRole(['ngo', 'admin']), async (req, res) 
   }
 });
 
+// GET /api/ngo/outbreaks?villageId=X — scoped outbreak alerts for ASHA workers
+// Does NOT require admin role. Server filters by villageId so the client
+// never receives alerts for other villages.
+router.get('/outbreaks', auth, checkRole(['ngo', 'admin']), async (req, res) => {
+  const { villageId } = req.query;
+  try {
+    const daysBack = parseInt(req.query.days) || 7;
+    let outbreaks = await import('../dynamodb.js').then(m => m.default.queryRecentAll('outbreak_telemetry', daysBack));
+    outbreaks.sort((a, b) => (b.detectedAt || '').localeCompare(a.detectedAt || ''));
+    // Server-side village filter — never expose other villages' data
+    if (villageId) {
+      outbreaks = outbreaks.filter(o => o.villageId === villageId);
+    }
+    res.json({ outbreaks: outbreaks.slice(0, 20) });
+  } catch (err) {
+    res.status(503).json({ success: false, error: { code: 'OUTBREAKS_UNAVAILABLE', message: err.message } });
+  }
+});
+
 export default router;
+

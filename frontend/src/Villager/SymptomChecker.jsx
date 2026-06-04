@@ -1,5 +1,5 @@
-import { useState, useRef } from 'react';
-import { Mic, Activity, AlertCircle, Volume2, ShieldCheck, HeartPulse, Scan, Upload } from 'lucide-react';
+import { useState, useRef, useCallback, useEffect } from 'react';
+import { Mic, Activity, AlertCircle, Volume2, ShieldCheck, HeartPulse, Scan, Upload, Camera, X } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import api from '../services/api';
 
@@ -12,7 +12,11 @@ export default function SymptomChecker() {
   const [selectedSymptoms, setSelectedSymptoms] = useState([]);
   const [skinImage, setSkinImage] = useState(null);
   const [skinPreview, setSkinPreview] = useState(null);
+  const [showCamera, setShowCamera] = useState(false);
+  const [cameraErr, setCameraErr] = useState(false);
   const fileInputRef = useRef(null);
+  const videoRef = useRef(null);
+  const streamRef = useRef(null);
 
   const symptomList = [
     // Original 8
@@ -48,16 +52,76 @@ export default function SymptomChecker() {
     );
   };
 
-  const handleImageUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setSkinImage(file);
-      const reader = new FileReader();
-      reader.onloadend = () => setSkinPreview(reader.result);
-      reader.readAsDataURL(file);
-      setResult(null);
+  // Compress to ≤200KB via canvas before setting state — avoids 3-5MB raw uploads
+  const processImage = useCallback((file) => {
+    if (!file || !file.type.startsWith('image/')) return;
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+    img.onload = () => {
+      const MAX = 1280;
+      let { width, height } = img;
+      if (width > MAX || height > MAX) {
+        const ratio = Math.min(MAX / width, MAX / height);
+        width = Math.round(width * ratio);
+        height = Math.round(height * ratio);
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+      canvas.toBlob((blob) => {
+        URL.revokeObjectURL(objectUrl);
+        const compressed = new File([blob], file.name || 'skin.jpg', { type: 'image/jpeg' });
+        setSkinImage(compressed);
+        setSkinPreview(URL.createObjectURL(compressed));
+        setResult(null);
+      }, 'image/jpeg', 0.82);
+    };
+    img.src = objectUrl;
+  }, []);
+
+  const handleImageUpload = (e) => processImage(e.target.files[0]);
+
+  // Camera
+  const openCamera = async () => {
+    setCameraErr(false);
+    setShowCamera(true);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment', width: { ideal: 1280 } }
+      });
+      streamRef.current = stream;
+      const attach = (tries = 15) => {
+        if (videoRef.current) { videoRef.current.srcObject = stream; videoRef.current.play().catch(() => {}); }
+        else if (tries > 0) setTimeout(() => attach(tries - 1), 100);
+      };
+      setTimeout(() => attach(), 150);
+    } catch {
+      setCameraErr(true);
+      setShowCamera(false);
+      fileInputRef.current?.click();
     }
   };
+
+  const closeCamera = useCallback(() => {
+    streamRef.current?.getTracks().forEach(t => t.stop());
+    streamRef.current = null;
+    setShowCamera(false);
+  }, []);
+
+  const capturePhoto = () => {
+    if (!videoRef.current) return;
+    const canvas = document.createElement('canvas');
+    canvas.width = videoRef.current.videoWidth;
+    canvas.height = videoRef.current.videoHeight;
+    canvas.getContext('2d').drawImage(videoRef.current, 0, 0);
+    canvas.toBlob((blob) => {
+      processImage(new File([blob], 'skin_capture.jpg', { type: 'image/jpeg' }));
+      closeCamera();
+    }, 'image/jpeg', 0.88);
+  };
+
+  useEffect(() => () => closeCamera(), [closeCamera]);
 
   // Voice-to-symptom: say keyword → auto-selects matching symptom checkbox
   const handleVoiceSymptom = () => {
@@ -267,6 +331,23 @@ export default function SymptomChecker() {
 
   return (
     <div className="bg-white rounded-[50px] shadow-2xl p-8 lg:p-12 w-full translate-y-[-20px] animate-in fade-in slide-in-from-bottom-10 duration-1000 max-h-[85vh] overflow-y-auto">
+      {/* ── CAMERA MODAL ── */}
+      {showCamera && (
+        <div className="fixed inset-0 z-50 bg-black flex flex-col items-center justify-center">
+          <video ref={videoRef} autoPlay playsInline muted
+            className="w-full sm:max-w-lg rounded-xl object-cover h-[60vh] sm:h-auto" />
+          <div className="flex gap-3 mt-6">
+            <button onClick={closeCamera}
+              className="px-6 py-3 bg-white/10 border border-white/20 text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-white/20">
+              <X className="w-4 h-4 inline mr-1" /> Cancel
+            </button>
+            <button onClick={capturePhoto}
+              className="px-8 py-3 bg-white text-slate-900 rounded-xl font-black text-xs uppercase tracking-widest hover:scale-105 transition-transform shadow-xl">
+              📸 Capture
+            </button>
+          </div>
+        </div>
+      )}
       <div className="flex items-center gap-4 mb-10 overflow-hidden relative group">
         <div className="w-16 h-16 bg-gradient-to-br from-indigo-600 to-indigo-700 text-white rounded-[24px] flex items-center justify-center p-4 shadow-xl shadow-indigo-100 group-hover:scale-110 transition-transform">
           <HeartPulse className="w-8 h-8" />
@@ -320,21 +401,20 @@ export default function SymptomChecker() {
             </label>
           </div>
           {!skinPreview ? (
-            <div
-              onClick={() => fileInputRef.current?.click()}
-              className="w-full h-48 border-4 border-dashed border-teal-300 bg-white hover:bg-teal-100/50 transition-colors rounded-3xl flex flex-col items-center justify-center cursor-pointer group"
-            >
-              <Upload className="w-12 h-12 text-teal-400 mb-4 group-hover:-translate-y-2 transition-transform duration-300" />
-              <span className="text-lg font-bold text-teal-700">{t.diseaseChecker?.scanner_desc || 'Tap here to upload a skin photo'}</span>
-              <p className="text-sm font-medium text-teal-500 mt-2">Real AI pixel analysis · JPG, PNG, WEBP</p>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                capture="environment"
-                className="hidden"
-                onChange={handleImageUpload}
-              />
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-2">
+                <button onClick={openCamera}
+                  className="flex flex-col items-center gap-2 py-6 bg-teal-600 text-white rounded-2xl font-black hover:bg-teal-700 active:scale-95 transition-all">
+                  <Camera className="w-8 h-8" />
+                  <span className="text-[10px] uppercase tracking-widest">Take Photo</span>
+                </button>
+                <button onClick={() => fileInputRef.current?.click()}
+                  className="flex flex-col items-center gap-2 py-6 bg-slate-100 text-slate-700 rounded-2xl font-black hover:bg-slate-200 active:scale-95 transition-all border border-slate-200">
+                  <Upload className="w-8 h-8" />
+                  <span className="text-[10px] uppercase tracking-widest">Upload Photo</span>
+                </button>
+              </div>
+              <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
             </div>
           ) : (
             <div className="w-full h-64 rounded-3xl overflow-hidden relative border-4 border-teal-500 shadow-lg">

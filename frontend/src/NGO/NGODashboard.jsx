@@ -14,9 +14,9 @@ import SkeletonCard from '../components/SkeletonCard';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
-/* ─── AI Urgency Classifier (Tristha Track: Ticket Classification) ─────── */
+/* ─── Rule-based Triage Classifier (Tristha Track: Ticket Classification) ── */
 // Classifies incoming health requests into P1-P4 urgency levels
-// based on clinical keyword analysis of symptom descriptions.
+// based on clinical keyword matching of symptom descriptions.
 // Source: MoHFW Emergency Triage Guidelines 2023 + WHO IMCI Protocol
 const P1_KEYWORDS = ['unconscious','not breathing','seizure','heavy bleeding','chest pain','stroke','convulsion','no pulse','eclampsia'];
 const P2_KEYWORDS = ['high fever','severe pain','difficulty breathing','vomiting blood','accident','fracture','preterm','labour','labor'];
@@ -26,10 +26,17 @@ const P3_KEYWORDS = ['fever','pain','diarrhea','vomiting','swelling','rash','cou
 const URGENCY_TEXT  = { red: 'text-red-400',    orange: 'text-orange-400', amber: 'text-amber-400', slate: 'text-slate-400' };
 const URGENCY_BORDER = { red: 'border-l-red-500', orange: 'border-l-orange-500', amber: 'border-l-amber-500', slate: 'border-l-slate-300' };
 
-// ── P1 Alert Sound — Web Audio API (no external file needed) ─────────────
+// ── P1 Alert Sound — Web Audio API singleton (avoids browser 6-ctx limit) ──
+let _audioCtx = null;
+function getAudioCtx() {
+  if (!_audioCtx || _audioCtx.state === 'closed') {
+    _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  return _audioCtx;
+}
 function playP1Alert() {
   try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const ctx = getAudioCtx();
     [0, 0.3, 0.6].forEach(delay => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
@@ -74,7 +81,7 @@ function RequestCard({ req, onUpdate, type }) {
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex flex-wrap items-center gap-2 mb-1">
-          {/* AI Urgency Badge — Tristha Track: Ticket Classification */}
+          {/* Triage Badge — rule-based keyword classifier */}
           {urgency && (
             <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border flex items-center gap-1 ${urgency.badge}`}>
               <Zap className="w-2.5 h-2.5" />{urgency.level} · {urgency.label}
@@ -96,9 +103,9 @@ function RequestCard({ req, onUpdate, type }) {
         </p>
       </div>
       <div className="flex gap-2 shrink-0">
-        {req.status === 'pending'     && <button onClick={() => onUpdate(req.id, 'assigned')}    className="px-4 py-2 bg-emerald-600 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-emerald-700 transition-colors">Accept</button>}
-        {req.status === 'assigned'    && <button onClick={() => onUpdate(req.id, 'in_progress')} className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-blue-700 transition-colors">Start</button>}
-        {req.status === 'in_progress' && <button onClick={() => onUpdate(req.id, 'completed')}   className="px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-700 transition-colors">Complete</button>}
+        {req.status === 'pending'     && <button onClick={() => onUpdate(req.id, 'assigned',    type)} className="px-4 py-2 bg-emerald-600 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-emerald-700 transition-colors">Accept</button>}
+        {req.status === 'assigned'    && <button onClick={() => onUpdate(req.id, 'in_progress', type)} className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-blue-700 transition-colors">Start</button>}
+        {req.status === 'in_progress' && <button onClick={() => onUpdate(req.id, 'completed',   type)} className="px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-700 transition-colors">Complete</button>}
       </div>
     </motion.div>
   );
@@ -187,12 +194,10 @@ export default function NGODashboard() {
   const fetchOutbreaks = async () => {
     setLoadingOutbreaks(true);
     try {
-      const res = await api.get('/admin/outbreaks');
-      const allOutbreaks = res.data.outbreaks || [];
-      
-      // PROFESSIONAL FILTER: Only show alerts relevant to this ASHA worker's village
-      const myVillageAlerts = allOutbreaks.filter(ob => ob.villageId === user?.villageId);
-      setOutbreaks(myVillageAlerts);
+      // Scoped NGO endpoint — server filters by villageId; no admin access needed
+      const params = user?.villageId ? `?villageId=${encodeURIComponent(user.villageId)}` : '';
+      const res = await api.get(`/ngo/outbreaks${params}`);
+      setOutbreaks(res.data.outbreaks || []);
     } catch (e) {
       console.error('Failed to fetch outbreak alerts:', e);
     } finally {
@@ -227,11 +232,12 @@ export default function NGODashboard() {
     } finally { setLoadingPad(false); }
   };
 
-  const updateStatus = async (id, status) => {
+  const updateStatus = async (id, status, type) => {
     try {
       await ngoService.updateRequestStatus(id, status);
-      fetchAmbulances();
-      fetchPads();
+      // Only re-fetch the list that actually changed
+      if (type === 'pad') fetchPads();
+      else fetchAmbulances();
     } catch (e) { alert('Failed to update status: ' + (typeof e === 'string' ? e : e?.message)); }
   };
 

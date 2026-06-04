@@ -88,7 +88,7 @@ const OFFLINE_FALLBACK_CHAT_REPLIES = {
   mr: "नमस्ते! मी सखी आहे. सध्या तुमचे इंटरनेट बंद (offline) आहे, त्यामुळे मी सविस्तर उत्तर शोधू शकत नाही. कृपया वरील पडताळलेले सल्ले पहा किंवा तुमच्या आशा सेविकेशी संपर्क साधा.",
   ta: "வணக்கம்! நான் சகி. நீங்கள் தற்போது ஆஃப்லைனில் உள்ளீர்கள், எனவே என்னால் விரிவான பதிலைத் தேட முடியவில்லை. தயவுசெய்து மேலே உள்ள சரிபார்க்கப்பட்ட ஆஃப்லைன் உதவிக்குறிப்புகளைப் பார்க்கவும் அல்லது உங்கள் ஆஷா பணியாளரைத் தொடர்பு கொள்ளவும்.",
   te: "నమస్తే! నేను సఖిని. ప్రస్తుతం మీ ఇంటర్నెట్ ఆఫ్‌లైన్‌లో ఉంది, కాబట్టి నేను పూర్తి సమాధానాన్ని శోధించలేకపోతున్నాను. దయచేసి పైన పేర్కొన్న ధృవీకరించబడిన చిట్కాలను చూడండి లేదా మీ ఆశా కార్యకర్తను సంప్రదించండి.",
-  bn: "নমস্কার! আমি সখী। আপনার ইন্টারনেট বর্তমানে অফলাইন রয়েছে, তাই আমি বিস্তারিত উত্তর খুঁজতে পারছি না। অনুগ্রহ করে উপরের যাচাইকৃত অফলাইন টিপসগুলি দেখুন বা আপনার আশা কর্মীর সাথে যোগাযোগ করুন।"
+  bn: "নমস্কার! আমি সখী। আপনার ইন্টারনেট বর্তমানে অফলাইন রয়েছে, তাই আমি বিস্তারিত উত্তর খুঁজতে পারছি না। অনুগ্রহ করে উপরের যাচাইকৃত অফলাইন টিপসগুলি দেখুন বা আপনার আশা কর্মীর সাথে যোগাযোগ করুন."
 };
 
 const URGENCY_COLORS = {
@@ -125,26 +125,63 @@ const OFFLINE_KNOWLEDGE_HEADERS = {
   }
 };
 
+const findOfflineTip = (msg, lang) => {
+  const offlineTips = OFFLINE_TIPS_BY_LANG[lang] || OFFLINE_TIPS_BY_LANG['hi'];
+  const cleanMsg = msg.toLowerCase();
+  if (cleanMsg.includes('pain') || cleanMsg.includes('dard') || cleanMsg.includes('cramp') || cleanMsg.includes('pet') || cleanMsg.includes('peth') || cleanMsg.includes('வலி') || cleanMsg.includes('నొప్పి') || cleanMsg.includes('ব্যথা') || cleanMsg.includes('पोटदुखी')) return offlineTips[1];
+  if (cleanMsg.includes('heavy') || cleanMsg.includes('bleed') || cleanMsg.includes('khoon') || cleanMsg.includes('bahaw') || cleanMsg.includes('रक्त') || cleanMsg.includes('இரத்த') || cleanMsg.includes('రక్త') || cleanMsg.includes('রক্ত')) return offlineTips[0];
+  if (cleanMsg.includes('often') || cleanMsg.includes('change') || cleanMsg.includes('pad') || cleanMsg.includes('hours') || cleanMsg.includes('ghante') || cleanMsg.includes('पॅड') || cleanMsg.includes('பேட்') || cleanMsg.includes('ప్యాడ్') || cleanMsg.includes('প্যাড')) return offlineTips[2];
+  if (cleanMsg.includes('food') || cleanMsg.includes('iron') || cleanMsg.includes('eat') || cleanMsg.includes('diet') || cleanMsg.includes('nutrition') || cleanMsg.includes('पालक') || cleanMsg.includes('गुड़') || cleanMsg.includes('गूळ') || cleanMsg.includes('உணவு') || cleanMsg.includes('ఆహారం') || cleanMsg.includes('খাবার')) return offlineTips[3];
+  if (cleanMsg.includes('rash') || cleanMsg.includes('itch') || cleanMsg.includes('clean') || cleanMsg.includes('khujli') || cleanMsg.includes('खुजली') || cleanMsg.includes('खाज') || cleanMsg.includes('அரிப்பு') || cleanMsg.includes('దురద') || cleanMsg.includes('চুলকানি')) return offlineTips[4];
+  if (cleanMsg.includes('miss') || cleanMsg.includes('late') || cleanMsg.includes('irregular') || cleanMsg.includes('cycle') || cleanMsg.includes('deeri') || cleanMsg.includes('चक्र') || cleanMsg.includes('முறையற்ற') || cleanMsg.includes('క్రమం') || cleanMsg.includes('অনিয়মিত')) return offlineTips[5];
+  if (cleanMsg.includes('cloth') || cleanMsg.includes('wash') || cleanMsg.includes('dry') || cleanMsg.includes('sun') || cleanMsg.includes('kapd') || cleanMsg.includes('dho') || cleanMsg.includes('sukha') || cleanMsg.includes('कापड') || cleanMsg.includes('துணி') || cleanMsg.includes('వస్త్రం') || cleanMsg.includes('কাপড়')) return offlineTips[6];
+  if (cleanMsg.includes('smell') || cleanMsg.includes('foul') || cleanMsg.includes('white') || cleanMsg.includes('discharge') || cleanMsg.includes('infection') || cleanMsg.includes('badbu') || cleanMsg.includes('gandh') || cleanMsg.includes('safed') || cleanMsg.includes('pani') || cleanMsg.includes('दुर्गंध') || cleanMsg.includes('துர்நாற்றம்') || cleanMsg.includes('వాసన') || cleanMsg.includes('গন্ধ')) return offlineTips[7];
+  if (cleanMsg.includes('bath') || cleanMsg.includes('bathe') || cleanMsg.includes('nahana') || cleanMsg.includes('snan') || cleanMsg.includes('आंघोळ') || cleanMsg.includes('குளிக்க') || cleanMsg.includes('స్నానం') || cleanMsg.includes('স্নান')) return offlineTips[8];
+  if (cleanMsg.includes('sour') || cleanMsg.includes('pickle') || cleanMsg.includes('curd') || cleanMsg.includes('kitchen') || cleanMsg.includes('achar') || cleanMsg.includes('khatta') || cleanMsg.includes('rasoi') || cleanMsg.includes('myth') || cleanMsg.includes('अंधविश्वास') || cleanMsg.includes('लोणचे') || cleanMsg.includes('ஊறகாய்') || cleanMsg.includes('పుల్లటి') || cleanMsg.includes('আচার')) return offlineTips[9];
+  return null;
+};
+
 export default function SakhiChatbot() {
   const { lang, t } = useLanguage();
   const [isOnline, setIsOnline] = useState(navigator.onLine);
-  const [messages, setMessages] = useState([
-    { role: 'ai', text: t.menstrual?.sakhi_welcome || "Hello! I'm Sakhi, your Women's Health Assistant. I'm here to answer any questions about menstrual health, hygiene, pain, or when to see a doctor. Everything you share is completely private. How can I help you today?" }
-  ]);
+  const [messages, setMessages] = useState(() => {
+    const saved = sessionStorage.getItem('sakhi_chat_history');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    return [
+      { role: 'ai', text: t.menstrual?.sakhi_welcome || "Hello! I'm Sakhi, your Women's Health Assistant. I'm here to answer any questions about menstrual health, hygiene, pain, or when to see a doctor. Everything you share is completely private. How can I help you today?" }
+    ];
+  });
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const scrollRef = useRef(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
 
-  // Sakhi speaks back! Voice response for rural low-literacy users.
-  const speakResponse = (text, langCode = 'hi-IN') => {
+  const langVoiceMap = { en: 'en-IN', hi: 'hi-IN', mr: 'mr-IN', ta: 'ta-IN', te: 'te-IN', bn: 'bn-IN' };
+  const speakLang = langVoiceMap[lang] || 'hi-IN';
+
+  useEffect(() => {
+    sessionStorage.setItem('sakhi_chat_history', JSON.stringify(messages.slice(-20)));
+  }, [messages]);
+
+  const speakResponse = (text, langCode = 'hi-IN', urgency = 'P4') => {
     if (!window.speechSynthesis) return;
-    window.speechSynthesis.cancel(); // Stop any ongoing speech
-    const utterance = new SpeechSynthesisUtterance(text.slice(0, 300)); // Limit to 300 chars
+    window.speechSynthesis.cancel();
+    
+    let limit = 300;
+    if (urgency === 'P1' || urgency === 'P2') limit = 500;
+    else if (urgency === 'P4') limit = 200;
+
+    const utterance = new SpeechSynthesisUtterance(text.slice(0, limit));
     utterance.lang = langCode;
-    utterance.rate = 0.85; // Slightly slower for clarity
-    utterance.pitch = 1.1; // Slightly higher pitch for female voice simulation
+    utterance.rate = 0.85;
+    utterance.pitch = 1.1;
 
     const voices = window.speechSynthesis.getVoices();
     const l = langCode.toLowerCase().split('-')[0];
@@ -211,6 +248,22 @@ export default function SakhiChatbot() {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages]);
 
+  const findOfflineTip = (msg, lang) => {
+    const offlineTips = OFFLINE_TIPS_BY_LANG[lang] || OFFLINE_TIPS_BY_LANG['hi'];
+    const cleanMsg = msg.toLowerCase();
+    if (cleanMsg.includes('pain') || cleanMsg.includes('dard') || cleanMsg.includes('cramp') || cleanMsg.includes('pet') || cleanMsg.includes('peth') || cleanMsg.includes('வலி') || cleanMsg.includes('నొప్పి') || cleanMsg.includes('ব্যথা') || cleanMsg.includes('पोटदुखी')) return offlineTips[1];
+    if (cleanMsg.includes('heavy') || cleanMsg.includes('bleed') || cleanMsg.includes('khoon') || cleanMsg.includes('bahaw') || cleanMsg.includes('रक्त') || cleanMsg.includes('இரத்த') || cleanMsg.includes('రక్త') || cleanMsg.includes('রক্ত')) return offlineTips[0];
+    if (cleanMsg.includes('often') || cleanMsg.includes('change') || cleanMsg.includes('pad') || cleanMsg.includes('hours') || cleanMsg.includes('ghante') || cleanMsg.includes('पॅड') || cleanMsg.includes('பேட்') || cleanMsg.includes('ప్యాడ్') || cleanMsg.includes('প্যাড')) return offlineTips[2];
+    if (cleanMsg.includes('food') || cleanMsg.includes('iron') || cleanMsg.includes('eat') || cleanMsg.includes('diet') || cleanMsg.includes('nutrition') || cleanMsg.includes('पालक') || cleanMsg.includes('गुड़') || cleanMsg.includes('गूळ') || cleanMsg.includes('உணவு') || cleanMsg.includes('ఆహారం') || cleanMsg.includes('খাবার')) return offlineTips[3];
+    if (cleanMsg.includes('rash') || cleanMsg.includes('itch') || cleanMsg.includes('clean') || cleanMsg.includes('khujli') || cleanMsg.includes('खुजली') || cleanMsg.includes('खाज') || cleanMsg.includes('அரிப்பு') || cleanMsg.includes('దురద') || cleanMsg.includes('চুলকানি')) return offlineTips[4];
+    if (cleanMsg.includes('miss') || cleanMsg.includes('late') || cleanMsg.includes('irregular') || cleanMsg.includes('cycle') || cleanMsg.includes('deeri') || cleanMsg.includes('चक्र') || cleanMsg.includes('முறையற்ற') || cleanMsg.includes('క్రమం') || cleanMsg.includes('অনিয়মিত')) return offlineTips[5];
+    if (cleanMsg.includes('cloth') || cleanMsg.includes('wash') || cleanMsg.includes('dry') || cleanMsg.includes('sun') || cleanMsg.includes('kapd') || cleanMsg.includes('dho') || cleanMsg.includes('sukha') || cleanMsg.includes('कापड') || cleanMsg.includes('துணி') || cleanMsg.includes('వస్త్రం') || cleanMsg.includes('কাপড়')) return offlineTips[6];
+    if (cleanMsg.includes('smell') || cleanMsg.includes('foul') || cleanMsg.includes('white') || cleanMsg.includes('discharge') || cleanMsg.includes('infection') || cleanMsg.includes('badbu') || cleanMsg.includes('gandh') || cleanMsg.includes('safed') || cleanMsg.includes('pani') || cleanMsg.includes('दुर्गंध') || cleanMsg.includes('துர்நாற்றம்') || cleanMsg.includes('వాసన') || cleanMsg.includes('গন্ধ')) return offlineTips[7];
+    if (cleanMsg.includes('bath') || cleanMsg.includes('bathe') || cleanMsg.includes('nahana') || cleanMsg.includes('snan') || cleanMsg.includes('आंघोळ') || cleanMsg.includes('குளிக்க') || cleanMsg.includes('స్నానం') || cleanMsg.includes('স্নান')) return offlineTips[8];
+    if (cleanMsg.includes('sour') || cleanMsg.includes('pickle') || cleanMsg.includes('curd') || cleanMsg.includes('kitchen') || cleanMsg.includes('achar') || cleanMsg.includes('khatta') || cleanMsg.includes('rasoi') || cleanMsg.includes('myth') || cleanMsg.includes('अंधविश्वास') || cleanMsg.includes('लोणचे') || cleanMsg.includes('ஊறகாய்') || cleanMsg.includes('పుల్లటి') || cleanMsg.includes('আচার')) return offlineTips[9];
+    return null;
+  };
+
   const handleSend = async (overrideText = null) => {
     const userMsg = (overrideText || input).trim();
     if (!userMsg || loading) return;
@@ -218,37 +271,9 @@ export default function SakhiChatbot() {
     setMessages(prev => [...prev, { role: 'user', text: userMsg }]);
     setLoading(true);
 
-    const langVoiceMap = { en: 'en-IN', hi: 'hi-IN', mr: 'mr-IN', ta: 'ta-IN', te: 'te-IN', bn: 'bn-IN' };
-    const speakLang = langVoiceMap[lang] || 'hi-IN';
-    const offlineTips = OFFLINE_TIPS_BY_LANG[lang] || OFFLINE_TIPS_BY_LANG['hi'];
-
     if (!isOnline) {
       setTimeout(() => {
-        const cleanMsg = userMsg.toLowerCase();
-        let matchedTip = null;
-        
-        if (cleanMsg.includes('pain') || cleanMsg.includes('dard') || cleanMsg.includes('cramp') || cleanMsg.includes('pet') || cleanMsg.includes('peth') || cleanMsg.includes('வலி') || cleanMsg.includes('నొప్పి') || cleanMsg.includes('ব্যথা') || cleanMsg.includes('पोटदुखी')) {
-          matchedTip = offlineTips[1];
-        } else if (cleanMsg.includes('heavy') || cleanMsg.includes('bleed') || cleanMsg.includes('khoon') || cleanMsg.includes('bahaw') || cleanMsg.includes('रक्त') || cleanMsg.includes('இரத்த') || cleanMsg.includes('రక్త') || cleanMsg.includes('রক্ত')) {
-          matchedTip = offlineTips[0];
-        } else if (cleanMsg.includes('often') || cleanMsg.includes('change') || cleanMsg.includes('pad') || cleanMsg.includes('hours') || cleanMsg.includes('ghante') || cleanMsg.includes('पॅड') || cleanMsg.includes('பேட்') || cleanMsg.includes('ప్యాడ్') || cleanMsg.includes('প্যাড')) {
-          matchedTip = offlineTips[2];
-        } else if (cleanMsg.includes('food') || cleanMsg.includes('iron') || cleanMsg.includes('eat') || cleanMsg.includes('diet') || cleanMsg.includes('nutrition') || cleanMsg.includes('पालक') || cleanMsg.includes('गुड़') || cleanMsg.includes('गूळ') || cleanMsg.includes('உணவு') || cleanMsg.includes('ఆహారం') || cleanMsg.includes('খাবার')) {
-          matchedTip = offlineTips[3];
-        } else if (cleanMsg.includes('rash') || cleanMsg.includes('itch') || cleanMsg.includes('clean') || cleanMsg.includes('khujli') || cleanMsg.includes('खुजली') || cleanMsg.includes('खाज') || cleanMsg.includes('அரிப்பு') || cleanMsg.includes('దురద') || cleanMsg.includes('চুলকানি')) {
-          matchedTip = offlineTips[4];
-        } else if (cleanMsg.includes('miss') || cleanMsg.includes('late') || cleanMsg.includes('irregular') || cleanMsg.includes('cycle') || cleanMsg.includes('deeri') || cleanMsg.includes('चक्र') || cleanMsg.includes('முறையற்ற') || cleanMsg.includes('క్రమం') || cleanMsg.includes('অনিয়মিত')) {
-          matchedTip = offlineTips[5];
-        } else if (cleanMsg.includes('cloth') || cleanMsg.includes('wash') || cleanMsg.includes('dry') || cleanMsg.includes('sun') || cleanMsg.includes('kapd') || cleanMsg.includes('dho') || cleanMsg.includes('sukha') || cleanMsg.includes('कापड') || cleanMsg.includes('துणी') || cleanMsg.includes('వస్త్రం') || cleanMsg.includes('কাপড়')) {
-          matchedTip = offlineTips[6];
-        } else if (cleanMsg.includes('smell') || cleanMsg.includes('foul') || cleanMsg.includes('white') || cleanMsg.includes('discharge') || cleanMsg.includes('infection') || cleanMsg.includes('badbu') || cleanMsg.includes('gandh') || cleanMsg.includes('safed') || cleanMsg.includes('pani') || cleanMsg.includes('दुर्गंध') || cleanMsg.includes('துர்நாற்றம்') || cleanMsg.includes('వాసన') || cleanMsg.includes('গন্ধ')) {
-          matchedTip = offlineTips[7];
-        } else if (cleanMsg.includes('bath') || cleanMsg.includes('bathe') || cleanMsg.includes('nahana') || cleanMsg.includes('snan') || cleanMsg.includes('आंघोळ') || cleanMsg.includes('குளிக்க') || cleanMsg.includes('స్నానం') || cleanMsg.includes('স্নান')) {
-          matchedTip = offlineTips[8];
-        } else if (cleanMsg.includes('sour') || cleanMsg.includes('pickle') || cleanMsg.includes('curd') || cleanMsg.includes('kitchen') || cleanMsg.includes('achar') || cleanMsg.includes('khatta') || cleanMsg.includes('rasoi') || cleanMsg.includes('myth') || cleanMsg.includes('अंधविश्वास') || cleanMsg.includes('लोणचे') || cleanMsg.includes('ஊறகாய்') || cleanMsg.includes('పుల్లటి') || cleanMsg.includes('আচার')) {
-          matchedTip = offlineTips[9];
-        }
-
+        const matchedTip = findOfflineTip(userMsg, lang);
         if (matchedTip) {
           setMessages(prev => [...prev, {
             role:    'ai',
@@ -257,9 +282,7 @@ export default function SakhiChatbot() {
             urgency: matchedTip.urgency,
             grounded: false,
           }]);
-          if (matchedTip.urgency === 'P1' || matchedTip.urgency === 'P2' || matchedTip.urgency === 'P3') {
-            speakResponse(matchedTip.a, speakLang);
-          }
+          if (matchedTip.urgency !== 'P4') speakResponse(matchedTip.a, speakLang, matchedTip.urgency);
         } else {
           const fallbackText = OFFLINE_FALLBACK_CHAT_REPLIES[lang] || OFFLINE_FALLBACK_CHAT_REPLIES['hi'];
           setMessages(prev => [...prev, {
@@ -286,40 +309,10 @@ export default function SakhiChatbot() {
         grounded: res.data.grounded,
       }]);
       if (res.data.urgency === 'P1' || res.data.urgency === 'P2') {
-        speakResponse(res.data.reply, speakLang);
+        speakResponse(res.data.reply, speakLang, res.data.urgency);
       }
     } catch (err) {
-      if (err.response?.status === 401) {
-        alert('Your session has expired. Please log in again.');
-        localStorage.removeItem('token');
-        window.location.href = '/login';
-        return;
-      }
-      
-      const cleanMsg = userMsg.toLowerCase();
-      let matchedTip = null;
-      if (cleanMsg.includes('pain') || cleanMsg.includes('dard') || cleanMsg.includes('cramp') || cleanMsg.includes('pet') || cleanMsg.includes('peth') || cleanMsg.includes('வலி') || cleanMsg.includes('నొప్పి') || cleanMsg.includes('ব্যথা') || cleanMsg.includes('पोटदुखी')) {
-        matchedTip = offlineTips[1];
-      } else if (cleanMsg.includes('heavy') || cleanMsg.includes('bleed') || cleanMsg.includes('khoon') || cleanMsg.includes('bahaw') || cleanMsg.includes('रक्त') || cleanMsg.includes('இரத்த') || cleanMsg.includes('రక్త') || cleanMsg.includes('রক্ত')) {
-        matchedTip = offlineTips[0];
-      } else if (cleanMsg.includes('often') || cleanMsg.includes('change') || cleanMsg.includes('pad') || cleanMsg.includes('hours') || cleanMsg.includes('ghante') || cleanMsg.includes('पॅड') || cleanMsg.includes('பேட்') || cleanMsg.includes('ప్యాడ్') || cleanMsg.includes('প্যাড')) {
-        matchedTip = offlineTips[2];
-      } else if (cleanMsg.includes('food') || cleanMsg.includes('iron') || cleanMsg.includes('eat') || cleanMsg.includes('diet') || cleanMsg.includes('nutrition') || cleanMsg.includes('पालक') || cleanMsg.includes('गुड़') || cleanMsg.includes('गूळ') || cleanMsg.includes('உணவு') || cleanMsg.includes('ఆహారం') || cleanMsg.includes('খাবার')) {
-        matchedTip = offlineTips[3];
-      } else if (cleanMsg.includes('rash') || cleanMsg.includes('itch') || cleanMsg.includes('clean') || cleanMsg.includes('khujli') || cleanMsg.includes('खुजली') || cleanMsg.includes('खाज') || cleanMsg.includes('அரிப்பு') || cleanMsg.includes('దురద') || cleanMsg.includes('চুলকানি')) {
-        matchedTip = offlineTips[4];
-      } else if (cleanMsg.includes('miss') || cleanMsg.includes('late') || cleanMsg.includes('irregular') || cleanMsg.includes('cycle') || cleanMsg.includes('deeri') || cleanMsg.includes('चक्र') || cleanMsg.includes('முறையற்ற') || cleanMsg.includes('క్రమం') || cleanMsg.includes('অনিয়মিত')) {
-        matchedTip = offlineTips[5];
-      } else if (cleanMsg.includes('cloth') || cleanMsg.includes('wash') || cleanMsg.includes('dry') || cleanMsg.includes('sun') || cleanMsg.includes('kapd') || cleanMsg.includes('dho') || cleanMsg.includes('sukha') || cleanMsg.includes('कापड') || cleanMsg.includes('துணி') || cleanMsg.includes('వస్త్రం') || cleanMsg.includes('কাপড়')) {
-        matchedTip = offlineTips[6];
-      } else if (cleanMsg.includes('smell') || cleanMsg.includes('foul') || cleanMsg.includes('white') || cleanMsg.includes('discharge') || cleanMsg.includes('infection') || cleanMsg.includes('badbu') || cleanMsg.includes('gandh') || cleanMsg.includes('safed') || cleanMsg.includes('pani') || cleanMsg.includes('दुर्गंध') || cleanMsg.includes('துர்நாற்றம்') || cleanMsg.includes('వాసన') || cleanMsg.includes('গন্ধ')) {
-        matchedTip = offlineTips[7];
-      } else if (cleanMsg.includes('bath') || cleanMsg.includes('bathe') || cleanMsg.includes('nahana') || cleanMsg.includes('snan') || cleanMsg.includes('आंघोळ') || cleanMsg.includes('குளிக்க') || cleanMsg.includes('స్నానం') || cleanMsg.includes('স্নান')) {
-        matchedTip = offlineTips[8];
-      } else if (cleanMsg.includes('sour') || cleanMsg.includes('pickle') || cleanMsg.includes('curd') || cleanMsg.includes('kitchen') || cleanMsg.includes('achar') || cleanMsg.includes('khatta') || cleanMsg.includes('rasoi') || cleanMsg.includes('myth') || cleanMsg.includes('अंधविश्वास') || cleanMsg.includes('लोणचे') || cleanMsg.includes('ஊறகாய்') || cleanMsg.includes('పుల్లటి') || cleanMsg.includes('আচার')) {
-        matchedTip = offlineTips[9];
-      }
-
+      const matchedTip = findOfflineTip(userMsg, lang);
       if (matchedTip) {
         setMessages(prev => [...prev, {
           role:    'ai',
@@ -328,11 +321,11 @@ export default function SakhiChatbot() {
           urgency: matchedTip.urgency,
           grounded: false,
         }]);
-        speakResponse(matchedTip.a, speakLang);
+        speakResponse(matchedTip.a, speakLang, matchedTip.urgency);
       } else {
         setMessages(prev => [...prev, {
           role: 'ai',
-          text: t.menstrual?.sakhi_error || 'I could not process your question right now. Please try again, or contact your ASHA worker for immediate help.',
+          text: t.menstrual?.sakhi_error || 'I could not process your question right now. Please try again.',
           isError: true,
           grounded: false,
         }]);
@@ -342,18 +335,46 @@ export default function SakhiChatbot() {
     }
   };
 
-  const startVoice = () => {
+  const LANG_CHAIN = {
+    hi: ['hi-IN', 'en-IN', 'ta-IN', 'mr-IN', 'te-IN', 'bn-IN'],
+    ta: ['ta-IN', 'en-IN', 'hi-IN', 'te-IN'],
+    en: ['en-IN', 'hi-IN', 'ta-IN', 'mr-IN', 'te-IN', 'bn-IN'],
+    bn: ['bn-IN', 'hi-IN', 'en-IN'],
+    te: ['te-IN', 'hi-IN', 'en-IN', 'ta-IN'],
+    mr: ['mr-IN', 'hi-IN', 'en-IN'],
+  };
+
+  const recognitionRef = useRef(null);
+
+  const stopVoice = useCallback(() => {
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+      recognitionRef.current = null;
+    }
+    setIsListening(false);
+  }, []);
+
+  const startVoiceAttempt = useCallback((langChain, attemptIdx = 0) => {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) {
-      setMessages(prev => [...prev, { role: 'ai', text: 'Voice input is not supported on this device. Please use Chrome or Edge.', isError: true }]);
+      setMessages(prev => [...prev, { role: 'ai', text: 'Voice input is not supported on this device. Please use Chrome or Edge.', isError: true }].slice(-100));
+      return;
+    }
+    if (attemptIdx >= langChain.length) {
+      setIsListening(false);
       return;
     }
 
+    const currentLang = langChain[attemptIdx];
     try {
       const rec = new SR();
-      const LANG_MAP = { hi: 'hi-IN', en: 'en-IN', ta: 'ta-IN', mr: 'mr-IN', te: 'te-IN', bn: 'bn-IN' };
-      rec.lang = LANG_MAP[lang] || 'hi-IN';
+      rec.lang = currentLang;
+      rec.continuous = false;
+      rec.interimResults = false;
       
+      recognitionRef.current = rec;
+      setIsListening(true);
+
       rec.onstart = () => setIsListening(true);
       rec.onresult = (e) => { 
         const text = e.results[0][0].transcript;
@@ -365,18 +386,35 @@ export default function SakhiChatbot() {
       };
       rec.onerror = (e) => {
         console.error('[Sakhi Voice Error]', e.error);
-        setIsListening(false);
-        if (e.error === 'not-allowed') {
-          setMessages(prev => [...prev, { role: 'ai', text: 'Microphone access denied. Please enable microphone permissions in your browser settings.', isError: true }]);
+        if ((e.error === 'no-speech' || e.error === 'language-not-supported' || e.error === 'network') && attemptIdx + 1 < langChain.length) {
+          setTimeout(() => startVoiceAttempt(langChain, attemptIdx + 1), 200);
+        } else {
+          setIsListening(false);
+          if (e.error === 'not-allowed') {
+            setMessages(prev => [...prev, { role: 'ai', text: 'Microphone access denied. Please enable microphone permissions in your browser settings.', isError: true }].slice(-100));
+          }
         }
+        recognitionRef.current = null;
       };
-      rec.onend = () => setIsListening(false);
+      rec.onend = () => {
+        setIsListening(false);
+        recognitionRef.current = null;
+      };
       rec.start();
     } catch (err) {
       console.error('[Sakhi Start Error]', err);
       setIsListening(false);
     }
-  };
+  }, [handleSend]);
+
+  const startVoice = useCallback(() => {
+    if (isListening) {
+      stopVoice();
+      return;
+    }
+    const chain = LANG_CHAIN[lang] || ['hi-IN', 'en-IN', 'ta-IN'];
+    startVoiceAttempt(chain, 0);
+  }, [isListening, lang, startVoiceAttempt, stopVoice]);
 
   const suggestions = t.menstrual?.sakhi_suggestions || ['How do I manage period pain?', 'What is heavy bleeding?', 'How often should I change pads?', 'My periods are irregular'];
 
@@ -496,7 +534,7 @@ export default function SakhiChatbot() {
             )}
             {m.role === 'ai' && !m.isError && (
               <button
-                onClick={() => speakResponse(m.text)}
+                onClick={() => speakResponse(m.text, speakLang, m.urgency)}
                 title="Listen to this response"
                 className="w-6 h-6 bg-rose-50 border border-rose-100 rounded-full flex items-center justify-center shrink-0 mt-1 hover:bg-rose-100 transition-colors opacity-60 hover:opacity-100"
               >
