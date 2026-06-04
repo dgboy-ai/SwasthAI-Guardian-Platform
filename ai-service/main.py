@@ -3,6 +3,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import joblib
 import os
+
+# ── Load .env file so GROQ_API_KEY and other secrets are available ─────────────
+from dotenv import load_dotenv
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"), override=False)
+
 from skin_analyzer import analyze_skin_image
 import re
 from collections import Counter

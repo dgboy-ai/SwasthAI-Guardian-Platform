@@ -2,6 +2,13 @@
 
 All notable changes and feature developments completed during the hackathon window are documented in this file chronologically.
 
+## June 5, 2026
+### Added
+- **AI Service Environment Configuration**: Added `python-dotenv` support to automatically load `GROQ_API_KEY` at startup in the FastAPI service, resolving the `503` RAG offline fallback issue.
+- **Windows Emoji Console Crash Fix**: Reconfigured outbreak agent stdout to `UTF-8` and replaced emoji log markers with ASCII-safe strings, preventing UnicodeEncodeErrors on Windows environments.
+- **Speech Synthesis Autoplay Control**: Disabled automatic text-to-speech triggers in `SakhiChatbot.jsx` and `SymptomCheckerPage.jsx` to prevent voice playback interference during demo video recording, while preserving manual read-aloud buttons.
+- **Project Audit & Roadmap Status**: Updated the master audit log and hackathon checklist (`audit_and_roadmap.md`) to mark all roadmap phases as fully completed.
+
 ---
 
 ## June 4, 2026

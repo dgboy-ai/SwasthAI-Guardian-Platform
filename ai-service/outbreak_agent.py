@@ -10,12 +10,20 @@ composite key: villageId HASH + detectedAt RANGE) via the backend API.
 This ensures events are queryable cross-service and not siloed in a local SQLite file.
 """
 import os
+import sys
 import json
 import threading
 import time
 import requests
 from datetime import datetime
 from groq import Groq
+
+# ── Fix Windows cp1252 UnicodeEncodeError for emoji in print statements ─────────
+if sys.stdout.encoding and sys.stdout.encoding.lower() not in ('utf-8', 'utf-8-sig'):
+    try:
+        sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+    except Exception:
+        pass
 
 BACKEND_URL   = os.getenv("BACKEND_URL", "http://localhost:5000")
 AGENT_SECRET  = os.getenv("AGENT_SECRET")
@@ -172,7 +180,7 @@ def run_outbreak_agent():
         print("[AGENT] No GROQ_API_KEY found. Outbreak agent will not run.")
         return
 
-    print(f"[AGENT] 🤖 Agentic Outbreak Monitor v2 started. Interval: {CHECK_INTERVAL_SECONDS // 60} minutes.")
+    print(f"[AGENT] [OK] Agentic Outbreak Monitor v2 started. Interval: {CHECK_INTERVAL_SECONDS // 60} minutes.")
     print(f"[AGENT] Storage: DynamoDB outbreak_telemetry via {BACKEND_URL}")
 
     while True:
@@ -193,16 +201,16 @@ def run_outbreak_agent():
 
                 # Deduplication: check DynamoDB records from the last 24h
                 if _is_duplicate_outbreak(village_id, disease):
-                    print(f"[AGENT] ⏭  Skipping duplicate alert for village {village_id} (disease: {disease} flagged in last 24h)")
+                    print(f"[AGENT] [SKIP] Skipping duplicate alert for village {village_id} (disease: {disease} flagged in last 24h)")
                     continue
 
-                print(f"[AGENT] 🚨 OUTBREAK DETECTED in {village_id}: {disease} ({confidence:.0%} confidence)")
+                print(f"[AGENT] [ALERT] OUTBREAK DETECTED in {village_id}: {disease} ({confidence:.0%} confidence)")
                 _trigger_asha_alert(
                     village_id, disease, action, confidence,
                     cluster["count"], cluster.get("symptoms", "")
                 )
             else:
-                print(f"[AGENT] ✔ Village {cluster['villageId']}: No outbreak "
+                print(f"[AGENT] [OK] Village {cluster['villageId']}: No outbreak "
                       f"({cluster['count']} cases, confidence={result.get('confidence', 0):.0%})")
 
         time.sleep(CHECK_INTERVAL_SECONDS)

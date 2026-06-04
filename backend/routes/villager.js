@@ -144,13 +144,20 @@ function predictDiseaseLocal(text) {
 }
 
 // ── Helper: derive districtId from village_health or env fallback ─────────────
-async function getDistrictId(db, villageId) {
+async function getDistrictId(db, pool, usingSQLite, villageId) {
   try {
-    const row = await db.get('SELECT "districtId" FROM village_health WHERE "villageId" = ?', [villageId]);
-    return row?.districtId || process.env.DISTRICT_NAME || 'district_main';
+    if (!usingSQLite && pool) {
+      const res = await pool.query('SELECT "districtId" FROM village_health WHERE "villageId" = $1', [villageId]);
+      return res.rows[0]?.districtId || process.env.DISTRICT_NAME || 'district_main';
+    }
+    if (db) {
+      const row = await db.get('SELECT "districtId" FROM village_health WHERE "villageId" = ?', [villageId]);
+      return row?.districtId || process.env.DISTRICT_NAME || 'district_main';
+    }
   } catch (_) {
     return process.env.DISTRICT_NAME || 'district_main';
   }
+  return process.env.DISTRICT_NAME || 'district_main';
 }
 
 router.post('/emergency-alert', auth, async (req, res) => {
@@ -184,18 +191,26 @@ router.post('/emergency-alert', auth, async (req, res) => {
     const timestamp  = new Date().toISOString();
     const requestObj = { requestId, userId, name: userName, location: villageId, priority: 'High', symptoms: message, status: 'pending', timestamp, type: alertType };
 
-    await dynamoHelper.put('emergency_streams', {
-      districtId,
-      streamId: `amb-${requestId}-${Date.now()}`,
-      priority: 'High',
-      ...requestObj
-    });
-
-    if (typeof req.app.locals.broadcastToAdmins === 'function') {
-      req.app.locals.broadcastToAdmins('ambulance', requestObj);
-    }
-
+    // Return success immediately — the DB record is already saved.
+    // DynamoDB & SSE broadcast are best-effort (fire-and-forget).
     res.status(201).json({ success: true, requestId });
+
+    (async () => {
+      try {
+        await dynamoHelper.put('emergency_streams', {
+          districtId,
+          streamId: `amb-${requestId}-${Date.now()}`,
+          priority: 'High',
+          ...requestObj
+        });
+        if (typeof req.app.locals.broadcastToAdmins === 'function') {
+          req.app.locals.broadcastToAdmins('ambulance', requestObj);
+        }
+        console.log(`[EMERGENCY-ALERT] #${requestId} telemetry pushed OK`);
+      } catch (telemetryErr) {
+        console.warn(`[EMERGENCY-ALERT] #${requestId} saved locally; telemetry failed (non-critical):`, telemetryErr.message);
+      }
+    })();
   } catch (err) {
     console.error('Emergency alert error:', err);
     res.status(500).json({ error: 'Failed to process emergency alert.' });
@@ -204,6 +219,8 @@ router.post('/emergency-alert', auth, async (req, res) => {
 
 router.post('/symptoms', auth, aiLimiter, checkRole(['villager', 'ngo', 'admin']), logAudit('evaluate_symptoms', 'symptoms'), async (req, res) => {
   const db = req.app.locals.db;
+  const pool = req.app.locals.pool;
+  const usingSQLite = req.app.locals.usingSQLite;
   const AI_SERVICE_URL = req.app.locals.AI_SERVICE_URL;
   const text = sanitize(req.body.symptoms);
   const userId = req.user.id;
@@ -248,16 +265,32 @@ router.post('/symptoms', auth, aiLimiter, checkRole(['villager', 'ngo', 'admin']
     prediction = `${matchedName} - Reliable Advice: ${advice}`;
   }
 
-  await db.run(
-    'INSERT INTO symptoms ("userId", "villageId", symptoms, prediction, disease, advice, confidence, model_used) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-    [userId, villageId, text, prediction, disease, advice, confidence, model]
-  );
+  if (!usingSQLite && pool) {
+    await pool.query(
+      'INSERT INTO symptoms ("userId", "villageId", symptoms, prediction, disease, advice, confidence, model_used) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
+      [userId, villageId, text, prediction, disease, advice, confidence, model]
+    );
+  } else {
+    await db.run(
+      'INSERT INTO symptoms ("userId", "villageId", symptoms, prediction, disease, advice, confidence, model_used) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [userId, villageId, text, prediction, disease, advice, confidence, model]
+    );
+  }
 
   const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-  const logs = await db.all(
-    `SELECT id FROM symptoms WHERE "villageId" = ? AND "createdAt" >= ?`,
-    [villageId, oneDayAgo]
-  ).catch(() => []);
+  let logs = [];
+  if (!usingSQLite && pool) {
+    const resLogs = await pool.query(
+      `SELECT id FROM symptoms WHERE "villageId" = $1 AND "createdAt" >= $2`,
+      [villageId, oneDayAgo]
+    ).catch(() => ({ rows: [] }));
+    logs = resLogs.rows;
+  } else {
+    logs = await db.all(
+      `SELECT id FROM symptoms WHERE "villageId" = ? AND "createdAt" >= ?`,
+      [villageId, oneDayAgo]
+    ).catch(() => []);
+  }
   const alert = logs.length > 5 ? `⚠️ CLUSTER ALERT in ${villageId}: ${logs.length} similar cases detected.` : null;
   if (alert) eventEmitter.emit('outbreak_detected', { villageId, count: logs.length, prediction });
 
@@ -277,14 +310,23 @@ router.post('/symptoms', auth, aiLimiter, checkRole(['villager', 'ngo', 'admin']
 
 router.post('/skin-log', auth, async (req, res) => {
   const db = req.app.locals.db;
+  const pool = req.app.locals.pool;
+  const usingSQLite = req.app.locals.usingSQLite;
   const { condition, severity, rednessPercent, irregularPercent } = req.body;
   const userId = req.user.id;
   const villageId = req.user.villageId || 'v101';
   try {
-    await db.run(
-      'INSERT INTO skin_logs ("userId", "villageId", condition, severity, "rednessPercent", "irregularPercent") VALUES (?, ?, ?, ?, ?, ?)',
-      [userId, villageId, condition, severity, rednessPercent, irregularPercent]
-    );
+    if (!usingSQLite && pool) {
+      await pool.query(
+        'INSERT INTO skin_logs ("userId", "villageId", condition, severity, "rednessPercent", "irregularPercent") VALUES ($1, $2, $3, $4, $5, $6)',
+        [userId, villageId, condition, severity, rednessPercent, irregularPercent]
+      );
+    } else {
+      await db.run(
+        'INSERT INTO skin_logs ("userId", "villageId", condition, severity, "rednessPercent", "irregularPercent") VALUES (?, ?, ?, ?, ?, ?)',
+        [userId, villageId, condition, severity, rednessPercent, irregularPercent]
+      );
+    }
     res.status(201).send({ status: 'Logged' });
   } catch (err) {
     console.error('Failed to log skin condition:', err);
@@ -294,6 +336,7 @@ router.post('/skin-log', auth, async (req, res) => {
 
 router.post('/ambulance', auth, logAudit('request_ambulance', 'ambulance_requests'), async (req, res) => {
   const db = req.app.locals.db;
+  const pool = req.app.locals.pool;
   const usingSQLite = req.app.locals.usingSQLite;
   const name     = sanitize(req.body.name);
   const location = sanitize(req.body.location);
@@ -302,14 +345,15 @@ router.post('/ambulance', auth, logAudit('request_ambulance', 'ambulance_request
   const userId   = req.user.id;
   try {
     let recent = null;
-    if (usingSQLite) {
-      recent = await db.get(
-        `SELECT id FROM ambulance_requests WHERE user_id = ? AND created_at >= datetime('now', '-60 seconds')`,
+    if (!usingSQLite && pool) {
+      const recentRes = await pool.query(
+        `SELECT id FROM ambulance_requests WHERE user_id = $1 AND created_at >= NOW() - INTERVAL '60 seconds'`,
         [userId]
       );
+      recent = recentRes.rows[0];
     } else {
       recent = await db.get(
-        `SELECT id FROM ambulance_requests WHERE user_id = $1 AND created_at >= NOW() - INTERVAL '60 seconds'`,
+        `SELECT id FROM ambulance_requests WHERE user_id = ? AND created_at >= datetime('now', '-60 seconds')`,
         [userId]
       );
     }
@@ -320,31 +364,47 @@ router.post('/ambulance', auth, logAudit('request_ambulance', 'ambulance_request
       });
     }
 
-    const result = await db.run(
-      'INSERT INTO ambulance_requests (user_id, name, location, priority, request_type, symptoms, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [userId, name, location, priority, 'ambulance', sxy, 'pending']
-    );
+    let requestId;
+    if (!usingSQLite && pool) {
+      const result = await pool.query(
+        'INSERT INTO ambulance_requests (user_id, name, location, priority, request_type, symptoms, status) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id',
+        [userId, name, location, priority, 'ambulance', sxy, 'pending']
+      );
+      requestId = result.rows[0].id;
+    } else {
+      const result = await db.run(
+        'INSERT INTO ambulance_requests (user_id, name, location, priority, request_type, symptoms, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [userId, name, location, priority, 'ambulance', sxy, 'pending']
+      );
+      requestId = result.lastID;
+    }
 
-    const requestId  = result.lastID;
     const timestamp  = new Date().toISOString();
     const requestObj = { requestId, userId, name, location, priority, symptoms: sxy, status: 'pending', timestamp };
 
-    // Fix 2: derive real districtId from the village's record in the DB
-    const districtId = await getDistrictId(db, req.user.villageId || location);
-
-    await dynamoHelper.put('emergency_streams', {
-      districtId,
-      streamId: `amb-${requestId}-${Date.now()}`,
-      priority: priority || 'High',
-      ...requestObj
-    });
-
-    if (typeof req.app.locals.broadcastToAdmins === 'function') {
-      req.app.locals.broadcastToAdmins('ambulance', requestObj);
-    }
-
-    console.log(`[AMBULANCE] Request #${requestId} from user ${userId} — ${priority} at ${location} (district: ${districtId}) → SSE broadcast`);
+    // Return success immediately — the record is already saved.
+    // DynamoDB telemetry & SSE broadcast are best-effort (fire-and-forget).
     res.status(201).json({ status: 'dispatched', eta: '14 mins', requestId });
+
+    // Non-blocking: push to DynamoDB & broadcast to admin SSE stream
+    (async () => {
+      try {
+        const districtId = await getDistrictId(db, pool, usingSQLite, req.user.villageId || location);
+        await dynamoHelper.put('emergency_streams', {
+          districtId,
+          streamId: `amb-${requestId}-${Date.now()}`,
+          priority: priority || 'High',
+          ...requestObj
+        });
+        if (typeof req.app.locals.broadcastToAdmins === 'function') {
+          req.app.locals.broadcastToAdmins('ambulance', requestObj);
+        }
+        console.log(`[AMBULANCE] Request #${requestId} from user ${userId} — ${priority} at ${location} → SSE broadcast OK`);
+      } catch (telemetryErr) {
+        // Telemetry failure is non-critical
+        console.warn(`[AMBULANCE] Request #${requestId} saved locally; telemetry/SSE failed (non-critical):`, telemetryErr.message);
+      }
+    })();
   } catch (err) {
     console.error('[AMBULANCE ERROR]', err);
     res.status(500).json({
@@ -357,11 +417,22 @@ router.post('/ambulance', auth, logAudit('request_ambulance', 'ambulance_request
 
 router.get('/ambulance-status', auth, async (req, res) => {
   const db = req.app.locals.db;
+  const pool = req.app.locals.pool;
+  const usingSQLite = req.app.locals.usingSQLite;
   try {
-    const latest = await db.get(
-      'SELECT id, status, location, priority, created_at FROM ambulance_requests WHERE user_id = ? ORDER BY id DESC LIMIT 1',
-      [req.user.id]
-    );
+    let latest;
+    if (!usingSQLite && pool) {
+      const result = await pool.query(
+        'SELECT id, status, location, priority, created_at FROM ambulance_requests WHERE user_id = $1 ORDER BY id DESC LIMIT 1',
+        [req.user.id]
+      );
+      latest = result.rows[0];
+    } else {
+      latest = await db.get(
+        'SELECT id, status, location, priority, created_at FROM ambulance_requests WHERE user_id = ? ORDER BY id DESC LIMIT 1',
+        [req.user.id]
+      );
+    }
     if (!latest) return res.status(404).json({ error: 'No requests found.' });
     res.json(latest);
   } catch (err) {
@@ -371,15 +442,31 @@ router.get('/ambulance-status', auth, async (req, res) => {
 
 router.get('/my-history', auth, async (req, res) => {
   const db = req.app.locals.db;
+  const pool = req.app.locals.pool;
+  const usingSQLite = req.app.locals.usingSQLite;
   try {
-    const symptoms = await db.all(
-      'SELECT id, symptoms, prediction, "createdAt" FROM symptoms WHERE "userId" = ? ORDER BY id DESC LIMIT 5',
-      [req.user.id]
-    );
-    const ambulances = await db.all(
-      'SELECT id, location, priority, status, created_at FROM ambulance_requests WHERE user_id = ? ORDER BY id DESC LIMIT 5',
-      [req.user.id]
-    );
+    let symptoms, ambulances;
+    if (!usingSQLite && pool) {
+      const symptomsRes = await pool.query(
+        'SELECT id, symptoms, prediction, "createdAt" FROM symptoms WHERE "userId" = $1 ORDER BY id DESC LIMIT 5',
+        [req.user.id]
+      );
+      symptoms = symptomsRes.rows;
+      const ambulancesRes = await pool.query(
+        'SELECT id, location, priority, status, created_at FROM ambulance_requests WHERE user_id = $1 ORDER BY id DESC LIMIT 5',
+        [req.user.id]
+      );
+      ambulances = ambulancesRes.rows;
+    } else {
+      symptoms = await db.all(
+        'SELECT id, symptoms, prediction, "createdAt" FROM symptoms WHERE "userId" = ? ORDER BY id DESC LIMIT 5',
+        [req.user.id]
+      );
+      ambulances = await db.all(
+        'SELECT id, location, priority, status, created_at FROM ambulance_requests WHERE user_id = ? ORDER BY id DESC LIMIT 5',
+        [req.user.id]
+      );
+    }
     res.json({ symptoms, ambulances });
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch history.' });
@@ -388,25 +475,51 @@ router.get('/my-history', auth, async (req, res) => {
 
 router.get('/schemes', auth, async (req, res) => {
   const db = req.app.locals.db;
+  const pool = req.app.locals.pool;
+  const usingSQLite = req.app.locals.usingSQLite;
   try {
-    const user = await db.get('SELECT * FROM users WHERE id = ?', [req.user.id]);
+    let user;
+    if (!usingSQLite && pool) {
+      const resUser = await pool.query('SELECT * FROM users WHERE id = $1', [req.user.id]);
+      user = resUser.rows[0];
+    } else {
+      user = await db.get('SELECT * FROM users WHERE id = ?', [req.user.id]);
+    }
     if (!user) return res.status(404).send({ error: 'User not found.' });
 
     const { age, gender, economic_status, caste, area_type } = user;
 
-    const rows = await db.all(
-      `SELECT * FROM government_schemes
-       WHERE (min_age = 0 OR min_age <= ?)
-         AND (max_age = 120 OR max_age >= ?)
-         AND (gender_eligibility = 'all' OR gender_eligibility = ? OR ? IS NULL)
-         AND (
-           economic_status_eligibility = 'all'
-           OR economic_status_eligibility = ?
-           OR ? IS NULL
-         )
-       ORDER BY id`,
-      [age || 25, age || 25, gender || 'all', gender || null, economic_status || null, economic_status || null]
-    );
+    let rows;
+    if (!usingSQLite && pool) {
+      const resSchemes = await pool.query(
+        `SELECT * FROM government_schemes
+         WHERE (min_age = 0 OR min_age <= $1)
+           AND (max_age = 120 OR max_age >= $2)
+           AND (gender_eligibility = 'all' OR gender_eligibility = $3 OR $4 IS NULL)
+           AND (
+             economic_status_eligibility = 'all'
+             OR economic_status_eligibility = $5
+             OR $6 IS NULL
+           )
+         ORDER BY id`,
+        [age || 25, age || 25, gender || 'all', gender || null, economic_status || null, economic_status || null]
+      );
+      rows = resSchemes.rows;
+    } else {
+      rows = await db.all(
+        `SELECT * FROM government_schemes
+         WHERE (min_age = 0 OR min_age <= ?)
+           AND (max_age = 120 OR max_age >= ?)
+           AND (gender_eligibility = 'all' OR gender_eligibility = ? OR ? IS NULL)
+           AND (
+             economic_status_eligibility = 'all'
+             OR economic_status_eligibility = ?
+             OR ? IS NULL
+           )
+         ORDER BY id`,
+        [age || 25, age || 25, gender || 'all', gender || null, economic_status || null, economic_status || null]
+      );
+    }
 
     const schemes = rows.map(s => ({
       ...s,
@@ -423,8 +536,16 @@ router.get('/schemes', auth, async (req, res) => {
 
 router.get('/schemes/all', auth, async (req, res) => {
   const db = req.app.locals.db;
+  const pool = req.app.locals.pool;
+  const usingSQLite = req.app.locals.usingSQLite;
   try {
-    const rows = await db.all('SELECT * FROM government_schemes ORDER BY id');
+    let rows;
+    if (!usingSQLite && pool) {
+      const resSchemes = await pool.query('SELECT * FROM government_schemes ORDER BY id');
+      rows = resSchemes.rows;
+    } else {
+      rows = await db.all('SELECT * FROM government_schemes ORDER BY id');
+    }
     const schemes = rows.map(s => ({
       ...s,
       steps: s.steps ? s.steps.split('|') : [],
@@ -438,8 +559,16 @@ router.get('/schemes/all', auth, async (req, res) => {
 
 router.get('/schemes/:id', auth, async (req, res) => {
   const db = req.app.locals.db;
+  const pool = req.app.locals.pool;
+  const usingSQLite = req.app.locals.usingSQLite;
   try {
-    const scheme = await db.get('SELECT * FROM government_schemes WHERE id = ?', [req.params.id]);
+    let scheme;
+    if (!usingSQLite && pool) {
+      const resScheme = await pool.query('SELECT * FROM government_schemes WHERE id = $1', [req.params.id]);
+      scheme = resScheme.rows[0];
+    } else {
+      scheme = await db.get('SELECT * FROM government_schemes WHERE id = ?', [req.params.id]);
+    }
     if (!scheme) return res.status(404).send({ error: 'Scheme not found.' });
     scheme.steps = scheme.steps ? scheme.steps.split('|') : [];
     scheme.required_documents = scheme.required_documents ? scheme.required_documents.split(',') : [];
@@ -451,15 +580,25 @@ router.get('/schemes/:id', auth, async (req, res) => {
 
 router.post('/villager/pad-request', auth, logAudit('request_pads', 'ambulance_requests'), async (req, res) => {
   const db = req.app.locals.db;
+  const pool = req.app.locals.pool;
+  const usingSQLite = req.app.locals.usingSQLite;
   const { village } = req.body;
   if (!village) return res.status(400).send({ error: 'Village name is required.' });
   try {
-    const userRecord = await db.get('SELECT name FROM users WHERE id = ?', [req.user.id]);
-    const userName = userRecord?.name || 'Unknown Villager';
-
-    await db.run('INSERT INTO ambulance_requests (user_id, name, location, priority, request_type, symptoms, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [req.user.id, userName, village, 'Low', 'pad_request', 'Requires Sanitary Pads delivered to village.', 'pending']
-    );
+    let userName = 'Unknown Villager';
+    if (!usingSQLite && pool) {
+      const userRecord = await pool.query('SELECT name FROM users WHERE id = $1', [req.user.id]);
+      userName = userRecord.rows[0]?.name || 'Unknown Villager';
+      await pool.query('INSERT INTO ambulance_requests (user_id, name, location, priority, request_type, symptoms, status) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+        [req.user.id, userName, village, 'Low', 'pad_request', 'Requires Sanitary Pads delivered to village.', 'pending']
+      );
+    } else {
+      const userRecord = await db.get('SELECT name FROM users WHERE id = ?', [req.user.id]);
+      userName = userRecord?.name || 'Unknown Villager';
+      await db.run('INSERT INTO ambulance_requests (user_id, name, location, priority, request_type, symptoms, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [req.user.id, userName, village, 'Low', 'pad_request', 'Requires Sanitary Pads delivered to village.', 'pending']
+      );
+    }
     res.send({ success: true });
   } catch (err) {
     console.error(err);
@@ -638,6 +777,8 @@ router.post('/villager/sync-health', auth, async (req, res) => {
 // POST /villager/phq2 — Patient Health Questionnaire-2 mental health triage screener
 router.post('/villager/phq2', auth, logAudit('evaluate_mental_health', 'symptoms'), async (req, res) => {
   const db = req.app.locals.db;
+  const pool = req.app.locals.pool;
+  const usingSQLite = req.app.locals.usingSQLite;
   const { interest_score, mood_score } = req.body;
 
   if (interest_score === undefined || mood_score === undefined) {
@@ -652,21 +793,37 @@ router.post('/villager/phq2', auth, logAudit('evaluate_mental_health', 'symptoms
 
   try {
     const villageId = req.user.villageId || 'unassigned';
-    await db.run(
-      `INSERT INTO symptoms ("userId", "villageId", symptoms, prediction, disease, advice, confidence, model_used)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [req.user.id, villageId, `PHQ-2 score: ${score} (Interest: ${interest_score}, Mood: ${mood_score})`, advice, 'Depression Screen (PHQ-2)', advice, 1.0, 'PHQ-2 Screener']
-    );
+    if (!usingSQLite && pool) {
+      await pool.query(
+        `INSERT INTO symptoms ("userId", "villageId", symptoms, prediction, disease, advice, confidence, model_used)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        [req.user.id, villageId, `PHQ-2 score: ${score} (Interest: ${interest_score}, Mood: ${mood_score})`, advice, 'Depression Screen (PHQ-2)', advice, 1.0, 'PHQ-2 Screener']
+      );
+    } else {
+      await db.run(
+        `INSERT INTO symptoms ("userId", "villageId", symptoms, prediction, disease, advice, confidence, model_used)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [req.user.id, villageId, `PHQ-2 score: ${score} (Interest: ${interest_score}, Mood: ${mood_score})`, advice, 'Depression Screen (PHQ-2)', advice, 1.0, 'PHQ-2 Screener']
+      );
+    }
 
     if (positiveScreen) {
       const userName = req.user.name || 'Anonymous Villager';
       const userPhone = req.user.phone || null;
       
-      await db.run(
-        `INSERT INTO referrals (patient_name, patient_phone, "villageId", referred_by, referred_to, reason, priority, notes, status)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
-        [userName, userPhone, villageId, req.user.id, 'Mental Health Center / PHC', `Positive PHQ-2 Screen (Score: ${score}/6)`, 'urgent', 'Auto-generated via PHQ-2 Screening']
-      );
+      if (!usingSQLite && pool) {
+        await pool.query(
+          `INSERT INTO referrals (patient_name, patient_phone, "villageId", referred_by, referred_to, reason, priority, notes, status)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending')`,
+          [userName, userPhone, villageId, req.user.id, 'Mental Health Center / PHC', `Positive PHQ-2 Screen (Score: ${score}/6)`, 'urgent', 'Auto-generated via PHQ-2 Screening']
+        );
+      } else {
+        await db.run(
+          `INSERT INTO referrals (patient_name, patient_phone, "villageId", referred_by, referred_to, reason, priority, notes, status)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
+          [userName, userPhone, villageId, req.user.id, 'Mental Health Center / PHC', `Positive PHQ-2 Screen (Score: ${score}/6)`, 'urgent', 'Auto-generated via PHQ-2 Screening']
+        );
+      }
     }
 
     res.json({ success: true, score, positiveScreen, advice });

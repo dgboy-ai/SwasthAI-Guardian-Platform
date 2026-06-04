@@ -235,7 +235,6 @@ export default function SymptomCheckerPage() {
         const tier = getSeverityTier(selectedSymptoms, cached.prediction || '', otherSymptom);
         const finalRes = { ...tier, aiResult: cached.prediction, fromCache: true };
         setResult(finalRes);
-        speakResult(finalRes);
         setLoading(false);
         return;
       }
@@ -250,7 +249,6 @@ export default function SymptomCheckerPage() {
       const tier = getSeverityTier(selectedSymptoms, aiPrediction, otherSymptom);
       const finalRes = { ...tier, aiResult: aiPrediction };
       setResult(finalRes);
-      speakResult(finalRes);
       if (alert) setOutbreakAlert(alert);
 
       // ── Cache the fresh result ─────────────────────────────────────────────
@@ -265,7 +263,6 @@ export default function SymptomCheckerPage() {
         const tier = getSeverityTier(selectedSymptoms, '', otherSymptom);
         const finalRes = { ...tier, offline: true, error: true };
         setResult(finalRes);
-        speakResult(finalRes);
         
         // Queue the failed request for replay on reconnect
         queueSymptomCheck({

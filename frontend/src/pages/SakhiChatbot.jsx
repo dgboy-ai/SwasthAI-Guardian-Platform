@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import {
   MessageCircle, HeartPulse, Mic, AlertTriangle, Send,
@@ -282,7 +282,6 @@ export default function SakhiChatbot() {
             urgency: matchedTip.urgency,
             grounded: false,
           }]);
-          if (matchedTip.urgency !== 'P4') speakResponse(matchedTip.a, speakLang, matchedTip.urgency);
         } else {
           const fallbackText = OFFLINE_FALLBACK_CHAT_REPLIES[lang] || OFFLINE_FALLBACK_CHAT_REPLIES['hi'];
           setMessages(prev => [...prev, {
@@ -292,7 +291,6 @@ export default function SakhiChatbot() {
             urgency: "P4",
             grounded: false,
           }]);
-          speakResponse(fallbackText, speakLang);
         }
         setLoading(false);
       }, 600);
@@ -308,9 +306,6 @@ export default function SakhiChatbot() {
         urgency: res.data.urgency  || 'P4',
         grounded: res.data.grounded,
       }]);
-      if (res.data.urgency === 'P1' || res.data.urgency === 'P2') {
-        speakResponse(res.data.reply, speakLang, res.data.urgency);
-      }
     } catch (err) {
       const matchedTip = findOfflineTip(userMsg, lang);
       if (matchedTip) {
@@ -321,7 +316,6 @@ export default function SakhiChatbot() {
           urgency: matchedTip.urgency,
           grounded: false,
         }]);
-        speakResponse(matchedTip.a, speakLang, matchedTip.urgency);
       } else {
         setMessages(prev => [...prev, {
           role: 'ai',
