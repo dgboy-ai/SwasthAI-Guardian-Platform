@@ -52,6 +52,36 @@ router.post('/seed-demo-data', auth, checkRole(['admin']), async (req, res) => {
   }
 });
 
+// GET /api/admin/users — registry for district admin (judges / demos)
+router.get('/users', auth, checkRole(['admin']), async (req, res) => {
+  const db = req.app.locals.db;
+  try {
+    const limit = Math.min(parseInt(req.query.limit) || 100, 200);
+    const rows = await db.all(
+      'SELECT id, name, phone, email, username, role, "villageId" FROM users ORDER BY id DESC LIMIT ?',
+      [limit]
+    );
+    res.send(rows || []);
+  } catch (err) {
+    sendError(res, 500, 'USERS_FETCH_FAILED', 'Failed to fetch users', err.message);
+  }
+});
+
+router.put('/users/:id/role', auth, checkRole(['admin']), async (req, res) => {
+  const db = req.app.locals.db;
+  const { role } = req.body;
+  const allowed = ['villager', 'ngo', 'admin'];
+  if (!allowed.includes(role)) {
+    return sendError(res, 400, 'INVALID_ROLE', `Role must be one of: ${allowed.join(', ')}`);
+  }
+  try {
+    await db.run('UPDATE users SET role = ? WHERE id = ?', [role, req.params.id]);
+    res.send({ success: true, userId: req.params.id, role });
+  } catch (err) {
+    sendError(res, 500, 'ROLE_UPDATE_FAILED', 'Failed to update user role', err.message);
+  }
+});
+
 router.get('/analytics', auth, checkRole(['admin']), async (req, res) => {
   const db = req.app.locals.db;
   try {

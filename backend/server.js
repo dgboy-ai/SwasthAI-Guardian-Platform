@@ -328,12 +328,21 @@ if (isProduction && cluster.isPrimary) {
   app.get('/api/health/detailed', async (req, res) => {
     let dbUserCount = null;
     let dbVillageCount = null;
+    let padRequestCount = null;
+    let ambulanceCount = null;
     try {
       const userRow    = await db.get('SELECT COUNT(*) as cnt FROM users');
       const villageRow = await db.get('SELECT COUNT(*) as cnt FROM village_health');
-      dbUserCount    = parseInt(userRow?.cnt  || userRow?.count || 0);
-      dbVillageCount = parseInt(villageRow?.cnt || villageRow?.count || 0);
+      const padRow     = await db.get("SELECT COUNT(*) as cnt FROM ambulance_requests WHERE request_type = 'pad_request'");
+      const ambRow     = await db.get("SELECT COUNT(*) as cnt FROM ambulance_requests WHERE request_type = 'ambulance'");
+      dbUserCount      = parseInt(userRow?.cnt  || userRow?.count || 0, 10);
+      dbVillageCount   = parseInt(villageRow?.cnt || villageRow?.count || 0, 10);
+      padRequestCount  = parseInt(padRow?.cnt || padRow?.count || 0, 10);
+      ambulanceCount   = parseInt(ambRow?.cnt || ambRow?.count || 0, 10);
     } catch (_) { /* tables may not exist in SQLite dev mode */ }
+
+    const auroraConnected = !usingSQLite && !!pool;
+    const dynamoConnected = !dynamoHelper.isMock;
 
     res.json({
       service:   'SwasthAI Guardian — District Health Command Platform',
@@ -347,21 +356,34 @@ if (isProduction && cluster.isPrimary) {
       },
       databases: {
         aurora_postgresql: {
-          status:           usingSQLite ? 'SQLite fallback (set DATABASE_URL for Aurora)' : 'connected',
+          status:           auroraConnected ? 'connected' : (usingSQLite ? 'SQLite fallback (set DATABASE_URL for Aurora)' : 'disconnected'),
           engine:           usingSQLite ? 'SQLite 3' : 'Amazon Aurora PostgreSQL',
           region:           usingSQLite ? 'local' : (process.env.AWS_REGION || 'ap-south-1'),
           registered_users: dbUserCount,
           monitored_villages: dbVillageCount,
+          pad_requests:     padRequestCount,
+          ambulance_requests: ambulanceCount,
           pool:             pool ? { total: pool.totalCount, idle: pool.idleCount, waiting: pool.waitingCount } : null,
-          rationale:        'ACID compliance for medical records — a corrupted pregnancy record could cost a life'
+          rationale:        'ACID compliance for medical records — a corrupted pregnancy record could cost a life',
+          production_setup: usingSQLite ? 'Set DATABASE_URL to your RDS/Aurora endpoint on Render' : null,
         },
         dynamodb: {
-          status:    dynamoHelper.isMock ? 'mock (set AWS_ACCESS_KEY_ID for real DynamoDB)' : 'connected',
+          status:    dynamoConnected ? 'connected' : 'mock (set AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY)',
           region:    process.env.AWS_REGION || 'ap-south-1',
           billing:   'PAY_PER_REQUEST (serverless scaling)',
           tables:    dynamoHelper.schema,
-          rationale: 'Millisecond write latency for outbreak telemetry — a disease cluster must be recorded instantly'
+          rationale: 'Millisecond write latency for outbreak telemetry — a disease cluster must be recorded instantly',
+          production_setup: dynamoHelper.isMock
+            ? 'Add IAM keys with DynamoDB access; tables: outbreak_telemetry, sync_queues, village_node_state, emergency_streams'
+            : null,
         }
+      },
+      production_ready: auroraConnected && dynamoConnected,
+      demo_credentials: {
+        villager_otp: '1234 (any 10-digit phone)',
+        asha_phone: '9876543211',
+        admin_phone: '9876543212',
+        asha_registration_passcode: 'ASHA2026',
       },
       ai_service: {
         url:     AI_SERVICE_URL,

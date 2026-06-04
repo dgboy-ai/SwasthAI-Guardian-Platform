@@ -11,20 +11,20 @@ const ngoService = {
     }
   },
 
-  // Pregnancy Tracker
+  // Pregnancy Tracker (backend: POST /api/ngo/maternal)
   trackPregnancy: async (data) => {
     try {
-      const res = await api.post('/ngo/pregnancy-tracker', data);
+      const res = await api.post('/ngo/maternal', data);
       return res.data;
     } catch (error) {
       throw error.response?.data?.error || 'Failed to track pregnancy';
     }
   },
 
-  // Village Health Data
+  // Village Health Data (backend: POST /api/ngo/village — upsert by villageId)
   updateVillageData: async (villageId, data) => {
     try {
-      const res = await api.put(`/ngo/village/${villageId}`, data);
+      const res = await api.post('/ngo/village', { villageId, ...data });
       return res.data;
     } catch (error) {
       throw error.response?.data?.error || 'Failed to update village data';

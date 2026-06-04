@@ -361,5 +361,53 @@ router.get('/outbreaks', auth, checkRole(['ngo', 'admin']), async (req, res) => 
   }
 });
 
+// GET /api/ngo/stats — dashboard counters for ASHA portal
+router.get('/stats', auth, checkRole(['ngo', 'admin']), async (req, res) => {
+  const db = req.app.locals.db;
+  const count = (row) => parseInt(row?.c ?? row?.cnt ?? row?.count ?? 0, 10);
+  try {
+    const [ambulances, pads, pregnancies, malnutrition, villagers] = await Promise.all([
+      db.get("SELECT COUNT(*) as c FROM ambulance_requests WHERE request_type = 'ambulance'"),
+      db.get("SELECT COUNT(*) as c FROM ambulance_requests WHERE request_type = 'pad_request'"),
+      db.get('SELECT COUNT(*) as c FROM pregnancy_data'),
+      db.get("SELECT COUNT(*) as c FROM malnutrition_data WHERE status != 'Normal'"),
+      db.get("SELECT COUNT(*) as c FROM users WHERE role = 'villager'"),
+    ]);
+    res.json({
+      ambulances: count(ambulances),
+      pad_requests: count(pads),
+      pregnancies: count(pregnancies),
+      malnutrition_alerts: count(malnutrition),
+      registered_villagers: count(villagers),
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ error: 'Failed to fetch NGO statistics.' });
+  }
+});
+
+// GET /api/ngo/residents — villagers in ASHA worker's village (or all for admin)
+router.get('/residents', auth, checkRole(['ngo', 'admin']), async (req, res) => {
+  const db = req.app.locals.db;
+  try {
+    const villageId = req.user.role === 'admin' ? req.query.villageId : req.user.villageId;
+    let rows;
+    if (villageId) {
+      rows = await db.all(
+        'SELECT id, name, phone, username, "villageId" FROM users WHERE role = ? AND "villageId" = ? ORDER BY name ASC LIMIT 200',
+        ['villager', villageId]
+      );
+    } else {
+      rows = await db.all(
+        "SELECT id, name, phone, username, \"villageId\" FROM users WHERE role = 'villager' ORDER BY name ASC LIMIT 200"
+      );
+    }
+    res.send(rows || []);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ error: 'Failed to fetch residents.' });
+  }
+});
+
 export default router;
 

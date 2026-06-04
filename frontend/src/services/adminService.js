@@ -94,10 +94,11 @@ const adminService = {
     }
   },
 
+  /** Outbreak + symptom alerts (backend has no /admin/alerts — uses outbreaks feed) */
   getGlobalAlerts: async () => {
     try {
-      const res = await api.get('/admin/alerts');
-      return res.data;
+      const res = await api.get('/admin/outbreaks');
+      return res.data?.outbreaks ?? res.data ?? [];
     } catch (error) {
       throw error.response?.data?.error || 'Failed to fetch global alerts';
     }
@@ -113,10 +114,10 @@ const adminService = {
     }
   },
 
-  // System Configuration & AI Diagnostics
+  // Full stack status for judges (backend: GET /api/health/detailed)
   getSystemStatus: async () => {
     try {
-      const res = await api.get('/admin/status');
+      const res = await api.get('/health/detailed');
       return res.data;
     } catch (error) {
       throw error.response?.data?.error || 'Failed to fetch system status';

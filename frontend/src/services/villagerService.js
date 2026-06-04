@@ -97,7 +97,7 @@ const villagerService = {
   // Sakhi AI Chatbot Assistant
   askHealthAssistant: async (query, history = []) => {
     try {
-      const res = await api.post('/health-assistant', { query, history });
+      const res = await api.post('/health-assistant', { message: query, history });
       return res.data;
     } catch (error) {
       throw error.response?.data?.error || 'AI Assistant failed';
