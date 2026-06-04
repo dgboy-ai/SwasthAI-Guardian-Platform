@@ -31,7 +31,8 @@ const RegisterSchema = z.object({
   age: z.number().int().min(0).max(125).optional().nullable(),
   economic_status: z.string().optional().nullable(),
   caste: z.string().optional().nullable(),
-  area_type: z.string().optional().nullable()
+  area_type: z.string().optional().nullable(),
+  passcode: z.string().optional().nullable()
 });
 
 const RequestOtpSchema = z.object({
@@ -127,7 +128,15 @@ router.post('/register', async (req, res) => {
     return res.status(400).json({ error: parseResult.error.errors[0].message });
   }
 
-  const { phone, email, username, name, password, role, villageId, gender, age, economic_status, caste, area_type } = parseResult.data;
+  const { phone, email, username, name, password, role, villageId, gender, age, economic_status, caste, area_type, passcode } = parseResult.data;
+
+  if (role === 'ngo' && passcode !== (process.env.NGO_REGISTRATION_PASSCODE || 'ASHA2026')) {
+    return res.status(400).json({ error: 'Invalid ASHA/NGO registration passcode.' });
+  }
+  if (role === 'admin' && passcode !== (process.env.ADMIN_REGISTRATION_PASSCODE || 'ADMIN2026')) {
+    return res.status(400).json({ error: 'Invalid Admin registration passcode.' });
+  }
+
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
     const result = await db.run(

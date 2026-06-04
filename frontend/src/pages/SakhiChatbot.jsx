@@ -248,27 +248,11 @@ export default function SakhiChatbot() {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages]);
 
-  const findOfflineTip = (msg, lang) => {
-    const offlineTips = OFFLINE_TIPS_BY_LANG[lang] || OFFLINE_TIPS_BY_LANG['hi'];
-    const cleanMsg = msg.toLowerCase();
-    if (cleanMsg.includes('pain') || cleanMsg.includes('dard') || cleanMsg.includes('cramp') || cleanMsg.includes('pet') || cleanMsg.includes('peth') || cleanMsg.includes('வலி') || cleanMsg.includes('నొప్పి') || cleanMsg.includes('ব্যথা') || cleanMsg.includes('पोटदुखी')) return offlineTips[1];
-    if (cleanMsg.includes('heavy') || cleanMsg.includes('bleed') || cleanMsg.includes('khoon') || cleanMsg.includes('bahaw') || cleanMsg.includes('रक्त') || cleanMsg.includes('இரத்த') || cleanMsg.includes('రక్త') || cleanMsg.includes('রক্ত')) return offlineTips[0];
-    if (cleanMsg.includes('often') || cleanMsg.includes('change') || cleanMsg.includes('pad') || cleanMsg.includes('hours') || cleanMsg.includes('ghante') || cleanMsg.includes('पॅड') || cleanMsg.includes('பேட்') || cleanMsg.includes('ప్యాడ్') || cleanMsg.includes('প্যাড')) return offlineTips[2];
-    if (cleanMsg.includes('food') || cleanMsg.includes('iron') || cleanMsg.includes('eat') || cleanMsg.includes('diet') || cleanMsg.includes('nutrition') || cleanMsg.includes('पालक') || cleanMsg.includes('गुड़') || cleanMsg.includes('गूळ') || cleanMsg.includes('உணவு') || cleanMsg.includes('ఆహారం') || cleanMsg.includes('খাবার')) return offlineTips[3];
-    if (cleanMsg.includes('rash') || cleanMsg.includes('itch') || cleanMsg.includes('clean') || cleanMsg.includes('khujli') || cleanMsg.includes('खुजली') || cleanMsg.includes('खाज') || cleanMsg.includes('அரிப்பு') || cleanMsg.includes('దురద') || cleanMsg.includes('চুলকানি')) return offlineTips[4];
-    if (cleanMsg.includes('miss') || cleanMsg.includes('late') || cleanMsg.includes('irregular') || cleanMsg.includes('cycle') || cleanMsg.includes('deeri') || cleanMsg.includes('चक्र') || cleanMsg.includes('முறையற்ற') || cleanMsg.includes('క్రమం') || cleanMsg.includes('অনিয়মিত')) return offlineTips[5];
-    if (cleanMsg.includes('cloth') || cleanMsg.includes('wash') || cleanMsg.includes('dry') || cleanMsg.includes('sun') || cleanMsg.includes('kapd') || cleanMsg.includes('dho') || cleanMsg.includes('sukha') || cleanMsg.includes('कापड') || cleanMsg.includes('துணி') || cleanMsg.includes('వస్త్రం') || cleanMsg.includes('কাপড়')) return offlineTips[6];
-    if (cleanMsg.includes('smell') || cleanMsg.includes('foul') || cleanMsg.includes('white') || cleanMsg.includes('discharge') || cleanMsg.includes('infection') || cleanMsg.includes('badbu') || cleanMsg.includes('gandh') || cleanMsg.includes('safed') || cleanMsg.includes('pani') || cleanMsg.includes('दुर्गंध') || cleanMsg.includes('துர்நாற்றம்') || cleanMsg.includes('వాసన') || cleanMsg.includes('গন্ধ')) return offlineTips[7];
-    if (cleanMsg.includes('bath') || cleanMsg.includes('bathe') || cleanMsg.includes('nahana') || cleanMsg.includes('snan') || cleanMsg.includes('आंघोळ') || cleanMsg.includes('குளிக்க') || cleanMsg.includes('స్నానం') || cleanMsg.includes('স্নান')) return offlineTips[8];
-    if (cleanMsg.includes('sour') || cleanMsg.includes('pickle') || cleanMsg.includes('curd') || cleanMsg.includes('kitchen') || cleanMsg.includes('achar') || cleanMsg.includes('khatta') || cleanMsg.includes('rasoi') || cleanMsg.includes('myth') || cleanMsg.includes('अंधविश्वास') || cleanMsg.includes('लोणचे') || cleanMsg.includes('ஊறகாய்') || cleanMsg.includes('పుల్లటి') || cleanMsg.includes('আচার')) return offlineTips[9];
-    return null;
-  };
-
   const handleSend = async (overrideText = null) => {
     const userMsg = (overrideText || input).trim();
     if (!userMsg || loading) return;
     setInput('');
-    setMessages(prev => [...prev, { role: 'user', text: userMsg }]);
+    setMessages(prev => [...prev, { role: 'user', text: userMsg }].slice(-100));
     setLoading(true);
 
     if (!isOnline) {
@@ -281,7 +265,7 @@ export default function SakhiChatbot() {
             sources: [matchedTip.src],
             urgency: matchedTip.urgency,
             grounded: false,
-          }]);
+          }].slice(-100));
         } else {
           const fallbackText = OFFLINE_FALLBACK_CHAT_REPLIES[lang] || OFFLINE_FALLBACK_CHAT_REPLIES['hi'];
           setMessages(prev => [...prev, {
@@ -290,7 +274,7 @@ export default function SakhiChatbot() {
             sources: ["Sakhi Local Memory (Offline)"],
             urgency: "P4",
             grounded: false,
-          }]);
+          }].slice(-100));
         }
         setLoading(false);
       }, 600);
@@ -305,7 +289,7 @@ export default function SakhiChatbot() {
         sources: res.data.sources  || [],
         urgency: res.data.urgency  || 'P4',
         grounded: res.data.grounded,
-      }]);
+      }].slice(-100));
     } catch (err) {
       const matchedTip = findOfflineTip(userMsg, lang);
       if (matchedTip) {
@@ -315,14 +299,14 @@ export default function SakhiChatbot() {
           sources: [matchedTip.src],
           urgency: matchedTip.urgency,
           grounded: false,
-        }]);
+        }].slice(-100));
       } else {
         setMessages(prev => [...prev, {
           role: 'ai',
           text: t.menstrual?.sakhi_error || 'I could not process your question right now. Please try again.',
           isError: true,
           grounded: false,
-        }]);
+        }].slice(-100));
       }
     } finally {
       setLoading(false);

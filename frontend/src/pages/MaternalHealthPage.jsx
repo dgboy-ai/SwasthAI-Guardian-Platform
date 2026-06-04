@@ -42,6 +42,7 @@ function VitalSlider({ label, unit, min, max, value, onChange, dangerAbove, warn
 // LocalStorage helpers removed — migrated to centralized IndexedDB queue in offlineSyncQueue.js
 
 function MaternalForm({ onSave, onClose }) {
+  const navigate = useNavigate();
   const [form, setForm] = useState({ name: '', age: '', trimester: 1, dueDate: '' });
   const [vitals, setVitals] = useState({ systolic_bp: 115, diastolic_bp: 75, bs: 5.0, heart_rate: 78 });
   const [loading, setLoading] = useState(false);
@@ -69,7 +70,7 @@ function MaternalForm({ onSave, onClose }) {
       if (err.response?.status === 401) {
         alert('Your session has expired. Please log in again.');
         localStorage.removeItem('token');
-        window.location.href = '/login';
+        navigate('/login');
         return;
       }
       
@@ -242,7 +243,7 @@ export default function MaternalHealthPage() {
       if (err.response?.status === 401) {
         alert('Your session has expired. Please log in again.');
         localStorage.removeItem('token');
-        window.location.href = '/login';
+        navigate('/login');
         return;
       }
       

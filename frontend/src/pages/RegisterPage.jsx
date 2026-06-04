@@ -19,6 +19,7 @@ export default function RegisterPage() {
     password: '',
     role: 'villager',
     villageId: 'v101',
+    passcode: '',
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -43,6 +44,15 @@ export default function RegisterPage() {
       }
       if (!formData.phone && !formData.email) {
         throw new Error('Please provide at least a phone number or email address.');
+      }
+      if ((formData.role === 'ngo' || formData.role === 'admin') && !formData.passcode) {
+        throw new Error('Passcode is required for NGO/Admin registration.');
+      }
+      if (formData.role === 'ngo' && formData.passcode !== 'ASHA2026') {
+        throw new Error('Invalid ASHA/NGO registration passcode.');
+      }
+      if (formData.role === 'admin' && formData.passcode !== 'ADMIN2026') {
+        throw new Error('Invalid Admin registration passcode.');
       }
       await register(formData);
       const identifier = formData.email || formData.phone;
@@ -330,6 +340,29 @@ export default function RegisterPage() {
                 />
               </div>
             </div>
+
+            {/* Passcode (conditionally shown for NGO and Admin) */}
+            {(formData.role === 'ngo' || formData.role === 'admin') && (
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                  {formData.role === 'ngo' ? 'ASHA Worker Passcode' : 'Admin Passcode'}
+                </label>
+                <div className="relative group">
+                  <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-slate-300 group-focus-within:text-emerald-500 transition-colors">
+                    <Shield className="w-4 h-4" />
+                  </div>
+                  <input
+                    type="password"
+                    name="passcode"
+                    value={formData.passcode}
+                    onChange={handleInputChange}
+                    placeholder={formData.role === 'ngo' ? 'e.g. ASHA2026' : 'e.g. ADMIN2026'}
+                    required
+                    className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 text-sm font-bold text-slate-900 outline-none transition-all placeholder:text-slate-300"
+                  />
+                </div>
+              </div>
+            )}
 
             {/* Submit */}
             <motion.button
