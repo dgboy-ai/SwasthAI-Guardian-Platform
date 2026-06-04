@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { WifiOff, Wifi, X, CheckCircle, AlertCircle } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
+import { syncAllQueues } from '../utils/offlineSyncQueue';
 
 // ── Per-language offline/online messages ─────────────────────────────────────
 // Written in the simplest possible words a rural villager would understand
@@ -75,6 +76,10 @@ export default function OfflineToast() {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [toastType, setToastType] = useState(null); // 'offline' | 'online' | null
   const [expanded, setExpanded] = useState(false);
+  // wasOnlineRef is intentionally initialized from navigator.onLine.
+  // On first mount, if the device is already online, wasOnlineRef.current = true,
+  // preventing the "Back Online" toast from showing redundantly on initial load.
+  // This is correct behavior to avoid spamming the user.
   const wasOnlineRef = useRef(navigator.onLine);
   const onlineTimerRef = useRef(null);
 
@@ -95,6 +100,8 @@ export default function OfflineToast() {
       if (!wasOnlineRef.current) {
         setToastType('online');
         setExpanded(false);
+        // Trigger queue sync on online event
+        syncAllQueues().catch(err => console.error('Failed to sync offline queues:', err));
         // Auto-dismiss the "back online" toast after 4 seconds
         onlineTimerRef.current = setTimeout(() => {
           setToastType(null);

@@ -233,12 +233,27 @@ export default function NGODashboard() {
   };
 
   const updateStatus = async (id, status, type) => {
+    // ── Optimistic Update Pattern ──
+    const prevAmbulances = [...ambulances];
+    const prevPads = [...pads];
+
+    if (type === 'pad') {
+      setPads(prev => prev.map(p => p.id === id ? { ...p, status } : p));
+    } else {
+      setAmbulances(prev => prev.map(a => a.id === id ? { ...a, status } : a));
+    }
+
     try {
       await ngoService.updateRequestStatus(id, status);
-      // Only re-fetch the list that actually changed
+      // Re-fetch in background to keep data in sync
       if (type === 'pad') fetchPads();
       else fetchAmbulances();
-    } catch (e) { alert('Failed to update status: ' + (typeof e === 'string' ? e : e?.message)); }
+    } catch (e) {
+      // Rollback on failure
+      setPads(prevPads);
+      setAmbulances(prevAmbulances);
+      alert('Failed to update status: ' + (typeof e === 'string' ? e : e?.message));
+    }
   };
 
   const tabs = [

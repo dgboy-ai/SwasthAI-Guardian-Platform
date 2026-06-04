@@ -25,23 +25,7 @@ const NAV_ITEMS = [
   { id: 'system',    label: 'System Status',    icon: Settings        },
 ];
 
-/* ─── Static demo data (shown when backend is offline) ───────────────────── */
-const DEMO_STATS    = { pregnancies: 126, malnutrition: 248, villages: 4, today_symptoms: 12 };
-const DEMO_SUMMARY  = { totalUsers: 3842, totalNgos: 47, emergencyCount: 7, sanitaryCount: 23, totalRequests: 4198 };
-const DEMO_OUTBREAKS = [
-  { id: 1, villageId: '47',  classification: 'Fever Cluster',     symptomPattern: 'High fever + body ache reported in 6 cases', action: 'Deploy ASHA workers to Village 47. Screen all children under 10.', confidence: 0.91, detectedAt: new Date(Date.now() - 480000).toISOString()  },
-  { id: 2, villageId: '12',  classification: 'Diarrheal Signal',  symptomPattern: 'Watery stools + dehydration in 4 cases',       action: 'Distribute ORS packets. Inspect water sources in Block C.',       confidence: 0.78, detectedAt: new Date(Date.now() - 1500000).toISOString() },
-  { id: 3, villageId: '8',   classification: 'Respiratory Cases', symptomPattern: 'Cough + cold cluster — 5 cases in 12 hours',   action: 'Activate TB screening protocol. Refer 2 cases to PHC.',           confidence: 0.84, detectedAt: new Date(Date.now() - 3600000).toISOString() },
-  { id: 4, villageId: '21',  classification: 'Fever Cluster',     symptomPattern: 'Malaria-like symptoms in northern zone',        action: 'RDT testing for all reported cases. Spray prophylactic.',         confidence: 0.76, detectedAt: new Date(Date.now() - 7200000).toISOString() },
-  { id: 5, villageId: '3',   classification: 'Skin Rash Cluster', symptomPattern: 'Rash + itching in 5 children under 5',         action: 'Scabies treatment kits required. Hygiene drive needed.',           confidence: 0.69, detectedAt: new Date(Date.now() - 10800000).toISOString()},
-];
-const DEMO_AMBULANCES = [
-  { user_id: 101, name: 'Priya Sharma',  type: 'emergency', location: 'Sehore CHC Road, Block B',   priority: 'Critical', status: 'in_progress', created_at: new Date(Date.now() - 720000).toISOString()   },
-  { user_id: 102, name: 'Ramesh Verma',  type: 'emergency', location: 'Budhni Village, NH-46',       priority: 'High',     status: 'assigned',    created_at: new Date(Date.now() - 1800000).toISOString()  },
-  { user_id: 103, name: 'Sunita Patel',  type: 'routine',   location: 'Nasrullaganj PHC',            priority: 'Normal',   status: 'completed',   created_at: new Date(Date.now() - 3600000).toISOString()  },
-  { user_id: 104, name: 'Mohan Yadav',   type: 'emergency', location: 'Ichhawar Block, Village 12',  priority: 'Critical', status: 'pending',     created_at: new Date(Date.now() - 7200000).toISOString()  },
-  { user_id: 105, name: 'Geeta Rawat',   type: 'routine',   location: 'Rehti PHC, District Road',    priority: 'Normal',   status: 'completed',   created_at: new Date(Date.now() - 14400000).toISOString() },
-];
+/* ─── Static demo data (Moved to judgeDemo.js for bundle optimization) ─── */
 
 /* ─── Helpers ─────────────────────────────────────────────────────────────── */
 const statusColor = (s) => ({
@@ -180,6 +164,9 @@ export default function AdminDashboard() {
   const [activeView, setActiveView]         = useState('command');
   const [sidebarOpen, setSidebarOpen]       = useState(false);
   const [judgeDemoMode, setJudgeDemoMode]   = useState(false);
+  const [demoData, setDemoData]             = useState(null);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [alertError, setAlertError]         = useState(null);
   const [stats, setStats]                   = useState(null);      // null = not yet loaded
   const [summary, setSummary]               = useState(null);
   const [ambulances, setAmbulances]         = useState(null);
@@ -187,6 +174,17 @@ export default function AdminDashboard() {
   const [alertSent, setAlertSent]           = useState(false);
   const [lastSync, setLastSync]             = useState('Just now');
   const lastSyncRef = useRef(Date.now());
+
+  useEffect(() => {
+    if (judgeDemoMode && !demoData) {
+      import('./judgeDemo').then(m => {
+        setDemoData(m);
+      }).catch(err => {
+        console.error('Failed to load demo data:', err);
+      });
+    }
+  }, [judgeDemoMode, demoData]);
+
 
   /* Live "last sync" ticker */
   useEffect(() => {
@@ -232,7 +230,11 @@ export default function AdminDashboard() {
     const token = localStorage.getItem('token');
     if (!token || token === 'offline-mock-token') return;
 
-    const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace(/\/+$/, '');
+    let API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+    if (import.meta.env.MODE === 'production' && !import.meta.env.VITE_API_URL) {
+      API_BASE = `${window.location.origin}/api`;
+    }
+    API_BASE = API_BASE.replace(/\/+$/, '');
     // EventSource doesn't support custom headers, so pass token as query param
     const sseUrl = `${API_BASE}/admin/live-feed?token=${encodeURIComponent(token)}`;
 
@@ -268,10 +270,10 @@ export default function AdminDashboard() {
   }, []);
 
 
-  const S  = stats || (judgeDemoMode ? DEMO_STATS : { pregnancies: 0, malnutrition: 0, villages: 0, today_symptoms: 0 });
-  const SM = summary || (judgeDemoMode ? DEMO_SUMMARY : { totalUsers: 0, totalNgos: 0, emergencyCount: 0, sanitaryCount: 0, totalRequests: 0 });
-  const OB = outbreaks || (judgeDemoMode ? DEMO_OUTBREAKS : []);
-  const AM = ambulances || (judgeDemoMode ? DEMO_AMBULANCES : []);
+  const S  = stats || (judgeDemoMode && demoData ? demoData.DEMO_STATS : { pregnancies: 0, malnutrition: 0, villages: 0, today_symptoms: 0 });
+  const SM = summary || (judgeDemoMode && demoData ? demoData.DEMO_SUMMARY : { totalUsers: 0, totalNgos: 0, emergencyCount: 0, sanitaryCount: 0, totalRequests: 0 });
+  const OB = outbreaks || (judgeDemoMode && demoData ? demoData.DEMO_OUTBREAKS : []);
+  const AM = ambulances || (judgeDemoMode && demoData ? demoData.DEMO_AMBULANCES : []);
   const isLoading = stats === null && summary === null && !judgeDemoMode;
 
   const issueDistrictAlert = async () => {
@@ -281,9 +283,14 @@ export default function AdminDashboard() {
         disease: 'Manual District Alert',
         action: 'All ASHA workers notified. Escalate to District Health Officer immediately.',
       });
-    } catch (_) {}
-    setAlertSent(true);
-    setTimeout(() => setAlertSent(false), 4000);
+      setAlertSent(true);
+      setAlertError(null);
+      setTimeout(() => setAlertSent(false), 4000);
+    } catch (err) {
+      console.error(err);
+      setAlertError(err.message || 'Failed to dispatch outbreak alert to district.');
+      setTimeout(() => setAlertError(null), 5000);
+    }
   };
 
   const downloadReport = async () => {
@@ -294,7 +301,10 @@ export default function AdminDashboard() {
     } catch (e) {
       console.warn('Backend download failed, generating client-side report fallback...');
       // Client-side fallback: Generate CSV from AM and OB arrays
-      let csv = 'Record ID,Type,Patient Name/ID,Location/Priority,Status,Date\n';
+      // Label clearly as [DEMO DATA] in the file header if judgeDemoMode is active
+      const isDemo = judgeDemoMode;
+      let csv = isDemo ? '# ⚠️ [DEMO DATA] - GENERATED IN OFFLINE MODE WITH MOCK DEMO SEEDS\n' : '# OFFLINE MODE REPORT - SYNCED DATA FALLBACK\n';
+      csv += 'Record ID,Type,Patient Name/ID,Location/Priority,Status,Date\n';
       AM.forEach((a, i) => {
         csv += `AMB-${i+101},${a.type || 'emergency'},"${a.name || 'User ' + a.user_id}","${a.location || ''} (${a.priority || ''})",${a.status},${a.created_at || new Date().toISOString()}\n`;
       });
@@ -303,7 +313,7 @@ export default function AdminDashboard() {
       });
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const url = window.URL.createObjectURL(blob);
-      triggerBlobDownload(url, 'swasthai_admin_report_offline.csv');
+      triggerBlobDownload(url, isDemo ? 'swasthai_admin_demo_report.csv' : 'swasthai_admin_report_offline.csv');
     }
   };
 
@@ -438,12 +448,41 @@ export default function AdminDashboard() {
                 System Online
               </span>
               {/* Bell */}
-              <button className="relative p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors">
-                <Bell className="w-5 h-5" />
-                {OB.length > 0 && (
-                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full border-2 border-white" />
+              <div className="relative">
+                <button
+                  onClick={() => setShowNotifications(!showNotifications)}
+                  className="relative p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors"
+                >
+                  <Bell className="w-5 h-5" />
+                  {OB.length > 0 && (
+                    <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full border-2 border-white" />
+                  )}
+                </button>
+                {showNotifications && (
+                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl border border-slate-200 shadow-xl z-50 p-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                    <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-100">
+                      <p className="font-black text-slate-900 text-xs uppercase tracking-wider">Notifications</p>
+                      <button onClick={() => setShowNotifications(false)} className="text-[10px] font-bold text-slate-400 hover:text-slate-600">Close</button>
+                    </div>
+                    {OB.length === 0 ? (
+                      <p className="text-[11px] text-slate-400 text-center py-4 font-semibold">No new notifications</p>
+                    ) : (
+                      <div className="space-y-2 max-h-60 overflow-y-auto">
+                        {OB.slice(0, 5).map((ob, idx) => (
+                          <div key={idx} className="p-2 hover:bg-slate-50 rounded-xl transition-colors flex gap-2">
+                            <span className="shrink-0">⚠️</span>
+                            <div>
+                              <p className="text-[11px] font-bold text-slate-800">{ob.classification}</p>
+                              <p className="text-[9px] text-slate-500 mt-0.5 leading-tight">{ob.symptomPattern}</p>
+                              <p className="text-[8px] text-slate-400 mt-1 font-semibold">{timeAgo(ob.detectedAt)}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 )}
-              </button>
+              </div>
               {/* Admin avatar */}
               <div className="flex items-center gap-2 pl-2.5 border-l border-slate-200">
                 <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-full flex items-center justify-center text-white text-[11px] font-black shadow-sm">A</div>
@@ -799,10 +838,15 @@ export default function AdminDashboard() {
                 <div className="flex items-center gap-2 flex-wrap">
                   <button
                     onClick={issueDistrictAlert}
-                    className={`px-4 py-2 rounded-xl text-[10.5px] font-black uppercase tracking-wider transition-all shadow-sm ${alertSent ? 'bg-emerald-500 text-white' : 'bg-rose-50 text-rose-600 border border-rose-100 hover:bg-rose-100'}`}
+                    className={`px-4 py-2 rounded-xl text-[10.5px] font-black uppercase tracking-wider transition-all shadow-sm ${alertSent ? 'bg-emerald-500 text-white' : alertError ? 'bg-rose-600 text-white' : 'bg-rose-50 text-rose-600 border border-rose-100 hover:bg-rose-100'}`}
                   >
-                    {alertSent ? '✅ Alert Sent' : 'Issue Alert'}
+                    {alertSent ? '✅ Alert Sent' : alertError ? '⚠️ Alert Failed' : 'Issue Alert'}
                   </button>
+                  {alertError && (
+                    <span className="text-[10px] text-rose-600 font-bold bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-100 transition-opacity">
+                      Error: {alertError}
+                    </span>
+                  )}
                   <button
                     onClick={() => alert('ASHA Network Broadcast Signal Dispatched.')}
                     className="px-4 py-2 bg-emerald-50 text-emerald-700 border border-emerald-100 hover:bg-emerald-100 rounded-xl text-[10.5px] font-black uppercase tracking-wider transition-all shadow-sm"

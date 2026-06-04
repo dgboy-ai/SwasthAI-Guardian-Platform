@@ -20,7 +20,7 @@ const adminService = {
     }
   },
 
-  // Global Health Analytics
+  // Global Health Analytics & Summary
   getAnalytics: async () => {
     try {
       const res = await api.get('/admin/analytics');
@@ -30,7 +30,63 @@ const adminService = {
     }
   },
 
-  // System Configuration
+  getSummary: async () => {
+    try {
+      const res = await api.get('/admin/summary');
+      return res.data;
+    } catch (error) {
+      throw error.response?.data?.error || 'Failed to fetch summary stats';
+    }
+  },
+
+  // Outbreaks & Alerts
+  getOutbreaks: async () => {
+    try {
+      const res = await api.get('/admin/outbreaks');
+      return res.data;
+    } catch (error) {
+      throw error.response?.data?.error || 'Failed to fetch outbreak events';
+    }
+  },
+
+  getOutbreaksDynamo: async (days = 7, limit = 20) => {
+    try {
+      const res = await api.get(`/admin/outbreaks-dynamo?days=${days}&limit=${limit}`);
+      return res.data;
+    } catch (error) {
+      throw error.response?.data?.error || 'Failed to fetch DynamoDB outbreaks';
+    }
+  },
+
+  issueOutbreakAlert: async (data) => {
+    try {
+      const res = await api.post('/admin/outbreak-alert', data);
+      return res.data;
+    } catch (error) {
+      throw error.response?.data?.error || 'Failed to dispatch outbreak alert';
+    }
+  },
+
+  getGlobalAlerts: async () => {
+    try {
+      const res = await api.get('/admin/alerts');
+      return res.data;
+    } catch (error) {
+      throw error.response?.data?.error || 'Failed to fetch global alerts';
+    }
+  },
+
+  // Ambulances Feed
+  getAmbulances: async () => {
+    try {
+      const res = await api.get('/admin/ambulances');
+      return res.data;
+    } catch (error) {
+      throw error.response?.data?.error || 'Failed to fetch dispatches';
+    }
+  },
+
+  // System Configuration & AI Diagnostics
   getSystemStatus: async () => {
     try {
       const res = await api.get('/admin/status');
@@ -40,13 +96,31 @@ const adminService = {
     }
   },
 
-  // Critical Alerts Management
-  getGlobalAlerts: async () => {
+  getRagTraces: async () => {
     try {
-      const res = await api.get('/admin/alerts');
+      const res = await api.get('/admin/rag-traces');
       return res.data;
     } catch (error) {
-      throw error.response?.data?.error || 'Failed to fetch global alerts';
+      throw error.response?.data?.error || 'Failed to fetch RAG traces';
+    }
+  },
+
+  // Demo Control & Reports
+  seedDemoData: async () => {
+    try {
+      const res = await api.post('/admin/seed-demo-data');
+      return res.data;
+    } catch (error) {
+      throw error.response?.data?.error || 'Failed to trigger demo seeding';
+    }
+  },
+
+  getReport: async () => {
+    try {
+      const res = await api.get('/admin/report', { responseType: 'blob' });
+      return res.data;
+    } catch (error) {
+      throw error.response?.data?.error || 'Failed to export outbreak report';
     }
   }
 };

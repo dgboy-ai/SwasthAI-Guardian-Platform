@@ -12,6 +12,15 @@ All notable changes and feature developments completed during the hackathon wind
 - **Refined Status Updates**: Optimized dashboard requests to selectively re-fetch only the modified list (triage vs resources), preventing redundant network overhead.
 - **Sakhi Chatbot Persistence & Offline Triage**: Enabled `sessionStorage` chat history caching, refactored offline clinical keyword triage to matching local tips, and dynamically scaled voice synthesis length according to triage urgency levels.
 - **Speech Recognition Lang-Chain Fallback**: Implemented an automated fallback language chain (e.g., Hindi -> English -> Tamil etc.) for the browser Web Speech API to maximize transcription compatibility on rural devices.
+- **Offline Queue Sync on Online Event**: Integrated `syncAllQueues()` inside `OfflineToast`'s connection recovery listener to trigger automatic replay of queued IndexedDB operations immediately upon returning online.
+- **Navigator Online Behavior Documentation**: Documented the initialization behavior of `wasOnlineRef` from `navigator.onLine` to formally log that preventing the "Back Online" toast on first mount (if already online) is correct behavior.
+- **Admin Dashboard Bundle Optimization**: Extracted all static demo constants (`DEMO_STATS`, `DEMO_SUMMARY`, etc.) to a separate `judgeDemo.js` file and loaded them dynamically via ES import code-splitting when demo mode is activated, preventing leakage into initial production chunks.
+- **Resilient SSE Connection Pathing**: Updated `EventSource` endpoint setup in `AdminDashboard.jsx` to dynamically fallback to `window.location.origin` if the environment is production and `VITE_API_URL` is omitted, resolving live-feed failures on preview server deployments.
+- **Alert Dispatch Error Handling**: Wired try-catch error alerts on the manual outbreak dispatch trigger to show fallback alert failure statuses when backend is unreachable, rather than silently marking alerts as sent.
+- **Demo Mode CSV Headers**: Appended clear `# ⚠️ [DEMO DATA]` headers to client-side report fallbacks generated in offline demo mode to inform evaluators of mock datasets.
+- **Notification Panel Dropdown**: Configured the header notification Bell icon to toggle a slide-in dropdown panel listing active outbreak alerts on click, providing intuitive user feedback.
+- **Full API Clients Expansion**: Expanded `adminService.js` and `villagerService.js` to expose full client wrappers for all backend endpoints (outbreak telemetry, RAG traces, demo seeding, symptom history, government schemes, PHQ-2, and chat assistants), ensuring robust module coverage.
+- **Optimistic UI Status Updates**: Refactored `NGODashboard.jsx` status updates with an optimistic update pattern that immediately reflects status changes in local state, falling back and rolling back state cleanly if the backend request fails.
 
 ---
 
