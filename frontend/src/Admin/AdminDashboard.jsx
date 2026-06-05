@@ -52,6 +52,44 @@ const timeAgo = (iso) => {
 };
 
 /* ─── Confidence badge ────────────────────────────────────────────────────── */
+const stackStatusMeta = (status = '') => {
+  const s = String(status || '').toLowerCase();
+  if (
+    s.includes('connected') ||
+    s.includes('online') ||
+    s.includes('active') ||
+    s.includes('ok') ||
+    s.includes('ready') ||
+    s.includes('scanning') ||
+    s.includes('caching') ||
+    s.includes('client') ||
+    s.includes('dual-track')
+  ) {
+    return { label: status || 'Connected', dot: 'bg-emerald-500', pill: 'bg-emerald-50 text-emerald-700 border-emerald-100' };
+  }
+  if (s.includes('mock') || s.includes('sqlite') || s.includes('fallback') || s.includes('not configured') || s.includes('not confirmed')) {
+    return { label: status || 'Fallback', dot: 'bg-amber-500', pill: 'bg-amber-50 text-amber-700 border-amber-100' };
+  }
+  if (s.includes('loading')) {
+    return { label: 'Loading', dot: 'bg-slate-400', pill: 'bg-slate-50 text-slate-600 border-slate-100' };
+  }
+  return { label: status || 'Unavailable', dot: 'bg-rose-500', pill: 'bg-rose-50 text-rose-700 border-rose-100' };
+};
+
+const latestDynamoWrite = (feed) => {
+  if (!feed) return null;
+  const records = [
+    ...(feed.outbreak_telemetry || []),
+    ...(feed.sync_queues || []),
+    ...(feed.village_node_state || []),
+    ...(feed.emergency_streams || []),
+  ];
+  return records
+    .map(item => item.timestamp || item.ts || item.detectedAt || item.queuedAt || item.lastActive || item._insertedAt)
+    .filter(Boolean)
+    .sort((a, b) => new Date(b) - new Date(a))[0] || feed.timestamp || null;
+};
+
 const ConfBadge = ({ pct }) => {
   const n = Math.round((pct || 0) * 100);
   const cls = n >= 85 ? 'bg-emerald-100 text-emerald-700 border-emerald-200'
@@ -103,6 +141,100 @@ function KpiCard({ icon: Icon, label, value, trend, badge, color }) {
 }
 
 /* ─── AI Reasoning Trace (live Groq decision log from Sakhi RAG) ────────── */
+function ProductionEvidencePanel({ systemStatus, dynamoFeed, loading, error, compact = false }) {
+  const aurora = systemStatus?.databases?.aurora_postgresql || {};
+  const dynamo = systemStatus?.databases?.dynamodb || {};
+  const auroraMeta = stackStatusMeta(loading ? 'Loading' : aurora.status);
+  const dynamoMeta = stackStatusMeta(loading ? 'Loading' : dynamo.status);
+  const ready = !!systemStatus?.production_ready;
+  const readyMeta = ready
+    ? { label: 'Production ready', dot: 'bg-emerald-500', pill: 'bg-emerald-50 text-emerald-700 border-emerald-100' }
+    : stackStatusMeta(error ? 'Unavailable' : 'Fallback / not ready');
+  const tables = dynamo.tables || [];
+  const latestWrite = latestDynamoWrite(dynamoFeed);
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="px-5 py-4 border-b border-slate-100 flex items-start justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <Shield className="w-4 h-4 text-emerald-600" />
+            <p className="font-black text-slate-900 text-[13px] uppercase tracking-wide">Production Evidence</p>
+          </div>
+          <p className="text-[11px] text-slate-500 font-medium">
+            Live proof from /api/health/detailed and DynamoDB telemetry feed.
+          </p>
+        </div>
+        <span className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black border whitespace-nowrap ${readyMeta.pill}`}>
+          <span className={`w-1.5 h-1.5 rounded-full ${readyMeta.dot}`} />
+          {readyMeta.label}
+        </span>
+      </div>
+
+      {error && (
+        <div className="mx-5 mt-4 p-3 rounded-xl border border-rose-100 bg-rose-50 text-[11px] font-bold text-rose-700">
+          Could not load live stack proof: {error}
+        </div>
+      )}
+
+      <div className={`p-5 grid gap-3 ${compact ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-3'}`}>
+        {[
+          { label: 'Aurora PostgreSQL', status: auroraMeta.label, meta: auroraMeta, sub: aurora.engine || 'Relational system of record' },
+          { label: 'Amazon DynamoDB', status: dynamoMeta.label, meta: dynamoMeta, sub: `${tables.length || 0} tables - ${dynamo.billing || 'PAY_PER_REQUEST'}` },
+          { label: 'AWS Region', status: dynamo.region || aurora.region || 'ap-south-1', meta: stackStatusMeta('connected'), sub: 'Healthcare deployment region' },
+        ].map(item => (
+          <div key={item.label} className="rounded-xl border border-slate-100 bg-slate-50/70 p-3">
+            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">{item.label}</p>
+            <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-black border ${item.meta.pill}`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${item.meta.dot}`} />
+              {item.status}
+            </span>
+            <p className="text-[10px] text-slate-500 font-semibold mt-2 leading-snug">{item.sub}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="px-5 pb-5 grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="rounded-xl border border-slate-100 p-3">
+          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">DynamoDB Tables</p>
+          <div className="flex flex-wrap gap-1.5">
+            {tables.length > 0 ? tables.map(t => (
+              <span key={t.name} className="px-2 py-1 rounded-lg bg-amber-50 text-amber-700 border border-amber-100 text-[9px] font-black">
+                {t.name}
+              </span>
+            )) : (
+              <span className="text-[10px] font-bold text-slate-400">No live table schema available yet</span>
+            )}
+          </div>
+        </div>
+        <div className="rounded-xl border border-slate-100 p-3">
+          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Latest Telemetry Writes</p>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <p className="text-[10px] font-bold text-slate-500">Newest DynamoDB event</p>
+              <p className="text-[12px] font-black text-slate-900">{latestWrite ? timeAgo(latestWrite) : 'No event loaded'}</p>
+            </div>
+            <div>
+              <p className="text-[10px] font-bold text-slate-500">Aurora pool</p>
+              <p className="text-[12px] font-black text-slate-900">
+                {aurora.pool ? `${aurora.pool.total} total / ${aurora.pool.idle} idle` : 'Not exposed'}
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] font-bold text-slate-500">Registered users</p>
+              <p className="text-[12px] font-black text-slate-900">{aurora.registered_users ?? '...'}</p>
+            </div>
+            <div>
+              <p className="text-[10px] font-bold text-slate-500">SSE clients</p>
+              <p className="text-[12px] font-black text-slate-900">{systemStatus?.realtime?.sse_clients_connected ?? 0}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function AIReasoningTrace() {
   const [traces, setTraces]   = useState([]);
   const [loading, setLoading] = useState(true);
@@ -172,6 +304,10 @@ export default function AdminDashboard() {
   const [summary, setSummary]               = useState(null);
   const [ambulances, setAmbulances]         = useState(null);
   const [outbreaks, setOutbreaks]           = useState(null);
+  const [systemStatus, setSystemStatus]     = useState(null);
+  const [dynamoFeed, setDynamoFeed]         = useState(null);
+  const [systemError, setSystemError]       = useState(null);
+  const [systemLoading, setSystemLoading]   = useState(true);
   const [alertSent, setAlertSent]           = useState(false);
   const [lastSync, setLastSync]             = useState('Just now');
   const lastSyncRef = useRef(Date.now());
@@ -228,8 +364,29 @@ export default function AdminDashboard() {
 
   /* ── SSE real-time feed — live ambulance + outbreak pushes from backend ─── */
   useEffect(() => {
+    const loadSystemProof = async () => {
+      setSystemLoading(true);
+      try {
+        const [status, feed] = await Promise.all([
+          adminService.getSystemStatus(),
+          adminService.getDynamoFeed().catch(() => null),
+        ]);
+        setSystemStatus(status);
+        setDynamoFeed(feed);
+        setSystemError(null);
+      } catch (err) {
+        setSystemError(typeof err === 'string' ? err : err.message || 'System status unavailable');
+      } finally {
+        setSystemLoading(false);
+      }
+    };
+    loadSystemProof();
+    const systemProofInterval = setInterval(loadSystemProof, 30000);
+
     const token = localStorage.getItem('token');
-    if (!token || token === 'offline-mock-token') return;
+    if (!token || token === 'offline-mock-token') {
+      return () => clearInterval(systemProofInterval);
+    }
 
     let API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
     if (import.meta.env.MODE === 'production' && !import.meta.env.VITE_API_URL) {
@@ -267,7 +424,10 @@ export default function AdminDashboard() {
       // EventSource not supported or backend offline — polling fallback handles this
     }
 
-    return () => { if (sse) sse.close(); };
+    return () => {
+      clearInterval(systemProofInterval);
+      if (sse) sse.close();
+    };
   }, []);
 
 
@@ -276,6 +436,14 @@ export default function AdminDashboard() {
   const OB = outbreaks || (judgeDemoMode && demoData ? demoData.DEMO_OUTBREAKS : []);
   const AM = ambulances || (judgeDemoMode && demoData ? demoData.DEMO_AMBULANCES : []);
   const isLoading = stats === null && summary === null && !judgeDemoMode;
+  const auroraStatus = systemStatus?.databases?.aurora_postgresql?.status || (systemLoading ? 'Loading' : 'Unavailable');
+  const dynamoStatus = systemStatus?.databases?.dynamodb?.status || (systemLoading ? 'Loading' : 'Unavailable');
+  const aiStatus = systemStatus?.ai_service ? 'Online' : (systemLoading ? 'Loading' : 'Unavailable');
+  const productionReadyStatus = systemStatus?.production_ready ? 'Ready' : (systemLoading ? 'Loading' : 'Not ready');
+  const auroraStripMeta = stackStatusMeta(auroraStatus);
+  const dynamoStripMeta = stackStatusMeta(dynamoStatus);
+  const aiStripMeta = stackStatusMeta(aiStatus);
+  const productionStripMeta = stackStatusMeta(systemStatus?.production_ready ? 'connected' : productionReadyStatus);
 
   const issueDistrictAlert = async () => {
     try {
@@ -496,15 +664,15 @@ export default function AdminDashboard() {
           {/* Status strip */}
           <div className="flex items-center gap-4 mt-2.5 overflow-x-auto pb-1.5 border-t border-slate-100 pt-2">
             {[
-              { label: 'System Health', status: 'Operational', type: 'health' },
-              { label: 'Aurora PostgreSQL', status: 'Connected', type: 'db' },
-              { label: 'DynamoDB',          status: 'Connected', type: 'db' },
-              { label: 'AI Service',        status: 'Online', type: 'ai' },
+              { label: 'System Health', status: productionReadyStatus, meta: productionStripMeta },
+              { label: 'Aurora PostgreSQL', status: auroraStripMeta.label, meta: auroraStripMeta },
+              { label: 'DynamoDB',          status: dynamoStripMeta.label, meta: dynamoStripMeta },
+              { label: 'AI Service',        status: aiStripMeta.label, meta: aiStripMeta },
               { label: 'Offline Villages',  status: S.villages ?? 4, type: 'warn' },
               { label: 'Pending Syncs',     status: '12', type: 'sync' },
               { label: 'Last Sync',         status: lastSync, type: 'time' },
             ].map(s => {
-              let badgeCls = "bg-emerald-50 text-emerald-700 border-emerald-100";
+              let badgeCls = s.meta?.pill || "bg-emerald-50 text-emerald-700 border-emerald-100";
               if (s.type === 'warn') {
                 badgeCls = "bg-rose-50 text-rose-700 border-rose-100";
               } else if (s.type === 'sync') {
@@ -530,6 +698,13 @@ export default function AdminDashboard() {
           {/* ══════ COMMAND CENTER ══════ */}
           {activeView === 'command' && (
             <div className="p-4 lg:p-5 space-y-4">
+
+              <ProductionEvidencePanel
+                systemStatus={systemStatus}
+                dynamoFeed={dynamoFeed}
+                loading={systemLoading}
+                error={systemError}
+              />
 
               {/* Critical Alerts */}
               <div className="bg-rose-50 border-2 border-rose-200 rounded-2xl p-4">
@@ -1145,32 +1320,41 @@ export default function AdminDashboard() {
 
           {/* ══════ SYSTEM STATUS ══════ */}
           {activeView === 'system' && (
-            <div className="p-4 lg:p-5">
-              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-                <div className="flex items-center gap-2 mb-5">
+            <div className="p-4 lg:p-5 space-y-4">
+              <ProductionEvidencePanel
+                systemStatus={systemStatus}
+                dynamoFeed={dynamoFeed}
+                loading={systemLoading}
+                error={systemError}
+              />
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+                <div className="flex items-center gap-2 mb-4">
                   <Settings className="w-5 h-5 text-emerald-600" />
-                  <h2 className="font-black text-slate-900 text-[18px]">System Status</h2>
+                  <h2 className="font-black text-slate-900 text-[18px]">Operational Modules</h2>
                 </div>
-                <div className="space-y-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {[
-                    { label: 'Aurora PostgreSQL', status: 'Connected' },
-                    { label: 'Amazon DynamoDB',   status: 'Connected' },
-                    { label: 'AI Service (Groq)', status: 'Online'    },
-                    { label: 'Outbreak Agent',    status: 'Scanning'  },
-                    { label: 'Service Worker',    status: 'Caching'   },
-                    { label: 'IndexedDB Queue',   status: 'Active'    },
-                  ].map(s => (
-                    <div key={s.label} className="flex items-center justify-between py-3 border-b border-slate-50 last:border-0">
-                      <div className="flex items-center gap-3">
-                        <Database className="w-4 h-4 text-slate-400" />
-                        <span className="font-bold text-[13px] text-slate-700">{s.label}</span>
+                    { label: 'AI Service', status: aiStatus },
+                    { label: 'Outbreak Agent', status: systemStatus?.ai_service?.modules?.some(m => m.includes('OutbreakAgent')) ? 'Online' : 'Not confirmed' },
+                    { label: 'Service Worker', status: 'Caching' },
+                    { label: 'IndexedDB Queue', status: 'Active' },
+                    { label: 'SSE Live Feed', status: `${systemStatus?.realtime?.sse_clients_connected ?? 0} clients` },
+                    { label: 'RAG Memory', status: systemStatus?.stack?.rag_memory || 'Not loaded' },
+                  ].map(s => {
+                    const meta = stackStatusMeta(s.status);
+                    return (
+                      <div key={s.label} className="rounded-xl border border-slate-100 bg-slate-50/70 p-3">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Database className="w-4 h-4 text-slate-400" />
+                          <span className="font-bold text-[12px] text-slate-700">{s.label}</span>
+                        </div>
+                        <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-black border ${meta.pill}`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${meta.dot}`} />
+                          {s.status}
+                        </span>
                       </div>
-                      <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black bg-emerald-50 text-emerald-700 border border-emerald-100">
-                        <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                        {s.status}
-                      </span>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </div>

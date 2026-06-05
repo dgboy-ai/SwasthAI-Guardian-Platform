@@ -124,6 +124,15 @@ const adminService = {
     }
   },
 
+  getDynamoFeed: async () => {
+    try {
+      const res = await api.get('/admin/dynamo-feed');
+      return res.data;
+    } catch (error) {
+      throw error.response?.data?.error || 'Failed to fetch DynamoDB feed';
+    }
+  },
+
   getRagTraces: async () => {
     try {
       const res = await api.get('/admin/rag-traces');
