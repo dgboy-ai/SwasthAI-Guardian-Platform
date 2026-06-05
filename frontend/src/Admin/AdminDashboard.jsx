@@ -152,6 +152,7 @@ function ProductionEvidencePanel({ systemStatus, dynamoFeed, loading, error, com
     : stackStatusMeta(error ? 'Unavailable' : 'Fallback / not ready');
   const tables = dynamo.tables || [];
   const latestWrite = latestDynamoWrite(dynamoFeed);
+  const recentTraces = systemStatus?.recent_request_traces || [];
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
@@ -229,6 +230,30 @@ function ProductionEvidencePanel({ systemStatus, dynamoFeed, loading, error, com
               <p className="text-[12px] font-black text-slate-900">{systemStatus?.realtime?.sse_clients_connected ?? 0}</p>
             </div>
           </div>
+        </div>
+      </div>
+
+      <div className="px-5 pb-5">
+        <div className="rounded-xl border border-slate-100 p-3">
+          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Recent Request Traces</p>
+          {recentTraces.length === 0 ? (
+            <span className="text-[10px] font-bold text-slate-400">No request traces loaded yet</span>
+          ) : (
+            <div className="space-y-1.5">
+              {recentTraces.slice(0, 4).map(trace => (
+                <div key={trace.traceId || `${trace.method}-${trace.path}-${trace.timestamp}`} className="flex items-center justify-between gap-3 rounded-lg bg-slate-50 border border-slate-100 px-2.5 py-2">
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-black text-slate-700 truncate">{trace.method} {trace.path}</p>
+                    <p className="text-[9px] font-mono text-slate-400 truncate">{trace.traceId || 'trace unavailable'}</p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-[10px] font-black text-slate-900">{trace.status || '...'}</p>
+                    <p className="text-[9px] font-bold text-slate-400">{trace.duration ?? 0}ms</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

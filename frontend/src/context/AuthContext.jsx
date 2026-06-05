@@ -5,6 +5,8 @@ import ngoService from '../services/ngoService';
 import adminService from '../services/adminService';
 
 const AuthContext = createContext(null);
+const DEMO_SECRET = 'demo-only';
+const demoCredentialHash = (identifier, role, secret = DEMO_SECRET) => btoa(`${identifier}:${role}:${secret}`);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -21,7 +23,7 @@ export const AuthProvider = ({ children }) => {
           username: '9876543210',
           email: '',
           phone: '9876543210',
-          password: 'Demo@1234',
+          credentialHash: demoCredentialHash('9876543210', 'villager'),
           role: 'villager',
           villageId: 'v101',
           isOfflineSession: true
@@ -32,7 +34,7 @@ export const AuthProvider = ({ children }) => {
           username: '9876543211',
           email: '',
           phone: '9876543211',
-          password: 'Demo@1234',
+          credentialHash: demoCredentialHash('9876543211', 'ngo'),
           role: 'ngo',
           villageId: 'v101',
           isOfflineSession: true
@@ -43,7 +45,7 @@ export const AuthProvider = ({ children }) => {
           username: 'admin',
           email: 'admin@swasthai.in',
           phone: '',
-          password: 'Demo@1234',
+          credentialHash: demoCredentialHash('admin@swasthai.in', 'admin'),
           role: 'admin',
           villageId: 'v101',
           isOfflineSession: true
@@ -107,7 +109,7 @@ export const AuthProvider = ({ children }) => {
         username: data.username,
         email: data.email || '',
         phone: data.phone || '',
-        password: data.password, // Local-only judge/demo cache; not production authentication.
+        credentialHash: demoCredentialHash(data.email || data.phone || data.username, data.role || 'villager', data.password),
         role: data.role || 'villager',
         villageId: data.villageId || 'v101',
         isOfflineSession: true
@@ -166,8 +168,9 @@ export const AuthProvider = ({ children }) => {
         );
 
         if (matchedUser) {
-          // Must match password AND role
-          if (matchedUser.password !== password) {
+          // Must match credential hash AND role. This is still judge/demo cache, not production authentication.
+          const matchedIdentifier = matchedUser.email || matchedUser.phone || matchedUser.username;
+          if (matchedUser.credentialHash !== demoCredentialHash(matchedIdentifier, matchedUser.role, password)) {
             throw new Error('Incorrect password.');
           }
           if (matchedUser.role !== role) {

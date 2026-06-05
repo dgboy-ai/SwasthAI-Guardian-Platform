@@ -13,10 +13,12 @@ import {
 // Judge/demo credentials pre-cached for hackathon walkthroughs.
 // Production authentication uses backend-issued tokens and real OTP/password verification.
 const OFFLINE_CACHE_KEY = 'swasthai_offline_user_cache';
+const DEMO_SECRET = 'demo-only';
+const demoCredentialHash = (id, role, secret = DEMO_SECRET) => btoa(`${id}:${role}:${secret}`);
 const DEMO_CREDENTIALS = [
-  { id: '9876543210',       password: 'Demo@1234', role: 'villager', name: 'Demo Villager'   },
-  { id: '9876543211',       password: 'Demo@1234', role: 'ngo',      name: 'Demo ASHA'      },
-  { id: 'admin@swasthai.in', password: 'Demo@1234', role: 'admin',  name: 'Demo Admin'     },
+  { id: '9876543210',       credentialHash: demoCredentialHash('9876543210', 'villager'),       role: 'villager', name: 'Demo Villager' },
+  { id: '9876543211',       credentialHash: demoCredentialHash('9876543211', 'ngo'),            role: 'ngo',      name: 'Demo ASHA' },
+  { id: 'admin@swasthai.in', credentialHash: demoCredentialHash('admin@swasthai.in', 'admin'),   role: 'admin',    name: 'Demo Admin' },
 ];
 
 function seedOfflineCache() {
@@ -37,7 +39,8 @@ function tryOfflineLogin(identifier, passwordOrOtp, loginMethod, role) {
         // OTP mode: accept '1234' as universal demo OTP offline
         return idMatch && roleMatch && passwordOrOtp === '1234';
       }
-      return idMatch && roleMatch && u.password === passwordOrOtp;
+      const expectedHash = demoCredentialHash(identifier, role, passwordOrOtp);
+      return idMatch && roleMatch && u.credentialHash === expectedHash;
     });
     return user || null;
   } catch (e) {
@@ -49,7 +52,7 @@ function cacheUserAfterLogin(identifier, password, role, name) {
   try {
     const existing = JSON.parse(localStorage.getItem(OFFLINE_CACHE_KEY) || '[]');
     const idx = existing.findIndex(u => u.id === identifier && u.role === role);
-    const entry = { id: identifier, password, role, name: name || identifier };
+    const entry = { id: identifier, credentialHash: demoCredentialHash(identifier, role, password), role, name: name || identifier };
     if (idx >= 0) {
       existing[idx] = entry;
     } else {

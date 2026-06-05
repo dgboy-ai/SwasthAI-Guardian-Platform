@@ -737,6 +737,8 @@ def health_check():
     return {
         "status": "SwasthAI AI Node Online",
         "model_loaded": disease_pipeline is not None,
+        "model_fallback_state": "primary_model_loaded" if disease_pipeline is not None else "offline_rule_fallback",
+        "guardrail_status": "active_conservative_triage_no_diagnosis_claim",
         "active_modules": 6,
         "modules": ["disease_prediction", "pregnancy_risk", "malnutrition", "skin_analysis", "rag_sakhi", "agentic_outbreak_monitor"],
         "disease_classes": list(disease_pipeline.classes_) if disease_pipeline else [],

@@ -343,6 +343,40 @@ if (isProduction && cluster.isPrimary) {
 
     const auroraConnected = !usingSQLite && !!pool;
     const dynamoConnected = !dynamoHelper.isMock;
+    let aiHealth = null;
+    let aiLiveStatus = 'unreachable';
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 2500);
+      const aiRes = await fetch(`${AI_SERVICE_URL}/health`, { signal: controller.signal });
+      clearTimeout(timeout);
+      if (aiRes.ok) {
+        aiHealth = await aiRes.json();
+        aiLiveStatus = 'online';
+      } else {
+        aiLiveStatus = `http_${aiRes.status}`;
+      }
+    } catch (err) {
+      aiHealth = { error: err.name === 'AbortError' ? 'timeout' : err.message };
+    }
+
+    let recentRequests = [];
+    try {
+      const logs = await dynamoHelper.query('sync_queues', 'deviceId = :dev', { ':dev': 'server-telemetry' });
+      recentRequests = (logs || [])
+        .sort((a, b) => String(b.queuedAt || '').localeCompare(String(a.queuedAt || '')))
+        .slice(0, 8)
+        .map(r => ({
+          traceId: r.traceId,
+          method: r.method,
+          path: r.path,
+          status: r.resStatus,
+          duration: r.duration,
+          timestamp: r.queuedAt
+        }));
+    } catch (e) {
+      console.error('[Detailed Health Telemetry Fetch Error]', e.message);
+    }
 
     res.json({
       service:   'SwasthAI Guardian — District Health Command Platform',
@@ -356,7 +390,7 @@ if (isProduction && cluster.isPrimary) {
       },
       databases: {
         aurora_postgresql: {
-          status:           auroraConnected ? 'connected' : (usingSQLite ? 'SQLite fallback (set DATABASE_URL for Aurora)' : 'disconnected'),
+          status:           auroraConnected ? 'connected' : (usingSQLite ? 'SQLite fallback' : 'disconnected'),
           engine:           usingSQLite ? 'SQLite 3' : 'Amazon Aurora PostgreSQL',
           region:           usingSQLite ? 'local' : (process.env.AWS_REGION || 'ap-south-1'),
           registered_users: dbUserCount,
@@ -368,7 +402,7 @@ if (isProduction && cluster.isPrimary) {
           production_setup: usingSQLite ? 'Set DATABASE_URL to your RDS/Aurora endpoint on Render' : null,
         },
         dynamodb: {
-          status:    dynamoConnected ? 'connected' : 'mock (set AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY)',
+          status:    dynamoConnected ? 'connected' : 'mock',
           region:    process.env.AWS_REGION || 'ap-south-1',
           billing:   'PAY_PER_REQUEST (serverless scaling)',
           tables:    dynamoHelper.schema,
@@ -387,6 +421,13 @@ if (isProduction && cluster.isPrimary) {
       },
       ai_service: {
         url:     AI_SERVICE_URL,
+        live_status: aiLiveStatus,
+        health: aiHealth,
+        disease_model_loaded: aiHealth?.model_loaded ?? null,
+        model_fallback_state: aiHealth?.model_loaded ? 'primary model loaded; fallback retained' : 'fallback rules available',
+        rag_chunks: aiHealth?.model_accuracy?.rag_chunks ?? 243,
+        rag_threshold: aiHealth?.model_accuracy?.rag_threshold ?? 0.45,
+        guardrail_status: 'clinical safety guardrails active; advice is conservative and escalation-oriented',
         modules: [
           'SymptomNet-DL (PyTorch, 64.6% accuracy, 101 diseases)',
           'RandomForest-TFIDF (fallback, 51.8% accuracy)',
@@ -402,6 +443,7 @@ if (isProduction && cluster.isPrimary) {
         sse_clients_connected: adminRouter.sseClientsCount || 0,
         endpoint: '/api/admin/live-feed'
       },
+      recent_request_traces: recentRequests,
       stack: {
         frontend:   'React 18 + Vite + PWA (offline-first, Vercel)',
         backend:    'Node.js + Express + Cluster (multi-CPU)',

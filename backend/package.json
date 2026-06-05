@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js",
+    "smoke": "node tests/smoke.js"
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.569.0",

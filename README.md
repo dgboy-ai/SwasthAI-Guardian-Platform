@@ -6,6 +6,8 @@
 ---
 
 ## 🏆 H0 Hackathon — Track 2: Monetizable B2B App (Healthcare)
+
+SwasthAI is framed as a B2B district operations platform: the buyer is a district health office, NGO network, or public-health command center that needs ASHA workload visibility, outbreak proof, monthly CMO reporting, and auditable AWS-backed data flows.
 **Sponsor**: Amazon Web Services | **Event**: H0: Hack the Zero Stack with Vercel v0 and AWS Databases
 
 | | |
@@ -49,10 +51,12 @@
 
 - ✅ **Ambulance handler** now writes every SOS dispatch to DynamoDB `emergency_streams` table
 - ✅ **`/api/health/detailed`** — exposes full AWS connection state, DynamoDB schema status, and AI module readiness
+- ✅ **Admin Production Evidence panel** — shows Aurora/DynamoDB status, region, table names, pool counts, production readiness, and latest telemetry writes directly in the UI
+- ✅ **Judge/demo auth labeling** — demo credentials remain usable for evaluation, while production auth is clearly documented as backend OTP/password verification with issued tokens
 - ✅ **CORS** updated to auto-allow all `*.vercel.app` origins
 - ✅ **`vercel.json`** upgraded with security headers (X-Frame-Options, XSS protection, asset caching)
 - ✅ **`DEPLOYMENT.md`** created — district health officers can self-deploy in under 2 hours
-- ✅ **DynamoDB hardening** — `Scan` → `Query` optimization (O(n) → O(1)), atomic `UpdateCommand`, GSI validation at startup, idempotent TTL handling
+- ✅ **DynamoDB hardening** — district/time `Query` access for command-center outbreak proof, atomic `UpdateCommand`, GSI validation at startup, idempotent TTL handling
 - ✅ **Model cache** — `SENTENCE_TRANSFORMERS_HOME` pinned to `.model_cache/` so the 400MB transformer model is never re-downloaded on restart
 - ✅ **Resilient Event Dispatcher** — database null-guards, 3-attempt retries for telemetry writes, sanitized DynamoDB partition keys
 - ✅ **Secure & Idempotent Seeding** — demo seeds blocked in production (`NODE_ENV === 'production'`); `ON CONFLICT DO NOTHING` idempotency; foreign keys dynamically resolved

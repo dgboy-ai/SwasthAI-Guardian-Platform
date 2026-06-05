@@ -116,7 +116,7 @@ To ensure the app remains fully functional with zero initial setup for judges or
 
 ### DynamoDB Table Design (Composite Keys + GSIs)
 
-**Purpose-Built Schema**: We designed every DynamoDB table around its query pattern to ensure O(1) single-request lookups, preventing expensive table scans and guaranteeing predictable cloud costs even under heavy village diagnostic loads:
+**Purpose-Built Schema**: We designed every DynamoDB table around its query pattern to prefer bounded `Query` calls for judged command-center proof and operational views, avoiding cross-partition scans for the main outbreak telemetry path:
 
 ```
 Table: outbreak_telemetry
@@ -161,7 +161,7 @@ Every 30 minutes →
   → If LLM confidence ≥ 70%:
       Checks DynamoDB to ensure no duplicate alert exists for this village in the last 24h
       → POST to /api/admin/outbreak-alert (fails loudly at startup if AGENT_SECRET is missing)
-      → Backend writes to DynamoDB outbreak_telemetry (composite key: villageId + detectedAt)
+      → Backend writes to DynamoDB outbreak_telemetry (villageId + detectedAt, with districtId for district-time GSI)
       → SSE broadcast to all connected admin dashboard sessions
       → Admin sees live Outbreak Radar update with AI reasoning trace and disease name
 ```

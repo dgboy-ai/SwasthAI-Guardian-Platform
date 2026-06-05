@@ -257,6 +257,7 @@ export default function MonitoringDashboard() {
   const [dynamoFeed, setDynamoFeed] = useState(null);
   const [dynamoLoading, setDynamoLoading] = useState(false);
   const [ragTraces, setRagTraces] = useState([]);
+  const [aiProof, setAiProof] = useState(null);
   const [networkSimState, setNetworkSimState] = useState(localStorage.getItem('simulated_network_state') || 'online');
   const [demoRunning, setDemoRunning] = useState(false);
   const [seedLoading, setSeedLoading] = useState(false);
@@ -364,6 +365,8 @@ export default function MonitoringDashboard() {
         const res = await api.get('/health');
         if (res.data?.connections !== undefined) setDbConnections(res.data.connections);
         if (res.data?.recentRequests !== undefined) setRecentRequests(res.data.recentRequests);
+        const detailed = await api.get('/health/detailed');
+        if (detailed.data?.ai_service) setAiProof(detailed.data.ai_service);
         const ragRes = await api.get('/admin/rag-traces');
         if (ragRes.data) setRagTraces(ragRes.data);
       } catch { /* ignore */ }
@@ -798,6 +801,28 @@ export default function MonitoringDashboard() {
             </tbody>
           </table>
         </div>
+      </div>
+
+      <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 16, padding: 20, marginBottom: 20 }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: '#9ca3af', marginBottom: 14 }}>AI Health Proof</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: 12 }}>
+          {[
+            { label: 'Disease model', value: aiProof?.disease_model_loaded ? 'Loaded' : aiProof ? 'Fallback' : 'Checking' },
+            { label: 'RAG chunks', value: aiProof?.rag_chunks ?? 'Checking' },
+            { label: 'Retrieval threshold', value: aiProof?.rag_threshold ?? 'Checking' },
+            { label: 'Model fallback', value: aiProof?.model_fallback_state || 'Checking' },
+            { label: 'Guardrails', value: aiProof?.guardrail_status || 'Checking' },
+            { label: 'AI service', value: aiProof?.live_status || 'Checking' },
+          ].map(item => (
+            <div key={item.label} style={{ border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: 12, background: 'rgba(15,23,42,0.35)' }}>
+              <div style={{ color: '#6b7280', fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1 }}>{item.label}</div>
+              <div style={{ color: '#d1d5db', fontSize: 12, fontWeight: 700, marginTop: 6, lineHeight: 1.35 }}>{String(item.value)}</div>
+            </div>
+          ))}
+        </div>
+        <p style={{ color: '#6b7280', fontSize: 11, marginTop: 12, lineHeight: 1.5 }}>
+          Clinical text remains conservative: AI output supports triage and escalation, not final diagnosis.
+        </p>
       </div>
 
       {/* ── RAG Diagnostics Panel */}

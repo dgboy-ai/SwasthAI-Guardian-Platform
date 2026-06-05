@@ -2,7 +2,7 @@
 
 > **Note to Judges:** Our attached demo video showcases the V1 foundation of our platform. Below is the documentation for our **V2 Production Upgrade**, which introduces Grounded RAG, Offline Login,  Local Offline Maternal/Child Sync, and an Autonomous Outbreak Agent. check GitHub Readme.md for v1 and v2 differences
 
-A production-grade, AI-powered healthcare platform built for rural India. Connecting remote villagers, ASHA health workers, and district hospitals through real machine learning, offline-first architecture, and regional language support.
+A production-grade, AI-powered B2B district health operations platform for rural India. It connects villagers, ASHA health workers, NGOs, and district health offices through real machine learning, offline-first workflows, regional language support, and live AWS database proof.
 
 ---
 
@@ -88,6 +88,8 @@ ASHA Worker (offline zone)
 ```
 
 This architecture means **clinical data is never lost** — it accumulates locally and flows to production AWS infrastructure the moment signal returns.
+
+The Admin dashboard includes a Production Evidence panel that calls `/api/health/detailed` and shows Aurora status, DynamoDB status, region, table names, pool counts, production readiness, recent request traces, and latest telemetry writes. Local SQLite/mock modes are labeled explicitly for judge/demo evaluation.
 
 ---
 
