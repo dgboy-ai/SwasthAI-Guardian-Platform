@@ -28,7 +28,7 @@ let docClient = null;
 //   outbreak_telemetry : query by village, district/time, and disease
 //   sync_queues        : query by device (pending items) + query by status (fleet management)
 //   village_node_state : single-item lookup by village + TTL auto-expire
-//   emergency_streams  : query by district (all emergencies) + query by priority
+//   emergency_streams  : query by district/date bucket + query by priority
 const TABLE_DEFINITIONS = [
   {
     name: 'outbreak_telemetry',
@@ -114,16 +114,28 @@ const TABLE_DEFINITIONS = [
     AttributeDefinitions: [
       { AttributeName: 'districtId', AttributeType: 'S' },
       { AttributeName: 'streamId',   AttributeType: 'S' },
-      { AttributeName: 'priority',   AttributeType: 'S' }
+      { AttributeName: 'priority',   AttributeType: 'S' },
+      { AttributeName: 'districtDateBucket', AttributeType: 'S' },
+      { AttributeName: 'timestamp',  AttributeType: 'S' }
     ],
-    GlobalSecondaryIndexes: [{
-      IndexName: 'priority-index',
-      KeySchema: [
-        { AttributeName: 'priority',  KeyType: 'HASH'  },
-        { AttributeName: 'streamId',  KeyType: 'RANGE' }
-      ],
-      Projection: { ProjectionType: 'ALL' }
-    }],
+    GlobalSecondaryIndexes: [
+      {
+        IndexName: 'priority-index',
+        KeySchema: [
+          { AttributeName: 'priority',  KeyType: 'HASH'  },
+          { AttributeName: 'streamId',  KeyType: 'RANGE' }
+        ],
+        Projection: { ProjectionType: 'ALL' }
+      },
+      {
+        IndexName: 'district-date-index',
+        KeySchema: [
+          { AttributeName: 'districtDateBucket', KeyType: 'HASH'  },
+          { AttributeName: 'timestamp',          KeyType: 'RANGE' }
+        ],
+        Projection: { ProjectionType: 'ALL' }
+      }
+    ],
     BillingMode: 'PAY_PER_REQUEST',
     TtlAttribute: null,
   }
@@ -372,6 +384,26 @@ const dynamoHelper = {
     );
   },
 
+  async queryEmergenciesByDistrictDate(districtId, daysBack = 7) {
+    const days = Math.max(1, Math.min(parseInt(daysBack, 10) || 7, 31));
+    const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+    const buckets = [];
+    for (let i = 0; i < days; i += 1) {
+      const day = new Date(Date.now() - i * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+      buckets.push(`${districtId}#${day}`);
+    }
+    const results = await Promise.all(buckets.map(bucket =>
+      this.query(
+        'emergency_streams',
+        'districtDateBucket = :bucket AND #ts >= :cutoff',
+        { ':bucket': bucket, ':cutoff': cutoff },
+        'district-date-index',
+        { ExpressionAttributeNames: { '#ts': 'timestamp' } }
+      )
+    ));
+    return results.flat();
+  },
+
   // ── Fix 1: queryRecentAll — Query ALL villages via page-by-page pattern ──────
   // Used when we need a cross-village view (e.g. heatmap, district report).
   // Falls back to Scan only in mock/dev mode for simplicity.
@@ -413,7 +445,7 @@ const dynamoHelper = {
       return list.filter(item =>
         item.villageId === val || item.village_id === val ||
         item.userId === val || item.deviceId === val ||
-        item.districtId === val || item.disease === val
+        item.districtId === val || item.districtDateBucket === val || item.disease === val
       );
     }
     return list;

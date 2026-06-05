@@ -440,15 +440,13 @@ router.get('/disease-trends', auth, checkRole(['admin', 'ngo']), async (req, res
 
 router.get('/dynamo-feed', auth, async (req, res) => {
   try {
-    // Fix 1: outbreak_telemetry uses queryRecentAll (has detectedAt range key)
-    // sync_queues, village_node_state, emergency_streams still use scan
-    // (they lack a common time-range key suitable for cross-partition Query)
+    const daysBack = parseInt(req.query.days) || 7;
     const districtId = requestedDistrict(req);
     const [outbreaks, syncQueues, nodeStates, emergencies] = await Promise.all([
-      dynamoHelper.queryByDistrict('outbreak_telemetry', districtId, 7),
+      dynamoHelper.queryByDistrict('outbreak_telemetry', districtId, daysBack),
       dynamoHelper.scan('sync_queues'),
       dynamoHelper.scan('village_node_state'),
-      dynamoHelper.scan('emergency_streams'),
+      dynamoHelper.queryEmergenciesByDistrictDate(districtId, daysBack),
     ]);
     const sort = (arr) => (arr || [])
       .sort((a, b) => new Date(b.timestamp || b.ts || b.detectedAt || 0) - new Date(a.timestamp || a.ts || a.detectedAt || 0))
@@ -460,7 +458,8 @@ router.get('/dynamo-feed', auth, async (req, res) => {
       emergency_streams: sort(emergencies),
       isMock: dynamoHelper.isMock,
       districtId,
-      accessPattern: 'outbreak_telemetry.district-time-index',
+      daysBack,
+      accessPattern: 'outbreak_telemetry.district-time-index + emergency_streams.district-date-index',
       timestamp: new Date().toISOString(),
     });
   } catch (err) {

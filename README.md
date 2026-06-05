@@ -52,7 +52,7 @@ SwasthAI is framed as a B2B district operations platform: the buyer is a distric
 - ✅ **Ambulance handler** now writes every SOS dispatch to DynamoDB `emergency_streams` table
 - ✅ **`/api/health/detailed`** — exposes full AWS connection state, DynamoDB schema status, and AI module readiness
 - ✅ **Admin Production Evidence panel** — shows Aurora/DynamoDB status, region, table names, pool counts, production readiness, and latest telemetry writes directly in the UI
-- ✅ **Judge/demo auth labeling** — demo credentials remain usable for evaluation, while production auth is clearly documented as backend OTP/password verification with issued tokens
+- ✅ **Judge/demo auth labeling** — demo credentials remain usable for evaluation, while production auth is documented as backend OTP/password verification with issued tokens; the production replacement path is encrypted device credential cache or WebAuthn/device-bound refresh tokens
 - ✅ **CORS** updated to auto-allow all `*.vercel.app` origins
 - ✅ **`vercel.json`** upgraded with security headers (X-Frame-Options, XSS protection, asset caching)
 - ✅ **`DEPLOYMENT.md`** created — district health officers can self-deploy in under 2 hours
@@ -78,7 +78,7 @@ SwasthAI is framed as a B2B district operations platform: the buyer is a distric
 | :--- | :--- | :--- |
 | **Hybrid Diagnostic Engine (DL + ML)** | Simple Random Forest on a 50-class, English-only dataset (~88% accuracy on that simpler task). | **SymptomNet** (Transformer-based Deep Learning) + Random Forest fallback — evaluated on **101 disease classes** across 7 languages. Hold-out accuracy: **64.6%** (SymptomNet) \| **51.8%** (RF). For context, random chance across 101 classes = ~1%. |
 | **Sakhi RAG (Retrieval-Augmented)** | Generic LLM chatbot prone to hallucinations. 35 inline knowledge chunks, no memory across turns. | **Grounded RAG system** with **243 clinical knowledge chunks** (2-sentence sliding-window overlap), calibrated retrieval threshold **0.45** (F1=1.00), and full 6-turn conversation memory. |
-| **Hardened Offline-First Sync** | Basic local storage that required an active internet connection to function. | **Offline Login** via pre-seeded password hashes + **Maternal & Child Assessment** caching inside an IndexedDB transactional sync queue — works with zero connectivity. |
+| **Hardened Offline-First Sync** | Basic local storage that required an active internet connection to function. | **Judge/demo Offline Login** via pre-seeded credential hashes + **Maternal & Child Assessment** caching inside an IndexedDB transactional sync queue. Production path: encrypted device credential cache or WebAuthn/device-bound refresh token. |
 | **Edge Image Compression** | Standard high-resolution uploads that failed on slow connections. | On-device `browser-image-compression` shrinks images from 5MB+ down to **< 200KB automatically**, making skin scan uploads viable over 2G/EDGE networks. |
 | **Agentic Outbreak Radar** | Manual reporting — a health worker had to notice and file a report. | Autonomous background agent scans village clinical data **every 30 minutes**, clusters symptoms using Groq LLM reasoning, and pushes real-time SSE alerts to admins and ASHA workers. |
 | **API Resilience** | No failover — an LLM outage meant a broken experience. | Groq client wrapped in a **3-attempt exponential backoff loop** (1s → 2s → 4s). On full outage: falls back silently to WHO/ASHA knowledge base — never fails the user. |

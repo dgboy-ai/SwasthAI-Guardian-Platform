@@ -132,8 +132,10 @@ Table: village_node_state
   TTL: expiresAt                              ← auto-purge stale nodes after 7 days (no cron needed)
 
 Table: emergency_streams
-  PK: districtId (HASH) + streamId (RANGE)   ← all SOS events in a district, ordered
-  GSI: priority-index → priority + streamId  ← critical-only P1 filter for admin dashboards
+  PK: districtId (HASH) + streamId (RANGE)          ← durable append-only event stream
+  GSI: district-date-index → districtDateBucket + timestamp
+                                                   ← bounded district/day command-center query
+  GSI: priority-index → priority + streamId         ← critical-only P1 filter for admin dashboards
 ```
 
 ---
@@ -142,7 +144,7 @@ Table: emergency_streams
 
 | Fix | Before (naive) | After (production-grade) |
 |---|---|---|
-| **Scan → Query** | `scan('outbreak_telemetry')` — reads the entire table every time (O(table-size)) | `queryRecentAll()` with FilterExpression + `queryByVillage()` KeyConditionExpression — O(result-set) |
+| **Scan → Query** | Broad table reads for command-center proof | `outbreak_telemetry.district-time-index` and `emergency_streams.district-date-index` provide bounded district/time `Query` access |
 | **Dynamic districtId** | Hardcoded `'district_main'` as partition key for all records | `getDistrictId(db, villageId)` — resolves the real district via PostgreSQL join before every DynamoDB write |
 | **Atomic UpdateCommand** | Full `PutCommand` on every update — race condition risk under concurrent writes | `UpdateCommand` patches only 4 owned fields — safe to call in parallel, never overwrites concurrent writes |
 | **GSI Validation** | Assumed GSIs existed at runtime (silent failure if missing) | `DescribeTableCommand` on startup — compares actual vs. required GSI names; fails loudly if missing |

@@ -2,6 +2,8 @@ const API_BASE = (process.env.API_BASE || 'http://localhost:5000/api').replace(/
 const identifier = process.env.SMOKE_IDENTIFIER || process.env.SMOKE_PHONE || '9876543210';
 const password = process.env.SMOKE_PASSWORD || 'Demo@1234';
 const role = process.env.SMOKE_ROLE || 'villager';
+const adminIdentifier = process.env.SMOKE_ADMIN_IDENTIFIER || 'admin@swasthai.in';
+const adminPassword = process.env.SMOKE_ADMIN_PASSWORD || 'Demo@1234';
 
 async function request(path, options = {}) {
   const res = await fetch(`${API_BASE}${path}`, {
@@ -29,6 +31,7 @@ async function main() {
   pass('detailed health');
 
   let token = null;
+  let adminToken = null;
   try {
     const auth = await request('/auth/login-password', {
       method: 'POST',
@@ -38,6 +41,17 @@ async function main() {
     pass('password auth');
   } catch (err) {
     skip('password auth + protected flows', err.message);
+  }
+
+  try {
+    const auth = await request('/auth/login-password', {
+      method: 'POST',
+      body: JSON.stringify({ identifier: adminIdentifier, password: adminPassword, role: 'admin' })
+    });
+    adminToken = auth.token;
+    pass('admin auth');
+  } catch (err) {
+    skip('admin auth + admin protected flows', err.message);
   }
 
   if (token) {
@@ -66,12 +80,24 @@ async function main() {
     });
     pass('ambulance submit');
 
-    try {
-      await request('/admin/dynamo-feed', { headers: authz });
-      pass('DynamoDB feed access');
-    } catch (err) {
-      skip('DynamoDB feed access', `requires admin token: ${err.message}`);
-    }
+    await request('/health-assistant', {
+      method: 'POST',
+      headers: authz,
+      body: JSON.stringify({ message: 'hello sakhi' })
+    });
+    pass('RAG assistant fallback');
+
+    await request('/villager/sync-health', {
+      method: 'POST',
+      headers: { ...authz, 'x-device-id': 'smoke-device' },
+      body: JSON.stringify({
+        recordCount: 2,
+        durationMs: 123,
+        syncBatchId: `smoke-sync-${Date.now()}`,
+        clientRequestIds: [`smoke-sync-item-${Date.now()}`]
+      })
+    });
+    pass('offline queue replay');
 
     try {
       await request('/admin/users', { headers: authz });
@@ -79,6 +105,11 @@ async function main() {
     } catch {
       pass('role protection');
     }
+  }
+
+  if (adminToken) {
+    await request('/admin/dynamo-feed', { headers: { Authorization: `Bearer ${adminToken}` } });
+    pass('DynamoDB feed access');
   }
 
   for (const r of results) {

@@ -165,10 +165,12 @@ eventEmitter.on("emergency_triggered", async (eventData) => {
 
   try {
     const districtId = await getDistrictId(pgDb, resolvedVillageId);
+    const districtDateBucket = `${districtId}#${now.slice(0, 10)}`;
     
     await callWithRetry(async () => {
       await dynamoHelper.put("emergency_streams", {
         districtId,
+        districtDateBucket,
         streamId:    `amb-${requestId}-${Date.now()}`,
         eventId:     `EVT-EMG-${Date.now()}-${requestId}`,
         requestId,
@@ -199,10 +201,12 @@ eventEmitter.on("maternal_alert", async (eventData) => {
 
   try {
     const districtId = await getDistrictId(pgDb, resolvedVillageId);
+    const districtDateBucket = `${districtId}#${now.slice(0, 10)}`;
 
     await callWithRetry(async () => {
       await dynamoHelper.put("emergency_streams", {
         districtId,
+        districtDateBucket,
         streamId:    `mat-${Date.now()}`,
         eventId:     `EVT-MAT-${Date.now()}`,
         eventType:   "maternal_alert",

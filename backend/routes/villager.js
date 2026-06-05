@@ -451,8 +451,10 @@ router.post('/ambulance', auth, logAudit('request_ambulance', 'ambulance_request
     (async () => {
       try {
         const districtId = await getDistrictId(db, pool, usingSQLite, req.user.villageId || location);
+        const districtDateBucket = `${districtId}#${timestamp.slice(0, 10)}`;
         await dynamoHelper.put('emergency_streams', {
           districtId,
+          districtDateBucket,
           streamId: `amb-${requestId}-${Date.now()}`,
           priority: priority || 'High',
           ...requestObj
