@@ -8,6 +8,18 @@ const AuthContext = createContext(null);
 const DEMO_SECRET = 'demo-only';
 const demoCredentialHash = (identifier, role, secret = DEMO_SECRET) => btoa(`${identifier}:${role}:${secret}`);
 
+function normalizeOfflineUsers(users) {
+  return (Array.isArray(users) ? users : []).map(user => {
+    const identifier = user.email || user.phone || user.username || user.id;
+    const next = { ...user };
+    if (!next.credentialHash && next.password && identifier && next.role) {
+      next.credentialHash = demoCredentialHash(identifier, next.role, next.password);
+    }
+    delete next.password;
+    return next;
+  });
+}
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -15,7 +27,7 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     // 🌐 Seed the offline database with the official demo accounts so they work offline immediately on fresh devices
     try {
-      const offlineUsers = JSON.parse(localStorage.getItem('offline_users') || '[]');
+      const offlineUsers = normalizeOfflineUsers(JSON.parse(localStorage.getItem('offline_users') || '[]'));
       const defaultDemoUsers = [
         {
           id: 'demo-villager',
@@ -55,12 +67,14 @@ export const AuthProvider = ({ children }) => {
       // Add missing default users
       let updated = [...offlineUsers];
       defaultDemoUsers.forEach(demoUser => {
-        const exists = offlineUsers.some(u => 
+        const existingIndex = updated.findIndex(u => 
           u.username === demoUser.username || 
           (demoUser.email && u.email === demoUser.email) || 
           (demoUser.phone && u.phone === demoUser.phone)
         );
-        if (!exists) {
+        if (existingIndex >= 0) {
+          updated[existingIndex] = { ...updated[existingIndex], ...demoUser };
+        } else {
           updated.push(demoUser);
         }
       });

@@ -21,17 +21,33 @@ const DEMO_CREDENTIALS = [
   { id: 'admin@swasthai.in', credentialHash: demoCredentialHash('admin@swasthai.in', 'admin'),   role: 'admin',    name: 'Demo Admin' },
 ];
 
+function normalizeOfflineUsers(users) {
+  return (Array.isArray(users) ? users : []).map(user => {
+    const identifier = user.id || user.email || user.phone || user.username;
+    const next = { ...user };
+    if (!next.credentialHash && next.password && identifier && next.role) {
+      next.credentialHash = demoCredentialHash(identifier, next.role, next.password);
+    }
+    delete next.password;
+    return next;
+  });
+}
+
 function seedOfflineCache() {
-  // Pre-seed demo credentials so offline login works on first visit too
-  const existing = localStorage.getItem(OFFLINE_CACHE_KEY);
-  if (!existing) {
-    localStorage.setItem(OFFLINE_CACHE_KEY, JSON.stringify(DEMO_CREDENTIALS));
-  }
+  const existing = normalizeOfflineUsers(JSON.parse(localStorage.getItem(OFFLINE_CACHE_KEY) || '[]'));
+  const merged = [...existing];
+  DEMO_CREDENTIALS.forEach(demoUser => {
+    const idx = merged.findIndex(u => u.id === demoUser.id && u.role === demoUser.role);
+    if (idx >= 0) merged[idx] = { ...merged[idx], ...demoUser };
+    else merged.push(demoUser);
+  });
+  localStorage.setItem(OFFLINE_CACHE_KEY, JSON.stringify(merged));
 }
 
 function tryOfflineLogin(identifier, passwordOrOtp, loginMethod, role) {
   try {
-    const cached = JSON.parse(localStorage.getItem(OFFLINE_CACHE_KEY) || '[]');
+    const cached = normalizeOfflineUsers(JSON.parse(localStorage.getItem(OFFLINE_CACHE_KEY) || '[]'));
+    localStorage.setItem(OFFLINE_CACHE_KEY, JSON.stringify(cached));
     const user = cached.find(u => {
       const idMatch = u.id === identifier;
       const roleMatch = !role || u.role === role;

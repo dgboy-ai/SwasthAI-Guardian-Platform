@@ -313,8 +313,8 @@ if (isProduction && cluster.isPrimary) {
       uptime: Math.floor(process.uptime()),
       timestamp: new Date().toISOString(),
       worker: process.pid,
-      db: usingSQLite ? 'SQLite (local)' : 'PostgreSQL/Aurora',
-      dynamodb: dynamoHelper.isMock ? 'mock (no AWS credentials)' : 'connected',
+      db: usingSQLite ? 'SQLite fallback' : 'connected',
+      dynamodb: dynamoHelper.isMock ? 'mock' : 'connected',
       recentRequests,
       ...(pool ? {
         connections: pool.totalCount,
