@@ -25,7 +25,7 @@ let docClient = null;
 
 // ── Table Definitions with Deliberate Access Patterns ──────────────────────────
 // Each table has composite keys and GSIs designed for the actual query patterns:
-//   outbreak_telemetry : query by village (time-series) + query by disease (cross-village)
+//   outbreak_telemetry : query by village, district/time, and disease
 //   sync_queues        : query by device (pending items) + query by status (fleet management)
 //   village_node_state : single-item lookup by village + TTL auto-expire
 //   emergency_streams  : query by district (all emergencies) + query by priority
@@ -41,16 +41,27 @@ const TABLE_DEFINITIONS = [
     AttributeDefinitions: [
       { AttributeName: 'villageId',  AttributeType: 'S' },
       { AttributeName: 'detectedAt', AttributeType: 'S' },
-      { AttributeName: 'disease',    AttributeType: 'S' }
+      { AttributeName: 'disease',    AttributeType: 'S' },
+      { AttributeName: 'districtId', AttributeType: 'S' }
     ],
-    GlobalSecondaryIndexes: [{
-      IndexName: 'disease-index',
-      KeySchema: [
-        { AttributeName: 'disease',    KeyType: 'HASH'  },
-        { AttributeName: 'detectedAt', KeyType: 'RANGE' }
-      ],
-      Projection: { ProjectionType: 'ALL' }
-    }],
+    GlobalSecondaryIndexes: [
+      {
+        IndexName: 'disease-index',
+        KeySchema: [
+          { AttributeName: 'disease',    KeyType: 'HASH'  },
+          { AttributeName: 'detectedAt', KeyType: 'RANGE' }
+        ],
+        Projection: { ProjectionType: 'ALL' }
+      },
+      {
+        IndexName: 'district-time-index',
+        KeySchema: [
+          { AttributeName: 'districtId', KeyType: 'HASH'  },
+          { AttributeName: 'detectedAt', KeyType: 'RANGE' }
+        ],
+        Projection: { ProjectionType: 'ALL' }
+      }
+    ],
     BillingMode: 'PAY_PER_REQUEST',
     TtlAttribute: null,
   },
@@ -348,6 +359,16 @@ const dynamoHelper = {
       'disease = :disease AND detectedAt >= :cutoff',
       { ':disease': disease, ':cutoff': cutoff },
       'disease-index'
+    );
+  },
+
+  async queryByDistrict(tableName, districtId, daysBack = 7) {
+    const cutoff = new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000).toISOString();
+    return this.query(
+      tableName,
+      'districtId = :districtId AND detectedAt >= :cutoff',
+      { ':districtId': districtId, ':cutoff': cutoff },
+      'district-time-index'
     );
   },
 

@@ -21,6 +21,21 @@ const STORES = {
 
 let dbPromise = null;
 
+function makeRequestId(prefix) {
+  const randomPart = Math.random().toString(36).slice(2, 10);
+  return `${prefix}-${Date.now()}-${randomPart}`;
+}
+
+function withClientRequestId(prefix, record) {
+  const clientRequestId = record.clientRequestId || makeRequestId(prefix);
+  return {
+    id: clientRequestId,
+    clientRequestId,
+    ...record,
+    ts: record.ts || Date.now()
+  };
+}
+
 function getQueueDB() {
   if (dbPromise) return dbPromise;
   dbPromise = new Promise((resolve) => {
@@ -98,28 +113,28 @@ async function deleteFromStore(storeName, id) {
 // ── Public Queue Actions ──────────────────────────────────────────────────────
 
 export async function queueMaternalRecord(record) {
-  const item = { id: `mat-${Date.now()}-${Math.random().toString().slice(-4)}`, ...record, ts: Date.now() };
+  const item = withClientRequestId('mat', record);
   await addToStore(STORES.maternal, item);
   triggerQueueUpdateEvent();
   return item;
 }
 
 export async function queueChildRecord(record) {
-  const item = { id: `chld-${Date.now()}-${Math.random().toString().slice(-4)}`, ...record, ts: Date.now() };
+  const item = withClientRequestId('chld', record);
   await addToStore(STORES.child, item);
   triggerQueueUpdateEvent();
   return item;
 }
 
 export async function queueAmbulanceRequest(request) {
-  const item = { id: `amb-${Date.now()}-${Math.random().toString().slice(-4)}`, ...request, ts: Date.now() };
+  const item = withClientRequestId('amb', request);
   await addToStore(STORES.ambulance, item);
   triggerQueueUpdateEvent();
   return item;
 }
 
 export async function queueSymptomCheck(check) {
-  const item = { id: `sym-${Date.now()}-${Math.random().toString().slice(-4)}`, ...check, ts: Date.now() };
+  const item = withClientRequestId('sym', check);
   await addToStore(STORES.symptoms, item);
   triggerQueueUpdateEvent();
   return item;
@@ -170,7 +185,9 @@ export async function syncAllQueues() {
   console.log('🔄 [OfflineSyncQueue] Commencing background replay...');
   
   const startTime = Date.now();
+  const syncBatchId = makeRequestId('sync');
   let syncCount = 0;
+  const syncedClientRequestIds = [];
 
   try {
     // 1. Replay SOS Ambulance Requests
@@ -181,10 +198,13 @@ export async function syncAllQueues() {
           name: r.name,
           location: r.location,
           priority: r.priority,
-          symptoms: r.symptoms
+          symptoms: r.symptoms,
+          clientRequestId: r.clientRequestId || r.id,
+          syncBatchId
         });
         await deleteFromStore(STORES.ambulance, r.id);
         syncCount++;
+        syncedClientRequestIds.push(r.clientRequestId || r.id);
       } catch (err) {
         console.error('[SyncQueue] Failed to replay ambulance SOS:', err.message);
         // Retain in queue for next replay attempt unless validation error
@@ -198,10 +218,13 @@ export async function syncAllQueues() {
       try {
         await api.post('/symptoms', {
           symptoms: s.symptoms,
-          villageId: s.villageId
+          villageId: s.villageId,
+          clientRequestId: s.clientRequestId || s.id,
+          syncBatchId
         });
         await deleteFromStore(STORES.symptoms, s.id);
         syncCount++;
+        syncedClientRequestIds.push(s.clientRequestId || s.id);
       } catch (err) {
         console.error('[SyncQueue] Failed to replay symptom check:', err.message);
         if (err.response?.status === 400) await deleteFromStore(STORES.symptoms, s.id);
@@ -217,10 +240,13 @@ export async function syncAllQueues() {
           age: m.age,
           trimester: m.trimester,
           dueDate: m.dueDate,
-          vitals: m.vitals
+          vitals: m.vitals,
+          clientRequestId: m.clientRequestId || m.id,
+          syncBatchId
         });
         await deleteFromStore(STORES.maternal, m.id);
         syncCount++;
+        syncedClientRequestIds.push(m.clientRequestId || m.id);
       } catch (err) {
         console.error('[SyncQueue] Failed to replay maternal record:', err.message);
         if (err.response?.status === 400) await deleteFromStore(STORES.maternal, m.id);
@@ -235,10 +261,13 @@ export async function syncAllQueues() {
           name: c.childName || c.name,
           age: c.ageMonths || c.age,
           weight: c.weight,
-          height: c.height
+          height: c.height,
+          clientRequestId: c.clientRequestId || c.id,
+          syncBatchId
         });
         await deleteFromStore(STORES.child, c.id);
         syncCount++;
+        syncedClientRequestIds.push(c.clientRequestId || c.id);
       } catch (err) {
         console.error('[SyncQueue] Failed to replay child nutrition:', err.message);
         if (err.response?.status === 400) await deleteFromStore(STORES.child, c.id);
@@ -253,7 +282,9 @@ export async function syncAllQueues() {
       try {
         await api.post('/villager/sync-health', {
           recordCount: syncCount,
-          durationMs
+          durationMs,
+          syncBatchId,
+          clientRequestIds: syncedClientRequestIds
         });
       } catch (syncLogErr) {
         console.warn('Could not post sync metrics to event dispatcher:', syncLogErr.message);

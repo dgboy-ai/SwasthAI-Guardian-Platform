@@ -21,6 +21,11 @@ const sanitize = (str) => {
   return str.replace(/<[^>]*>/g, '').trim();
 };
 
+const cleanClientRequestId = (value) => {
+  const cleaned = sanitize(value);
+  return typeof cleaned === 'string' && cleaned.length > 0 ? cleaned.slice(0, 120) : null;
+};
+
 const OFFLINE_DISEASE_MAP = {
   'Malaria / मलेरिया': { severity: 'P2', specialty: 'General Physician', advice: 'Sleep under a mosquito net, drink fluids, and visit nearest PHC within 24h for blood test.' },
   'Dengue / डेंगू': { severity: 'P2', specialty: 'General Physician', advice: 'Complete bed rest, stay hydrated. Do NOT take pain relievers like Ibuprofen/Aspirin (only Paracetamol is safe).' },
@@ -171,7 +176,7 @@ router.post('/emergency-alert', auth, async (req, res) => {
     const villageId = userRecord?.villageId || 'v101';
 
     // Fix 2: derive real districtId — no more 'district_main' hardcode
-    const districtId = await getDistrictId(db, villageId);
+    const districtId = await getDistrictId(db, pool, req.app.locals.usingSQLite, villageId);
 
     let requestId;
     if (pool) {
@@ -223,6 +228,7 @@ router.post('/symptoms', auth, aiLimiter, checkRole(['villager', 'ngo', 'admin']
   const usingSQLite = req.app.locals.usingSQLite;
   const AI_SERVICE_URL = req.app.locals.AI_SERVICE_URL;
   const text = sanitize(req.body.symptoms);
+  const clientRequestId = cleanClientRequestId(req.body.clientRequestId);
   const userId = req.user.id;
   const villageId = req.user.villageId || req.body.villageId;
   
@@ -235,6 +241,36 @@ router.post('/symptoms', auth, aiLimiter, checkRole(['villager', 'ngo', 'admin']
   let alternatives = [];
   let model = 'Offline Rule Matcher';
   let accuracy = '90.0%';
+
+  if (clientRequestId) {
+    const existing = !usingSQLite && pool
+      ? (await pool.query(
+          'SELECT id, prediction, disease, advice, confidence, model_used FROM symptoms WHERE client_request_id = $1',
+          [clientRequestId]
+        )).rows[0]
+      : await db.get(
+          'SELECT id, prediction, disease, advice, confidence, model_used FROM symptoms WHERE client_request_id = ?',
+          [clientRequestId]
+        );
+
+    if (existing) {
+      return res.send({
+        prediction: existing.prediction,
+        disease: existing.disease,
+        advice: existing.advice,
+        severity: 'P3',
+        doctor_specialty: 'General Physician',
+        confidence: existing.confidence,
+        alternatives: [],
+        model: existing.model_used || 'Offline Rule Matcher',
+        accuracy,
+        alert: null,
+        duplicate: true,
+        recordId: existing.id,
+        clientRequestId
+      });
+    }
+  }
 
   try {
     const aiRes = await axios.post(`${AI_SERVICE_URL}/predict/disease`, { symptoms: text }, {
@@ -267,15 +303,17 @@ router.post('/symptoms', auth, aiLimiter, checkRole(['villager', 'ngo', 'admin']
 
   if (!usingSQLite && pool) {
     await pool.query(
-      'INSERT INTO symptoms ("userId", "villageId", symptoms, prediction, disease, advice, confidence, model_used) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
-      [userId, villageId, text, prediction, disease, advice, confidence, model]
+      'INSERT INTO symptoms ("userId", "villageId", symptoms, prediction, disease, advice, confidence, model_used, client_request_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)',
+      [userId, villageId, text, prediction, disease, advice, confidence, model, clientRequestId]
     );
   } else {
     await db.run(
-      'INSERT INTO symptoms ("userId", "villageId", symptoms, prediction, disease, advice, confidence, model_used) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-      [userId, villageId, text, prediction, disease, advice, confidence, model]
+      'INSERT INTO symptoms ("userId", "villageId", symptoms, prediction, disease, advice, confidence, model_used, client_request_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [userId, villageId, text, prediction, disease, advice, confidence, model, clientRequestId]
     );
   }
+
+  eventEmitter.emit('symptom_submitted', { userId, villageId, symptoms: text, prediction, timestamp: new Date().toISOString(), clientRequestId });
 
   const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
   let logs = [];
@@ -342,8 +380,31 @@ router.post('/ambulance', auth, logAudit('request_ambulance', 'ambulance_request
   const location = sanitize(req.body.location);
   const priority = sanitize(req.body.priority);
   const sxy      = sanitize(req.body.symptoms);
+  const clientRequestId = cleanClientRequestId(req.body.clientRequestId);
   const userId   = req.user.id;
   try {
+    if (clientRequestId) {
+      const existing = !usingSQLite && pool
+        ? (await pool.query(
+            'SELECT id, status, created_at FROM ambulance_requests WHERE client_request_id = $1',
+            [clientRequestId]
+          )).rows[0]
+        : await db.get(
+            'SELECT id, status, created_at FROM ambulance_requests WHERE client_request_id = ?',
+            [clientRequestId]
+          );
+
+      if (existing) {
+        return res.status(200).json({
+          status: existing.status || 'dispatched',
+          eta: '14 mins',
+          requestId: existing.id,
+          duplicate: true,
+          clientRequestId
+        });
+      }
+    }
+
     let recent = null;
     if (!usingSQLite && pool) {
       const recentRes = await pool.query(
@@ -367,20 +428,20 @@ router.post('/ambulance', auth, logAudit('request_ambulance', 'ambulance_request
     let requestId;
     if (!usingSQLite && pool) {
       const result = await pool.query(
-        'INSERT INTO ambulance_requests (user_id, name, location, priority, request_type, symptoms, status) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id',
-        [userId, name, location, priority, 'ambulance', sxy, 'pending']
+        'INSERT INTO ambulance_requests (user_id, name, location, priority, request_type, symptoms, status, client_request_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id',
+        [userId, name, location, priority, 'ambulance', sxy, 'pending', clientRequestId]
       );
       requestId = result.rows[0].id;
     } else {
       const result = await db.run(
-        'INSERT INTO ambulance_requests (user_id, name, location, priority, request_type, symptoms, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
-        [userId, name, location, priority, 'ambulance', sxy, 'pending']
+        'INSERT INTO ambulance_requests (user_id, name, location, priority, request_type, symptoms, status, client_request_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        [userId, name, location, priority, 'ambulance', sxy, 'pending', clientRequestId]
       );
       requestId = result.lastID;
     }
 
     const timestamp  = new Date().toISOString();
-    const requestObj = { requestId, userId, name, location, priority, symptoms: sxy, status: 'pending', timestamp };
+    const requestObj = { requestId, userId, name, location, priority, symptoms: sxy, status: 'pending', timestamp, clientRequestId };
 
     // Return success immediately — the record is already saved.
     // DynamoDB telemetry & SSE broadcast are best-effort (fire-and-forget).
@@ -753,19 +814,29 @@ CRITICAL CLINICAL & TRANSLATION SAFEGUARDS:
 
 // POST /villager/sync-health — Telemetry recorder on client IndexedDB queue replay
 router.post('/villager/sync-health', auth, async (req, res) => {
-  const { recordCount, durationMs } = req.body;
+  const { recordCount, durationMs, syncBatchId, clientRequestIds = [] } = req.body;
   try {
     const deviceId = req.headers['x-device-id'] || 'unknown-device';
     const logItem = {
       deviceId,
       queuedAt: new Date().toISOString(),
       status: 'synced',
+      syncBatchId: cleanClientRequestId(syncBatchId) || `sync-${Date.now()}`,
+      clientRequestIds: Array.isArray(clientRequestIds) ? clientRequestIds.slice(0, 50) : [],
       recordCount: Number(recordCount || 0),
       durationMs: Number(durationMs || 0),
       userId: req.user.id
     };
 
     await dynamoHelper.put('sync_queues', logItem);
+    eventEmitter.emit('sync_restored', {
+      villageId: req.user.villageId || 'unassigned',
+      recordCount: logItem.recordCount,
+      durationMs: logItem.durationMs,
+      syncBatchId: logItem.syncBatchId,
+      clientRequestIds: logItem.clientRequestIds,
+      timestamp: logItem.queuedAt
+    });
     console.log(`[SYNC REPLAY] Successful drainage of ${recordCount} items from device ${deviceId} in ${durationMs}ms`);
     res.json({ success: true });
   } catch (err) {

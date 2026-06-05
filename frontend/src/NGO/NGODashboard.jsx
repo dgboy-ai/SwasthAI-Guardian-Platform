@@ -13,6 +13,7 @@ import ngoService from '../services/ngoService';
 import SkeletonCard from '../components/SkeletonCard';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { getQueueStats } from '../utils/offlineSyncQueue';
 
 /* ─── Rule-based Triage Classifier (Tristha Track: Ticket Classification) ── */
 // Classifies incoming health requests into P1-P4 urgency levels
@@ -139,12 +140,14 @@ export default function NGODashboard() {
   const [loadingAmb, setLoadingAmb]     = useState(false);
   const [loadingPad, setLoadingPad]     = useState(false);
   const [loadingOutbreaks, setLoadingOutbreaks] = useState(false);
+  const [workload, setWorkload]         = useState(null);
 
   /* Fetch both on mount so overview counts are available */
   useEffect(() => {
     fetchAmbulances();
     fetchPads();
     fetchOutbreaks();
+    fetchWorkload();
   }, []);
 
   /* Also re-fetch when switching into a tab */
@@ -177,6 +180,21 @@ export default function NGODashboard() {
       console.error('Failed to fetch outbreak alerts:', e);
     } finally {
       setLoadingOutbreaks(false);
+    }
+  };
+
+  const fetchWorkload = async () => {
+    try {
+      const [serverQueue, localQueue] = await Promise.all([
+        ngoService.getWorkloadQueue(),
+        getQueueStats().catch(() => ({ totalPending: 0 }))
+      ]);
+      const items = (serverQueue.items || []).map(item =>
+        item.key === 'pending_sync' ? { ...item, count: localQueue.totalPending || 0 } : item
+      );
+      setWorkload({ ...serverQueue, items, total: items.reduce((sum, item) => sum + item.count, 0) });
+    } catch (err) {
+      console.warn('ASHA workload queue unavailable:', err.message || err);
     }
   };
 

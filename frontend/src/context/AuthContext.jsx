@@ -107,7 +107,7 @@ export const AuthProvider = ({ children }) => {
         username: data.username,
         email: data.email || '',
         phone: data.phone || '',
-        password: data.password, // Saved strictly locally for offline demo authentication
+        password: data.password, // Local-only judge/demo cache; not production authentication.
         role: data.role || 'villager',
         villageId: data.villageId || 'v101',
         isOfflineSession: true
@@ -210,7 +210,7 @@ export const AuthProvider = ({ children }) => {
         (error.response && error.response.status >= 500);
 
       if (isNetworkOrServerError && identifier && password) {
-        console.log('API unreachable or slow. Creating secure offline session.');
+        console.log('API unreachable or slow. Creating judge/demo offline session.');
         return createOfflineSession();
       }
       

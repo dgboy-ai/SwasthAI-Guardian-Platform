@@ -3,12 +3,18 @@ import axios from 'axios';
 import { z } from 'zod';
 import { auth, checkRole } from '../middleware/auth.js';
 import { logAudit } from '../middleware/audit.js';
+import eventEmitter from '../eventDispatcher.js';
 
 const router = express.Router();
 
 const sanitize = (str) => {
   if (typeof str !== 'string') return str;
   return str.replace(/<[^>]*>/g, '').trim();
+};
+
+const cleanClientRequestId = (value) => {
+  const cleaned = sanitize(value);
+  return typeof cleaned === 'string' && cleaned.length > 0 ? cleaned.slice(0, 120) : null;
 };
 
 router.get('/maternal', auth, checkRole(['ngo', 'admin']), async (req, res) => {
@@ -65,6 +71,7 @@ router.post('/maternal', auth, checkRole(['ngo', 'admin']), logAudit('create', '
   const db = req.app.locals.db;
   const AI_SERVICE_URL = req.app.locals.AI_SERVICE_URL;
   const { name, age, trimester, dueDate, vitals } = req.body;
+  const clientRequestId = cleanClientRequestId(req.body.clientRequestId);
 
   if (!name || !age || !trimester) {
     return res.status(400).send({ error: 'Name, age, and trimester are required.' });
@@ -79,6 +86,22 @@ router.post('/maternal', auth, checkRole(['ngo', 'admin']), logAudit('create', '
   const villageId = req.user.villageId || 'unassigned';
   const patientVitals = vitals || { systolic_bp: 120, diastolic_bp: 80, bs: 5.0, body_temp: 98, heart_rate: 75 };
 
+  if (clientRequestId) {
+    const existing = await db.get(
+      'SELECT id, "riskLevel", "villageId" FROM pregnancy_data WHERE client_request_id = ?',
+      [clientRequestId]
+    );
+    if (existing) {
+      return res.send({
+        riskLevel: existing.riskLevel,
+        villageId: existing.villageId,
+        recordId: existing.id,
+        duplicate: true,
+        clientRequestId
+      });
+    }
+  }
+
   let riskLevel;
   try {
     const ai = await axios.post(`${AI_SERVICE_URL}/predict/pregnancy_risk`, { age, ...patientVitals });
@@ -87,14 +110,21 @@ router.post('/maternal', auth, checkRole(['ngo', 'admin']), logAudit('create', '
     console.error('AI Service Error (Maternal Risk):', err.message);
     return res.status(503).send({ error: 'Maternal Risk AI is currently unavailable. Please consult a doctor immediately if you notice warning signs.' });
   }
-  await db.run('INSERT INTO pregnancy_data (name, age, trimester, "dueDate", "riskLevel", "villageId", recorded_by) VALUES (?, ?, ?, ?, ?, ?, ?)', [name, age, trimester, dueDate, riskLevel, villageId, req.user.id]);
-  res.send({ riskLevel, villageId });
+  const saved = await db.run(
+    'INSERT INTO pregnancy_data (name, age, trimester, "dueDate", "riskLevel", "villageId", recorded_by, client_request_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+    [name, age, trimester, dueDate, riskLevel, villageId, req.user.id, clientRequestId]
+  );
+  if (String(riskLevel || '').toLowerCase() === 'high') {
+    eventEmitter.emit('maternal_alert', { name, age, villageId, riskLevel, vitals: patientVitals, timestamp: new Date().toISOString() });
+  }
+  res.send({ riskLevel, villageId, recordId: saved.lastID, clientRequestId });
 });
 
 router.post('/malnutrition', auth, checkRole(['ngo', 'admin']), async (req, res) => {
   const db = req.app.locals.db;
   const AI_SERVICE_URL = req.app.locals.AI_SERVICE_URL;
   const { name, age, weight, height } = req.body;
+  const clientRequestId = cleanClientRequestId(req.body.clientRequestId);
 
   if (!name || !age || !weight || !height) {
     return res.status(400).send({ error: 'Name, age, weight, and height are all required.' });
@@ -110,6 +140,22 @@ router.post('/malnutrition', auth, checkRole(['ngo', 'admin']), async (req, res)
   }
 
   const villageId = req.user.villageId || 'unassigned';
+  if (clientRequestId) {
+    const existing = await db.get(
+      'SELECT id, status, "villageId" FROM malnutrition_data WHERE client_request_id = ?',
+      [clientRequestId]
+    );
+    if (existing) {
+      return res.send({
+        status: existing.status,
+        villageId: existing.villageId,
+        recordId: existing.id,
+        duplicate: true,
+        clientRequestId
+      });
+    }
+  }
+
   let status, bmi, action;
   try {
     const ai = await axios.post(`${AI_SERVICE_URL}/predict/malnutrition`, { age_months: age, weight_kg: weight, height_cm: height });
@@ -120,8 +166,11 @@ router.post('/malnutrition', auth, checkRole(['ngo', 'admin']), async (req, res)
     console.error('AI Service Error (Malnutrition):', err.message);
     return res.status(503).send({ error: 'Malnutrition assessment AI is currently unavailable. Please check back later.' });
   }
-  await db.run('INSERT INTO malnutrition_data ("childName", "ageMonths", weight, height, status, "villageId") VALUES (?, ?, ?, ?, ?, ?)', [name, age, weight, height, status, villageId]);
-  res.send({ status, bmi, action, villageId });
+  const saved = await db.run(
+    'INSERT INTO malnutrition_data ("childName", "ageMonths", weight, height, status, "villageId", client_request_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    [name, age, weight, height, status, villageId, clientRequestId]
+  );
+  res.send({ status, bmi, action, villageId, recordId: saved.lastID, clientRequestId });
 });
 
 router.get('/ambulances', auth, checkRole(['ngo', 'admin']), async (req, res) => {
@@ -387,6 +436,43 @@ router.get('/stats', auth, checkRole(['ngo', 'admin']), async (req, res) => {
 });
 
 // GET /api/ngo/residents — villagers in ASHA worker's village (or all for admin)
+router.get('/workload', auth, checkRole(['ngo', 'admin']), async (req, res) => {
+  const db = req.app.locals.db;
+  const count = (row) => parseInt(row?.c ?? row?.cnt ?? row?.count ?? 0, 10);
+  try {
+    const villageId = req.user.role === 'admin' ? req.query.villageId : req.user.villageId;
+    const scoped = villageId ? ' AND "villageId" = ?' : '';
+    const params = villageId ? [villageId] : [];
+
+    const [referrals, highRiskPregnancies, missedVaccinations, padRequests, sosItems] = await Promise.all([
+      db.get(`SELECT COUNT(*) as c FROM referrals WHERE status IN ('pending','accepted','in_transit')${scoped}`, params).catch(() => ({ c: 0 })),
+      db.get(`SELECT COUNT(*) as c FROM pregnancy_data WHERE LOWER("riskLevel") = 'high'${scoped}`, params).catch(() => ({ c: 0 })),
+      db.get(`SELECT COUNT(*) as c FROM vaccination_records WHERE status IN ('scheduled','missed') AND COALESCE(given_date, '') = ''${scoped}`, params).catch(() => ({ c: 0 })),
+      db.get("SELECT COUNT(*) as c FROM ambulance_requests WHERE request_type = 'pad_request' AND status = 'pending'").catch(() => ({ c: 0 })),
+      db.get("SELECT COUNT(*) as c FROM ambulance_requests WHERE request_type = 'ambulance' AND status IN ('pending','assigned','in_progress')").catch(() => ({ c: 0 })),
+    ]);
+
+    const items = [
+      { key: 'pending_referrals', label: 'Pending referrals', count: count(referrals), priority: 'high' },
+      { key: 'high_risk_pregnancies', label: 'High-risk pregnancies', count: count(highRiskPregnancies), priority: 'critical' },
+      { key: 'missed_vaccinations', label: 'Missed vaccinations', count: count(missedVaccinations), priority: 'medium' },
+      { key: 'pad_requests', label: 'Pad requests', count: count(padRequests), priority: 'medium' },
+      { key: 'sos_items', label: 'SOS items', count: count(sosItems), priority: 'critical' },
+      { key: 'pending_sync', label: 'Pending sync count', count: 0, priority: 'low' },
+    ];
+
+    res.json({
+      villageId: villageId || 'all',
+      generatedAt: new Date().toISOString(),
+      items,
+      total: items.reduce((sum, item) => sum + item.count, 0)
+    });
+  } catch (err) {
+    console.error('[NGO WORKLOAD] Error:', err.message);
+    res.status(500).json({ error: 'Failed to fetch ASHA workload queue.' });
+  }
+});
+
 router.get('/residents', auth, checkRole(['ngo', 'admin']), async (req, res) => {
   const db = req.app.locals.db;
   try {
@@ -410,4 +496,3 @@ router.get('/residents', auth, checkRole(['ngo', 'admin']), async (req, res) => 
 });
 
 export default router;
-

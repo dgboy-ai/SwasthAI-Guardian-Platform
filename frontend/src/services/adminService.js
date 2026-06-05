@@ -142,6 +142,27 @@ const adminService = {
     }
   },
 
+  getDistrictReport: async (month) => {
+    try {
+      const params = month ? `?month=${encodeURIComponent(month)}` : '';
+      const res = await api.get(`/admin/district-report${params}`);
+      return res.data;
+    } catch (error) {
+      throw error.response?.data?.error || 'Failed to fetch district report';
+    }
+  },
+
+  exportDistrictReport: async (month) => {
+    try {
+      const query = new URLSearchParams({ format: 'csv' });
+      if (month) query.set('month', month);
+      const res = await api.get(`/admin/district-report?${query.toString()}`, { responseType: 'blob' });
+      return res.data;
+    } catch (error) {
+      throw error.response?.data?.error || 'Failed to export district report';
+    }
+  },
+
   // Demo Control & Reports
   seedDemoData: async () => {
     try {

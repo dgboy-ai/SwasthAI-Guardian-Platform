@@ -60,9 +60,12 @@ eventEmitter.on("symptom_submitted", async (eventData) => {
   const now = timestamp || new Date().toISOString();
 
   try {
+    const districtId = await getDistrictId(pgDb, villageId);
+
     await callWithRetry(async () => {
       await dynamoHelper.put("outbreak_telemetry", {
         villageId,
+        districtId,
         detectedAt:  now,
         eventId:     `EVT-SYM-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
         eventType:   "symptom_submitted",
@@ -88,9 +91,12 @@ eventEmitter.on("outbreak_detected", async (eventData) => {
   const now = timestamp || new Date().toISOString();
 
   try {
+    const districtId = await getDistrictId(pgDb, villageId);
+
     await callWithRetry(async () => {
       await dynamoHelper.put("outbreak_telemetry", {
         villageId,
+        districtId,
         detectedAt:  now,
         eventId:     `EVT-OUT-${Date.now()}`,
         eventType:   "outbreak_detected",
@@ -118,17 +124,22 @@ eventEmitter.on("outbreak_detected", async (eventData) => {
 
 // 3. Listen for sync restorations
 eventEmitter.on("sync_restored", async (eventData) => {
-  const { villageId, recordCount, durationMs, timestamp } = eventData;
+  const { villageId, recordCount, durationMs, syncBatchId, clientRequestIds = [], timestamp } = eventData;
   console.log(`[EVENT] sync_restored: ${recordCount} records from ${villageId} synced in ${durationMs}ms`);
   const now = timestamp || new Date().toISOString();
 
   try {
+    const districtId = await getDistrictId(pgDb, villageId);
+
     await callWithRetry(async () => {
       await dynamoHelper.put("outbreak_telemetry", {
         villageId,
+        districtId,
         detectedAt:   now,
         eventId:      `EVT-SYNC-${Date.now()}`,
         eventType:    "sync_restored",
+        syncBatchId,
+        clientRequestIds,
         recordCount,
         durationMs,
         timestamp:    now,

@@ -308,6 +308,8 @@ export default function AdminDashboard() {
   const [dynamoFeed, setDynamoFeed]         = useState(null);
   const [systemError, setSystemError]       = useState(null);
   const [systemLoading, setSystemLoading]   = useState(true);
+  const [districtReport, setDistrictReport] = useState(null);
+  const [reportLoading, setReportLoading]   = useState(false);
   const [alertSent, setAlertSent]           = useState(false);
   const [lastSync, setLastSync]             = useState('Just now');
   const lastSyncRef = useRef(Date.now());
@@ -331,6 +333,23 @@ export default function AdminDashboard() {
     }, 30000);
     return () => clearInterval(id);
   }, []);
+
+  useEffect(() => {
+    if (activeView !== 'reports') return;
+    const loadDistrictReport = async () => {
+      setReportLoading(true);
+      try {
+        const month = new Date().toISOString().slice(0, 7);
+        const report = await adminService.getDistrictReport(month);
+        setDistrictReport(report);
+      } catch (err) {
+        console.warn('District report preview unavailable:', err.message || err);
+      } finally {
+        setReportLoading(false);
+      }
+    };
+    loadDistrictReport();
+  }, [activeView]);
 
   /* Data fetch — falls back to demo data gracefully */
   useEffect(() => {
@@ -483,6 +502,17 @@ export default function AdminDashboard() {
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const url = window.URL.createObjectURL(blob);
       triggerBlobDownload(url, isDemo ? 'swasthai_admin_demo_report.csv' : 'swasthai_admin_report_offline.csv');
+    }
+  };
+
+  const downloadDistrictReport = async () => {
+    try {
+      const month = new Date().toISOString().slice(0, 7);
+      const blob = await adminService.exportDistrictReport(month);
+      const url = window.URL.createObjectURL(new Blob([blob], { type: 'text/csv;charset=utf-8;' }));
+      triggerBlobDownload(url, `district_cmo_report_${month}.csv`);
+    } catch (err) {
+      console.warn('District CMO report export failed:', err.message || err);
     }
   };
 
@@ -1301,6 +1331,61 @@ export default function AdminDashboard() {
                 <button onClick={downloadReport} className="flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-xl font-black text-[12px] uppercase tracking-wider hover:bg-emerald-700 transition-colors shadow-sm">
                   <Download className="w-4 h-4" /> Download District CSV Report
                 </button>
+              </div>
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+                  <div className="flex items-center justify-between gap-3 mb-4">
+                    <div>
+                      <h3 className="font-black text-slate-900 text-[15px]">District Onboarding Checklist</h3>
+                      <p className="text-[10px] text-slate-400 font-bold mt-1">Procurement workflow for first district rollout</p>
+                    </div>
+                    <CheckCircle className="w-5 h-5 text-emerald-600" />
+                  </div>
+                  <div className="space-y-2">
+                    {[
+                      { label: 'Upload villages', done: (SM.villages || 0) > 0 },
+                      { label: 'Assign ASHA workers', done: (SM.totalNgos || 0) > 0 },
+                      { label: 'Configure outbreak threshold', done: true },
+                      { label: 'Verify AWS storage', done: systemStatus?.production_ready === true },
+                      { label: 'Export first district report', done: !!districtReport },
+                    ].map(step => (
+                      <div key={step.label} className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 p-3">
+                        <span className="text-[12px] font-bold text-slate-700">{step.label}</span>
+                        <span className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase ${step.done ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                          {step.done ? 'Ready' : 'Pending'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+                  <div className="flex items-center justify-between gap-3 mb-4">
+                    <div>
+                      <h3 className="font-black text-slate-900 text-[15px]">Monthly CMO Report</h3>
+                      <p className="text-[10px] text-slate-400 font-bold mt-1">Generated from Aurora records + DynamoDB telemetry.</p>
+                    </div>
+                    <button onClick={downloadDistrictReport} className="flex items-center gap-2 px-3 py-2 bg-slate-900 text-white rounded-xl font-black text-[10px] uppercase tracking-wider">
+                      <Download className="w-3.5 h-3.5" /> Export
+                    </button>
+                  </div>
+                  {reportLoading ? (
+                    <p className="text-[12px] text-slate-400 font-bold">Loading report preview...</p>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-3">
+                      {[
+                        { label: 'Villages', val: districtReport?.villages?.total ?? 0 },
+                        { label: 'High-risk', val: districtReport?.maternal?.highRiskPregnancies ?? 0 },
+                        { label: 'SOS', val: districtReport?.emergencies?.ambulanceRequests ?? 0 },
+                        { label: 'Outbreaks', val: districtReport?.outbreakAlerts?.count ?? 0 },
+                      ].map(metric => (
+                        <div key={metric.label} className="rounded-xl bg-slate-50 border border-slate-100 p-3">
+                          <p className="text-[20px] font-black text-slate-900">{metric.val}</p>
+                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{metric.label}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {[

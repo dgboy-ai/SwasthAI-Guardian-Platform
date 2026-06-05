@@ -72,6 +72,7 @@ export async function initSchema(db, pool, usingSQLite) {
       "riskLevel" VARCHAR(20),
       "villageId" VARCHAR(60),
       recorded_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      client_request_id VARCHAR(120) UNIQUE DEFAULT NULL,
       created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
     );
@@ -84,6 +85,7 @@ export async function initSchema(db, pool, usingSQLite) {
       height DOUBLE PRECISION,
       status VARCHAR(50),
       "villageId" VARCHAR(60),
+      client_request_id VARCHAR(120) UNIQUE DEFAULT NULL,
       created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
     );
@@ -98,6 +100,7 @@ export async function initSchema(db, pool, usingSQLite) {
       advice TEXT,
       confidence REAL,
       model_used VARCHAR(50),
+      client_request_id VARCHAR(120) UNIQUE DEFAULT NULL,
       "createdAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
     );
@@ -124,6 +127,7 @@ export async function initSchema(db, pool, usingSQLite) {
       request_type VARCHAR(30) DEFAULT 'ambulance',
       symptoms TEXT,
       status VARCHAR(20) DEFAULT 'pending',
+      client_request_id VARCHAR(120) UNIQUE DEFAULT NULL,
       created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
     );
@@ -357,20 +361,31 @@ export async function initSchema(db, pool, usingSQLite) {
     await addColIfMissing('village_health', 'lng', 'DOUBLE PRECISION DEFAULT NULL');
     await addColIfMissing('ambulance_requests', 'type', "VARCHAR(30) DEFAULT 'emergency'");
     await addColIfMissing('ambulance_requests', 'request_type', "VARCHAR(30) DEFAULT 'ambulance'");
+    await addColIfMissing('ambulance_requests', 'client_request_id', 'VARCHAR(120) DEFAULT NULL');
     await addColIfMissing('ambulance_requests', 'updated_at', 'TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP');
     await addColIfMissing('users', 'created_at', 'TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP');
     await addColIfMissing('users', 'updated_at', 'TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP');
     await addColIfMissing('pregnancy_data', 'recorded_by', 'INTEGER REFERENCES users(id) ON DELETE SET NULL');
+    await addColIfMissing('pregnancy_data', 'client_request_id', 'VARCHAR(120) DEFAULT NULL');
     await addColIfMissing('pregnancy_data', 'updated_at', 'TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP');
     await addColIfMissing('symptoms', 'disease', 'VARCHAR(120) DEFAULT NULL');
     await addColIfMissing('symptoms', 'advice', 'TEXT DEFAULT NULL');
     await addColIfMissing('symptoms', 'confidence', 'REAL DEFAULT NULL');
     await addColIfMissing('symptoms', 'model_used', 'VARCHAR(50) DEFAULT NULL');
+    await addColIfMissing('symptoms', 'client_request_id', 'VARCHAR(120) DEFAULT NULL');
     await addColIfMissing('symptoms', 'updated_at', 'TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP');
+    await addColIfMissing('malnutrition_data', 'client_request_id', 'VARCHAR(120) DEFAULT NULL');
     await addColIfMissing('referrals', 'outcome', 'VARCHAR(120) DEFAULT NULL');
     await addColIfMissing('referrals', 'outcome_details', 'TEXT DEFAULT NULL');
     await addColIfMissing('referrals', 'closed_at', 'TIMESTAMPTZ DEFAULT NULL');
     await addColIfMissing('referrals', 'updated_at', 'TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP');
+
+    await pool.query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_symptoms_client_request       ON symptoms(client_request_id) WHERE client_request_id IS NOT NULL;
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_ambulance_client_request      ON ambulance_requests(client_request_id) WHERE client_request_id IS NOT NULL;
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_pregnancy_client_request      ON pregnancy_data(client_request_id) WHERE client_request_id IS NOT NULL;
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_malnutrition_client_request   ON malnutrition_data(client_request_id) WHERE client_request_id IS NOT NULL;
+    `);
   } else {
     // ── SQLite Schema Auto-Creation & Demo Data Seeding ──────────────────────
     console.log('📦 Initializing SQLite database schema and indexing...');
@@ -445,6 +460,7 @@ export async function initSchema(db, pool, usingSQLite) {
         "riskLevel" TEXT,
         "villageId" TEXT,
         recorded_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+        client_request_id TEXT UNIQUE DEFAULT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
@@ -457,6 +473,7 @@ export async function initSchema(db, pool, usingSQLite) {
         height REAL,
         status TEXT,
         "villageId" TEXT,
+        client_request_id TEXT UNIQUE DEFAULT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
@@ -471,6 +488,7 @@ export async function initSchema(db, pool, usingSQLite) {
         advice TEXT,
         confidence REAL,
         model_used TEXT,
+        client_request_id TEXT UNIQUE DEFAULT NULL,
         "createdAt" DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
@@ -497,6 +515,7 @@ export async function initSchema(db, pool, usingSQLite) {
         request_type TEXT DEFAULT 'ambulance',
         symptoms TEXT,
         status TEXT DEFAULT 'pending',
+        client_request_id TEXT UNIQUE DEFAULT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
@@ -715,20 +734,31 @@ export async function initSchema(db, pool, usingSQLite) {
 
     await addSQLiteColIfMissing('ambulance_requests', 'type', "TEXT DEFAULT 'emergency'");
     await addSQLiteColIfMissing('ambulance_requests', 'request_type', "TEXT DEFAULT 'ambulance'");
+    await addSQLiteColIfMissing('ambulance_requests', 'client_request_id', 'TEXT DEFAULT NULL');
     await addSQLiteColIfMissing('ambulance_requests', 'updated_at', 'DATETIME DEFAULT NULL');
 
     await addSQLiteColIfMissing('pregnancy_data', 'recorded_by', 'INTEGER REFERENCES users(id) ON DELETE SET NULL');
+    await addSQLiteColIfMissing('pregnancy_data', 'client_request_id', 'TEXT DEFAULT NULL');
     await addSQLiteColIfMissing('pregnancy_data', 'updated_at', 'DATETIME DEFAULT NULL');
 
     await addSQLiteColIfMissing('symptoms', 'disease', 'TEXT DEFAULT NULL');
     await addSQLiteColIfMissing('symptoms', 'advice', 'TEXT DEFAULT NULL');
     await addSQLiteColIfMissing('symptoms', 'confidence', 'REAL DEFAULT NULL');
     await addSQLiteColIfMissing('symptoms', 'model_used', 'TEXT DEFAULT NULL');
+    await addSQLiteColIfMissing('symptoms', 'client_request_id', 'TEXT DEFAULT NULL');
     await addSQLiteColIfMissing('symptoms', 'updated_at', 'DATETIME DEFAULT NULL');
+    await addSQLiteColIfMissing('malnutrition_data', 'client_request_id', 'TEXT DEFAULT NULL');
 
     await addSQLiteColIfMissing('referrals', 'outcome', 'TEXT DEFAULT NULL');
     await addSQLiteColIfMissing('referrals', 'outcome_details', 'TEXT DEFAULT NULL');
     await addSQLiteColIfMissing('referrals', 'closed_at', 'DATETIME DEFAULT NULL');
     await addSQLiteColIfMissing('referrals', 'updated_at', 'DATETIME DEFAULT NULL');
+
+    await db.exec(`
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_sqlite_symptoms_client_request      ON symptoms(client_request_id);
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_sqlite_ambulance_client_request     ON ambulance_requests(client_request_id);
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_sqlite_pregnancy_client_request     ON pregnancy_data(client_request_id);
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_sqlite_malnutrition_client_request  ON malnutrition_data(client_request_id);
+    `);
   }
 }

@@ -41,6 +41,15 @@ const ngoService = {
     }
   },
 
+  getWorkloadQueue: async () => {
+    try {
+      const res = await api.get('/ngo/workload');
+      return res.data;
+    } catch (error) {
+      throw error.response?.data?.error || 'Failed to fetch ASHA workload queue';
+    }
+  },
+
   // Get Assigned Residents
   getAssignedResidents: async () => {
     try {

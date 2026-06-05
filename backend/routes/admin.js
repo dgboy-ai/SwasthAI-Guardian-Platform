@@ -24,6 +24,20 @@ Object.defineProperty(router, 'sseClientsCount', {
   get: () => adminSseClients.size
 });
 
+async function resolveDistrictId(db, villageId) {
+  if (!villageId) return process.env.DISTRICT_NAME || 'district_main';
+  try {
+    const row = await db.get('SELECT "districtId" FROM village_health WHERE "villageId" = ?', [villageId]);
+    return row?.districtId || process.env.DISTRICT_NAME || 'district_main';
+  } catch (_) {
+    return process.env.DISTRICT_NAME || 'district_main';
+  }
+}
+
+function requestedDistrict(req) {
+  return req.query.districtId || process.env.DISTRICT_NAME || 'district_main';
+}
+
 export function broadcastToAdmins(eventType, data) {
   const payload = `event: ${eventType}\ndata: ${JSON.stringify(data)}\n\n`;
   adminSseClients.forEach((res, clientId) => {
@@ -319,8 +333,11 @@ router.post('/outbreak-alert', async (req, res) => {
   const timestamp = detectedAt || new Date().toISOString();
 
   try {
+    const districtId = await resolveDistrictId(db, villageId);
+
     await dynamoHelper.put('outbreak_telemetry', {
       villageId,
+      districtId,
       detectedAt:     timestamp,
       disease,
       action,
@@ -383,10 +400,11 @@ router.get('/outbreaks-dynamo', async (req, res) => {
   try {
     // Fix 1: queryRecentAll instead of unbounded scan — last 7 days with FilterExpression
     const daysBack = parseInt(req.query.days) || 7;
-    const outbreaks = await dynamoHelper.queryRecentAll('outbreak_telemetry', daysBack);
+    const districtId = requestedDistrict(req);
+    const outbreaks = await dynamoHelper.queryByDistrict('outbreak_telemetry', districtId, daysBack);
     outbreaks.sort((a, b) => (b.detectedAt || '').localeCompare(a.detectedAt || ''));
     const limit = parseInt(req.query.limit) || 20;
-    res.json({ outbreaks: outbreaks.slice(0, limit), total: outbreaks.length, store: dynamoHelper.isMock ? 'mock' : 'dynamodb', daysBack });
+    res.json({ outbreaks: outbreaks.slice(0, limit), total: outbreaks.length, store: dynamoHelper.isMock ? 'mock' : 'dynamodb', daysBack, districtId, accessPattern: 'district-time-index' });
   } catch (err) {
     sendError(res, 500, 'DYNAMO_OUTBREAKS_FAILED', err.message);
   }
@@ -396,9 +414,10 @@ router.get('/outbreaks', auth, checkRole(['admin', 'ngo']), async (req, res) => 
   try {
     // Fix 1: queryRecentAll instead of unbounded scan — last 7 days with FilterExpression
     const daysBack = parseInt(req.query.days) || 7;
-    const outbreaks = await dynamoHelper.queryRecentAll('outbreak_telemetry', daysBack);
+    const districtId = requestedDistrict(req);
+    const outbreaks = await dynamoHelper.queryByDistrict('outbreak_telemetry', districtId, daysBack);
     outbreaks.sort((a, b) => (b.detectedAt || '').localeCompare(a.detectedAt || ''));
-    res.json({ outbreaks: outbreaks.slice(0, 20), store: dynamoHelper.isMock ? 'mock' : 'dynamodb', daysBack });
+    res.json({ outbreaks: outbreaks.slice(0, 20), store: dynamoHelper.isMock ? 'mock' : 'dynamodb', daysBack, districtId, accessPattern: 'district-time-index' });
   } catch (err) {
     sendError(res, 503, 'OUTBREAKS_TEMPORARILY_UNAVAILABLE', err.message);
   }
@@ -424,8 +443,9 @@ router.get('/dynamo-feed', auth, async (req, res) => {
     // Fix 1: outbreak_telemetry uses queryRecentAll (has detectedAt range key)
     // sync_queues, village_node_state, emergency_streams still use scan
     // (they lack a common time-range key suitable for cross-partition Query)
+    const districtId = requestedDistrict(req);
     const [outbreaks, syncQueues, nodeStates, emergencies] = await Promise.all([
-      dynamoHelper.queryRecentAll('outbreak_telemetry', 7),
+      dynamoHelper.queryByDistrict('outbreak_telemetry', districtId, 7),
       dynamoHelper.scan('sync_queues'),
       dynamoHelper.scan('village_node_state'),
       dynamoHelper.scan('emergency_streams'),
@@ -439,6 +459,8 @@ router.get('/dynamo-feed', auth, async (req, res) => {
       village_node_state: sort(nodeStates),
       emergency_streams: sort(emergencies),
       isMock: dynamoHelper.isMock,
+      districtId,
+      accessPattern: 'outbreak_telemetry.district-time-index',
       timestamp: new Date().toISOString(),
     });
   } catch (err) {
@@ -668,7 +690,7 @@ router.get('/district-report', auth, checkRole(['admin']), async (req, res) => {
     try {
       const monthStart = `${monthParam}-01T00:00:00.000Z`;
       const monthEnd   = `${monthParam}-31T23:59:59.999Z`;
-      const raw = await dynamoHelper.queryRecentAll('outbreak_telemetry', 60); // 60-day window covers any month
+      const raw = await dynamoHelper.queryByDistrict('outbreak_telemetry', process.env.DISTRICT_NAME || 'district_main', 60);
       outbreaks = (raw || []).filter(o => {
         const ts = o.detectedAt || '';
         return ts >= monthStart && ts <= monthEnd;

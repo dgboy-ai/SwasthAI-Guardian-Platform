@@ -10,8 +10,8 @@ import {
 } from 'lucide-react';
 
 // ── Offline-First Login Helpers ──────────────────────────────────────────────
-// Demo credentials pre-cached on first successful online login.
-// Enables ASHA workers in zero-signal zones to authenticate locally.
+// Judge/demo credentials pre-cached for hackathon walkthroughs.
+// Production authentication uses backend-issued tokens and real OTP/password verification.
 const OFFLINE_CACHE_KEY = 'swasthai_offline_user_cache';
 const DEMO_CREDENTIALS = [
   { id: '9876543210',       password: 'Demo@1234', role: 'villager', name: 'Demo Villager'   },
@@ -136,7 +136,7 @@ export default function LoginPage() {
           setTimeout(() => navigate(`/${offlineUser.role}`), 400);
           return;
         }
-        setError('📶 No internet connection. Use demo credentials (shown below) to access offline mode.');
+        setError('No internet connection. Use judge/demo credentials below for local-only offline mode.');
       } else {
         setError(err.message || 'Login failed. Please check your details and try again.');
       }
@@ -265,8 +265,8 @@ export default function LoginPage() {
               >
                 <WifiOff className="w-4 h-4 shrink-0 text-amber-600" />
                 <span>
-                  <span className="font-black">Offline Mode Active</span> — Use demo credentials below to access SwasthAI.
-                  <span className="block text-amber-600 font-medium mt-0.5">ऑफ़लाइन मोड: डेमो क्रेडेंशियल से लॉगिन करें।</span>
+                  <span className="font-black">Judge/Demo Offline Mode</span> - local-only credentials are enabled for the hackathon walkthrough.
+                  <span className="block text-amber-600 font-medium mt-0.5">Production sign-in uses backend OTP/password verification and issued tokens.</span>
                 </span>
               </motion.div>
             )}
@@ -397,10 +397,10 @@ export default function LoginPage() {
               </span>
             </motion.button>
 
-            {/* Demo credentials — for hackathon judges */}
+            {/* Judge/demo credentials for hackathon judges */}
             <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl space-y-2.5">
               <p className="text-[10px] font-black uppercase tracking-widest text-emerald-700 flex items-center gap-2">
-                <Zap className="w-3.5 h-3.5" /> For Quick Demo - Click to Fill
+                <Zap className="w-3.5 h-3.5" /> Judge/Demo Mode - Click to Fill
               </p>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {[
@@ -422,7 +422,7 @@ export default function LoginPage() {
                 ))}
               </div>
               <p className="text-[10px] font-medium text-emerald-700">
-                OTP login: Use <span className="font-black text-emerald-900">1234</span> for any account.
+                Demo OTP: Use <span className="font-black text-emerald-900">1234</span> only for judge/demo accounts.
               </p>
             </div>
           </form>
