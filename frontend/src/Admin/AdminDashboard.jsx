@@ -335,6 +335,8 @@ export default function AdminDashboard() {
   const [systemLoading, setSystemLoading]   = useState(true);
   const [districtReport, setDistrictReport] = useState(null);
   const [reportLoading, setReportLoading]   = useState(false);
+  const [ashaPerformance, setAshaPerformance] = useState([]);
+  const [districtConfig, setDistrictConfig] = useState(null);
   const [alertSent, setAlertSent]           = useState(false);
   const [lastSync, setLastSync]             = useState('Just now');
   const lastSyncRef = useRef(Date.now());
@@ -365,8 +367,14 @@ export default function AdminDashboard() {
       setReportLoading(true);
       try {
         const month = new Date().toISOString().slice(0, 7);
-        const report = await adminService.getDistrictReport(month);
+        const [report, performance, config] = await Promise.all([
+          adminService.getDistrictReport(month),
+          adminService.getAshaPerformance().catch(() => ({ performance: [] })),
+          adminService.getDistrictConfig('district_main').catch(() => ({ config: null })),
+        ]);
         setDistrictReport(report);
+        setAshaPerformance(performance?.performance || []);
+        setDistrictConfig(config?.config || null);
       } catch (err) {
         console.warn('District report preview unavailable:', err.message || err);
       } finally {
@@ -1386,6 +1394,27 @@ export default function AdminDashboard() {
                 <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
                   <div className="flex items-center justify-between gap-3 mb-4">
                     <div>
+                      <h3 className="font-black text-slate-900 text-[15px]">District Configuration</h3>
+                      <p className="text-[10px] text-slate-400 font-bold mt-1">Repeatable deployment settings for each buyer district</p>
+                    </div>
+                    <Settings className="w-5 h-5 text-slate-500" />
+                  </div>
+                  <div className="grid grid-cols-3 gap-3">
+                    {[
+                      { label: 'Outbreak threshold', val: districtConfig?.outbreak_threshold ?? 3 },
+                      { label: 'Auto ambulance', val: districtConfig?.enable_auto_ambulance ? 'On' : 'Off' },
+                      { label: 'Emergency contact', val: districtConfig?.emergency_contact_phone || 'Pending' },
+                    ].map(item => (
+                      <div key={item.label} className="rounded-xl bg-slate-50 border border-slate-100 p-3 min-w-0">
+                        <p className="text-[15px] font-black text-slate-900 truncate">{item.val}</p>
+                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mt-1 leading-tight">{item.label}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+                  <div className="flex items-center justify-between gap-3 mb-4">
+                    <div>
                       <h3 className="font-black text-slate-900 text-[15px]">Monthly CMO Report</h3>
                       <p className="text-[10px] text-slate-400 font-bold mt-1">Generated from Aurora records + DynamoDB telemetry.</p>
                     </div>
@@ -1410,6 +1439,41 @@ export default function AdminDashboard() {
                       ))}
                     </div>
                   )}
+                </div>
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+                  <div className="flex items-center justify-between gap-3 mb-4">
+                    <div>
+                      <h3 className="font-black text-slate-900 text-[15px]">ASHA Performance</h3>
+                      <p className="text-[10px] text-slate-400 font-bold mt-1">Worker KPIs for CMO review and NGO operations</p>
+                    </div>
+                    <Users className="w-5 h-5 text-emerald-600" />
+                  </div>
+                  <div className="space-y-2">
+                    {(ashaPerformance || []).slice(0, 4).map(worker => (
+                      <div key={worker.asha_id || worker.name} className="rounded-xl border border-slate-100 bg-slate-50 p-3">
+                        <div className="flex items-center justify-between gap-3 mb-2">
+                          <p className="text-[12px] font-black text-slate-800 truncate">{worker.name || 'ASHA worker'}</p>
+                          <span className="text-[9px] font-black text-slate-400 uppercase">{worker.villageId || 'unassigned'}</span>
+                        </div>
+                        <div className="grid grid-cols-4 gap-2 text-center">
+                          {[
+                            { label: 'Ref', val: worker.referrals_count },
+                            { label: 'Preg', val: worker.pregnancies_tracked },
+                            { label: 'Vax', val: worker.vaccinations_completed },
+                            { label: 'SOS', val: worker.emergencies_reported },
+                          ].map(metric => (
+                            <div key={metric.label}>
+                              <p className="text-[14px] font-black text-slate-900">{metric.val ?? 0}</p>
+                              <p className="text-[8px] font-black text-slate-400 uppercase">{metric.label}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                    {(!ashaPerformance || ashaPerformance.length === 0) && (
+                      <p className="text-[12px] text-slate-400 font-bold">No ASHA KPI records yet.</p>
+                    )}
+                  </div>
                 </div>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

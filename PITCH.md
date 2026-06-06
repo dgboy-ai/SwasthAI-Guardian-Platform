@@ -22,10 +22,10 @@ Our goal was to build a scalable, AI-powered digital health ecosystem that bridg
 
 Most health applications simply call a third-party AI API and display the result. SwasthAI owns its intelligence and operates securely, even without a stable internet connection:
 
-*   **Custom Medical AI (Upgraded to SymptomNet):** We evolved from our V1 Random Forest model to a custom Transformer-based Deep Learning model (**SymptomNet**). Trained on rural Indian disease patterns across 101 classes, it achieves **64.6% diagnostic accuracy** (exceptional given a 0.99% random-guess baseline), with a Random Forest fallback at 51.8%.
-*   **"Sakhi" Women's Health AI (Grounded RAG + Memory):** Our private conversational AI for women's health is powered by a **Grounded RAG** system with **243 knowledge chunks** (2-sentence sliding-window overlap) from WHO/MoHFW/FOGSI/ASHA/UNICEF, a **calibrated retrieval threshold of 0.45** (F1=1.00 on 50-query grid search), and **full conversation memory** (dual-track: frontend localStorage history + server-side session cache). Every answer cites its source and never hallucinates.
+*   **Custom Medical AI (Upgraded to SymptomNet):** We evolved from our V1 Random Forest model to **SymptomNet**, a Transformer-embedding neural model evaluated on a reserved test set across **101 disease classes** in 7 languages: **64.6% SymptomNet accuracy** and **51.8% Random Forest fallback accuracy** versus ~1% random chance, used for triage support with confidence scores, alternatives, uncertainty refusal, and ASHA/PHC escalation.
+*   **"Sakhi" Women's Health AI (Grounded RAG + Memory):** Our private conversational AI for women's health is powered by a **Grounded RAG** system with **243 knowledge chunks** (2-sentence sliding-window overlap) from WHO/MoHFW/FOGSI/ASHA/UNICEF, a **calibrated retrieval threshold of 0.45**, and **full conversation memory** (dual-track: frontend localStorage history + server-side session cache). It provides conservative triage support, not diagnosis.
 *   **Agentic Outbreak Radar (Autonomous):** An autonomous background AI agent scans village clinical data every 30 minutes. If it detects a localized symptom cluster (e.g., 5+ cases of fever in one village), it triggers instant, targeted notifications for both District Admins and local ASHA workers to stop outbreaks before they become epidemics.
-*   **Hardened Offline-First Sync:** We engineered an **Offline-First Login**. Using IndexedDB and Service Workers, ASHA workers in zero-signal zones can securely log in, verify credentials, access cached data, and record patient vitals. The data auto-syncs when the device reaches a 2G/3G network.
+*   **Hardened Offline-First Sync:** We engineered a clearly labeled **Judge/Demo Offline Login**. Using IndexedDB and Service Workers, ASHA workers in zero-signal zones can use demo credential hashes, access cached data, and record patient vitals. Production replacement is encrypted device credential cache or WebAuthn/device-bound refresh tokens.
 *   **Smart Share Peer-to-Peer:** A high-visibility Share Button generates a **Dynamic QR Code**, allowing villagers and ASHA workers to distribute the PWA instantly without needing an app store or internet connection.
 *   **Full Native Localization & Voice:** The entire platform dynamically supports **7 languages natively** (English, Hindi, Hinglish, Marathi, Tamil, Telugu, and Bengali), with Voice-to-Text integration ensuring non-literate users can interact with complex medical AI seamlessly.
 
@@ -52,7 +52,7 @@ Most health applications simply call a third-party AI API and display the result
 
 ### 👨‍🌾 Villager Features
 
-*   **AI Symptom Checker** with multilingual voice input and **64.6% diagnostic accuracy** (SymptomNet/RF hybrid across 101 classes).
+*   **AI Symptom Checker** with multilingual voice input, **101-class SymptomNet/RF evaluation metrics**, confidence, alternatives, uncertainty refusal, and ASHA/PHC escalation.
 *   **Sakhi Women's Health AI** powered by Grounded RAG with 243 chunks, calibrated threshold 0.45, and conversation memory.
 *   **Skin Disease Scanner** with image-based Edge AI assesssment.
 *   **Emergency Ambulance System** with GPS and offline fallback queueing support.
@@ -97,11 +97,22 @@ Most health applications simply call a third-party AI API and display the result
 
 ### Backend
 *   Node.js + Express API
-*   SQLite Database
+*   Aurora PostgreSQL system of record with SQLite local fallback
+*   DynamoDB event and telemetry plane
 *   JWT Authentication + Bcrypt
 
 ### AI Services
-*   Python FastAPI · SymptomNet Transformer Model · Groq Llama-3.3-70b · Grounded RAG (312 chunks, threshold 0.45) · Sakhi Conversation Memory · Autonomous Outbreak Detection Agent
+*   Python FastAPI · SymptomNet Transformer Model · Groq Llama-3.3-70b · Grounded RAG (243 chunks, threshold 0.45) · Sakhi Conversation Memory · Autonomous Outbreak Detection Agent
+
+---
+
+## Prize Strategy
+
+*   **Top 3 B2B SaaS:** The buyer is a district health office or NGO network. The repeatable workflow is district onboarding, ASHA assignment, configurable outbreak thresholds, live command center, CMO report export, and performance review.
+*   **Best Technical Implementation:** Aurora stores durable medical and operational records; DynamoDB stores high-write telemetry streams. The Admin Production Evidence panel verifies status, schema, regions, and latest writes.
+*   **Most Impactful:** The field chain is villager triage -> ASHA workload queue -> referral/SOS follow-through -> district intelligence -> monthly health report.
+*   **Most Original:** SwasthAI is not a hospital app scaled down. It is a field-health operations layer built from the village upward, where disconnected village work becomes auditable district telemetry.
+*   **Best Design:** The UI is built around operational roles: compact admin cockpit, mobile ASHA queue, clear degraded/mock status labels, and low-connectivity field workflows.
 
 ---
 
@@ -117,7 +128,7 @@ Most health applications simply call a third-party AI API and display the result
 
 ## Accomplishments that we're proud of
 
-*   Built a healthcare AI engine with **64.6% diagnostic accuracy** across **101 distinct disease classes** (SymptomNet).
+*   Built a healthcare AI triage-support engine evaluated on a reserved test set across **101 distinct disease classes**: **64.6% SymptomNet accuracy** and **51.8% Random Forest fallback accuracy**, with conservative uncertainty handling.
 *   Deployed **Sakhi RAG** with 243 chunks, calibrated threshold 0.45 (F1=1.00), and full conversation memory.
 *   Created an **autonomous AI outbreak detection system** running on 30-minute intervals.
 *   Added support for **7 Indian languages with voice interaction** (including Hinglish).
@@ -151,3 +162,4 @@ We also learned how proactive AI systems can shift medical response from reactiv
 ***
 
 **SwasthAI Guardian** - *Built for Bharat's villages, not just its cities.*
+

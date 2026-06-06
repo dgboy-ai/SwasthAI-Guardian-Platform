@@ -163,6 +163,24 @@ const adminService = {
     }
   },
 
+  getAshaPerformance: async () => {
+    try {
+      const res = await api.get('/admin/asha-performance');
+      return res.data;
+    } catch (error) {
+      throw error.response?.data?.error || 'Failed to fetch ASHA performance';
+    }
+  },
+
+  getDistrictConfig: async (districtId = 'district_main') => {
+    try {
+      const res = await api.get(`/admin/district-config/${encodeURIComponent(districtId)}`);
+      return res.data;
+    } catch (error) {
+      throw error.response?.data?.error || 'Failed to fetch district config';
+    }
+  },
+
   // Demo Control & Reports
   seedDemoData: async () => {
     try {
