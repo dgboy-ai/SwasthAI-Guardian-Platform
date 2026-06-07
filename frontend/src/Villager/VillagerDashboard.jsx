@@ -15,7 +15,15 @@ export default function VillagerDashboard() {
   const { t } = useLanguage();
   const { user } = useAuth();
   const [showFeature, setShowFeature] = useState(null); // 'symptom', 'ambulance', 'telemedicine', 'academy'
-  const [isOffline, setIsOffline] = useState(false);
+  const [isOffline, setIsOffline] = useState(localStorage.getItem('simulated_network_state') === 'offline');
+
+  const toggleDashboardOffline = () => {
+    const nextState = !isOffline;
+    setIsOffline(nextState);
+    const simState = nextState ? 'offline' : 'online';
+    localStorage.setItem('simulated_network_state', simState);
+    window.dispatchEvent(new Event(simState));
+  };
 
   // Fallback for user name if not available
   const userName = user?.name?.split(' ')[0] || 'Villager';
@@ -43,15 +51,11 @@ export default function VillagerDashboard() {
           </div>
           <div className="flex items-center gap-4">
             <button
-              onClick={() => setIsOffline(!isOffline)}
+              onClick={toggleDashboardOffline}
               className={`p-3 rounded-full transition-all border ${isOffline ? 'bg-slate-800 border-slate-700 text-emerald-400' : 'bg-white border-slate-200 text-slate-400 hover:text-emerald-600 hover:border-emerald-200'}`}
               title={isOffline ? 'Go Online' : 'Go Offline'}
             >
               {isOffline ? <Zap className="w-5 h-5" /> : <WifiOff className="w-5 h-5" />}
-            </button>
-            <button className="p-3 bg-white border border-slate-200 text-slate-400 rounded-full hover:text-emerald-600 hover:border-emerald-200 transition-all relative">
-              <span className="absolute top-0 right-0 w-3 h-3 bg-rose-500 border-2 border-white rounded-full"></span>
-              <Bell className="w-5 h-5" />
             </button>
           </div>
         </header>

@@ -191,6 +191,7 @@ export default function App() {
                    <LayoutWrapper><ErrorBoundary><MonitoringDashboard /></ErrorBoundary></LayoutWrapper>
                 </ProtectedRoute>
               } />
+              <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
             </ErrorBoundary>
             </Suspense>

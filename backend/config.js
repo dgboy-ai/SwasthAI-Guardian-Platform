@@ -22,7 +22,7 @@ export function getAgentSecret() {
   if (isProduction) {
     throw new Error('AGENT_SECRET is required in production');
   }
-  return null;
+  return 'dev-only-agent-secret';
 }
 
 export function getAadhaarSalt() {

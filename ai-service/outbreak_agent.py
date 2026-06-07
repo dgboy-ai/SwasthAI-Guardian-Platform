@@ -25,15 +25,15 @@ if sys.stdout.encoding and sys.stdout.encoding.lower() not in ('utf-8', 'utf-8-s
     except Exception:
         pass
 
-BACKEND_URL   = os.getenv("BACKEND_URL", "http://localhost:5000")
+BACKEND_URL   = os.getenv("BACKEND_URL", "http://localhost:3001")
 AGENT_SECRET  = os.getenv("AGENT_SECRET")
 
-# Fail loudly if AGENT_SECRET is missing in production
-if not AGENT_SECRET:
+if not AGENT_SECRET or AGENT_SECRET == "REPLACE_WITH_RANDOM_AGENT_SECRET":
     if os.getenv("NODE_ENV") == "production":
         raise RuntimeError("FATAL: AGENT_SECRET environment variable is required for OutbreakAgent in production.")
     else:
-        print("[AGENT] [!] WARNING: AGENT_SECRET is not set. Outbreak agent will not be able to authenticate with backend.")
+        print("[AGENT] [!] Using fallback development AGENT_SECRET.")
+        AGENT_SECRET = "dev-only-agent-secret"
 
 CHECK_INTERVAL_SECONDS = 30 * 60  # 30 minutes
 
