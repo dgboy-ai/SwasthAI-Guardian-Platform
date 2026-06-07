@@ -4,7 +4,7 @@ All notable changes and feature developments completed during the hackathon wind
 
 ## June 7, 2026
 ### Added
-- **Production API Fallback & Vercel Fix**: Resolved JSON parsing failures caused by Vercel returning HTML error pages when querying relative paths without a configured proxy. Exposes fallback routing directly to the live Render backend (`https://swasthai-guardian.onrender.com/api`) inside the Axios API client, Schemes page, and Admin SSE feed.
+- **Production API Fallback & Vercel Fix**: Resolved JSON parsing failures caused by Vercel returning HTML error pages when querying relative paths without a configured proxy. Exposes fallback routing directly to the live Render backend (`https://swasthai-guardian-platform.onrender.com/api`) inside the Axios API client, Schemes page, and Admin SSE feed.
 - **Frictionless Demo Login & SaaS Anchor Pitch**:
   - Implemented 1-click frictionless demo login shortcuts in both the Landing Page hero and Login Page credential cards to streamline evaluation flows for judges.
   - Anchored the platform's presentation with a prominent B2B SaaS pitch tagline for the "Guardian" operations dashboard.

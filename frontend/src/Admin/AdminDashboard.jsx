@@ -15,30 +15,30 @@ import { VERSION, COPYRIGHT_YEAR } from '../constants/version';
 
 /* ─── Sidebar nav ─────────────────────────────────────────────────────────── */
 const NAV_ITEMS = [
-  { id: 'command',   label: 'Command Center',   icon: LayoutDashboard },
-  { id: 'outbreak',  label: 'Outbreak Radar',   icon: Radio           },
-  { id: 'maternal',  label: 'Maternal Health',  icon: Heart           },
-  { id: 'nutrition', label: 'Child Nutrition',  icon: Baby            },
-  { id: 'ambulance', label: 'Ambulance Feed',   icon: Truck           },
-  { id: 'offline',   label: 'Offline Villages', icon: WifiOff         },
-  { id: 'ai',        label: 'AI Intelligence',  icon: BrainCircuit    },
-  { id: 'reports',   label: 'Reports',          icon: BarChart3       },
-  { id: 'system',    label: 'System Status',    icon: Settings        },
+  { id: 'command', label: 'Command Center', icon: LayoutDashboard },
+  { id: 'outbreak', label: 'Outbreak Radar', icon: Radio },
+  { id: 'maternal', label: 'Maternal Health', icon: Heart },
+  { id: 'nutrition', label: 'Child Nutrition', icon: Baby },
+  { id: 'ambulance', label: 'Ambulance Feed', icon: Truck },
+  { id: 'offline', label: 'Offline Villages', icon: WifiOff },
+  { id: 'ai', label: 'AI Intelligence', icon: BrainCircuit },
+  { id: 'reports', label: 'Reports', icon: BarChart3 },
+  { id: 'system', label: 'System Status', icon: Settings },
 ];
 
 /* ─── Static demo data (Moved to judgeDemo.js for bundle optimization) ─── */
 
 /* ─── Helpers ─────────────────────────────────────────────────────────────── */
 const statusColor = (s) => ({
-  pending:     'bg-yellow-100 text-yellow-700 border-yellow-200',
-  assigned:    'bg-blue-100 text-blue-700 border-blue-200',
+  pending: 'bg-yellow-100 text-yellow-700 border-yellow-200',
+  assigned: 'bg-blue-100 text-blue-700 border-blue-200',
   in_progress: 'bg-purple-100 text-purple-700 border-purple-200',
-  completed:   'bg-emerald-100 text-emerald-700 border-emerald-200',
+  completed: 'bg-emerald-100 text-emerald-700 border-emerald-200',
 }[s] || 'bg-slate-100 text-slate-500 border-slate-200');
 
 const outbreakStatusStyle = (s = '') => {
   const l = s.toLowerCase();
-  if (l.includes('new'))    return 'bg-red-100 text-red-700 border-red-200';
+  if (l.includes('new')) return 'bg-red-100 text-red-700 border-red-200';
   if (l.includes('invest')) return 'bg-orange-100 text-orange-700 border-orange-200';
   return 'bg-blue-100 text-blue-700 border-blue-200';
 };
@@ -46,7 +46,7 @@ const outbreakStatusStyle = (s = '') => {
 const timeAgo = (iso) => {
   if (!iso) return '—';
   const mins = Math.round((Date.now() - new Date(iso)) / 60000);
-  if (mins < 1)  return 'Just now';
+  if (mins < 1) return 'Just now';
   if (mins < 60) return `${mins} min ago`;
   return `${Math.round(mins / 60)} hr ago`;
 };
@@ -93,8 +93,8 @@ const latestDynamoWrite = (feed) => {
 const ConfBadge = ({ pct }) => {
   const n = Math.round((pct || 0) * 100);
   const cls = n >= 85 ? 'bg-emerald-100 text-emerald-700 border-emerald-200'
-            : n >= 70 ? 'bg-amber-100 text-amber-700 border-amber-200'
-            :           'bg-rose-100 text-rose-700 border-rose-200';
+    : n >= 70 ? 'bg-amber-100 text-amber-700 border-amber-200'
+      : 'bg-rose-100 text-rose-700 border-rose-200';
   return (
     <span className={`px-2.5 py-1 rounded-full text-[10px] font-black border whitespace-nowrap ${cls}`}>
       {n}% confidence
@@ -104,12 +104,12 @@ const ConfBadge = ({ pct }) => {
 
 /* ─── KPI Card ────────────────────────────────────────────────────────────── */
 const KPI_COLORS = {
-  rose:    { outer: 'from-rose-500 to-rose-600',       num: 'text-rose-600',    bg: 'bg-rose-50'    },
-  amber:   { outer: 'from-amber-500 to-orange-500',    num: 'text-amber-600',   bg: 'bg-amber-50'   },
-  red:     { outer: 'from-red-500 to-red-600',         num: 'text-red-600',     bg: 'bg-red-50'     },
-  emerald: { outer: 'from-emerald-500 to-teal-600',    num: 'text-emerald-700', bg: 'bg-emerald-50' },
-  slate:   { outer: 'from-slate-500 to-slate-700',     num: 'text-slate-600',   bg: 'bg-slate-100'  },
-  purple:  { outer: 'from-purple-500 to-indigo-600',   num: 'text-purple-700',  bg: 'bg-purple-50'  },
+  rose: { outer: 'from-rose-500 to-rose-600', num: 'text-rose-600', bg: 'bg-rose-50' },
+  amber: { outer: 'from-amber-500 to-orange-500', num: 'text-amber-600', bg: 'bg-amber-50' },
+  red: { outer: 'from-red-500 to-red-600', num: 'text-red-600', bg: 'bg-red-50' },
+  emerald: { outer: 'from-emerald-500 to-teal-600', num: 'text-emerald-700', bg: 'bg-emerald-50' },
+  slate: { outer: 'from-slate-500 to-slate-700', num: 'text-slate-600', bg: 'bg-slate-100' },
+  purple: { outer: 'from-purple-500 to-indigo-600', num: 'text-purple-700', bg: 'bg-purple-50' },
 };
 
 function KpiCard({ icon: Icon, label, value, trend, badge, color }) {
@@ -261,9 +261,9 @@ function ProductionEvidencePanel({ systemStatus, dynamoFeed, loading, error, com
 }
 
 function AIReasoningTrace() {
-  const [traces, setTraces]   = useState([]);
+  const [traces, setTraces] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [open, setOpen]       = useState(true);
+  const [open, setOpen] = useState(true);
 
   useEffect(() => {
     api.get('/admin/rag-traces')
@@ -319,27 +319,27 @@ function AIReasoningTrace() {
 
 /* ══════════════════════════════════════════════════════════════════════════ */
 export default function AdminDashboard() {
-  const [activeView, setActiveView]         = useState('command');
-  const [sidebarOpen, setSidebarOpen]       = useState(false);
-  const [judgeDemoMode, setJudgeDemoMode]   = useState(false);
-  const [demoData, setDemoData]             = useState(null);
+  const [activeView, setActiveView] = useState('command');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [judgeDemoMode, setJudgeDemoMode] = useState(false);
+  const [demoData, setDemoData] = useState(null);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [alertError, setAlertError]         = useState(null);
-  const [stats, setStats]                   = useState(null);      // null = not yet loaded
-  const [summary, setSummary]               = useState(null);
-  const [ambulances, setAmbulances]         = useState(null);
-  const [outbreaks, setOutbreaks]           = useState(null);
-  const [systemStatus, setSystemStatus]     = useState(null);
-  const [dynamoFeed, setDynamoFeed]         = useState(null);
-  const [systemError, setSystemError]       = useState(null);
-  const [systemLoading, setSystemLoading]   = useState(true);
+  const [alertError, setAlertError] = useState(null);
+  const [stats, setStats] = useState(null);      // null = not yet loaded
+  const [summary, setSummary] = useState(null);
+  const [ambulances, setAmbulances] = useState(null);
+  const [outbreaks, setOutbreaks] = useState(null);
+  const [systemStatus, setSystemStatus] = useState(null);
+  const [dynamoFeed, setDynamoFeed] = useState(null);
+  const [systemError, setSystemError] = useState(null);
+  const [systemLoading, setSystemLoading] = useState(true);
   const [districtReport, setDistrictReport] = useState(null);
-  const [reportLoading, setReportLoading]   = useState(false);
+  const [reportLoading, setReportLoading] = useState(false);
   const [ashaPerformance, setAshaPerformance] = useState([]);
   const [districtConfig, setDistrictConfig] = useState(null);
-  const [alertSent, setAlertSent]           = useState(false);
-  const [lastSync, setLastSync]             = useState('Just now');
-  const [auditLogs, setAuditLogs]           = useState([]);
+  const [alertSent, setAlertSent] = useState(false);
+  const [lastSync, setLastSync] = useState('Just now');
+  const [auditLogs, setAuditLogs] = useState([]);
   const [simulatingOutbreak, setSimulatingOutbreak] = useState(false);
   const lastSyncRef = useRef(Date.now());
 
@@ -446,7 +446,7 @@ export default function AdminDashboard() {
 
     let API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
     if (import.meta.env.MODE === 'production' && !import.meta.env.VITE_API_URL) {
-      API_BASE = 'https://swasthai-guardian.onrender.com/api';
+      API_BASE = 'https://swasthai-guardian-platform.onrender.com/api';
     }
     API_BASE = API_BASE.replace(/\/+$/, '');
     // EventSource doesn't support custom headers, so pass token as query param
@@ -462,14 +462,14 @@ export default function AdminDashboard() {
           setAmbulances(prev => [req, ...(prev || [])].slice(0, 50));
           lastSyncRef.current = Date.now();
           setLastSync('Just now');
-        } catch (_) {}
+        } catch (_) { }
       });
 
       sse.addEventListener('outbreak', (e) => {
         try {
           const outbreak = JSON.parse(e.data);
           setOutbreaks(prev => [outbreak, ...(prev || [])].slice(0, 50));
-        } catch (_) {}
+        } catch (_) { }
       });
 
       sse.onerror = () => {
@@ -487,7 +487,7 @@ export default function AdminDashboard() {
   }, []);
 
 
-  const S  = (judgeDemoMode && demoData ? demoData.DEMO_STATS : stats) || { pregnancies: 0, malnutrition: 0, villages: 0, today_symptoms: 0 };
+  const S = (judgeDemoMode && demoData ? demoData.DEMO_STATS : stats) || { pregnancies: 0, malnutrition: 0, villages: 0, today_symptoms: 0 };
   const SM = (judgeDemoMode && demoData ? demoData.DEMO_SUMMARY : summary) || { totalUsers: 0, totalNgos: 0, emergencyCount: 0, sanitaryCount: 0, totalRequests: 0 };
   const OB = (judgeDemoMode && demoData ? demoData.DEMO_OUTBREAKS : outbreaks) || [];
   const AM = (judgeDemoMode && demoData ? demoData.DEMO_AMBULANCES : ambulances) || [];
@@ -507,7 +507,7 @@ export default function AdminDashboard() {
     const days = [];
     const symptomCounts = [0, 0, 0, 0, 0, 0, 0];
     const emergencyCounts = [0, 0, 0, 0, 0, 0, 0];
-    
+
     const now = new Date();
     for (let i = 6; i >= 0; i--) {
       const d = new Date();
@@ -515,7 +515,7 @@ export default function AdminDashboard() {
       const label = d.toLocaleDateString('en-US', { weekday: 'short' });
       days.push({ label, dateString: d.toISOString().slice(0, 10) });
     }
-    
+
     OB.forEach(ob => {
       const dateStr = (ob.detectedAt || '').slice(0, 10);
       const idx = days.findIndex(d => d.dateString === dateStr);
@@ -607,10 +607,10 @@ export default function AdminDashboard() {
       let csv = isDemo ? '# ⚠️ [DEMO DATA] - GENERATED IN OFFLINE MODE WITH MOCK DEMO SEEDS\n' : '# OFFLINE MODE REPORT - SYNCED DATA FALLBACK\n';
       csv += 'Record ID,Type,Patient Name/ID,Location/Priority,Status,Date\n';
       AM.forEach((a, i) => {
-        csv += `AMB-${i+101},${a.type || 'emergency'},"${a.name || 'User ' + a.user_id}","${a.location || ''} (${a.priority || ''})",${a.status},${a.created_at || new Date().toISOString()}\n`;
+        csv += `AMB-${i + 101},${a.type || 'emergency'},"${a.name || 'User ' + a.user_id}","${a.location || ''} (${a.priority || ''})",${a.status},${a.created_at || new Date().toISOString()}\n`;
       });
       OB.forEach((ob, i) => {
-        csv += `OUT-${i+101},outbreak,"Village ${ob.villageId}","${ob.classification} (${ob.confidence ? Math.round(ob.confidence*100) : 80}% confidence)",new,${ob.detectedAt || new Date().toISOString()}\n`;
+        csv += `OUT-${i + 101},outbreak,"Village ${ob.villageId}","${ob.classification} (${ob.confidence ? Math.round(ob.confidence * 100) : 80}% confidence)",new,${ob.detectedAt || new Date().toISOString()}\n`;
       });
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const url = window.URL.createObjectURL(blob);
@@ -640,9 +640,9 @@ export default function AdminDashboard() {
 
   /* AI recommendations: top 3 outbreaks → action text */
   const AI_RECS_META = [
-    { color: 'border-l-rose-500',   action: 'Deploy Now',       btnCls: 'bg-emerald-600 hover:bg-emerald-700' },
-    { color: 'border-l-orange-400', action: 'Activate Program', btnCls: 'bg-orange-500 hover:bg-orange-600'   },
-    { color: 'border-l-blue-400',   action: 'Investigate',      btnCls: 'bg-blue-500 hover:bg-blue-600'       },
+    { color: 'border-l-rose-500', action: 'Deploy Now', btnCls: 'bg-emerald-600 hover:bg-emerald-700' },
+    { color: 'border-l-orange-400', action: 'Activate Program', btnCls: 'bg-orange-500 hover:bg-orange-600' },
+    { color: 'border-l-blue-400', action: 'Investigate', btnCls: 'bg-blue-500 hover:bg-blue-600' },
   ];
   const recs = OB.slice(0, 3).map((ob, i) => ({
     ...AI_RECS_META[i],
@@ -652,9 +652,9 @@ export default function AdminDashboard() {
 
   /* Critical alerts: always 3 */
   const FALLBACK_ALERTS = [
-    { icon: Heart, title: 'High-Risk Pregnancy',    sub: 'Block B, Ramnagar Village',    time: '2 min ago'  },
-    { icon: Radio, title: 'Fever Cluster Detected', sub: 'Northern Zone, 3 Villages',    time: '8 min ago'  },
-    { icon: Truck, title: 'Ambulance SOS',          sub: 'Patient Critical Condition',   time: '15 min ago' },
+    { icon: Heart, title: 'High-Risk Pregnancy', sub: 'Block B, Ramnagar Village', time: '2 min ago' },
+    { icon: Radio, title: 'Fever Cluster Detected', sub: 'Northern Zone, 3 Villages', time: '8 min ago' },
+    { icon: Truck, title: 'Ambulance SOS', sub: 'Patient Critical Condition', time: '15 min ago' },
   ];
   const realAlerts = [
     ...OB.slice(0, 1).map(ob => ({ icon: Radio, title: ob.classification, sub: `Village ${ob.villageId}`, time: timeAgo(ob.detectedAt) })),
@@ -809,11 +809,11 @@ export default function AdminDashboard() {
             {[
               { label: 'System Health', status: productionReadyStatus, meta: productionStripMeta },
               { label: 'Aurora PostgreSQL', status: auroraStripMeta.label, meta: auroraStripMeta },
-              { label: 'DynamoDB',          status: dynamoStripMeta.label, meta: dynamoStripMeta },
-              { label: 'AI Service',        status: aiStripMeta.label, meta: aiStripMeta },
-              { label: 'Offline Villages',  status: S.villages ?? 4, type: 'warn' },
-              { label: 'Pending Syncs',     status: '12', type: 'sync' },
-              { label: 'Last Sync',         status: lastSync, type: 'time' },
+              { label: 'DynamoDB', status: dynamoStripMeta.label, meta: dynamoStripMeta },
+              { label: 'AI Service', status: aiStripMeta.label, meta: aiStripMeta },
+              { label: 'Offline Villages', status: S.villages ?? 4, type: 'warn' },
+              { label: 'Pending Syncs', status: '12', type: 'sync' },
+              { label: 'Last Sync', status: lastSync, type: 'time' },
             ].map(s => {
               let badgeCls = s.meta?.pill || "bg-emerald-50 text-emerald-700 border-emerald-100";
               if (s.type === 'warn') {
@@ -932,12 +932,12 @@ export default function AdminDashboard() {
                       </>
                     ) : (
                       <>
-                        <KpiCard icon={Heart}       color="rose"    label="High-Risk Pregnancies"      value={S.pregnancies ?? 126}      trend={18} />
-                        <KpiCard icon={Baby}        color="amber"   label="Severe Malnutrition Cases"  value={S.malnutrition ?? 248}     trend={12} />
-                        <KpiCard icon={Radio}       color="red"     label="Active Outbreak Clusters"   value={OB.length || 3}            badge="NEW" />
-                        <KpiCard icon={Truck}       color="emerald" label="Active Ambulances"          value={`${AM.length || 7}/7`} />
-                        <KpiCard icon={WifiOff}     color="slate"   label="Offline Villages"           value={S.villages ?? 4} />
-                        <KpiCard icon={Activity}    color="purple"  label="Emergency Cases Today"      value={S.today_symptoms ?? 12}    trend={20} />
+                        <KpiCard icon={Heart} color="rose" label="High-Risk Pregnancies" value={S.pregnancies ?? 126} trend={18} />
+                        <KpiCard icon={Baby} color="amber" label="Severe Malnutrition Cases" value={S.malnutrition ?? 248} trend={12} />
+                        <KpiCard icon={Radio} color="red" label="Active Outbreak Clusters" value={OB.length || 3} badge="NEW" />
+                        <KpiCard icon={Truck} color="emerald" label="Active Ambulances" value={`${AM.length || 7}/7`} />
+                        <KpiCard icon={WifiOff} color="slate" label="Offline Villages" value={S.villages ?? 4} />
+                        <KpiCard icon={Activity} color="purple" label="Emergency Cases Today" value={S.today_symptoms ?? 12} trend={20} />
                       </>
                     )}
                   </div>
@@ -1068,10 +1068,10 @@ export default function AdminDashboard() {
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       {[
-                        { label: 'Villagers',    val: SM.totalUsers,     color: 'text-emerald-700', bg: 'bg-emerald-50' },
-                        { label: 'NGO Workers',  val: SM.totalNgos,      color: 'text-sky-700',     bg: 'bg-sky-50'     },
-                        { label: 'SOS Requests', val: SM.emergencyCount, color: 'text-rose-700',    bg: 'bg-rose-50'    },
-                        { label: 'Pad Requests', val: SM.sanitaryCount,  color: 'text-purple-700',  bg: 'bg-purple-50'  },
+                        { label: 'Villagers', val: SM.totalUsers, color: 'text-emerald-700', bg: 'bg-emerald-50' },
+                        { label: 'NGO Workers', val: SM.totalNgos, color: 'text-sky-700', bg: 'bg-sky-50' },
+                        { label: 'SOS Requests', val: SM.emergencyCount, color: 'text-rose-700', bg: 'bg-rose-50' },
+                        { label: 'Pad Requests', val: SM.sanitaryCount, color: 'text-purple-700', bg: 'bg-purple-50' },
                       ].map(s => (
                         <div key={s.label} className={`${s.bg} rounded-xl p-3 text-center`}>
                           <p className={`text-2xl font-black ${s.color}`}>{s.val ?? 0}</p>
@@ -1089,15 +1089,15 @@ export default function AdminDashboard() {
                     </div>
                     <div className="grid grid-cols-3 gap-2">
                       {[
-                        { icon: Radio,       label: 'Launch Outbreak Investigation', color: 'rose',    view: 'outbreak'  },
-                        { icon: Truck,       label: 'Ambulance Operations Center',   color: 'rose',    view: 'ambulance' },
-                        { icon: WifiOff,     label: 'Monitor Offline Villages',      color: 'slate',   view: 'offline'   },
-                        { icon: Package,     label: 'Pad Distribution Monitoring',   color: 'purple',  view: null        },
-                        { icon: FileText,    label: 'Export District Health Report', color: 'emerald', view: null, action: downloadReport },
-                        { icon: BrainCircuit,label: 'Review AI Recommendations',    color: 'blue',    view: 'ai'        },
+                        { icon: Radio, label: 'Launch Outbreak Investigation', color: 'rose', view: 'outbreak' },
+                        { icon: Truck, label: 'Ambulance Operations Center', color: 'rose', view: 'ambulance' },
+                        { icon: WifiOff, label: 'Monitor Offline Villages', color: 'slate', view: 'offline' },
+                        { icon: Package, label: 'Pad Distribution Monitoring', color: 'purple', view: null },
+                        { icon: FileText, label: 'Export District Health Report', color: 'emerald', view: null, action: downloadReport },
+                        { icon: BrainCircuit, label: 'Review AI Recommendations', color: 'blue', view: 'ai' },
                       ].map((w, i) => {
-                        const bg = { rose:'bg-rose-100', slate:'bg-slate-100', purple:'bg-purple-100', emerald:'bg-emerald-100', blue:'bg-blue-100' };
-                        const ic = { rose:'text-rose-600', slate:'text-slate-600', purple:'text-purple-600', emerald:'text-emerald-700', blue:'text-blue-600' };
+                        const bg = { rose: 'bg-rose-100', slate: 'bg-slate-100', purple: 'bg-purple-100', emerald: 'bg-emerald-100', blue: 'bg-blue-100' };
+                        const ic = { rose: 'text-rose-600', slate: 'text-slate-600', purple: 'text-purple-600', emerald: 'text-emerald-700', blue: 'text-blue-600' };
                         return (
                           <button
                             key={i}
@@ -1122,11 +1122,11 @@ export default function AdminDashboard() {
                     </div>
                     <div className="space-y-2.5">
                       {[
-                        { label: 'Sakhi RAG Status',          right: <span className="text-[11px] font-black text-emerald-600 flex items-center gap-1">Connected <span className="text-[9px] font-normal text-slate-400">(430ms)</span></span> },
-                        { label: 'Offline Sync Queue',         right: <span className="text-[11px] font-black text-rose-600">12 pending</span> },
-                        { label: 'Judge Evaluation Toolkit',   right: <span className={`px-2 py-0.5 rounded text-[9px] font-black border ${judgeDemoMode ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-slate-50 text-slate-400 border-slate-200'}`}>{judgeDemoMode ? 'Active' : 'Inactive'}</span> },
-                        { label: 'Network Simulator Status',   right: <span className="px-2 py-0.5 rounded text-[9px] font-black bg-emerald-50 text-emerald-700 border border-emerald-200">Normal</span> },
-                        { label: 'Outbreak AI Engine',         right: <span className="px-2 py-0.5 rounded text-[9px] font-black bg-emerald-50 text-emerald-700 border border-emerald-200">Scanning</span> },
+                        { label: 'Sakhi RAG Status', right: <span className="text-[11px] font-black text-emerald-600 flex items-center gap-1">Connected <span className="text-[9px] font-normal text-slate-400">(430ms)</span></span> },
+                        { label: 'Offline Sync Queue', right: <span className="text-[11px] font-black text-rose-600">12 pending</span> },
+                        { label: 'Judge Evaluation Toolkit', right: <span className={`px-2 py-0.5 rounded text-[9px] font-black border ${judgeDemoMode ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-slate-50 text-slate-400 border-slate-200'}`}>{judgeDemoMode ? 'Active' : 'Inactive'}</span> },
+                        { label: 'Network Simulator Status', right: <span className="px-2 py-0.5 rounded text-[9px] font-black bg-emerald-50 text-emerald-700 border border-emerald-200">Normal</span> },
+                        { label: 'Outbreak AI Engine', right: <span className="px-2 py-0.5 rounded text-[9px] font-black bg-emerald-50 text-emerald-700 border border-emerald-200">Scanning</span> },
                       ].map((r, i) => (
                         <div key={i} className="flex items-center justify-between py-1.5 border-b border-slate-50 last:border-0">
                           <span className="text-[11px] text-slate-500 font-medium">{r.label}</span>
@@ -1375,11 +1375,10 @@ export default function AdminDashboard() {
                           </td>
                           <td className="px-5 py-3.5 text-[12px] font-medium text-slate-500 max-w-[180px] truncate">{a.location || 'District Request'}</td>
                           <td className="px-5 py-3.5">
-                            <span className={`px-2.5 py-1 rounded-full text-[9px] font-black border ${
-                              a.priority === 'Critical' ? 'bg-rose-50 text-rose-700 border-rose-200' :
-                              a.priority === 'High'     ? 'bg-orange-50 text-orange-700 border-orange-200' :
-                              'bg-slate-50 text-slate-500 border-slate-200'
-                            }`}>{a.priority || '—'}</span>
+                            <span className={`px-2.5 py-1 rounded-full text-[9px] font-black border ${a.priority === 'Critical' ? 'bg-rose-50 text-rose-700 border-rose-200' :
+                                a.priority === 'High' ? 'bg-orange-50 text-orange-700 border-orange-200' :
+                                  'bg-slate-50 text-slate-500 border-slate-200'
+                              }`}>{a.priority || '—'}</span>
                           </td>
                           <td className="px-5 py-3.5">
                             <span className={`px-2.5 py-1 rounded-full text-[9px] font-black border ${statusColor(a.status)}`}>{a.status}</span>
@@ -1412,9 +1411,9 @@ export default function AdminDashboard() {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {[
-                  { label: 'Active Village Devices', val: '418',    icon: Database    },
-                  { label: 'Sync Success Rate',       val: '100%',  icon: Shield      },
-                  { label: 'Local Sync Status',       val: 'Synced', icon: CheckCircle },
+                  { label: 'Active Village Devices', val: '418', icon: Database },
+                  { label: 'Sync Success Rate', val: '100%', icon: Shield },
+                  { label: 'Local Sync Status', val: 'Synced', icon: CheckCircle },
                 ].map(s => (
                   <div key={s.label} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 flex items-center gap-4">
                     <div className="w-11 h-11 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center shrink-0 shadow-sm">
@@ -1446,8 +1445,8 @@ export default function AdminDashboard() {
                 <div className="grid grid-cols-3 gap-3 mb-5">
                   {[
                     { label: 'Neural Model', val: 'SymptomNet' },
-                    { label: 'Accuracy',     val: '96.8%'     },
-                    { label: 'Scan Interval',val: '30 min'    },
+                    { label: 'Accuracy', val: '96.8%' },
+                    { label: 'Scan Interval', val: '30 min' },
                   ].map(s => (
                     <div key={s.label} className="bg-white/10 border border-white/10 rounded-xl p-3">
                       <p className="text-[15px] font-black text-white">{s.val}</p>
@@ -1499,7 +1498,7 @@ export default function AdminDashboard() {
                           <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 bg-emerald-500 rounded-sm" /> Symptom Clusters</span>
                         </div>
                       </div>
-                      
+
                       <div className="h-48 w-full flex items-end justify-between gap-4 pt-4 px-2">
                         {chartData.map((d, i) => {
                           const symHeight = (d.symptoms / maxVal) * 100;
@@ -1508,7 +1507,7 @@ export default function AdminDashboard() {
                             <div key={i} className="flex-1 flex flex-col items-center gap-2 h-full justify-end">
                               <div className="flex items-end gap-1.5 h-full w-full justify-center">
                                 {/* Emergencies bar */}
-                                <div 
+                                <div
                                   className="w-3 sm:w-5 bg-rose-500 rounded-t-md hover:bg-rose-600 transition-all duration-300 relative group"
                                   style={{ height: `${Math.max(emHeight, 4)}%` }}
                                 >
@@ -1517,7 +1516,7 @@ export default function AdminDashboard() {
                                   </div>
                                 </div>
                                 {/* Symptoms bar */}
-                                <div 
+                                <div
                                   className="w-3 sm:w-5 bg-emerald-500 rounded-t-md hover:bg-emerald-600 transition-all duration-300 relative group"
                                   style={{ height: `${Math.max(symHeight, 4)}%` }}
                                 >
@@ -1647,9 +1646,9 @@ export default function AdminDashboard() {
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {[
-                  { label: 'Total Records', val: SM.totalRequests  },
-                  { label: 'Villagers',     val: SM.totalUsers     },
-                  { label: 'NGO Workers',   val: SM.totalNgos      },
+                  { label: 'Total Records', val: SM.totalRequests },
+                  { label: 'Villagers', val: SM.totalUsers },
+                  { label: 'NGO Workers', val: SM.totalNgos },
                   { label: 'Emergency SOS', val: SM.emergencyCount },
                 ].map(s => (
                   <div key={s.label} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 text-center">

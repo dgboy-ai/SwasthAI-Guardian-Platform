@@ -2,10 +2,10 @@
 
 > **For judges who just want to evaluate**: The live app is already deployed.
 > ```
-> https://swasthai-guardian.onrender.com
+> https://swasthai-guardian-platform.onrender.com
 > ```
 > Login: select any role → enter any phone number → OTP: `1234`
-> Full AWS health status: `GET https://swasthai-guardian.onrender.com/api/health/detailed`
+> Full AWS health status: `GET https://swasthai-guardian-platform.onrender.com/api/health/detailed`
 
 ---
 

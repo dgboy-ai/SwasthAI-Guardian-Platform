@@ -1,17 +1,17 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { styles } from './GovernmentSchemesPage.styles';
-const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.MODE === 'production' ? 'https://swasthai-guardian.onrender.com/api' : 'http://localhost:5000/api');
+const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.MODE === 'production' ? 'https://swasthai-guardian-platform.onrender.com/api' : 'http://localhost:5000/api');
 const API = API_BASE.replace(/\/api$/, '');
 
 // ── Category config ──────────────────────────────────────────────────────────
 const CATEGORY_META = {
   health_insurance: { label: 'Health Insurance', label_hi: 'स्वास्थ्य बीमा', icon: '🏥', color: '#10b981', bg: '#d1fae5' },
-  maternal_health:  { label: 'Maternal Health',  label_hi: 'मातृ स्वास्थ्य',  icon: '🤱', color: '#8b5cf6', bg: '#ede9fe' },
-  child_health:     { label: 'Child Health',      label_hi: 'बाल स्वास्थ्य',   icon: '👶', color: '#f59e0b', bg: '#fef3c7' },
-  insurance:        { label: 'Insurance',          label_hi: 'बीमा',            icon: '🛡️', color: '#3b82f6', bg: '#dbeafe' },
-  nutrition:        { label: 'Nutrition',          label_hi: 'पोषण',            icon: '🥗', color: '#ef4444', bg: '#fee2e2' },
-  other:            { label: 'Other',              label_hi: 'अन्य',            icon: '📋', color: '#6b7280', bg: '#f3f4f6' },
+  maternal_health: { label: 'Maternal Health', label_hi: 'मातृ स्वास्थ्य', icon: '🤱', color: '#8b5cf6', bg: '#ede9fe' },
+  child_health: { label: 'Child Health', label_hi: 'बाल स्वास्थ्य', icon: '👶', color: '#f59e0b', bg: '#fef3c7' },
+  insurance: { label: 'Insurance', label_hi: 'बीमा', icon: '🛡️', color: '#3b82f6', bg: '#dbeafe' },
+  nutrition: { label: 'Nutrition', label_hi: 'पोषण', icon: '🥗', color: '#ef4444', bg: '#fee2e2' },
+  other: { label: 'Other', label_hi: 'अन्य', icon: '📋', color: '#6b7280', bg: '#f3f4f6' },
 };
 
 function getCat(category) {
@@ -21,7 +21,7 @@ function getCat(category) {
 // ── IndexedDB offline cache ───────────────────────────────────────────────────
 const CACHE_KEY = 'swasthai_schemes_cache';
 function saveCache(data) {
-  try { localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data })); } catch (_) {}
+  try { localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data })); } catch (_) { }
 }
 function loadCache() {
   try {
@@ -29,7 +29,7 @@ function loadCache() {
     if (!raw) return null;
     const { ts, data } = JSON.parse(raw);
     if (Date.now() - ts < 6 * 60 * 60 * 1000) return data; // 6h TTL
-  } catch (_) {}
+  } catch (_) { }
   return null;
 }
 
@@ -159,7 +159,7 @@ function SchemeDetailModal({ scheme, onClose }) {
   const [copiedStep, setCopiedStep] = useState(null);
 
   const handleCopy = (text, idx) => {
-    navigator.clipboard?.writeText(text).catch(() => {});
+    navigator.clipboard?.writeText(text).catch(() => { });
     setCopiedStep(idx);
     setTimeout(() => setCopiedStep(null), 1500);
   };
@@ -424,7 +424,7 @@ export default function GovernmentSchemesPage() {
               <div key={i} style={{ ...styles.card, cursor: 'default', height: 280, padding: 20, boxSizing: 'border-box' }}>
                 {/* Top Accent */}
                 <div style={{ height: 4, background: '#cbd5e1', borderRadius: '12px 12px 0 0', margin: '-20px -20px 20px' }} />
-                
+
                 {/* Category Badge */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                   <div style={{ width: 100, height: 20, borderRadius: 8, animation: 'skeleton-pulse 1.5s infinite ease-in-out' }} />
