@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { styles } from './GovernmentSchemesPage.styles';
-
-const API = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace(/\/api$/, '');
+const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.MODE === 'production' ? 'https://swasthai-guardian.onrender.com/api' : 'http://localhost:5000/api');
+const API = API_BASE.replace(/\/api$/, '');
 
 // ── Category config ──────────────────────────────────────────────────────────
 const CATEGORY_META = {

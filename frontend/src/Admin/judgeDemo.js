@@ -14,3 +14,16 @@ export const DEMO_AMBULANCES = [
   { user_id: 104, name: 'Mohan Yadav',   type: 'emergency', location: 'Ichhawar Block, Village 12',  priority: 'Critical', status: 'pending',     created_at: new Date(Date.now() - 7200000).toISOString()  },
   { user_id: 105, name: 'Geeta Rawat',   type: 'routine',   location: 'Rehti PHC, District Road',    priority: 'Normal',   status: 'completed',   created_at: new Date(Date.now() - 14400000).toISOString() }
 ];
+export const DEMO_REPORT = {
+  villages: { total: 4 },
+  maternal: { highRiskPregnancies: 28 },
+  emergencies: { ambulanceRequests: 14 },
+  outbreakAlerts: { count: 3 }
+};
+
+export const DEMO_ASHA_PERFORMANCE = [
+  { name: 'Anjali Sharma (ASHA)', villageId: 'v101', referrals_count: 14, pregnancies_tracked: 28, vaccinations_completed: 45, emergencies_reported: 3 },
+  { name: 'Sunita Bai (ASHA)', villageId: 'v102', referrals_count: 9, pregnancies_tracked: 18, vaccinations_completed: 32, emergencies_reported: 1 },
+  { name: 'Rekha Devi (ASHA)', villageId: 'v103', referrals_count: 12, pregnancies_tracked: 22, vaccinations_completed: 40, emergencies_reported: 2 },
+  { name: 'Pooja Patel (ASHA)', villageId: 'v104', referrals_count: 6, pregnancies_tracked: 12, vaccinations_completed: 25, emergencies_reported: 0 }
+];

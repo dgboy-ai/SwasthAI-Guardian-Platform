@@ -6,10 +6,12 @@
   },
   "private": true,
   "scripts": {
-    "install-all": "npm install && cd backend && npm install && cd ../frontend && npm install",
+    "install-all": "npm install && cd backend && npm install && cd ../frontend && npm install && cd ../ai-service && pip install -r requirements.txt",
     "build": "cd backend && npm install && npm rebuild sqlite3 --build-from-source && cd ../frontend && npm install --include=dev && npm run build",
     "start": "node backend/server.js",
-    "dev": "concurrently \"cd backend && npm run dev\" \"cd frontend && npm run dev\"",
+    "dev": "concurrently \"cd backend && npm run dev\" \"cd frontend && npm run dev\" \"cd ai-service && uvicorn main:app --port 8000 --host 127.0.0.1\"",
+    "dev:ai": "cd ai-service && uvicorn main:app --port 8000 --host 127.0.0.1",
+    "train:ai": "cd ai-service && python train_disease_model.py && python train_deep_model.py && python calibrate_rag.py",
     "heroku-postbuild": "npm run build"
   },
   "devDependencies": {

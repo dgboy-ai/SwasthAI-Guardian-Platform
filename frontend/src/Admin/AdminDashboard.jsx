@@ -442,7 +442,7 @@ export default function AdminDashboard() {
 
     let API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
     if (import.meta.env.MODE === 'production' && !import.meta.env.VITE_API_URL) {
-      API_BASE = `${window.location.origin}/api`;
+      API_BASE = 'https://swasthai-guardian.onrender.com/api';
     }
     API_BASE = API_BASE.replace(/\/+$/, '');
     // EventSource doesn't support custom headers, so pass token as query param
@@ -483,10 +483,12 @@ export default function AdminDashboard() {
   }, []);
 
 
-  const S  = stats || (judgeDemoMode && demoData ? demoData.DEMO_STATS : { pregnancies: 0, malnutrition: 0, villages: 0, today_symptoms: 0 });
-  const SM = summary || (judgeDemoMode && demoData ? demoData.DEMO_SUMMARY : { totalUsers: 0, totalNgos: 0, emergencyCount: 0, sanitaryCount: 0, totalRequests: 0 });
-  const OB = outbreaks || (judgeDemoMode && demoData ? demoData.DEMO_OUTBREAKS : []);
-  const AM = ambulances || (judgeDemoMode && demoData ? demoData.DEMO_AMBULANCES : []);
+  const S  = (judgeDemoMode && demoData ? demoData.DEMO_STATS : stats) || { pregnancies: 0, malnutrition: 0, villages: 0, today_symptoms: 0 };
+  const SM = (judgeDemoMode && demoData ? demoData.DEMO_SUMMARY : summary) || { totalUsers: 0, totalNgos: 0, emergencyCount: 0, sanitaryCount: 0, totalRequests: 0 };
+  const OB = (judgeDemoMode && demoData ? demoData.DEMO_OUTBREAKS : outbreaks) || [];
+  const AM = (judgeDemoMode && demoData ? demoData.DEMO_AMBULANCES : ambulances) || [];
+  const REP = (judgeDemoMode && demoData ? demoData.DEMO_REPORT : districtReport);
+  const PERF = (judgeDemoMode && demoData ? demoData.DEMO_ASHA_PERFORMANCE : ashaPerformance);
   const isLoading = stats === null && summary === null && !judgeDemoMode;
   const auroraStatus = systemStatus?.databases?.aurora_postgresql?.status || (systemLoading ? 'Loading' : 'Unavailable');
   const dynamoStatus = systemStatus?.databases?.dynamodb?.status || (systemLoading ? 'Loading' : 'Unavailable');
@@ -1427,10 +1429,10 @@ export default function AdminDashboard() {
                   ) : (
                     <div className="grid grid-cols-2 gap-3">
                       {[
-                        { label: 'Villages', val: districtReport?.villages?.total ?? 0 },
-                        { label: 'High-risk', val: districtReport?.maternal?.highRiskPregnancies ?? 0 },
-                        { label: 'SOS', val: districtReport?.emergencies?.ambulanceRequests ?? 0 },
-                        { label: 'Outbreaks', val: districtReport?.outbreakAlerts?.count ?? 0 },
+                        { label: 'Villages', val: REP?.villages?.total ?? 0 },
+                        { label: 'High-risk', val: REP?.maternal?.highRiskPregnancies ?? 0 },
+                        { label: 'SOS', val: REP?.emergencies?.ambulanceRequests ?? 0 },
+                        { label: 'Outbreaks', val: REP?.outbreakAlerts?.count ?? 0 },
                       ].map(metric => (
                         <div key={metric.label} className="rounded-xl bg-slate-50 border border-slate-100 p-3">
                           <p className="text-[20px] font-black text-slate-900">{metric.val}</p>
@@ -1449,7 +1451,7 @@ export default function AdminDashboard() {
                     <Users className="w-5 h-5 text-emerald-600" />
                   </div>
                   <div className="space-y-2">
-                    {(ashaPerformance || []).slice(0, 4).map(worker => (
+                    {(PERF || []).slice(0, 4).map(worker => (
                       <div key={worker.asha_id || worker.name} className="rounded-xl border border-slate-100 bg-slate-50 p-3">
                         <div className="flex items-center justify-between gap-3 mb-2">
                           <p className="text-[12px] font-black text-slate-800 truncate">{worker.name || 'ASHA worker'}</p>
@@ -1470,7 +1472,7 @@ export default function AdminDashboard() {
                         </div>
                       </div>
                     ))}
-                    {(!ashaPerformance || ashaPerformance.length === 0) && (
+                    {(!PERF || PERF.length === 0) && (
                       <p className="text-[12px] text-slate-400 font-bold">No ASHA KPI records yet.</p>
                     )}
                   </div>

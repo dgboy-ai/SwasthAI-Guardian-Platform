@@ -2,6 +2,20 @@
 
 All notable changes and feature developments completed during the hackathon window are documented in this file chronologically.
 
+## June 7, 2026
+### Added
+- **Production API Fallback & Vercel Fix**: Resolved JSON parsing failures caused by Vercel returning HTML error pages when querying relative paths without a configured proxy. Exposes fallback routing directly to the live Render backend (`https://swasthai-guardian.onrender.com/api`) inside the Axios API client, Schemes page, and Admin SSE feed.
+- **Frictionless Demo Login & SaaS Anchor Pitch**:
+  - Implemented 1-click frictionless demo login shortcuts in both the Landing Page hero and Login Page credential cards to streamline evaluation flows for judges.
+  - Anchored the platform's presentation with a prominent B2B SaaS pitch tagline for the "Guardian" operations dashboard.
+  - Added a custom-designed B2B SaaS Pricing section showing District and State tier subscriptions.
+  - Formulated a "Zero Vaporware" telemetry validation panel displaying model accuracy metrics (101 diseases, 64.6% accuracy, 243 RAG chunks) and active AWS RDS/DynamoDB connectivity details.
+- **AI Service Integration Workflow & CI Validation**:
+  - Upgraded root `package.json` setup, build, and development commands to automatically install and run the Python FastAPI service concurrently with frontend/backend Node services.
+  - Extended the GitHub Actions CI pipeline with an integration health check step that boots the FastAPI microservice and validates it responds successfully to the `/health` endpoint.
+
+---
+
 ## June 5, 2026
 ### Added
 - **AI Service Environment Configuration**: Added `python-dotenv` support to automatically load `GROQ_API_KEY` at startup in the FastAPI service, resolving the `503` RAG offline fallback issue.

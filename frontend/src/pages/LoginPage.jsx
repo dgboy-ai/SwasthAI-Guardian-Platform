@@ -430,13 +430,25 @@ export default function LoginPage() {
                   <button
                     key={d.roleId}
                     type="button"
-                    onClick={() => setFormData(prev => ({ ...prev, identifier: d.id, password: d.pass, role: d.roleId }))}
+                    onClick={async () => {
+                      setFormData({ identifier: d.id, password: d.pass, otp: '', role: d.roleId });
+                      setIsLoading(true);
+                      setError('');
+                      try {
+                        await loginPassword(d.id, d.pass, d.roleId);
+                        navigate(`/${d.roleId}`);
+                      } catch (err) {
+                        setError(err.message || 'Demo login failed.');
+                      } finally {
+                        setIsLoading(false);
+                      }
+                    }}
                     className="bg-white rounded-xl p-2.5 border border-emerald-100 text-left hover:border-emerald-400 hover:shadow-md transition-all group"
                   >
                     <p className="text-[8px] font-black uppercase text-emerald-600 mb-1 group-hover:text-emerald-700">{d.roleLabel}</p>
                     <p className="text-[10px] font-bold text-slate-700 truncate">{d.id}</p>
                     <p className="text-[10px] font-bold text-slate-400">{d.pass}</p>
-                    <p className="text-[9px] font-black text-emerald-500 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">← Click to fill</p>
+                    <p className="text-[9px] font-black text-emerald-500 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">← Click to login</p>
                   </button>
                 ))}
               </div>
