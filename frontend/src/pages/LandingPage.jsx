@@ -595,7 +595,7 @@ export default function LandingPage() {
                         <div className="p-3 bg-emerald-50 rounded-xl text-emerald-600 font-bold shrink-0">✓</div>
                         <div>
                            <p className="text-slate-900 font-black text-sm">Custom SymptomNet Neural Network</p>
-                           <p className="text-slate-500 text-xs font-semibold">Trained & validated on 101 disease classes in 7 languages (64.6% accuracy, standalone PKL file in the repository).</p>
+                           <p className="text-slate-500 text-xs font-semibold">Trained & validated on 101 disease classes in 6 regional languages + Hinglish (64.6% accuracy, standalone PKL file in the repository).</p>
                         </div>
                      </div>
                      <div className="flex items-start gap-4">

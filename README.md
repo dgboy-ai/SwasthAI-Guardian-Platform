@@ -23,7 +23,7 @@ SwasthAI is framed as a B2B district operations platform: the buyer is a distric
 > ### 📖 Technical Documentation & Codebase Index
 > Jump directly to the detailed architecture logs, code reference maps, and setup guides:
 > 
-> *   **🏗️ System & Database Designs**: [docs/system_architecture.md](docs/system_architecture.md) — Visual Mermaid flowchart, Aurora schemas, DynamoDB composite tables, and local SQLite edge fallback.
+> *   **🏗️ System & Database Designs**: [docs/system_architecture.md](docs/system_architecture.md) — End-to-end data flows, Mermaid ERD (Aurora PostgreSQL), DynamoDB composite key schemas, GSIs, access patterns, and local SQLite fallback details.
 > *   **🔬 AI Architecture & Val**: [docs/ai_architecture.md](docs/ai_architecture.md) — PyTorch SymptomNet 5-Fold Stratified CV logs, metrics, and Sakhi RAG parameters.
 > *   **⚙️ Setup & Dev Manual**: [docs/setup_guide.md](docs/setup_guide.md) — Docker Compose environments, env setups, and local dev guides.
 > *   **📁 Complete Repository Map**: Check the [Repository Directory Map](#-repository-structure) below for file references.

@@ -384,6 +384,71 @@ router.post('/outbreak-alert', async (req, res) => {
   }
 });
 
+router.post('/outbreak', auth, checkRole(['admin']), async (req, res) => {
+  const db = req.app.locals.db;
+  const { villageId, disease, action, confidence, caseCount, symptomPattern } = req.body;
+
+  const resolvedVillageId = villageId || 'VILLAGE_047';
+  const resolvedDisease = disease || 'Simulated Cholera Outbreak';
+  const resolvedAction = action || 'Simulated outbreak triggered by Admin. Dispatch medical kits and notify ASHA.';
+  const resolvedConfidence = confidence !== undefined ? Number(confidence) : 0.95;
+  const resolvedCaseCount = caseCount !== undefined ? Number(caseCount) : 8;
+  const resolvedSymptomPattern = symptomPattern || 'Severe dehydration, vomiting, and acute watery diarrhea';
+  
+  const timestamp = new Date().toISOString();
+
+  try {
+    const districtId = await resolveDistrictId(db, resolvedVillageId);
+
+    await dynamoHelper.put('outbreak_telemetry', {
+      villageId:      resolvedVillageId,
+      districtId,
+      detectedAt:     timestamp,
+      disease:        resolvedDisease,
+      action:         resolvedAction,
+      confidence:     resolvedConfidence,
+      caseCount:      resolvedCaseCount,
+      symptomPattern: resolvedSymptomPattern,
+      source:         'AdminSimulator',
+      severity:       resolvedConfidence >= 0.9 ? 'critical' : resolvedConfidence >= 0.75 ? 'high' : 'medium',
+      riskScore:      Math.round(resolvedConfidence * 100),
+    });
+
+    try {
+      await db.run(
+        `INSERT INTO village_health ("villageId", "outbreakAlert", "lastUpdated")
+         VALUES (?, ?, ?)
+         ON CONFLICT("villageId") DO UPDATE
+           SET "outbreakAlert" = excluded."outbreakAlert",
+               "lastUpdated" = excluded."lastUpdated"`,
+         [resolvedVillageId, `${resolvedDisease}: ${resolvedAction}`, timestamp]
+      );
+    } catch (auroraSyncErr) {
+      console.warn(`[OUTBREAK] Aurora sync skipped: ${auroraSyncErr.message}`);
+    }
+
+    if (typeof req.app.locals.broadcastToAdmins === 'function') {
+      req.app.locals.broadcastToAdmins('outbreak', {
+        villageId:      resolvedVillageId,
+        disease:        resolvedDisease,
+        action:         resolvedAction,
+        confidence:     resolvedConfidence,
+        caseCount:      resolvedCaseCount,
+        riskScore:      Math.round(resolvedConfidence * 100),
+        severity:       resolvedConfidence >= 0.9 ? 'critical' : resolvedConfidence >= 0.75 ? 'high' : 'medium',
+        detectedAt:     timestamp,
+        source:         'AdminSimulator'
+      });
+    }
+
+    console.log(`[OUTBREAK SIMULATOR] ✅ ${resolvedDisease} in ${resolvedVillageId} -> DynamoDB + SSE broadcast`);
+    res.status(201).json({ status: 'stored', store: 'dynamodb', sseBroadcast: true });
+  } catch (err) {
+    console.error('[OUTBREAK SIMULATOR] Error:', err.message);
+    sendError(res, 500, 'OUTBREAK_SIMULATION_FAILED', 'Failed to store and broadcast simulated outbreak alert', err.message);
+  }
+});
+
 router.get('/outbreaks-dynamo', async (req, res) => {
   const agentSecret = req.headers['x-agent-secret'];
   const isAgent  = agentSecret === process.env.AGENT_SECRET;

@@ -114,29 +114,84 @@ To ensure the app remains fully functional with zero initial setup for judges or
 
 ---
 
-### DynamoDB Table Design (Composite Keys + GSIs)
+### 📊 Relational Database ERD (Amazon Aurora PostgreSQL)
 
-**Purpose-Built Schema**: We designed every DynamoDB table around its query pattern to prefer bounded `Query` calls for judged command-center proof and operational views, avoiding cross-partition scans for the main outbreak telemetry path:
+Aurora acts as the consistent transactional store. The relationship chain is designed as:
+`users` → `village_health` → `pregnancy_data` → `symptoms`
 
+```mermaid
+erDiagram
+    users {
+        int id PK
+        string phone UNIQUE
+        string role "villager | ngo | admin"
+        string name
+        string villageId FK
+        string aadhaarHash
+        boolean verified
+    }
+    village_health {
+        string villageId PK
+        string name
+        int population
+        int pregnant_women
+        int malnutrition_cases
+        string outbreakAlert
+        timestamp lastUpdated
+    }
+    pregnancy_data {
+        int id PK
+        int userId FK
+        string riskLevel "Low | High | Critical"
+        string vitalsJson
+        timestamp createdAt
+    }
+    symptoms {
+        int id PK
+        int userId FK
+        string villageId FK
+        string symptoms
+        string prediction
+        string disease
+        float confidence
+        string model_used
+        string client_request_id
+        timestamp createdAt
+    }
+
+    users ||--o| village_health : "resides in"
+    users ||--o{ pregnancy_data : "has clinical profile"
+    users ||--o{ symptoms : "reports symptom logs"
+    village_health ||--o{ symptoms : "contains symptom records"
 ```
-Table: outbreak_telemetry
-  PK: villageId (HASH) + detectedAt (RANGE)   ← time-range queries per village
-  GSI: disease-index → disease + detectedAt   ← cross-village disease trend queries
 
-Table: sync_queues
-  PK: deviceId (HASH) + queuedAt (RANGE)      ← all pending records per device
-  GSI: status-index → status + queuedAt       ← fleet-level "show all failed syncs" view
+---
 
-Table: village_node_state
-  PK: villageId (HASH)                        ← single-item heartbeat/last-seen state
-  TTL: expiresAt                              ← auto-purge stale nodes after 7 days (no cron needed)
+### 📊 DynamoDB Table Design (Composite Keys + GSIs)
 
-Table: emergency_streams
-  PK: districtId (HASH) + streamId (RANGE)          ← durable append-only event stream
-  GSI: district-date-index → districtDateBucket + timestamp
-                                                   ← bounded district/day command-center query
-  GSI: priority-index → priority + streamId         ← critical-only P1 filter for admin dashboards
-```
+Every DynamoDB table is designed around specific access patterns to support zero-signal offline sync and rapid epidemic notifications:
+
+#### 1. Table: `outbreak_telemetry`
+Stores autonomous outbreak events classified by the Groq Llama-3 AI agent.
+- **PK**: `villageId` (HASH) + **SK**: `detectedAt` (RANGE)
+- **GSI: `disease-index`**: `disease` (HASH) + `detectedAt` (RANGE) — *Access Pattern: Query disease outbreaks by trend.*
+- **GSI: `district-time-index`**: `districtId` (HASH) + `detectedAt` (RANGE) — *Access Pattern: Query district outbreak timeline.*
+
+#### 2. Table: `sync_queues`
+Manages the offline-first queue from ASHA workers' handheld devices.
+- **PK**: `deviceId` (HASH) + **SK**: `queuedAt` (RANGE)
+- **GSI: `status-index`**: `status` (HASH) + `queuedAt` (RANGE) — *Access Pattern: Fetch failed sync logs across the fleet.*
+
+#### 3. Table: `village_node_state`
+Real-time connectivity heartbeat for remote village nodes.
+- **PK**: `villageId` (HASH)
+- **TTL**: `expiresAt` — *Access Pattern: Stale nodes automatically expire after 7 days of inactivity.*
+
+#### 4. Table: `emergency_streams`
+Live, high-throughput ambulance dispatch and SOS events.
+- **PK**: `districtId` (HASH) + **SK**: `streamId` (RANGE)
+- **GSI: `priority-index`**: `priority` (HASH) + `streamId` (RANGE) — *Access Pattern: Filter critical P1 emergency alerts.*
+- **GSI: `district-date-index`**: `districtDateBucket` (HASH) + `timestamp` (RANGE) — *Access Pattern: Page emergency events chronologically.*
 
 ---
 

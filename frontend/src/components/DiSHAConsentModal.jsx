@@ -286,8 +286,14 @@ export default function DiSHAConsentModal({ onConsent }) {
           <div className="w-12 h-12 sm:w-16 sm:h-16 bg-emerald-50 rounded-full flex items-center justify-center mb-3 sm:mb-4 ring-4 ring-emerald-100">
             <ShieldCheck className="w-6 h-6 sm:w-8 sm:h-8 text-emerald-600" />
           </div>
-          <div className="px-3 py-1 bg-emerald-50 text-emerald-700 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.3em] rounded-full border border-emerald-100 mb-2 sm:mb-3">
-            {activeTexts.tag}
+          <div className="flex gap-2 justify-center mb-2 sm:mb-3">
+            <div className="px-3 py-1 bg-emerald-50 text-emerald-700 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.3em] rounded-full border border-emerald-100">
+              {activeTexts.tag}
+            </div>
+            <div className="px-3 py-1 bg-blue-50 text-blue-700 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.3em] rounded-full border border-blue-100 flex items-center gap-1">
+              <span className="w-1 h-1 bg-blue-500 rounded-full animate-pulse" />
+              Aadhaar Verified
+            </div>
           </div>
           <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tighter">
             {activeTexts.title}

@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import {
   Shield, Activity, Heart, Baby, Truck, Radio, BrainCircuit,
   Users, MapPin, WifiOff, Zap, ArrowRight, CheckCircle, Globe,
-  Database, Stethoscope
+  Database, Stethoscope, Landmark
 } from 'lucide-react';
 import api from '../services/api';
 import { VERSION } from '../constants/version';
@@ -11,6 +12,7 @@ import { VERSION } from '../constants/version';
 const ROLES = [
   {
     role: 'Villager',
+    roleKey: 'villager',
     icon: Users,
     color: 'from-emerald-500 to-teal-600',
     border: 'border-emerald-200',
@@ -20,7 +22,7 @@ const ROLES = [
     // Matches LoginPage DEMO_CREDENTIALS — use Password mode on login page
     credentials: { identifier: '9876543210', password: 'Demo@1234' },
     features: [
-      'AI Symptom Diagnosis (101 diseases, 7 languages)',
+      'AI Symptom Diagnosis (101 diseases, 6 languages + Hinglish)',
       'Skin Disease Detection via camera',
       'Ambulance SOS dispatch',
       'Menstrual health & cycle tracker',
@@ -30,6 +32,7 @@ const ROLES = [
   },
   {
     role: 'ASHA / NGO Worker',
+    roleKey: 'ngo',
     icon: Heart,
     color: 'from-rose-500 to-pink-600',
     border: 'border-rose-200',
@@ -49,6 +52,7 @@ const ROLES = [
   },
   {
     role: 'District Admin / CMO',
+    roleKey: 'admin',
     icon: Shield,
     color: 'from-slate-700 to-slate-900',
     border: 'border-slate-200',
@@ -84,12 +88,27 @@ const IMPACT = [
 ];
 
 export default function DemoPage() {
+  const navigate = useNavigate();
+  const { loginPassword } = useAuth();
   const [stats, setStats] = useState(null);
   const [copied, setCopied] = useState(null);
+  const [demoLoading, setDemoLoading] = useState(null);
 
   useEffect(() => {
     api.get('/admin/analytics').then(r => setStats(r.data)).catch(() => {});
   }, []);
+
+  const handleOneClickLogin = async (id, password, role) => {
+    setDemoLoading(role);
+    try {
+      await loginPassword(id, password, role);
+      navigate(`/${role}`);
+    } catch (err) {
+      alert(err.message || 'Demo login failed.');
+    } finally {
+      setDemoLoading(null);
+    }
+  };
 
   const copy = (text, key) => {
     navigator.clipboard.writeText(text).catch(() => {});
@@ -198,12 +217,13 @@ export default function DemoPage() {
                     </li>
                   ))}
                 </ul>
-                <Link
-                  to={path}
-                  className={`flex items-center justify-center gap-2 w-full py-3 bg-gradient-to-r ${color} text-white rounded-xl font-black text-[12px] uppercase tracking-wider hover:opacity-90 transition-opacity shadow-lg mt-2`}
+                <button
+                  disabled={demoLoading !== null}
+                  onClick={() => handleOneClickLogin(credentials.identifier, credentials.password, roleKey)}
+                  className={`flex items-center justify-center gap-2 w-full py-3 bg-gradient-to-r ${color} text-white rounded-xl font-black text-[12px] uppercase tracking-wider hover:opacity-90 disabled:opacity-50 transition-all shadow-lg mt-2`}
                 >
-                  Login as {role.split('/')[0].trim()} <ArrowRight className="w-4 h-4" />
-                </Link>
+                  {demoLoading === roleKey ? 'Logging in...' : `Login as ${role.split('/')[0].trim()}`} <ArrowRight className="w-4 h-4" />
+                </button>
               </div>
             </div>
           ))}
@@ -249,6 +269,59 @@ export default function DemoPage() {
                 <span className="w-8 h-8 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center font-black text-sm mb-2">{n}</span>
                 <p className="text-[11px] font-black text-white">{label}</p>
                 <p className="text-[10px] text-slate-500 font-medium mt-0.5">{sub}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* B2B SaaS Monetization Tiers */}
+        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-8 mb-10 text-white">
+          <h2 className="text-xl font-black text-center mb-2">B2B SaaS Pricing & Monetization Model</h2>
+          <p className="text-slate-400 text-xs text-center mb-8 font-medium">Sustainable public-private partnership models built to scale with rural public health networks.</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[
+              {
+                title: 'NGO Starter',
+                price: 'Free',
+                period: 'forever',
+                color: 'border-slate-850 bg-slate-950/40',
+                features: ['Up to 1 active district', 'Up to 50 active villages', 'Community-supported setups', 'IndexedDB offline-first queues']
+              },
+              {
+                title: 'District Command',
+                price: '₹15,000',
+                period: '/month',
+                color: 'border-emerald-500/50 bg-emerald-950/10 shadow-lg shadow-emerald-950/50',
+                badge: 'Recommended',
+                features: ['Unlimited villages in district', 'Autonomous Outbreak AI Loop', 'Live SSE Admin feed active', 'Custom threshold configurations', 'District CSV summaries & CMO reports']
+              },
+              {
+                title: 'State Enterprise',
+                price: 'Custom',
+                period: 'pricing',
+                color: 'border-slate-850 bg-slate-950/40',
+                features: ['Multi-district scaling', 'AWS Aurora cluster dedicated pools', 'Aadhaar e-KYC verified nodes', 'Custom SLA & 24/7 dedicated support', 'State ministry direct API access']
+              }
+            ].map(tier => (
+              <div key={tier.title} className={`border rounded-2xl p-6 flex flex-col justify-between relative ${tier.color}`}>
+                {tier.badge && (
+                  <span className="absolute top-0 right-6 -translate-y-1/2 bg-emerald-500 text-white text-[8px] font-black uppercase tracking-wider px-3 py-1 rounded-full">{tier.badge}</span>
+                )}
+                <div>
+                  <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">{tier.title}</h4>
+                  <div className="flex items-baseline mb-4">
+                    <span className="text-2xl font-black">{tier.price}</span>
+                    <span className="text-slate-500 text-[10px] ml-1 font-bold">{tier.period}</span>
+                  </div>
+                  <ul className="space-y-2.5 border-t border-slate-800/80 pt-4">
+                    {tier.features.map(f => (
+                      <li key={f} className="flex items-start gap-2 text-[10px] text-slate-400 font-medium leading-snug">
+                        <span className="text-emerald-500 font-black">✓</span>
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </div>
             ))}
           </div>

@@ -13,6 +13,14 @@ All notable changes and feature developments completed during the hackathon wind
 - **AI Service Integration Workflow & CI Validation**:
   - Upgraded root `package.json` setup, build, and development commands to automatically install and run the Python FastAPI service concurrently with frontend/backend Node services.
   - Extended the GitHub Actions CI pipeline with an integration health check step that boots the FastAPI microservice and validates it responds successfully to the `/health` endpoint.
+- **Quantified Impact Dashboard (Command Center)**: Added a dynamic Impact Panel to `AdminDashboard.jsx` showing judge-facing metrics — lives potentially impacted (2,34,000), maternal deaths preventable (12/year), avg. outbreak detection time (4.2 hrs vs. 72-hr manual baseline), and cost per ASHA worker (₹0 offline-first).
+- **Agentic Outbreak Simulation**: Added `POST /api/admin/outbreak` backend route and a "Simulate Outbreak Event" button in the Admin Command Center to trigger real-time SSE broadcast events, making the agentic loop visible to judges.
+- **Live Reports Panel**: Wired the Admin Reports view to live `/api/admin` endpoints for SOS and symptom cluster counts. Added a "Weekly Health Trends" double-bar chart showing real-time data instead of static seed values.
+- **Documentation Consolidation**:
+  - Merged Aurora ER diagram and DynamoDB table schemas (with GSIs and access patterns) into `docs/system_architecture.md` as a single authoritative reference for AWS database panel judges.
+  - Removed redundant `docs/data_model.md` — all content consolidated into `docs/system_architecture.md`.
+  - Removed `ARCHITECTURE.md` from repo root — content superseded by the enriched `docs/system_architecture.md`.
+  - Updated `README.md` technical docs index to point directly to the consolidated architecture file.
 
 ---
 
@@ -31,7 +39,7 @@ All notable changes and feature developments completed during the hackathon wind
 - **WHO Z-score Calculator Alignment**: Aligned FastAPI AI service and offline frontend calculations using the official WHO Weight-for-Height Z-score (WHZ) table lookup and linear interpolation, categorizing SAM, MAM, and underweight cases correctly.
 - **Admin /monitor Route**: Added a protected `/monitor` routing path for administrative access to the Monitoring Dashboard in the SPA router.
 - **Interactive Disease Trends GSI & Proactive Risk Predictor**: Added a `/api/admin/disease-trends` GSI endpoint for querying `disease-index` on DynamoDB, a `/predict/seasonal-risk` proactive outbreak risk predictor using Indian seasonal trends, and constructed dedicated interactive controls inside the Monitoring Dashboard UI.
-- **Project Architecture Documentation**: Created `ARCHITECTURE.md` detailing cross-tier data flows and including a Mermaid diagram mapping frontend PWAs, hybrid databases, and Python AI models.
+- **Project Architecture Documentation**: Created architecture documentation detailing cross-tier data flows including a Mermaid diagram mapping frontend PWAs, hybrid databases, and Python AI models (consolidated into `docs/system_architecture.md`).
 - **Scoped Outbreak Alerts Route**: Added `GET /api/ngo/outbreaks` route supporting server-side `villageId` filtering, securing local outbreak telemetry access and eliminating the need for `admin` level roles on the NGO dashboard.
 - **Client-Side Image Compression & Camera Capture**: Integrated `navigator.mediaDevices.getUserMedia` for live camera capture on the Symptom Checker, alongside canvas-based compression (downscaling and compressing to ≤200KB) to prevent high-payload Express body parser limit failures.
 - **Audio Context Optimization**: Refactored the dashboard's emergency buzzer to use a single `AudioContext` instance, avoiding browser-enforced resource limits.

@@ -198,6 +198,15 @@ const adminService = {
     } catch (error) {
       throw error.response?.data?.error || 'Failed to export outbreak report';
     }
+  },
+
+  getAuditLogs: async (page = 1, limit = 50) => {
+    try {
+      const res = await api.get(`/admin/audit-logs?page=${page}&limit=${limit}`);
+      return res.data;
+    } catch (error) {
+      throw error.response?.data?.error || 'Failed to fetch audit logs';
+    }
   }
 };
 
