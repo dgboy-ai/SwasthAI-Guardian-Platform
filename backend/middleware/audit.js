@@ -19,9 +19,9 @@ export function logAudit(action, resource) {
     // Perform database logging asynchronously
     try {
       await db.run(
-        `INSERT INTO audit_logs (user_id, action, resource, resource_id, ip_address, user_agent)
-         VALUES (?, ?, ?, ?, ?, ?)`,
-        [userId, action, resource, resourceId ? String(resourceId) : null, ip, userAgent]
+        `INSERT INTO audit_logs (user_id, action, resource, resource_id, ip_address, user_agent, trace_id)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [userId, action, resource, resourceId ? String(resourceId) : null, ip, userAgent, req.traceId || null]
       );
     } catch (err) {
       console.error('[AUDIT] Failed to write audit log:', err.message);

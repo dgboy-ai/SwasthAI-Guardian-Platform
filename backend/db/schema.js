@@ -236,6 +236,7 @@ export async function initSchema(db, pool, usingSQLite) {
       resource_id VARCHAR(120) DEFAULT NULL,
       ip_address VARCHAR(45) DEFAULT NULL,
       user_agent TEXT DEFAULT NULL,
+      trace_id VARCHAR(120) DEFAULT NULL,
       created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
     );
 
@@ -379,6 +380,7 @@ export async function initSchema(db, pool, usingSQLite) {
     await addColIfMissing('referrals', 'outcome_details', 'TEXT DEFAULT NULL');
     await addColIfMissing('referrals', 'closed_at', 'TIMESTAMPTZ DEFAULT NULL');
     await addColIfMissing('referrals', 'updated_at', 'TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP');
+    await addColIfMissing('audit_logs', 'trace_id', 'VARCHAR(120) DEFAULT NULL');
 
     await pool.query(`
       CREATE UNIQUE INDEX IF NOT EXISTS idx_symptoms_client_request       ON symptoms(client_request_id) WHERE client_request_id IS NOT NULL;
@@ -624,6 +626,7 @@ export async function initSchema(db, pool, usingSQLite) {
         resource_id TEXT DEFAULT NULL,
         ip_address TEXT DEFAULT NULL,
         user_agent TEXT DEFAULT NULL,
+        trace_id TEXT DEFAULT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
 
@@ -753,6 +756,7 @@ export async function initSchema(db, pool, usingSQLite) {
     await addSQLiteColIfMissing('referrals', 'outcome_details', 'TEXT DEFAULT NULL');
     await addSQLiteColIfMissing('referrals', 'closed_at', 'DATETIME DEFAULT NULL');
     await addSQLiteColIfMissing('referrals', 'updated_at', 'DATETIME DEFAULT NULL');
+    await addSQLiteColIfMissing('audit_logs', 'trace_id', 'TEXT DEFAULT NULL');
 
     await db.exec(`
       CREATE UNIQUE INDEX IF NOT EXISTS idx_sqlite_symptoms_client_request      ON symptoms(client_request_id);

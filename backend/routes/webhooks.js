@@ -129,6 +129,7 @@ router.post(
             errorCode:    errorCode || null,
             errorMessage: errorMessage || null,
             timestamp:    new Date().toISOString(),
+            traceId:      req.traceId
           });
         }
       } catch (_) { /* SSE broadcast is best-effort */ }

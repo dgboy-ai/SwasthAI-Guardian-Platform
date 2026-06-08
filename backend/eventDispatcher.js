@@ -71,8 +71,11 @@ eventEmitter.on("symptom_submitted", async (eventData) => {
         eventType:   "symptom_submitted",
         userId,
         symptoms,
+        symptomPattern: symptoms,
         prediction,
+        classification: prediction,
         timestamp:   now,
+        traceId:     eventData.traceId || null
       });
     });
 
@@ -101,9 +104,12 @@ eventEmitter.on("outbreak_detected", async (eventData) => {
         eventId:     `EVT-OUT-${Date.now()}`,
         eventType:   "outbreak_detected",
         disease:     disease || 'Unknown',
+        classification: disease || 'Unknown',
         casesCount:  count,
+        caseCount:   count,
         action,
         timestamp:   now,
+        traceId:     eventData.traceId || null
       });
     });
 
@@ -143,6 +149,9 @@ eventEmitter.on("sync_restored", async (eventData) => {
         recordCount,
         durationMs,
         timestamp:    now,
+        classification: "Sync Restored",
+        symptomPattern: `Synced ${recordCount} records in ${durationMs}ms`,
+        traceId:      eventData.traceId || null
       });
     });
 
@@ -180,7 +189,8 @@ eventEmitter.on("emergency_triggered", async (eventData) => {
         priority:    priority || 'High',
         symptoms,
         status:      "pending",
-        timestamp:   now
+        timestamp:   now,
+        traceId:     eventData.traceId || null
       });
     });
 
@@ -216,7 +226,8 @@ eventEmitter.on("maternal_alert", async (eventData) => {
         riskLevel,
         vitals,
         priority:    riskLevel === 'high' ? 'High' : 'Medium',
-        timestamp:   now
+        timestamp:   now,
+        traceId:     eventData.traceId || null
       });
     });
   } catch (err) {

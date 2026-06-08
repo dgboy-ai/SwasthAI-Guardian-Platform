@@ -353,6 +353,7 @@ router.post('/outbreak-alert', async (req, res) => {
       districtId,
       detectedAt:     timestamp,
       disease,
+      classification: disease,
       action,
       confidence,
       caseCount,
@@ -360,6 +361,7 @@ router.post('/outbreak-alert', async (req, res) => {
       source,
       severity:       confidence >= 0.9 ? 'critical' : confidence >= 0.75 ? 'high' : 'medium',
       riskScore:      Math.round(confidence * 100),
+      traceId:        req.traceId
     });
 
     try {
@@ -379,13 +381,15 @@ router.post('/outbreak-alert', async (req, res) => {
       req.app.locals.broadcastToAdmins('outbreak', {
         villageId,
         disease,
+        classification: disease,
         action,
         confidence,
         caseCount,
         riskScore:   Math.round(confidence * 100),
         severity:    confidence >= 0.9 ? 'critical' : confidence >= 0.75 ? 'high' : 'medium',
         detectedAt:  timestamp,
-        source
+        source,
+        traceId:     req.traceId
       });
     }
 
@@ -418,6 +422,7 @@ router.post('/outbreak', auth, checkRole(['admin']), async (req, res) => {
       districtId,
       detectedAt:     timestamp,
       disease:        resolvedDisease,
+      classification: resolvedDisease,
       action:         resolvedAction,
       confidence:     resolvedConfidence,
       caseCount:      resolvedCaseCount,
@@ -425,6 +430,7 @@ router.post('/outbreak', auth, checkRole(['admin']), async (req, res) => {
       source:         'AdminSimulator',
       severity:       resolvedConfidence >= 0.9 ? 'critical' : resolvedConfidence >= 0.75 ? 'high' : 'medium',
       riskScore:      Math.round(resolvedConfidence * 100),
+      traceId:        req.traceId
     });
 
     try {
@@ -444,13 +450,15 @@ router.post('/outbreak', auth, checkRole(['admin']), async (req, res) => {
       req.app.locals.broadcastToAdmins('outbreak', {
         villageId:      resolvedVillageId,
         disease:        resolvedDisease,
+        classification: resolvedDisease,
         action:         resolvedAction,
         confidence:     resolvedConfidence,
         caseCount:      resolvedCaseCount,
         riskScore:      Math.round(resolvedConfidence * 100),
         severity:       resolvedConfidence >= 0.9 ? 'critical' : resolvedConfidence >= 0.75 ? 'high' : 'medium',
         detectedAt:     timestamp,
-        source:         'AdminSimulator'
+        source:         'AdminSimulator',
+        traceId:        req.traceId
       });
     }
 
@@ -469,8 +477,10 @@ router.get('/outbreaks-dynamo', async (req, res) => {
   let isAuthed = false;
   if (authHeader) {
     try {
-      jwt.verify(authHeader.replace('Bearer ', ''), process.env.JWT_SECRET);
-      isAuthed = true;
+      const decoded = jwt.verify(authHeader.replace('Bearer ', ''), process.env.JWT_SECRET);
+      if (decoded && ['admin', 'ngo'].includes(decoded.role)) {
+        isAuthed = true;
+      }
     } catch (_) {}
   }
   if (!isAgent && !isAuthed) return sendError(res, 403, 'FORBIDDEN', 'Forbidden');

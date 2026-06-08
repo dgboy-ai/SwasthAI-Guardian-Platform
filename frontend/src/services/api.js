@@ -15,6 +15,10 @@ const api = axios.create({
 });
 
 api.interceptors.request.use(async (config) => {
+  if (!config.headers['x-trace-id']) {
+    config.headers['x-trace-id'] = `tr-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+  }
+
   const token = localStorage.getItem('token');
   if (token && token !== 'offline-mock-token') {
     config.headers.Authorization = `Bearer ${token}`;

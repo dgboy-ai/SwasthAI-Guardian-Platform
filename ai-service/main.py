@@ -100,8 +100,15 @@ def has_health_keywords(text: str) -> bool:
     for suffix in medical_suffixes:
         if re.search(r'\b\w+' + suffix + r'\b', text_lower):
             return True
-            
     return False
+
+def is_prompt_injection(text: str) -> bool:
+    text_lower = text.lower()
+    injection_keywords = [
+        "ignore previous", "ignore all instructions", "system prompt", "you are now", 
+        "bypass", "developer mode", "override instruction", "dan mode"
+    ]
+    return any(kw in text_lower for kw in injection_keywords)
 
 # Romanized Tamil (spoken-type input) → English symptom terms for local/RF matching
 ROMANIZED_TA_TO_EN = {
@@ -656,29 +663,53 @@ async def predict_skin(file: UploadFile = File(...)):
 async def rag_sakhi_chat(data: ChatInput):
     """
     RAG-enhanced health chat with conversation memory.
-
-    Accepts:
-      message     — current user message
-      session_id  — unique user/session ID (used for server-side memory cache)
-      history     — optional list of {role, content} from frontend localStorage
-                    (preferred source; survives server restarts)
-
-    Memory priority: frontend history → in-memory server session cache → stateless.
     """
+    msg = (data.message or "").strip()
+    if not msg:
+        raise HTTPException(status_code=400, detail="Message cannot be empty.")
+    
+    # ── RAG Defensive Boundaries & Guardrails ──
+    if len(msg) > 400:
+        return {
+            "reply": "I can only process messages up to 400 characters. Please simplify your question. / मैं केवल 400 अक्षरों तक के संदेशों को समझ सकती हूँ। कृपया अपना प्रश्न छोटा करें।",
+            "sources": ["Sakhi Health Assistant — General Information"],
+            "urgency": "P4",
+            "engine": "RAG-Guardrail-Length",
+            "grounded": False
+        }
+        
+    if is_gibberish(msg):
+        return {
+            "reply": "Hello! I am Sakhi. Please ask a valid health question about pregnancy care, menstrual hygiene, periods, or child health. / नमस्ते! मैं सखी हूँ। कृपया गर्भावस्था, पीरियड्स, या बाल स्वास्थ्य के बारे में एक सही सवाल पूछें।",
+            "sources": ["Sakhi Health Assistant — General Information"],
+            "urgency": "P4",
+            "engine": "RAG-Guardrail-Gibberish",
+            "grounded": False
+        }
+        
+    if is_prompt_injection(msg):
+        return {
+            "reply": "Hello! I am Sakhi, a dedicated assistant for women's and family health. I cannot process instructions to change my settings. How can I help you with your health today? / नमस्ते! मैं सखी हूँ, महिलाओं और बच्चों के स्वास्थ्य के लिए समर्पित। मैं नियमों को बदलने का निर्देश स्वीकार नहीं कर सकती।",
+            "sources": ["Sakhi Health Assistant — General Information"],
+            "urgency": "P4",
+            "engine": "RAG-Guardrail-Injection",
+            "grounded": False
+        }
+
     groq_key = os.getenv("GROQ_API_KEY")
     if not groq_key:
         raise HTTPException(status_code=503, detail="GROQ_API_KEY not configured.")
     try:
         result = rag_chat(
-            data.message,
+            msg,
             groq_key,
             session_id=data.session_id,
             frontend_history=data.history,
         )
         return {
             "reply":   result["answer"],
-            "sources": result["sources"],   # e.g. ["WHO ANC Guidelines 2016", ...]
-            "urgency": result["urgency"],   # P1 / P2 / P3 / P4
+            "sources": result["sources"],
+            "urgency": result["urgency"],
             "engine":  "RAG-Groq (Llama-3.3-70b)",
             "grounded": True,
         }

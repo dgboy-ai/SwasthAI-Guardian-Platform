@@ -5,6 +5,7 @@ import { auth, checkRole } from '../middleware/auth.js';
 import dynamoHelper from '../dynamodb.js';
 import eventEmitter from '../eventDispatcher.js';
 import { logAudit } from '../middleware/audit.js';
+import { DiseasePredictionSchema, SeasonalRiskSchema, validateAiOutput } from '../utils/aiValidator.js';
 
 const router = express.Router();
 
@@ -194,7 +195,7 @@ router.post('/emergency-alert', auth, async (req, res) => {
     }
 
     const timestamp  = new Date().toISOString();
-    const requestObj = { requestId, userId, name: userName, location: villageId, priority: 'High', symptoms: message, status: 'pending', timestamp, type: alertType };
+    const requestObj = { requestId, userId, name: userName, location: villageId, priority: 'High', symptoms: message, status: 'pending', timestamp, type: alertType, traceId: req.traceId };
 
     // Return success immediately — the DB record is already saved.
     // DynamoDB & SSE broadcast are best-effort (fire-and-forget).
@@ -275,17 +276,18 @@ router.post('/symptoms', auth, aiLimiter, checkRole(['villager', 'ngo', 'admin']
   try {
     const aiRes = await axios.post(`${AI_SERVICE_URL}/predict/disease`, { symptoms: text }, {
       headers: { 'x-trace-id': req.traceId },
-      timeout: 8000
+      timeout: 5000
     });
-    prediction = aiRes.data.prediction;
-    disease = aiRes.data.disease || prediction;
-    advice = aiRes.data.advice || '';
-    severity = aiRes.data.severity || 'P3';
-    doctor_specialty = aiRes.data.doctor_specialty || 'General Physician';
-    confidence = aiRes.data.confidence;
-    alternatives = aiRes.data.alternatives || [];
-    model = aiRes.data.model || 'Hybrid Model';
-    accuracy = aiRes.data.accuracy || '86.9%';
+    const validated = validateAiOutput(DiseasePredictionSchema, aiRes.data, 'Disease Predict AI Output');
+    prediction = validated.prediction;
+    disease = validated.disease || prediction;
+    advice = validated.advice || '';
+    severity = validated.severity || 'P3';
+    doctor_specialty = validated.doctor_specialty || 'General Physician';
+    confidence = validated.confidence;
+    alternatives = validated.alternatives || [];
+    model = validated.model || 'Hybrid Model';
+    accuracy = validated.accuracy || '86.9%';
   } catch (err) {
     console.warn('AI Service unavailable for symptom check — using offline rule:', err.message);
     const matchedName = predictDiseaseLocal(text);
@@ -313,7 +315,7 @@ router.post('/symptoms', auth, aiLimiter, checkRole(['villager', 'ngo', 'admin']
     );
   }
 
-  eventEmitter.emit('symptom_submitted', { userId, villageId, symptoms: text, prediction, timestamp: new Date().toISOString(), clientRequestId });
+  eventEmitter.emit('symptom_submitted', { userId, villageId, symptoms: text, prediction, timestamp: new Date().toISOString(), clientRequestId, traceId: req.traceId });
 
   const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
   let logs = [];
@@ -330,7 +332,7 @@ router.post('/symptoms', auth, aiLimiter, checkRole(['villager', 'ngo', 'admin']
     ).catch(() => []);
   }
   const alert = logs.length > 5 ? `⚠️ CLUSTER ALERT in ${villageId}: ${logs.length} similar cases detected.` : null;
-  if (alert) eventEmitter.emit('outbreak_detected', { villageId, count: logs.length, prediction });
+  if (alert) eventEmitter.emit('outbreak_detected', { villageId, count: logs.length, prediction, timestamp: new Date().toISOString(), traceId: req.traceId });
 
   res.send({ 
     prediction,
@@ -441,7 +443,7 @@ router.post('/ambulance', auth, logAudit('request_ambulance', 'ambulance_request
     }
 
     const timestamp  = new Date().toISOString();
-    const requestObj = { requestId, userId, name, location, priority, symptoms: sxy, status: 'pending', timestamp, clientRequestId };
+    const requestObj = { requestId, userId, name, location, priority, symptoms: sxy, status: 'pending', timestamp, clientRequestId, traceId: req.traceId };
 
     // Return success immediately — the record is already saved.
     // DynamoDB telemetry & SSE broadcast are best-effort (fire-and-forget).
@@ -783,7 +785,7 @@ CRITICAL CLINICAL & TRANSLATION SAFEGUARDS:
         temperature: 0.35,
         max_tokens: 300
       },
-      { headers: { Authorization: `Bearer ${groqKey}`, 'Content-Type': 'application/json' } }
+      { headers: { Authorization: `Bearer ${groqKey}`, 'Content-Type': 'application/json', 'x-trace-id': req.traceId } }
     );
     const reply = groqRes.data.choices?.[0]?.message?.content || 'I could not process your question. Please try again.';
     let sources = ["Sakhi Health Assistant — General Information"];
@@ -837,7 +839,8 @@ router.post('/villager/sync-health', auth, async (req, res) => {
       durationMs: logItem.durationMs,
       syncBatchId: logItem.syncBatchId,
       clientRequestIds: logItem.clientRequestIds,
-      timestamp: logItem.queuedAt
+      timestamp: logItem.queuedAt,
+      traceId: req.traceId
     });
     console.log(`[SYNC REPLAY] Successful drainage of ${recordCount} items from device ${deviceId} in ${durationMs}ms`);
     res.json({ success: true });
@@ -914,11 +917,24 @@ router.get('/predict/seasonal-risk', auth, async (req, res) => {
     const url = month 
       ? `${AI_SERVICE_URL}/predict/seasonal-risk?villageId=${encodeURIComponent(villageId)}&month=${encodeURIComponent(month)}`
       : `${AI_SERVICE_URL}/predict/seasonal-risk?villageId=${encodeURIComponent(villageId)}`;
-    const aiRes = await axios.get(url);
-    res.json(aiRes.data);
+    const aiRes = await axios.get(url, { headers: { 'x-trace-id': req.traceId }, timeout: 5000 });
+    const validated = validateAiOutput(SeasonalRiskSchema, aiRes.data, 'Seasonal Risk AI Output');
+    res.json(validated);
   } catch (err) {
-    console.error('AI Service Error (Seasonal Risk):', err.message);
-    res.status(503).json({ error: 'Seasonal risk prediction AI is currently unavailable.' });
+    console.warn('[VILLAGER SEASONAL] AI Service failed or timed out — applying local clinical fallback:', err.message);
+    const resolvedMonth = month || new Date().toLocaleString('en-US', { month: 'long' });
+    const defaultData = {
+      villageId,
+      month: resolvedMonth,
+      risk_level: "Medium",
+      top_diseases: ["Gastroenteritis", "Malaria", "Viral Fever"],
+      preventive_measures: [
+        "Boil and filter all drinking water during monsoon.",
+        "Clear standing water nearby to prevent malaria vector breeding.",
+        "Ensure children receive timely MMR/seasonal vaccine coverage."
+      ]
+    };
+    res.json(defaultData);
   }
 });
 
