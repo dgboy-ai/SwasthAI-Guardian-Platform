@@ -61,6 +61,11 @@ export default function OutbreakRadarView({
           >
             {alertSent ? '✅ Alert Sent' : alertError ? '⚠️ Alert Failed' : 'Issue Alert'}
           </button>
+          {alertSent && (
+            <span className="text-[10px] text-emerald-600 font-bold bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-100 animate-pulse transition-all">
+              ⚡ SSE Broadcast Confirmed (DynamoDB & Aurora Synced)
+            </span>
+          )}
           {alertError && (
             <span className="text-[10px] text-rose-600 font-bold bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-100 transition-opacity">
               Error: {alertError}

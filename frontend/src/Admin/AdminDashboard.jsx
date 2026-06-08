@@ -36,6 +36,11 @@ export default function AdminDashboard() {
   const [activeView, setActiveView] = useState('command');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarWidth, setSidebarWidth] = useState(() => {
+    const saved = localStorage.getItem('admin_sidebar_width');
+    return saved ? parseInt(saved, 10) : 220;
+  });
+  const [isResizing, setIsResizing] = useState(false);
   const [judgeDemoMode, setJudgeDemoMode] = useState(false);
   const [demoData, setDemoData] = useState(null);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -57,6 +62,36 @@ export default function AdminDashboard() {
   const [auditLogs, setAuditLogs] = useState([]);
   const [simulatingOutbreak, setSimulatingOutbreak] = useState(false);
   const lastSyncRef = useRef(Date.now());
+
+  const startResizing = (mouseDownEvent) => {
+    mouseDownEvent.preventDefault();
+    setIsResizing(true);
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      if (!isResizing) return;
+      const newWidth = Math.max(160, Math.min(e.clientX, 450));
+      setSidebarWidth(newWidth);
+    };
+
+    const handleMouseUp = () => {
+      if (isResizing) {
+        setIsResizing(false);
+        localStorage.setItem('admin_sidebar_width', sidebarWidth);
+      }
+    };
+
+    if (isResizing) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isResizing, sidebarWidth]);
 
   useEffect(() => {
     if (judgeDemoMode && !demoData) {
@@ -260,17 +295,20 @@ export default function AdminDashboard() {
 
   const issueDistrictAlert = async () => {
     try {
-      await api.post('/admin/outbreak-alert', {
+      await api.post('/admin/outbreak', {
         villageId: 'DISTRICT_WIDE',
         disease: 'Manual District Alert',
         action: 'All ASHA workers notified. Escalate to District Health Officer immediately.',
+        confidence: 0.99,
+        caseCount: 15,
+        symptomPattern: 'Manual outbreak override issued by District Health Officer.'
       });
       setAlertSent(true);
       setAlertError(null);
-      setTimeout(() => setAlertSent(false), 4000);
+      setTimeout(() => setAlertSent(false), 5000);
     } catch (err) {
       console.error(err);
-      setAlertError(err.message || 'Failed to dispatch outbreak alert to district.');
+      setAlertError(err.response?.data?.error || err.message || 'Failed to dispatch outbreak alert to district.');
       setTimeout(() => setAlertError(null), 5000);
     }
   };
@@ -375,14 +413,16 @@ export default function AdminDashboard() {
       )}
 
       {/* ══ SIDEBAR ══════════════════════════════════════════════════════════ */}
-      <aside className={`
-        fixed top-0 left-0 h-full z-40 flex flex-col
-        bg-[#043927] text-white
-        transition-all duration-300 ease-in-out
-        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-        lg:translate-x-0 lg:relative lg:z-auto shrink-0
-        ${sidebarCollapsed ? 'w-[68px]' : 'w-[220px]'}
-      `}>
+      <aside
+        style={sidebarCollapsed ? { width: '68px' } : { width: `${sidebarWidth}px` }}
+        className={`
+          fixed top-0 left-0 h-full z-40 flex flex-col
+          bg-[#043927] text-white relative
+          ${isResizing ? '' : 'transition-all duration-300 ease-in-out'}
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+          lg:translate-x-0 lg:relative lg:z-auto shrink-0
+        `}
+      >
         {/* Logo */}
         <div className="px-4 pt-6 pb-5 border-b border-white/10 flex items-center justify-between">
           <div className="flex items-center gap-2.5 min-w-0">
@@ -458,6 +498,15 @@ export default function AdminDashboard() {
             {sidebarCollapsed ? 'v1.4' : `SwasthAI Guardian ${VERSION} · © ${COPYRIGHT_YEAR}`}
           </p>
         </div>
+
+        {/* Resize Handle */}
+        {!sidebarCollapsed && (
+          <div
+            onMouseDown={startResizing}
+            className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-emerald-500/50 active:bg-emerald-600 transition-colors z-50"
+            style={{ marginRight: '-2px' }}
+          />
+        )}
       </aside>
 
       {/* ══ MAIN AREA ════════════════════════════════════════════════════════ */}
