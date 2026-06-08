@@ -2,7 +2,8 @@ import React from 'react';
 import {
   Heart, Baby, Radio, Truck, WifiOff, Activity,
   BrainCircuit, AlertTriangle, TrendingUp, Users,
-  Zap, Shield, Database, ArrowRight
+  Zap, Shield, Database, ArrowRight, ChevronRight,
+  Package, FileText
 } from 'lucide-react';
 import ProductionEvidencePanel from './ProductionEvidencePanel';
 import KpiCard from './KpiCard';
