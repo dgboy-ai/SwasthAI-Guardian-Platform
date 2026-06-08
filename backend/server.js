@@ -261,6 +261,20 @@ if (isProduction && cluster.isPrimary) {
           console.error('[CLEANUP] Daily OTP database cleanup failed:', err.message);
         }
       }, 24 * 60 * 60 * 1000);
+
+      // Keep AI Service awake on Render (runs every 10 minutes)
+      if (process.env.NODE_ENV === 'production' && AI_SERVICE_URL) {
+        console.log(`[KEEP-ALIVE] Initializing AI service ping task for: ${AI_SERVICE_URL}`);
+        setInterval(async () => {
+          try {
+            const healthUrl = `${AI_SERVICE_URL.replace(/\/+$/, '')}/health`;
+            const res = await fetch(healthUrl);
+            console.log(`[KEEP-ALIVE] Ping to AI Service health check returned status: ${res.status}`);
+          } catch (err) {
+            console.error('[KEEP-ALIVE] Failed to ping AI service:', err.message);
+          }
+        }, 10 * 60 * 1000); // 10 minutes
+      }
       
     } catch (err) {
       console.error('Database setup/seeding failed:', err);
