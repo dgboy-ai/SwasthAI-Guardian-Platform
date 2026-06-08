@@ -717,7 +717,7 @@ router.post('/health-assistant', auth, checkRole(['villager', 'ngo', 'admin']), 
     });
   } catch (ragErr) {
     const duration = Date.now() - ragStartTime;
-    console.warn('[Sakhi] RAG service unavailable, falling back to direct Groq with hard guardrails:', ragErr.message);
+    req.log('warn', 'RAG service unavailable, falling back to direct Groq with hard guardrails', { error: ragErr.message });
     ragTraces.push({
       traceId: req.traceId,
       timestamp: new Date().toISOString(),
@@ -906,7 +906,7 @@ router.post('/villager/phq2', auth, checkRole(['villager', 'ngo', 'admin']), log
 
     res.json({ success: true, score, positiveScreen, advice });
   } catch (err) {
-    console.error('[PHQ2 ERROR]', err.message);
+    req.log('error', 'Failed to process PHQ-2 screening', { error: err.message });
     res.status(500).json({ error: 'Failed to process PHQ-2 screening.' });
   }
 });
@@ -923,7 +923,7 @@ router.get('/predict/seasonal-risk', auth, checkRole(['villager', 'ngo', 'admin'
     const validated = validateAiOutput(SeasonalRiskSchema, aiRes.data, 'Seasonal Risk AI Output');
     res.json(validated);
   } catch (err) {
-    console.warn('[VILLAGER SEASONAL] AI Service failed or timed out — applying local clinical fallback:', err.message);
+    req.log('warn', 'AI Service failed or timed out — applying local seasonal risk fallback', { error: err.message });
     const resolvedMonth = month || new Date().toLocaleString('en-US', { month: 'long' });
     const defaultData = {
       villageId,

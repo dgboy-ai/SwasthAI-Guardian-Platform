@@ -125,7 +125,7 @@ router.post('/maternal', auth, checkRole(['ngo', 'admin']), logAudit('create', '
     const validated = validateAiOutput(PregnancyRiskSchema, ai.data, 'Pregnancy Risk AI Output');
     riskLevel = validated.risk_level;
   } catch (err) {
-    console.warn('[NGO MATERNAL] AI Service failed or timed out — applying local clinical fallback:', err.message);
+    req.log('warn', 'AI Service failed or timed out — applying local pregnancy risk fallback', { error: err.message });
     // Local clinical fallback logic
     let score = 0;
     if (patientVitals.systolic_bp >= 140 || patientVitals.diastolic_bp >= 90) score += 3;
@@ -187,7 +187,7 @@ router.post('/malnutrition', auth, checkRole(['ngo', 'admin']), async (req, res)
     bmi = validated.bmi;
     action = validated.action;
   } catch (err) {
-    console.warn('[NGO MALNUTRITION] AI Service failed or timed out — applying local clinical fallback:', err.message);
+    req.log('warn', 'AI Service failed or timed out — applying local malnutrition fallback', { error: err.message });
     // Local clinical fallback logic
     const heightM = height / 100;
     bmi = Number((weight / (heightM * heightM)).toFixed(2));
