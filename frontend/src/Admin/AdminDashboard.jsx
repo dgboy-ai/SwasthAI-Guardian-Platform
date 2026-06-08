@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import {
   LayoutDashboard, Radio, Heart, Baby, Truck,
   WifiOff, BrainCircuit, BarChart3, Settings,
-  Bell, ChevronRight, Download, AlertTriangle,
+  Bell, ChevronRight, ChevronLeft, Download, AlertTriangle,
   Shield, MapPin, Activity, Users, Zap,
   Database, CheckCircle, TrendingUp, TrendingDown,
   Package, FileText, X, HeartPulse, ArrowRight,
@@ -321,6 +321,7 @@ function AIReasoningTrace() {
 export default function AdminDashboard() {
   const [activeView, setActiveView] = useState('command');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [judgeDemoMode, setJudgeDemoMode] = useState(false);
   const [demoData, setDemoData] = useState(null);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -673,30 +674,40 @@ export default function AdminDashboard() {
 
       {/* ══ SIDEBAR ══════════════════════════════════════════════════════════ */}
       <aside className={`
-        fixed top-0 left-0 h-full z-40 flex flex-col w-[220px]
+        fixed top-0 left-0 h-full z-40 flex flex-col
         bg-[#043927] text-white
-        transition-transform duration-300 ease-in-out
+        transition-all duration-300 ease-in-out
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
         lg:translate-x-0 lg:relative lg:z-auto shrink-0
+        ${sidebarCollapsed ? 'w-[68px]' : 'w-[220px]'}
       `}>
         {/* Logo */}
-        <div className="px-4 pt-6 pb-5 border-b border-white/10">
-          <div className="flex items-center gap-2.5">
+        <div className="px-4 pt-6 pb-5 border-b border-white/10 flex items-center justify-between">
+          <div className="flex items-center gap-2.5 min-w-0">
             <div className="w-9 h-9 bg-[#064E3B] rounded-xl flex items-center justify-center shadow-lg shrink-0 border border-emerald-700/50">
               <HeartPulse className="w-5 h-5 text-emerald-400" />
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-extrabold text-[12.5px] uppercase tracking-wider text-white leading-tight">SWASTHAI GUARDIAN</p>
-              <p className="text-[7.5px] text-emerald-400 font-black mt-0.5 leading-tight uppercase tracking-widest">National Rural Health Command Center</p>
-            </div>
-            <button className="lg:hidden text-white/60 hover:text-white" onClick={() => setSidebarOpen(false)}>
-              <X className="w-4 h-4" />
-            </button>
+            {!sidebarCollapsed && (
+              <div className="flex-1 min-w-0 animate-in fade-in duration-200">
+                <p className="font-extrabold text-[12.5px] uppercase tracking-wider text-white leading-tight">SWASTHAI GUARDIAN</p>
+                <p className="text-[7.5px] text-emerald-400 font-black mt-0.5 leading-tight uppercase tracking-widest">National Rural Health Command Center</p>
+              </div>
+            )}
           </div>
+          <button 
+            className="hidden lg:block text-white/40 hover:text-white ml-1.5 shrink-0" 
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            title={sidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+          >
+            {sidebarCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+          </button>
+          <button className="lg:hidden text-white/60 hover:text-white" onClick={() => setSidebarOpen(false)}>
+            <X className="w-4 h-4" />
+          </button>
         </div>
 
         {/* Nav items */}
-        <nav className="flex-1 py-3 overflow-y-auto">
+        <nav className="flex-1 py-3 overflow-y-auto min-w-0">
           {NAV_ITEMS.map(item => {
             const active = activeView === item.id;
             return (
@@ -704,30 +715,35 @@ export default function AdminDashboard() {
                 key={item.id}
                 onClick={() => { setActiveView(item.id); setSidebarOpen(false); }}
                 className={`
-                  w-full flex items-center gap-3 px-4 py-3 text-left transition-all duration-150
+                  w-full flex items-center gap-3 px-4 py-3 text-left transition-all duration-150 min-w-0
                   ${active
-                    ? 'bg-emerald-500 text-white mx-2 rounded-xl w-[calc(100%-16px)]'
-                    : 'text-white/60 hover:text-white hover:bg-white/10 mx-0 rounded-none'}
+                    ? 'bg-emerald-500 text-white rounded-xl'
+                    : 'text-white/60 hover:text-white hover:bg-white/10 rounded-none'}
                 `}
+                style={active && !sidebarCollapsed ? { margin: '0 8px', width: 'calc(100% - 16px)' } : {}}
               >
-                <item.icon className={`w-4 h-4 shrink-0 ${active ? 'text-white' : 'text-white/50'}`} />
-                <span className={`text-[12.5px] font-semibold ${active ? 'font-bold' : ''}`}>{item.label}</span>
-                {active && <ChevronRight className="w-3.5 h-3.5 ml-auto opacity-70" />}
+                <item.icon className={`w-4 h-4 shrink-0 ${active ? 'text-white' : 'text-white/50'}`} style={active && sidebarCollapsed ? { color: '#ffffff' } : {}} />
+                {!sidebarCollapsed && (
+                  <span className={`text-[12.5px] font-semibold truncate animate-in fade-in duration-200 ${active ? 'font-bold' : ''}`}>{item.label}</span>
+                )}
+                {active && !sidebarCollapsed && <ChevronRight className="w-3.5 h-3.5 ml-auto opacity-70 shrink-0" />}
               </button>
             );
           })}
         </nav>
 
         {/* Judge Demo Mode toggle */}
-        <div className="mx-3 mb-3 p-3 bg-white/5 rounded-xl border border-white/10">
+        <div className="mx-2 mb-3 p-2.5 bg-white/5 rounded-xl border border-white/10 min-w-0">
           <div className="flex items-center justify-between gap-2">
-            <div>
-              <p className="text-[10px] font-black text-emerald-400 uppercase tracking-wider">Judge Demo Mode</p>
-              <p className="text-[9px] text-white/40 font-medium mt-0.5">{judgeDemoMode ? 'Seeded data active' : 'Off'}</p>
-            </div>
+            {!sidebarCollapsed && (
+              <div className="animate-in fade-in duration-200 min-w-0">
+                <p className="text-[10px] font-black text-emerald-400 uppercase tracking-wider">Judge Demo Mode</p>
+                <p className="text-[9px] text-white/40 font-medium mt-0.5 truncate">{judgeDemoMode ? 'Seeded active' : 'Off'}</p>
+              </div>
+            )}
             <button
               onClick={() => setJudgeDemoMode(v => !v)}
-              className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${judgeDemoMode ? 'bg-emerald-500' : 'bg-white/20'}`}
+              className={`relative w-11 h-6 rounded-full transition-colors duration-200 shrink-0 ${judgeDemoMode ? 'bg-emerald-500' : 'bg-white/20'}`}
             >
               <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-all duration-200 ${judgeDemoMode ? 'left-6' : 'left-1'}`} />
             </button>
@@ -735,8 +751,10 @@ export default function AdminDashboard() {
         </div>
 
         {/* Version */}
-        <div className="px-4 py-3 border-t border-white/10">
-          <p className="text-[9px] text-white/30 font-medium">SwasthAI Guardian {VERSION} · © {COPYRIGHT_YEAR}</p>
+        <div className="px-4 py-3 border-t border-white/10 text-center lg:text-left">
+          <p className="text-[9px] text-white/30 font-medium truncate">
+            {sidebarCollapsed ? 'v1.4' : `SwasthAI Guardian ${VERSION} · © ${COPYRIGHT_YEAR}`}
+          </p>
         </div>
       </aside>
 
@@ -1320,9 +1338,9 @@ export default function AdminDashboard() {
                     <div className="space-y-4">
                       {[
                         { name: 'Fever Cases', count: 48, pct: 75, color: 'bg-rose-500' },
-                        { name: 'Diarrheal Signals', count: 32, pct: 50, color: 'bg-orange-500' },
+                        { name: 'Diarrheal Cases', count: 32, pct: 50, color: 'bg-orange-500' },
                         { name: 'Respiratory Cases', count: 29, pct: 45, color: 'bg-amber-500' },
-                        { name: 'Skin Infection Signals', count: 14, pct: 22, color: 'bg-blue-500' },
+                        { name: 'Skin Infection Cases', count: 14, pct: 22, color: 'bg-blue-500' },
                         { name: 'Maternal Risk Alerts', count: 5, pct: 8, color: 'bg-rose-600' },
                       ].map((d, i) => (
                         <div key={i} className="space-y-1.5">

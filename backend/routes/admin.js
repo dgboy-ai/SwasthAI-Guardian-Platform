@@ -317,7 +317,20 @@ router.get('/clusters', async (req, res) => {
 router.post('/outbreak-alert', async (req, res) => {
   const db = req.app.locals.db;
   const agentSecret = req.headers['x-agent-secret'];
-  if (!process.env.AGENT_SECRET || agentSecret !== process.env.AGENT_SECRET) {
+  const isAgent = process.env.AGENT_SECRET && agentSecret === process.env.AGENT_SECRET;
+
+  let isAuthedAdmin = false;
+  const authHeader = req.headers.authorization;
+  if (authHeader) {
+    try {
+      const decoded = jwt.verify(authHeader.replace('Bearer ', ''), process.env.JWT_SECRET);
+      if (decoded && decoded.role === 'admin') {
+        isAuthedAdmin = true;
+      }
+    } catch (_) {}
+  }
+
+  if (!isAgent && !isAuthedAdmin) {
     return sendError(res, 403, 'FORBIDDEN', 'Forbidden');
   }
 
