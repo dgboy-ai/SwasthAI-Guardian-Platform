@@ -1,7 +1,8 @@
 import express from 'express';
 import axios from 'axios';
 import rateLimit from 'express-rate-limit';
-import { auth, checkRole } from '../middleware/auth.js';
+import { auth } from '../middleware/auth.js';
+import { checkRole, enforceVillageScope, enforceReferralAccess, enforceAmbulanceAccess } from '../middleware/policy.js';
 import dynamoHelper from '../dynamodb.js';
 import eventEmitter from '../eventDispatcher.js';
 import { logAudit } from '../middleware/audit.js';
@@ -166,7 +167,7 @@ async function getDistrictId(db, pool, usingSQLite, villageId) {
   return process.env.DISTRICT_NAME || 'district_main';
 }
 
-router.post('/emergency-alert', auth, async (req, res) => {
+router.post('/emergency-alert', auth, checkRole(['villager', 'ngo', 'admin']), async (req, res) => {
   const db   = req.app.locals.db;
   const pool = req.app.locals.pool;
   const { alertType = 'menstrual_emergency', message = 'Emergency help needed' } = req.body;
@@ -223,7 +224,7 @@ router.post('/emergency-alert', auth, async (req, res) => {
   }
 });
 
-router.post('/symptoms', auth, aiLimiter, checkRole(['villager', 'ngo', 'admin']), logAudit('evaluate_symptoms', 'symptoms'), async (req, res) => {
+router.post('/symptoms', auth, aiLimiter, checkRole(['villager', 'ngo', 'admin']), enforceVillageScope, logAudit('evaluate_symptoms', 'symptoms'), async (req, res) => {
   const db = req.app.locals.db;
   const pool = req.app.locals.pool;
   const usingSQLite = req.app.locals.usingSQLite;
@@ -231,7 +232,7 @@ router.post('/symptoms', auth, aiLimiter, checkRole(['villager', 'ngo', 'admin']
   const text = sanitize(req.body.symptoms);
   const clientRequestId = cleanClientRequestId(req.body.clientRequestId);
   const userId = req.user.id;
-  const villageId = req.user.villageId || req.body.villageId;
+  const villageId = req.user.role === 'admin' ? (req.body.villageId || req.user.villageId || 'v101') : (req.user.villageId || 'v101');
   
   let prediction;
   let disease = 'Undetermined Symptoms / अनिर्धारित लक्षण';
@@ -348,13 +349,13 @@ router.post('/symptoms', auth, aiLimiter, checkRole(['villager', 'ngo', 'admin']
   });
 });
 
-router.post('/skin-log', auth, async (req, res) => {
+router.post('/skin-log', auth, checkRole(['villager', 'ngo', 'admin']), enforceVillageScope, async (req, res) => {
   const db = req.app.locals.db;
   const pool = req.app.locals.pool;
   const usingSQLite = req.app.locals.usingSQLite;
   const { condition, severity, rednessPercent, irregularPercent } = req.body;
   const userId = req.user.id;
-  const villageId = req.user.villageId || 'v101';
+  const villageId = req.user.role === 'admin' ? (req.body.villageId || req.user.villageId || 'v101') : (req.user.villageId || 'v101');
   try {
     if (!usingSQLite && pool) {
       await pool.query(
@@ -374,12 +375,12 @@ router.post('/skin-log', auth, async (req, res) => {
   }
 });
 
-router.post('/ambulance', auth, logAudit('request_ambulance', 'ambulance_requests'), async (req, res) => {
+router.post('/ambulance', auth, checkRole(['villager', 'ngo', 'admin']), logAudit('request_ambulance', 'ambulance_requests'), async (req, res) => {
   const db = req.app.locals.db;
   const pool = req.app.locals.pool;
   const usingSQLite = req.app.locals.usingSQLite;
   const name     = sanitize(req.body.name);
-  const location = sanitize(req.body.location);
+  const location = req.user.role === 'admin' ? sanitize(req.body.location) : (req.user.villageId || 'v101');
   const priority = sanitize(req.body.priority);
   const sxy      = sanitize(req.body.symptoms);
   const clientRequestId = cleanClientRequestId(req.body.clientRequestId);
@@ -480,7 +481,7 @@ router.post('/ambulance', auth, logAudit('request_ambulance', 'ambulance_request
   }
 });
 
-router.get('/ambulance-status', auth, async (req, res) => {
+router.get('/ambulance-status', auth, checkRole(['villager', 'ngo', 'admin']), async (req, res) => {
   const db = req.app.locals.db;
   const pool = req.app.locals.pool;
   const usingSQLite = req.app.locals.usingSQLite;
@@ -505,7 +506,7 @@ router.get('/ambulance-status', auth, async (req, res) => {
   }
 });
 
-router.get('/my-history', auth, async (req, res) => {
+router.get('/my-history', auth, checkRole(['villager', 'ngo', 'admin']), async (req, res) => {
   const db = req.app.locals.db;
   const pool = req.app.locals.pool;
   const usingSQLite = req.app.locals.usingSQLite;
@@ -538,7 +539,7 @@ router.get('/my-history', auth, async (req, res) => {
   }
 });
 
-router.get('/schemes', auth, async (req, res) => {
+router.get('/schemes', auth, checkRole(['villager', 'ngo', 'admin']), async (req, res) => {
   const db = req.app.locals.db;
   const pool = req.app.locals.pool;
   const usingSQLite = req.app.locals.usingSQLite;
@@ -599,7 +600,7 @@ router.get('/schemes', auth, async (req, res) => {
   }
 });
 
-router.get('/schemes/all', auth, async (req, res) => {
+router.get('/schemes/all', auth, checkRole(['villager', 'ngo', 'admin']), async (req, res) => {
   const db = req.app.locals.db;
   const pool = req.app.locals.pool;
   const usingSQLite = req.app.locals.usingSQLite;
@@ -622,7 +623,7 @@ router.get('/schemes/all', auth, async (req, res) => {
   }
 });
 
-router.get('/schemes/:id', auth, async (req, res) => {
+router.get('/schemes/:id', auth, checkRole(['villager', 'ngo', 'admin']), async (req, res) => {
   const db = req.app.locals.db;
   const pool = req.app.locals.pool;
   const usingSQLite = req.app.locals.usingSQLite;
@@ -643,25 +644,26 @@ router.get('/schemes/:id', auth, async (req, res) => {
   }
 });
 
-router.post('/villager/pad-request', auth, logAudit('request_pads', 'ambulance_requests'), async (req, res) => {
+router.post('/villager/pad-request', auth, checkRole(['villager', 'ngo', 'admin']), enforceVillageScope, logAudit('request_pads', 'ambulance_requests'), async (req, res) => {
   const db = req.app.locals.db;
   const pool = req.app.locals.pool;
   const usingSQLite = req.app.locals.usingSQLite;
   const { village } = req.body;
-  if (!village) return res.status(400).send({ error: 'Village name is required.' });
+  
+  const userVillageId = req.user.role === 'admin' ? (village || 'v101') : (req.user.villageId || 'v101');
   try {
     let userName = 'Unknown Villager';
     if (!usingSQLite && pool) {
       const userRecord = await pool.query('SELECT name FROM users WHERE id = $1', [req.user.id]);
       userName = userRecord.rows[0]?.name || 'Unknown Villager';
       await pool.query('INSERT INTO ambulance_requests (user_id, name, location, priority, request_type, symptoms, status) VALUES ($1, $2, $3, $4, $5, $6, $7)',
-        [req.user.id, userName, village, 'Low', 'pad_request', 'Requires Sanitary Pads delivered to village.', 'pending']
+        [req.user.id, userName, userVillageId, 'Low', 'pad_request', 'Requires Sanitary Pads delivered to village.', 'pending']
       );
     } else {
       const userRecord = await db.get('SELECT name FROM users WHERE id = ?', [req.user.id]);
       userName = userRecord?.name || 'Unknown Villager';
       await db.run('INSERT INTO ambulance_requests (user_id, name, location, priority, request_type, symptoms, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
-        [req.user.id, userName, village, 'Low', 'pad_request', 'Requires Sanitary Pads delivered to village.', 'pending']
+        [req.user.id, userName, userVillageId, 'Low', 'pad_request', 'Requires Sanitary Pads delivered to village.', 'pending']
       );
     }
     res.send({ success: true });
@@ -671,7 +673,7 @@ router.post('/villager/pad-request', auth, logAudit('request_pads', 'ambulance_r
   }
 });
 
-router.post('/health-assistant', auth, aiLimiter, async (req, res) => {
+router.post('/health-assistant', auth, checkRole(['villager', 'ngo', 'admin']), aiLimiter, async (req, res) => {
   const AI_SERVICE_URL = req.app.locals.AI_SERVICE_URL;
   const ragTraces = req.app.locals.ragTraces || [];
   const { message } = req.body;
@@ -817,7 +819,7 @@ CRITICAL CLINICAL & TRANSLATION SAFEGUARDS:
 });
 
 // POST /villager/sync-health — Telemetry recorder on client IndexedDB queue replay
-router.post('/villager/sync-health', auth, async (req, res) => {
+router.post('/villager/sync-health', auth, checkRole(['villager', 'ngo', 'admin']), async (req, res) => {
   const { recordCount, durationMs, syncBatchId, clientRequestIds = [] } = req.body;
   try {
     const deviceId = req.headers['x-device-id'] || 'unknown-device';
@@ -851,7 +853,7 @@ router.post('/villager/sync-health', auth, async (req, res) => {
 });
 
 // POST /villager/phq2 — Patient Health Questionnaire-2 mental health triage screener
-router.post('/villager/phq2', auth, logAudit('evaluate_mental_health', 'symptoms'), async (req, res) => {
+router.post('/villager/phq2', auth, checkRole(['villager', 'ngo', 'admin']), logAudit('evaluate_mental_health', 'symptoms'), async (req, res) => {
   const db = req.app.locals.db;
   const pool = req.app.locals.pool;
   const usingSQLite = req.app.locals.usingSQLite;
@@ -909,9 +911,9 @@ router.post('/villager/phq2', auth, logAudit('evaluate_mental_health', 'symptoms
   }
 });
 
-router.get('/predict/seasonal-risk', auth, async (req, res) => {
+router.get('/predict/seasonal-risk', auth, checkRole(['villager', 'ngo', 'admin']), enforceVillageScope, async (req, res) => {
   const AI_SERVICE_URL = req.app.locals.AI_SERVICE_URL;
-  const villageId = req.query.villageId || 'v101';
+  const villageId = req.user.role === 'admin' ? (req.query.villageId || 'v101') : (req.user.villageId || 'v101');
   const month = req.query.month;
   try {
     const url = month 

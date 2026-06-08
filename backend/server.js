@@ -203,40 +203,36 @@ if (isProduction && cluster.isPrimary) {
     console.log('📦 Falling back to SQLite for local development');
     const { createRequire } = await import('module');
     const require = createRequire(import.meta.url);
-    let sqlite3;
+    let sqliteDbInstance;
     try {
-      sqlite3 = require('better-sqlite3');
-    } catch {
-      const sqliteModule = await import('sqlite3');
-      const sqliteLib = sqliteModule.default;
-      await (async () => {
-        const { open } = await import('sqlite');
-        const sqliteDb = await open({ filename: path.join(__dirname, 'swasthai_guardian.sqlite'), driver: sqliteLib.Database });
-        db = {
-          get: (sql, params = []) => sqliteDb.get(sql, params),
-          all: (sql, params = []) => sqliteDb.all(sql, params),
-          run: async (sql, params = []) => {
-            const r = await sqliteDb.run(sql, params);
-            return { lastID: r.lastID };
-          },
-          exec: (sql) => sqliteDb.exec(sql),
-        };
-        console.log('✅ SQLite database opened (sqlite package)');
-      })();
-      if (!db) throw new Error('No database driver available');
-    }
-    if (sqlite3) {
-      const sqliteDb = sqlite3(path.join(__dirname, 'swasthai_guardian.sqlite'));
+      const sqlite3 = require('better-sqlite3');
+      sqliteDbInstance = sqlite3(path.join(__dirname, 'swasthai_guardian.sqlite'));
       db = {
-        get: (sql, params = []) => Promise.resolve(sqliteDb.prepare(sql).get(params) || null),
-        all: (sql, params = []) => Promise.resolve(sqliteDb.prepare(sql).all(params)),
+        get: (sql, params = []) => Promise.resolve(sqliteDbInstance.prepare(sql).get(params) || null),
+        all: (sql, params = []) => Promise.resolve(sqliteDbInstance.prepare(sql).all(params)),
         run: (sql, params = []) => {
-          const info = sqliteDb.prepare(sql).run(params);
+          const info = sqliteDbInstance.prepare(sql).run(params);
           return Promise.resolve({ lastID: info.lastInsertRowid });
         },
-        exec: (sql) => { sqliteDb.exec(sql); return Promise.resolve(); },
+        exec: (sql) => { sqliteDbInstance.exec(sql); return Promise.resolve(); },
       };
       console.log('✅ SQLite database opened (better-sqlite3)');
+    } catch (err) {
+      console.warn('⚠️ SQLite better-sqlite3 failed (possibly node version mismatch), falling back to standard sqlite/sqlite3:', err.message);
+      const sqliteModule = await import('sqlite3');
+      const sqliteLib = sqliteModule.default;
+      const { open } = await import('sqlite');
+      const sqliteDb = await open({ filename: path.join(__dirname, 'swasthai_guardian.sqlite'), driver: sqliteLib.Database });
+      db = {
+        get: (sql, params = []) => sqliteDb.get(sql, params),
+        all: (sql, params = []) => sqliteDb.all(sql, params),
+        run: async (sql, params = []) => {
+          const r = await sqliteDb.run(sql, params);
+          return { lastID: r.lastID };
+        },
+        exec: (sql) => sqliteDb.exec(sql),
+      };
+      console.log('✅ SQLite database opened (sqlite package)');
     }
   }
 

@@ -206,7 +206,13 @@ router.get('/ambulances', auth, checkRole(['ngo', 'admin']), async (req, res) =>
   try {
     const limit = parseInt(req.query.limit) || 100;
     const offset = (parseInt(req.query.page || 1) - 1) * limit;
-    const rows = await db.all("SELECT * FROM ambulance_requests WHERE request_type = 'ambulance' ORDER BY id DESC LIMIT ? OFFSET ?", [limit, offset]);
+    let rows;
+    if (req.user.role !== 'admin') {
+      const villageId = req.user.villageId || 'unassigned';
+      rows = await db.all("SELECT * FROM ambulance_requests WHERE request_type = 'ambulance' AND location = ? ORDER BY id DESC LIMIT ? OFFSET ?", [villageId, limit, offset]);
+    } else {
+      rows = await db.all("SELECT * FROM ambulance_requests WHERE request_type = 'ambulance' ORDER BY id DESC LIMIT ? OFFSET ?", [limit, offset]);
+    }
     res.send(rows);
   } catch (err) {
     console.error(err);
@@ -219,7 +225,13 @@ router.get('/pads', auth, checkRole(['ngo', 'admin']), async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 100;
     const offset = (parseInt(req.query.page || 1) - 1) * limit;
-    const rows = await db.all("SELECT * FROM ambulance_requests WHERE request_type = 'pad_request' ORDER BY id DESC LIMIT ? OFFSET ?", [limit, offset]);
+    let rows;
+    if (req.user.role !== 'admin') {
+      const villageId = req.user.villageId || 'unassigned';
+      rows = await db.all("SELECT * FROM ambulance_requests WHERE request_type = 'pad_request' AND location = ? ORDER BY id DESC LIMIT ? OFFSET ?", [villageId, limit, offset]);
+    } else {
+      rows = await db.all("SELECT * FROM ambulance_requests WHERE request_type = 'pad_request' ORDER BY id DESC LIMIT ? OFFSET ?", [limit, offset]);
+    }
     res.send(rows);
   } catch (err) {
     console.error(err);
@@ -369,7 +381,7 @@ router.put('/referral/:id/outcome', auth, checkRole(['ngo', 'admin']), enforceRe
 router.put('/referrals/:id/outcome', auth, checkRole(['ngo', 'admin']), enforceReferralAccess, logAudit('update_outcome', 'referrals'), handleReferralOutcome);
 
 // POST /vaccinations — register child vaccination record
-router.post('/vaccinations', auth, checkRole(['ngo', 'admin']), logAudit('create', 'vaccination_records'), async (req, res) => {
+router.post('/vaccinations', auth, checkRole(['ngo', 'admin']), enforceVillageScope, logAudit('create', 'vaccination_records'), async (req, res) => {
   const db = req.app.locals.db;
   const { child_name, parent_phone, vaccine_name, scheduled_date, given_date, status = 'scheduled', villageId } = req.body;
 
@@ -377,7 +389,7 @@ router.post('/vaccinations', auth, checkRole(['ngo', 'admin']), logAudit('create
     return res.status(400).json({ success: false, error: { code: 'INVALID_INPUT', message: 'child_name and vaccine_name are required.' } });
   }
 
-  const userVillageId = villageId || req.user.villageId || 'unassigned';
+  const userVillageId = req.user.role === 'admin' ? (villageId || 'unassigned') : (req.user.villageId || 'unassigned');
   const recordedBy = req.user.id;
 
   try {
@@ -399,7 +411,7 @@ router.post('/vaccinations', auth, checkRole(['ngo', 'admin']), logAudit('create
 });
 
 // GET /vaccinations — fetch child vaccination list with query filters
-router.get('/vaccinations', auth, checkRole(['ngo', 'admin']), async (req, res) => {
+router.get('/vaccinations', auth, checkRole(['ngo', 'admin']), enforceVillageScope, async (req, res) => {
   const db = req.app.locals.db;
   const { villageId, status, child_name, limit = 50, page = 1 } = req.query;
   const parsedLimit = Math.min(parseInt(limit) || 50, 100);
@@ -409,9 +421,10 @@ router.get('/vaccinations', auth, checkRole(['ngo', 'admin']), async (req, res) 
     let query = 'SELECT * FROM vaccination_records WHERE 1=1';
     const params = [];
 
-    if (villageId) {
+    const activeVillage = req.user.role === 'admin' ? villageId : (req.user.villageId || 'unassigned');
+    if (activeVillage) {
       query += ' AND "villageId" = ?';
-      params.push(villageId);
+      params.push(activeVillage);
     }
     if (status) {
       query += ' AND status = ?';
@@ -442,8 +455,9 @@ router.get('/outbreaks', auth, checkRole(['ngo', 'admin']), async (req, res) => 
     let outbreaks = await import('../dynamodb.js').then(m => m.default.queryRecentAll('outbreak_telemetry', daysBack));
     outbreaks.sort((a, b) => (b.detectedAt || '').localeCompare(a.detectedAt || ''));
     // Server-side village filter — never expose other villages' data
-    if (villageId) {
-      outbreaks = outbreaks.filter(o => o.villageId === villageId);
+    const activeVillage = req.user.role === 'admin' ? villageId : (req.user.villageId || 'unassigned');
+    if (activeVillage) {
+      outbreaks = outbreaks.filter(o => o.villageId === activeVillage);
     }
     res.json({ outbreaks: outbreaks.slice(0, 20) });
   } catch (err) {
@@ -456,12 +470,29 @@ router.get('/stats', auth, checkRole(['ngo', 'admin']), async (req, res) => {
   const db = req.app.locals.db;
   const count = (row) => parseInt(row?.c ?? row?.cnt ?? row?.count ?? 0, 10);
   try {
+    let queryAmbulances = "SELECT COUNT(*) as c FROM ambulance_requests WHERE request_type = 'ambulance'";
+    let queryPads = "SELECT COUNT(*) as c FROM ambulance_requests WHERE request_type = 'pad_request'";
+    let queryPregnancies = 'SELECT COUNT(*) as c FROM pregnancy_data';
+    let queryMalnutrition = "SELECT COUNT(*) as c FROM malnutrition_data WHERE status != 'Normal'";
+    let queryVillagers = "SELECT COUNT(*) as c FROM users WHERE role = 'villager'";
+    const params = [];
+
+    if (req.user.role !== 'admin') {
+      const villageId = req.user.villageId || 'unassigned';
+      queryAmbulances += " AND location = ?";
+      queryPads += " AND location = ?";
+      queryPregnancies += ' WHERE "villageId" = ?';
+      queryMalnutrition += ' AND "villageId" = ?';
+      queryVillagers += ' AND "villageId" = ?';
+      params.push(villageId, villageId, villageId, villageId, villageId);
+    }
+
     const [ambulances, pads, pregnancies, malnutrition, villagers] = await Promise.all([
-      db.get("SELECT COUNT(*) as c FROM ambulance_requests WHERE request_type = 'ambulance'"),
-      db.get("SELECT COUNT(*) as c FROM ambulance_requests WHERE request_type = 'pad_request'"),
-      db.get('SELECT COUNT(*) as c FROM pregnancy_data'),
-      db.get("SELECT COUNT(*) as c FROM malnutrition_data WHERE status != 'Normal'"),
-      db.get("SELECT COUNT(*) as c FROM users WHERE role = 'villager'"),
+      db.get(queryAmbulances, params[0] ? [params[0]] : []),
+      db.get(queryPads, params[1] ? [params[1]] : []),
+      db.get(queryPregnancies, params[2] ? [params[2]] : []),
+      db.get(queryMalnutrition, params[3] ? [params[3]] : []),
+      db.get(queryVillagers, params[4] ? [params[4]] : []),
     ]);
     res.json({
       ambulances: count(ambulances),
@@ -483,14 +514,15 @@ router.get('/workload', auth, checkRole(['ngo', 'admin']), async (req, res) => {
   try {
     const villageId = req.user.role === 'admin' ? req.query.villageId : req.user.villageId;
     const scoped = villageId ? ' AND "villageId" = ?' : '';
+    const scopedAmb = villageId ? ' AND location = ?' : '';
     const params = villageId ? [villageId] : [];
 
     const [referrals, highRiskPregnancies, missedVaccinations, padRequests, sosItems] = await Promise.all([
       db.get(`SELECT COUNT(*) as c FROM referrals WHERE status IN ('pending','accepted','in_transit')${scoped}`, params).catch(() => ({ c: 0 })),
       db.get(`SELECT COUNT(*) as c FROM pregnancy_data WHERE LOWER("riskLevel") = 'high'${scoped}`, params).catch(() => ({ c: 0 })),
       db.get(`SELECT COUNT(*) as c FROM vaccination_records WHERE status IN ('scheduled','missed') AND COALESCE(given_date, '') = ''${scoped}`, params).catch(() => ({ c: 0 })),
-      db.get("SELECT COUNT(*) as c FROM ambulance_requests WHERE request_type = 'pad_request' AND status = 'pending'").catch(() => ({ c: 0 })),
-      db.get("SELECT COUNT(*) as c FROM ambulance_requests WHERE request_type = 'ambulance' AND status IN ('pending','assigned','in_progress')").catch(() => ({ c: 0 })),
+      db.get(`SELECT COUNT(*) as c FROM ambulance_requests WHERE request_type = 'pad_request' AND status = 'pending'${scopedAmb}`, params).catch(() => ({ c: 0 })),
+      db.get(`SELECT COUNT(*) as c FROM ambulance_requests WHERE request_type = 'ambulance' AND status IN ('pending','assigned','in_progress')${scopedAmb}`, params).catch(() => ({ c: 0 })),
     ]);
 
     const items = [

@@ -18,10 +18,3 @@ export const auth = async (req, res, next) => {
     res.status(401).send({ error: 'Invalid Token' }); 
   }
 };
-
-export const checkRole = (roles) => (req, res, next) => {
-  if (!req.user || !roles.includes(req.user.role)) {
-    return res.status(403).send({ error: 'Access Denied: Insufficient Permissions' });
-  }
-  next();
-};
