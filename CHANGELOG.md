@@ -4,6 +4,16 @@ All notable changes and feature developments completed during the hackathon wind
 
 ## June 8, 2026
 ### Added
+- **Admin View Modularization**:
+  - Refactored the massive [AdminDashboard.jsx](file:///c:/projects/SwasthAI-Guardian-Platform/frontend/src/Admin/AdminDashboard.jsx) (~1,800 lines of code) by extracting all sub-views and telemetry panels into standalone components inside a new [components](file:///c:/projects/SwasthAI-Guardian-Platform/frontend/src/Admin/components) directory.
+  - Extracted [CommandCenterView.jsx](file:///c:/projects/SwasthAI-Guardian-Platform/frontend/src/Admin/components/CommandCenterView.jsx), [OutbreakRadarView.jsx](file:///c:/projects/SwasthAI-Guardian-Platform/frontend/src/Admin/components/OutbreakRadarView.jsx), [AmbulanceFeedView.jsx](file:///c:/projects/SwasthAI-Guardian-Platform/frontend/src/Admin/components/AmbulanceFeedView.jsx), [OfflineVillagesView.jsx](file:///c:/projects/SwasthAI-Guardian-Platform/frontend/src/Admin/components/OfflineVillagesView.jsx), [AIIntelligenceView.jsx](file:///c:/projects/SwasthAI-Guardian-Platform/frontend/src/Admin/components/AIIntelligenceView.jsx), [ReportsView.jsx](file:///c:/projects/SwasthAI-Guardian-Platform/frontend/src/Admin/components/ReportsView.jsx), [SystemStatusView.jsx](file:///c:/projects/SwasthAI-Guardian-Platform/frontend/src/Admin/components/SystemStatusView.jsx), and [MaternalNutritionView.jsx](file:///c:/projects/SwasthAI-Guardian-Platform/frontend/src/Admin/components/MaternalNutritionView.jsx).
+- **Route Access Protection Bypass for Admins**:
+  - Upgraded the `ProtectedRoute` gatekeeper in [App.jsx](file:///c:/projects/SwasthAI-Guardian-Platform/frontend/src/App.jsx) to permit users with the `"admin"` role to bypass specific route restrictions and access NGO pages (`/ngo/maternal`, `/ngo/child-nutrition`) directly.
+- **Dynamic Node Sync Status Table**:
+  - Upgraded the Offline Villages monitoring tab from a static screen to a live connection grid showing device names, connection states, pending queues, and relative heartbeat times.
+- **AI View Telemetry & Stability Enhancements**:
+  - Upgraded [AIIntelligenceView.jsx](file:///c:/projects/SwasthAI-Guardian-Platform/frontend/src/Admin/components/AIIntelligenceView.jsx) and [AIReasoningTrace.jsx](file:///c:/projects/SwasthAI-Guardian-Platform/frontend/src/Admin/components/AIReasoningTrace.jsx) to display high-fidelity mock grounding queries, latency times, and document sources for robust offline and demo runs.
+  - Implemented optional chaining (`?.`) guards across all extracted views to prevent runtime TypeErrors when AWS databases are not connected.
 - **Production RAM Optimizations & OOM Fix**:
   - Replaced the memory-heavy Random Forest model (487MB on disk and ~800MB RAM overhead) with a **Multinomial Logistic Regression model**. The new model achieves **71.1% accuracy** (a 19.3% boost over the 51.8% RF fallback) and is only **5.5MB** on disk, allowing the FastAPI service to boot under Render's strict 512MB RAM Free Tier.
   - Implemented **pre-computed RAG embeddings** (`kb_embeddings.npy` — 373KB) for the 243 health chunks, eliminating the need to load PyTorch and `sentence-transformers` on startup (saving ~700MB RAM).

@@ -596,12 +596,15 @@ export default function AdminDashboard() {
           {activeView === 'offline' && (
             <OfflineVillagesView
               S={S}
+              dynamoFeed={dynamoFeed}
+              judgeDemoMode={judgeDemoMode}
             />
           )}
 
           {activeView === 'ai' && (
             <AIIntelligenceView
               recs={recs}
+              judgeDemoMode={judgeDemoMode}
             />
           )}
 

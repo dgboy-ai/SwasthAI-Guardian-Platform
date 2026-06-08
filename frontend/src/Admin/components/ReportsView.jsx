@@ -81,8 +81,8 @@ export default function ReportsView({
           </div>
           <div className="space-y-2">
             {[
-              { label: 'Upload villages', done: (SM.villages || 0) > 0 },
-              { label: 'Assign ASHA workers', done: (SM.totalNgos || 0) > 0 },
+              { label: 'Upload villages', done: (SM?.villages || 0) > 0 },
+              { label: 'Assign ASHA workers', done: (SM?.totalNgos || 0) > 0 },
               { label: 'Configure outbreak threshold', done: true },
               { label: 'Verify AWS storage', done: systemStatus?.production_ready === true },
               { label: 'Export first district report', done: !!districtReport },
@@ -186,10 +186,10 @@ export default function ReportsView({
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: 'Total Records', val: SM.totalRequests },
-          { label: 'Villagers', val: SM.totalUsers },
-          { label: 'NGO Workers', val: SM.totalNgos },
-          { label: 'Emergency SOS', val: SM.emergencyCount },
+          { label: 'Total Records', val: SM?.totalRequests },
+          { label: 'Villagers', val: SM?.totalUsers },
+          { label: 'NGO Workers', val: SM?.totalNgos },
+          { label: 'Emergency SOS', val: SM?.emergencyCount },
         ].map(s => (
           <div key={s.label} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 text-center">
             <p className="text-[24px] font-black text-slate-900">{s.val ?? 0}</p>
