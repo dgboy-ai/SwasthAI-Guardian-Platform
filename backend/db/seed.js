@@ -106,11 +106,8 @@ export const GOVERNMENT_SCHEMES = [
 ];
 
 export async function seedData(db, pool, usingSQLite, bcrypt) {
-  // Prevent any seeding execution in production
-  if (process.env.NODE_ENV === 'production') {
-    console.warn('⚠️ Seeding data blocked in production environment.');
-    return;
-  }
+  // Allow seeding even in production if the database is empty so demo deployments have accounts
+
 
   if (pool) {
     const schemeCount = await pool.query('SELECT COUNT(*) FROM government_schemes');
