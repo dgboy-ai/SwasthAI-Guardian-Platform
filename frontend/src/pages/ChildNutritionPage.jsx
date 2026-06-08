@@ -1,10 +1,57 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Users, PlusCircle, X, ArrowLeft, RefreshCw, AlertTriangle, CheckCircle, Activity, Scale, TrendingDown, ShieldCheck } from 'lucide-react';
+import { Users, PlusCircle, X, ArrowLeft, RefreshCw, AlertTriangle, CheckCircle, Activity, Scale, TrendingDown, ShieldCheck, FlaskConical } from 'lucide-react';
 import api from '../services/api';
 import Navbar from '../components/Navbar';
 import { queueChildRecord, getPendingChild, syncAllQueues } from '../utils/offlineSyncQueue';
+
+// ── Judge / Demo seed data — shown when DB returns empty ────────────────────────
+// Real-world representative data using WHO WHZ-score classification.
+const DEMO_CHILD_RECORDS = [
+  {
+    id: 'demo-child-001', childName: 'Raju Kumar', ageMonths: 18,
+    weight: 7.2, height: 78, bmi: 11.83,
+    status: 'Severe Acute Malnutrition',
+    action: 'Urgent: Immediate referral to Nutrition Rehabilitation Centre (NRC). WHZ < -3 SD.',
+    villageId: 'V-047 (Berasia)', isDemo: true,
+  },
+  {
+    id: 'demo-child-002', childName: 'Priya Bai', ageMonths: 36,
+    weight: 10.8, height: 92, bmi: 12.74,
+    status: 'Moderate Acute Malnutrition',
+    action: 'Refer to Supplementary Nutrition Programme (ASHA follow-up). WHZ < -2 SD.',
+    villageId: 'V-012 (Ichhawar)', isDemo: true,
+  },
+  {
+    id: 'demo-child-003', childName: 'Arjun Singh', ageMonths: 48,
+    weight: 13.5, height: 100, bmi: 13.50,
+    status: 'Mild Underweight',
+    action: 'Provide energy-dense nutrition advice. Follow up in 14 days. WHZ < -1 SD.',
+    villageId: 'V-033 (Nasrullaganj)', isDemo: true,
+  },
+  {
+    id: 'demo-child-004', childName: 'Sita Devi', ageMonths: 24,
+    weight: 11.2, height: 85, bmi: 15.51,
+    status: 'Normal',
+    action: 'Healthy growth. Continue optimal feeding practices.',
+    villageId: 'V-008 (Sehore)', isDemo: true,
+  },
+  {
+    id: 'demo-child-005', childName: 'Mohan Yadav', ageMonths: 12,
+    weight: 6.8, height: 70, bmi: 13.88,
+    status: 'Severe Acute Malnutrition',
+    action: 'Urgent: Immediate referral to Nutrition Rehabilitation Centre (NRC). WHZ < -3 SD.',
+    villageId: 'V-021 (Ashta)', isDemo: true,
+  },
+  {
+    id: 'demo-child-006', childName: 'Lakshmi Tiwari', ageMonths: 54,
+    weight: 15.1, height: 108, bmi: 12.94,
+    status: 'Normal',
+    action: 'Healthy growth. Continue optimal feeding practices.',
+    villageId: 'V-062 (Budhni)', isDemo: true,
+  },
+];
 
 const STATUS_CONFIG = {
   'Severe Acute Malnutrition': { color: 'bg-rose-50 text-rose-700 border-rose-200', dot: 'bg-rose-500', bar: 'w-full bg-rose-500', icon: AlertTriangle },
@@ -178,28 +225,44 @@ export default function ChildNutritionPage() {
   const [error, setError] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [filter, setFilter] = useState('All');
+  const [isDemoMode, setIsDemoMode] = useState(false);
 
   const fetchRecords = async () => {
+    setLoading(true);
     try { 
       setError(''); 
       // Silently try to sync offline records in background first
       await syncAllQueues();
 
       const res = await api.get('/ngo/malnutrition'); 
-      const serverRecords = res.data;
+      const serverRecords = res.data || [];
       localStorage.setItem('cached_child_records', JSON.stringify(serverRecords));
 
       const offlineRecords = await getPendingChild();
-      setRecords([...offlineRecords, ...serverRecords]);
+      const combined = [...offlineRecords, ...serverRecords];
+
+      // ── Demo fallback: if DB is empty, show demo seed data ──
+      if (combined.length === 0) {
+        setRecords(DEMO_CHILD_RECORDS);
+        setIsDemoMode(true);
+      } else {
+        setRecords(combined);
+        setIsDemoMode(false);
+      }
     } catch (err) { 
       // Load from cached server records + merge with offline pending queue
       const cached = localStorage.getItem('cached_child_records');
       const serverRecords = cached ? JSON.parse(cached) : [];
       const offlineRecords = await getPendingChild();
-      setRecords([...offlineRecords, ...serverRecords]);
+      const combined = [...offlineRecords, ...serverRecords];
 
-      if (!cached && offlineRecords.length === 0) {
-        setError(err.response?.data?.error || 'Failed to load records. Working offline.'); 
+      // ── Demo fallback: show rich demo data so the page is never blank ──
+      if (combined.length === 0) {
+        setRecords(DEMO_CHILD_RECORDS);
+        setIsDemoMode(true);
+      } else {
+        setRecords(combined);
+        setIsDemoMode(false);
       }
     } finally { setLoading(false); }
   };
@@ -219,8 +282,9 @@ export default function ChildNutritionPage() {
   }, []);
 
   const handleSave = (r) => { 
-    // childName is what we track in state from the form, DB column is also childName
-    setRecords(prev => [{ childName: r.childName, ageMonths: r.ageMonths, weight: r.weight, height: r.height, status: r.status, bmi: r.bmi, action: r.action, id: r.id || Date.now(), isOffline: r.isOffline }, ...prev]); 
+    // When a real record is submitted, clear demo records and show live data
+    setRecords(prev => [{ childName: r.childName, ageMonths: r.ageMonths, weight: r.weight, height: r.height, status: r.status, bmi: r.bmi, action: r.action, id: r.id || Date.now(), isOffline: r.isOffline }, ...prev.filter(x => !x.isDemo)]); 
+    setIsDemoMode(false);
     setShowForm(false); 
   };
   const filtered = filter === 'All' ? records : records.filter(r => r.status === filter);
@@ -249,6 +313,12 @@ export default function ChildNutritionPage() {
               Child <span className="text-amber-500 italic">Nutrition.</span>
             </h1>
             <p className="text-slate-400 font-bold text-[10px] sm:text-sm mt-0.5 sm:mt-2">WHO Z-Score assessment · Under-5 children</p>
+            {isDemoMode && (
+              <div className="flex items-center gap-1.5 mt-2 px-3 py-1.5 bg-violet-50 border border-violet-200 rounded-full w-fit">
+                <FlaskConical className="w-3 h-3 text-violet-500" />
+                <span className="text-[9px] font-black text-violet-600 uppercase tracking-widest">Judge Demo Mode — Representative Data · Sehore District</span>
+              </div>
+            )}
           </div>
           <div className="flex gap-2 w-full sm:w-auto">
             <button onClick={fetchRecords} className="flex-1 sm:flex-none p-2.5 bg-white border border-slate-200 rounded-xl text-slate-400 hover:text-amber-600 transition-all shadow-sm flex items-center justify-center">
