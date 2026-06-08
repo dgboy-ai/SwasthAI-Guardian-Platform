@@ -175,6 +175,7 @@ export async function initSchema(db, pool, usingSQLite) {
       outcome VARCHAR(120) DEFAULT NULL,
       outcome_details TEXT DEFAULT NULL,
       closed_at TIMESTAMPTZ DEFAULT NULL,
+      client_request_id VARCHAR(120) UNIQUE DEFAULT NULL,
       created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
     );
@@ -211,6 +212,7 @@ export async function initSchema(db, pool, usingSQLite) {
       status VARCHAR(20) DEFAULT 'scheduled',
       "villageId" VARCHAR(60) REFERENCES village_health("villageId") ON DELETE SET NULL,
       recorded_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      client_request_id VARCHAR(120) UNIQUE DEFAULT NULL,
       created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
     );
@@ -379,7 +381,8 @@ export async function initSchema(db, pool, usingSQLite) {
     await addColIfMissing('referrals', 'outcome', 'VARCHAR(120) DEFAULT NULL');
     await addColIfMissing('referrals', 'outcome_details', 'TEXT DEFAULT NULL');
     await addColIfMissing('referrals', 'closed_at', 'TIMESTAMPTZ DEFAULT NULL');
-    await addColIfMissing('referrals', 'updated_at', 'TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP');
+    await addColIfMissing('referrals', 'client_request_id', 'VARCHAR(120) DEFAULT NULL');
+    await addColIfMissing('vaccination_records', 'client_request_id', 'VARCHAR(120) DEFAULT NULL');
     await addColIfMissing('audit_logs', 'trace_id', 'VARCHAR(120) DEFAULT NULL');
 
     await pool.query(`
@@ -387,6 +390,8 @@ export async function initSchema(db, pool, usingSQLite) {
       CREATE UNIQUE INDEX IF NOT EXISTS idx_ambulance_client_request      ON ambulance_requests(client_request_id) WHERE client_request_id IS NOT NULL;
       CREATE UNIQUE INDEX IF NOT EXISTS idx_pregnancy_client_request      ON pregnancy_data(client_request_id) WHERE client_request_id IS NOT NULL;
       CREATE UNIQUE INDEX IF NOT EXISTS idx_malnutrition_client_request   ON malnutrition_data(client_request_id) WHERE client_request_id IS NOT NULL;
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_referrals_client_request      ON referrals(client_request_id) WHERE client_request_id IS NOT NULL;
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_vaccination_client_request    ON vaccination_records(client_request_id) WHERE client_request_id IS NOT NULL;
     `);
   } else {
     // ── SQLite Schema Auto-Creation & Demo Data Seeding ──────────────────────
@@ -565,6 +570,7 @@ export async function initSchema(db, pool, usingSQLite) {
         outcome TEXT DEFAULT NULL,
         outcome_details TEXT DEFAULT NULL,
         closed_at DATETIME DEFAULT NULL,
+        client_request_id TEXT UNIQUE DEFAULT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
@@ -601,6 +607,7 @@ export async function initSchema(db, pool, usingSQLite) {
         status TEXT DEFAULT 'scheduled',
         "villageId" TEXT REFERENCES village_health("villageId") ON DELETE SET NULL,
         recorded_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+        client_request_id TEXT UNIQUE DEFAULT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
@@ -755,7 +762,8 @@ export async function initSchema(db, pool, usingSQLite) {
     await addSQLiteColIfMissing('referrals', 'outcome', 'TEXT DEFAULT NULL');
     await addSQLiteColIfMissing('referrals', 'outcome_details', 'TEXT DEFAULT NULL');
     await addSQLiteColIfMissing('referrals', 'closed_at', 'DATETIME DEFAULT NULL');
-    await addSQLiteColIfMissing('referrals', 'updated_at', 'DATETIME DEFAULT NULL');
+    await addSQLiteColIfMissing('referrals', 'client_request_id', 'TEXT DEFAULT NULL');
+    await addSQLiteColIfMissing('vaccination_records', 'client_request_id', 'TEXT DEFAULT NULL');
     await addSQLiteColIfMissing('audit_logs', 'trace_id', 'TEXT DEFAULT NULL');
 
     await db.exec(`
@@ -763,6 +771,8 @@ export async function initSchema(db, pool, usingSQLite) {
       CREATE UNIQUE INDEX IF NOT EXISTS idx_sqlite_ambulance_client_request     ON ambulance_requests(client_request_id);
       CREATE UNIQUE INDEX IF NOT EXISTS idx_sqlite_pregnancy_client_request     ON pregnancy_data(client_request_id);
       CREATE UNIQUE INDEX IF NOT EXISTS idx_sqlite_malnutrition_client_request  ON malnutrition_data(client_request_id);
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_sqlite_referrals_client_request     ON referrals(client_request_id);
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_sqlite_vaccination_client_request  ON vaccination_records(client_request_id);
     `);
   }
 }

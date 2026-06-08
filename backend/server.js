@@ -96,12 +96,29 @@ if (isProduction && cluster.isPrimary) {
   app.locals.AI_SERVICE_URL = AI_SERVICE_URL;
   app.locals.broadcastToAdmins = broadcastToAdmins;
 
+  const redactSensitiveData = (obj) => {
+    if (!obj || typeof obj !== 'object') return obj;
+    const redactedKeys = ['phone', 'name', 'email', 'aadhaar', 'password', 'token', 'patient_name', 'patient_phone', 'child_name', 'parent_phone'];
+    const newObj = Array.isArray(obj) ? [] : {};
+    for (const [key, value] of Object.entries(obj)) {
+      if (redactedKeys.includes(key) || redactedKeys.some(rk => key.toLowerCase().includes(rk))) {
+        newObj[key] = '[REDACTED]';
+      } else if (typeof value === 'object') {
+        newObj[key] = redactSensitiveData(value);
+      } else {
+        newObj[key] = value;
+      }
+    }
+    return newObj;
+  };
+
   // Trace ID & Structured Logging Middleware
   app.use((req, res, next) => {
     req.traceId = req.headers['x-trace-id'] || `tr-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
     res.setHeader('x-trace-id', req.traceId);
     
     req.log = (level, message, meta = {}) => {
+      const cleanMeta = redactSensitiveData(meta);
       console.log(JSON.stringify({
         timestamp: new Date().toISOString(),
         traceId: req.traceId,
@@ -109,7 +126,7 @@ if (isProduction && cluster.isPrimary) {
         message,
         path: req.path,
         method: req.method,
-        ...meta
+        ...cleanMeta
       }));
     };
     

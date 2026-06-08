@@ -1,6 +1,7 @@
 import express from 'express';
 import axios from 'axios';
 import rateLimit from 'express-rate-limit';
+import { z } from 'zod';
 import { auth } from '../middleware/auth.js';
 import { checkRole, enforceVillageScope, enforceReferralAccess, enforceAmbulanceAccess } from '../middleware/policy.js';
 import dynamoHelper from '../dynamodb.js';
@@ -9,6 +10,24 @@ import { logAudit } from '../middleware/audit.js';
 import { DiseasePredictionSchema, SeasonalRiskSchema, validateAiOutput } from '../utils/aiValidator.js';
 
 const router = express.Router();
+
+const EmergencyAlertSchema = z.object({
+  alertType: z.enum(['menstrual_emergency', 'pregnancy_emergency', 'general_emergency', 'ambulance_request']).default('menstrual_emergency'),
+  message: z.string().max(500).default('Emergency help needed')
+});
+
+const SyncHealthSchema = z.object({
+  recordCount: z.coerce.number().int().nonnegative().default(0),
+  durationMs: z.coerce.number().int().nonnegative().default(0),
+  syncBatchId: z.string().max(120),
+  clientRequestIds: z.array(z.string().max(120)).max(50).default([])
+});
+
+const Phq2Schema = z.object({
+  interest_score: z.coerce.number().int().min(0).max(3),
+  mood_score: z.coerce.number().int().min(0).max(3),
+  clientRequestId: z.string().max(120).optional()
+});
 
 const aiLimiter = rateLimit({
   windowMs: 60 * 1000,
@@ -170,7 +189,13 @@ async function getDistrictId(db, pool, usingSQLite, villageId) {
 router.post('/emergency-alert', auth, checkRole(['villager', 'ngo', 'admin']), async (req, res) => {
   const db   = req.app.locals.db;
   const pool = req.app.locals.pool;
-  const { alertType = 'menstrual_emergency', message = 'Emergency help needed' } = req.body;
+
+  const parsed = EmergencyAlertSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: 'Invalid input payload.', details: parsed.error.format() });
+  }
+  const { alertType, message } = parsed.data;
+
   try {
     const userId = req.user.id;
     const userRecord = await db.get('SELECT name, "villageId" FROM users WHERE id = ?', [userId]);
@@ -297,11 +322,26 @@ router.post('/symptoms', auth, aiLimiter, checkRole(['villager', 'ngo', 'admin']
       specialty: 'General Physician',
       advice: 'Consult your local ASHA worker or visit the nearest PHC.'
     };
-    disease = matchedName;
-    advice = details.advice;
-    severity = details.severity;
-    doctor_specialty = details.specialty;
-    prediction = `${matchedName} - Reliable Advice: ${advice}`;
+    const fallbackObj = {
+      prediction: `${matchedName} - Reliable Advice: ${details.advice}`,
+      disease: matchedName,
+      advice: details.advice,
+      severity: details.severity,
+      doctor_specialty: details.specialty,
+      confidence: 0.85,
+      alternatives: [],
+      model: 'Offline Rule Matcher',
+      accuracy: '90.0%'
+    };
+    const validated = validateAiOutput(DiseasePredictionSchema, fallbackObj, 'Disease Prediction Fallback');
+    disease = validated.disease;
+    advice = validated.advice;
+    severity = validated.severity;
+    doctor_specialty = validated.doctor_specialty;
+    prediction = validated.prediction;
+    confidence = validated.confidence;
+    model = validated.model;
+    accuracy = validated.accuracy;
   }
 
   if (!usingSQLite && pool) {
@@ -709,9 +749,10 @@ router.post('/health-assistant', auth, checkRole(['villager', 'ngo', 'admin']), 
     });
     if (ragTraces.length > 15) ragTraces.shift();
 
+    const validated = validateAiOutput(RagChatSchema, ragRes.data, 'RAG Chat AI Output');
     return res.send({
-      reply: ragRes.data.reply,
-      sources: ragRes.data.sources || [],
+      reply: validated.reply,
+      sources: validated.sources,
       urgency: ragRes.data.urgency || 'P4',
       grounded: true
     });
@@ -749,9 +790,13 @@ router.post('/health-assistant', auth, checkRole(['villager', 'ngo', 'admin']), 
   const hasHealthKeyword = HEALTH_KEYWORDS.some(k => queryClean.includes(k));
 
   if (!isGreeting && !hasHealthKeyword) {
-    return res.send({
+    const validated = validateAiOutput(RagChatSchema, {
       reply: "Namaste! Main Sakhi hoon, aapki women's health assistant. Main keval mahila aur parivaar ke swasthya, pregnancy, aur periods se jude sawalon ke jawab de sakti hoon. Kripya swasthya se juda sawal poochein.",
-      sources: ["Sakhi Health Assistant — General Information"],
+      sources: ["Sakhi Health Assistant — General Information"]
+    }, 'Direct Block Response');
+    return res.send({
+      reply: validated.reply,
+      sources: validated.sources,
       urgency: "P4",
       grounded: false
     });
@@ -806,9 +851,10 @@ CRITICAL CLINICAL & TRANSLATION SAFEGUARDS:
     if (lastTrace && lastTrace.traceId === req.traceId) {
       lastTrace.sources = sources;
     }
+    const validated = validateAiOutput(RagChatSchema, { reply, sources }, 'Direct Groq Fallback');
     res.send({
-      reply,
-      sources,
+      reply: validated.reply,
+      sources: validated.sources,
       urgency: "P4",
       grounded: false
     });
@@ -820,7 +866,11 @@ CRITICAL CLINICAL & TRANSLATION SAFEGUARDS:
 
 // POST /villager/sync-health — Telemetry recorder on client IndexedDB queue replay
 router.post('/villager/sync-health', auth, checkRole(['villager', 'ngo', 'admin']), async (req, res) => {
-  const { recordCount, durationMs, syncBatchId, clientRequestIds = [] } = req.body;
+  const parsed = SyncHealthSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: 'Invalid input payload.', details: parsed.error.format() });
+  }
+  const { recordCount, durationMs, syncBatchId, clientRequestIds } = parsed.data;
   try {
     const deviceId = req.headers['x-device-id'] || 'unknown-device';
     const logItem = {
@@ -857,50 +907,86 @@ router.post('/villager/phq2', auth, checkRole(['villager', 'ngo', 'admin']), log
   const db = req.app.locals.db;
   const pool = req.app.locals.pool;
   const usingSQLite = req.app.locals.usingSQLite;
-  const { interest_score, mood_score } = req.body;
 
-  if (interest_score === undefined || mood_score === undefined) {
-    return res.status(400).json({ error: 'interest_score and mood_score are required (range: 0-3).' });
+  const parsed = Phq2Schema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: 'Invalid input payload.', details: parsed.error.format() });
   }
 
-  const score = Number(interest_score) + Number(mood_score);
+  const { interest_score, mood_score } = parsed.data;
+  const clientRequestId = cleanClientRequestId(parsed.data.clientRequestId);
+
+  const score = interest_score + mood_score;
   const positiveScreen = score >= 3;
   const advice = positiveScreen 
     ? 'Your responses suggest you might be experiencing depression. We advise consulting a doctor or mental health professional. An alert has been sent to your local ASHA worker.'
     : 'Your responses suggest a low risk. Continue prioritizing sleep, exercise, and social connections.';
 
+  if (clientRequestId) {
+    const existing = !usingSQLite && pool
+      ? (await pool.query(
+          'SELECT id, prediction, advice FROM symptoms WHERE client_request_id = $1',
+          [clientRequestId]
+        )).rows[0]
+      : await db.get(
+          'SELECT id, prediction, advice FROM symptoms WHERE client_request_id = ?',
+          [clientRequestId]
+        );
+
+    if (existing) {
+      return res.json({
+        success: true,
+        score,
+        positiveScreen,
+        advice: existing.advice,
+        duplicate: true,
+        clientRequestId
+      });
+    }
+  }
+
   try {
     const villageId = req.user.villageId || 'unassigned';
     if (!usingSQLite && pool) {
       await pool.query(
-        `INSERT INTO symptoms ("userId", "villageId", symptoms, prediction, disease, advice, confidence, model_used)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-        [req.user.id, villageId, `PHQ-2 score: ${score} (Interest: ${interest_score}, Mood: ${mood_score})`, advice, 'Depression Screen (PHQ-2)', advice, 1.0, 'PHQ-2 Screener']
+        `INSERT INTO symptoms ("userId", "villageId", symptoms, prediction, disease, advice, confidence, model_used, client_request_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+        [req.user.id, villageId, `PHQ-2 score: ${score} (Interest: ${interest_score}, Mood: ${mood_score})`, advice, 'Depression Screen (PHQ-2)', advice, 1.0, 'PHQ-2 Screener', clientRequestId]
       );
     } else {
       await db.run(
-        `INSERT INTO symptoms ("userId", "villageId", symptoms, prediction, disease, advice, confidence, model_used)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        [req.user.id, villageId, `PHQ-2 score: ${score} (Interest: ${interest_score}, Mood: ${mood_score})`, advice, 'Depression Screen (PHQ-2)', advice, 1.0, 'PHQ-2 Screener']
+        `INSERT INTO symptoms ("userId", "villageId", symptoms, prediction, disease, advice, confidence, model_used, client_request_id)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [req.user.id, villageId, `PHQ-2 score: ${score} (Interest: ${interest_score}, Mood: ${mood_score})`, advice, 'Depression Screen (PHQ-2)', advice, 1.0, 'PHQ-2 Screener', clientRequestId]
       );
     }
 
     if (positiveScreen) {
       const userName = req.user.name || 'Anonymous Villager';
       const userPhone = req.user.phone || null;
+      const derivedClientRequestId = clientRequestId ? `ref-${clientRequestId}` : null;
       
-      if (!usingSQLite && pool) {
-        await pool.query(
-          `INSERT INTO referrals (patient_name, patient_phone, "villageId", referred_by, referred_to, reason, priority, notes, status)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending')`,
-          [userName, userPhone, villageId, req.user.id, 'Mental Health Center / PHC', `Positive PHQ-2 Screen (Score: ${score}/6)`, 'urgent', 'Auto-generated via PHQ-2 Screening']
-        );
-      } else {
-        await db.run(
-          `INSERT INTO referrals (patient_name, patient_phone, "villageId", referred_by, referred_to, reason, priority, notes, status)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
-          [userName, userPhone, villageId, req.user.id, 'Mental Health Center / PHC', `Positive PHQ-2 Screen (Score: ${score}/6)`, 'urgent', 'Auto-generated via PHQ-2 Screening']
-        );
+      let existingReferral = null;
+      if (derivedClientRequestId) {
+        existingReferral = !usingSQLite && pool
+          ? (await pool.query('SELECT id FROM referrals WHERE client_request_id = $1', [derivedClientRequestId])).rows[0]
+          : await db.get('SELECT id FROM referrals WHERE client_request_id = ?', [derivedClientRequestId]);
+      }
+
+      if (!existingReferral) {
+        if (!usingSQLite && pool) {
+          await pool.query(
+            `INSERT INTO referrals (patient_name, patient_phone, "villageId", referred_by, referred_to, reason, priority, notes, status, client_request_id)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', $9)`,
+            [userName, userPhone, villageId, req.user.id, 'Mental Health Center / PHC', `Positive PHQ-2 Screen (Score: ${score}/6)`, 'urgent', 'Auto-generated via PHQ-2 Screening', derivedClientRequestId]
+          );
+        } else {
+          await db.run(
+            `INSERT INTO referrals (patient_name, patient_phone, "villageId", referred_by, referred_to, reason, priority, notes, status, client_request_id)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)`,
+            [userName, userPhone, villageId, req.user.id, 'Mental Health Center / PHC', `Positive PHQ-2 Screen (Score: ${score}/6)`, 'urgent', 'Auto-generated via PHQ-2 Screening', derivedClientRequestId]
+          );
+        }
       }
     }
 
@@ -936,7 +1022,8 @@ router.get('/predict/seasonal-risk', auth, checkRole(['villager', 'ngo', 'admin'
         "Ensure children receive timely MMR/seasonal vaccine coverage."
       ]
     };
-    res.json(defaultData);
+    const validated = validateAiOutput(SeasonalRiskSchema, defaultData, 'Seasonal Risk Fallback');
+    res.json(validated);
   }
 });
 

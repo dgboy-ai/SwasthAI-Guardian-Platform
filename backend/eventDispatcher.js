@@ -1,12 +1,53 @@
 import { EventEmitter } from "events";
 import dynamoHelper from "./dynamodb.js";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const DLQ_PATH = path.join(__dirname, "failed_events_dlq.json");
 
 const eventEmitter = new EventEmitter();
 let pgDb = null;
+let isSQLite = false;
 
-export function initializeEventDispatcher(dbInstance) {
+export function initializeEventDispatcher(dbInstance, usingSQLite = false) {
   pgDb = dbInstance;
-  console.log("📢 Event Dispatcher Initialized with Relational DB reference.");
+  isSQLite = usingSQLite;
+  console.log(`📢 Event Dispatcher Initialized with Relational DB reference (usingSQLite: ${usingSQLite}).`);
+}
+
+// ── Dead Letter Queue (DLQ) Mechanism ────────────────────────────────────────
+async function writeToDLQ(eventType, eventData, errorMessage) {
+  try {
+    const dlqItem = {
+      timestamp: new Date().toISOString(),
+      eventType,
+      eventData,
+      error: errorMessage
+    };
+    
+    let currentDLQ = [];
+    if (fs.existsSync(DLQ_PATH)) {
+      try {
+        const raw = fs.readFileSync(DLQ_PATH, "utf8");
+        currentDLQ = JSON.parse(raw);
+      } catch (_) {
+        // start fresh if JSON is corrupted
+      }
+    }
+    
+    currentDLQ.push(dlqItem);
+    if (currentDLQ.length > 100) {
+      currentDLQ.shift(); // keep size constrained to 100 entries to prevent disk bloating
+    }
+    
+    fs.writeFileSync(DLQ_PATH, JSON.stringify(currentDLQ, null, 2), "utf8");
+    console.warn(`[DLQ] Saved failed event '${eventType}' to dead-letter queue at ${DLQ_PATH}`);
+  } catch (dlqErr) {
+    console.error("[CRITICAL DLQ ERROR] Failed to write to dead-letter queue file:", dlqErr.message);
+  }
 }
 
 // ── Generic Retry Helper for DynamoDB writes ────────────────────────────────
@@ -25,11 +66,18 @@ async function callWithRetry(fn, retries = 3, delay = 1000) {
 
 // ── Helper: derive districtId from village_health or env fallback ─────────────
 async function getDistrictId(db, villageId) {
-  if (!db) return process.env.DISTRICT_NAME || 'district_main';
+  if (!db) {
+    console.warn(`[DISTRICT RESOLUTION WARNING] Relational DB instance is null. Falling back to default district for village: ${villageId}`);
+    return process.env.DISTRICT_NAME || 'district_main';
+  }
   try {
     const row = await db.get('SELECT "districtId" FROM village_health WHERE "villageId" = ?', [villageId]);
+    if (!row?.districtId) {
+      console.warn(`[DISTRICT RESOLUTION WARNING] Village '${villageId}' has no assigned districtId in DB. Falling back to default.`);
+    }
     return row?.districtId || process.env.DISTRICT_NAME || 'district_main';
-  } catch (_) {
+  } catch (err) {
+    console.error(`[DISTRICT RESOLUTION ERROR] Failed to query districtId for village '${villageId}':`, err.message);
     return process.env.DISTRICT_NAME || 'district_main';
   }
 }
@@ -84,6 +132,7 @@ eventEmitter.on("symptom_submitted", async (eventData) => {
     });
   } catch (err) {
     console.error(`[EVENT ERROR] symptom_submitted handling failed:`, err.message);
+    await writeToDLQ("symptom_submitted", eventData, err.message);
   }
 });
 
@@ -125,6 +174,7 @@ eventEmitter.on("outbreak_detected", async (eventData) => {
     );
   } catch (err) {
     console.error(`[EVENT ERROR] outbreak_detected handling failed:`, err.message);
+    await writeToDLQ("outbreak_detected", eventData, err.message);
   }
 });
 
@@ -160,13 +210,14 @@ eventEmitter.on("sync_restored", async (eventData) => {
     });
   } catch (err) {
     console.error(`[EVENT ERROR] sync_restored handling failed:`, err.message);
+    await writeToDLQ("sync_restored", eventData, err.message);
   }
 });
 
 // 4. Listen for emergency dispatches
 eventEmitter.on("emergency_triggered", async (eventData) => {
   const { requestId, name, location, villageId, priority, symptoms, timestamp } = eventData;
-  console.log(`[EVENT] emergency_triggered: Request #${requestId} at ${location}`);
+  console.log(`[EVENT] emergency_triggered: Request #${requestId} (Priority: ${priority || 'High'})`);
 
   const resolvedVillageId = villageId || 'v101'; // structured ID fallback
   const resolvedLocation = location || 'unspecified'; // separate location attribute
@@ -199,13 +250,14 @@ eventEmitter.on("emergency_triggered", async (eventData) => {
     });
   } catch (err) {
     console.error(`[EVENT ERROR] emergency_triggered handling failed:`, err.message);
+    await writeToDLQ("emergency_triggered", eventData, err.message);
   }
 });
 
 // 5. Listen for high-risk maternal alerts
 eventEmitter.on("maternal_alert", async (eventData) => {
   const { name, age, villageId, riskLevel, vitals, timestamp } = eventData;
-  console.log(`[EVENT] maternal_alert: ${riskLevel} Risk pregnancy registered for ${name} in ${villageId}`);
+  console.log(`[EVENT] maternal_alert: ${riskLevel} Risk pregnancy registered in ${villageId}`);
   const now = timestamp || new Date().toISOString();
   const resolvedVillageId = villageId || 'v101';
 
@@ -232,6 +284,7 @@ eventEmitter.on("maternal_alert", async (eventData) => {
     });
   } catch (err) {
     console.error(`[EVENT ERROR] maternal_alert handling failed:`, err.message);
+    await writeToDLQ("maternal_alert", eventData, err.message);
   }
 });
 

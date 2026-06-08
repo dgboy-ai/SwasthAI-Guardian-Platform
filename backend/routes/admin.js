@@ -40,8 +40,23 @@ function requestedDistrict(req) {
 }
 
 export function broadcastToAdmins(eventType, data) {
-  const payload = `event: ${eventType}\ndata: ${JSON.stringify(data)}\n\n`;
-  adminSseClients.forEach((res, clientId) => {
+  adminSseClients.forEach((clientObj, clientId) => {
+    const { res, villageId, districtId } = clientObj;
+
+    // Scoping check: If the admin user has a villageId limit, filter the stream data
+    if (villageId) {
+      const eventVillageId = data.villageId || data.location;
+      const eventDistrictId = data.districtId;
+
+      if (eventVillageId && eventVillageId !== villageId) {
+        if (!districtId || eventDistrictId !== districtId) {
+          // Skip broadcasting this event to this client
+          return;
+        }
+      }
+    }
+
+    const payload = `event: ${eventType}\ndata: ${JSON.stringify(data)}\n\n`;
     try { 
       res.write(payload); 
     } catch (_) { 
@@ -866,7 +881,7 @@ router.get('/district-report', auth, checkRole(['admin']), async (req, res) => {
   }
 });
 
-router.get('/live-feed', (req, res) => {
+router.get('/live-feed', async (req, res) => {
   let decoded;
   try {
     const headerToken = req.header('Authorization')?.replace('Bearer ', '');
@@ -879,13 +894,28 @@ router.get('/live-feed', (req, res) => {
     return sendError(res, 401, 'INVALID_TOKEN', 'Invalid Token');
   }
 
+  const db = req.app.locals.db;
+  let userVillageId = null;
+  let userDistrictId = null;
+  try {
+    const user = await db.get('SELECT "villageId", role FROM users WHERE id = ?', [decoded.id]);
+    if (user) {
+      userVillageId = user.villageId;
+      if (userVillageId) {
+        userDistrictId = await resolveDistrictId(db, userVillageId);
+      }
+    }
+  } catch (dbErr) {
+    console.warn('[SSE AUTH] Failed to retrieve user details from DB:', dbErr.message);
+  }
+
   // Max SSE client cap & stale client eviction
   if (adminSseClients.size >= MAX_SSE_CLIENTS) {
     const oldestClientId = adminSseClients.keys().next().value;
-    const oldestRes = adminSseClients.get(oldestClientId);
+    const oldestClientObj = adminSseClients.get(oldestClientId);
     try { 
-      oldestRes.write('event: evicted\ndata: connection closed due to client limit\n\n');
-      oldestRes.end(); 
+      oldestClientObj.res.write('event: evicted\ndata: connection closed due to client limit\n\n');
+      oldestClientObj.res.end(); 
     } catch (_) {}
     adminSseClients.delete(oldestClientId);
   }
@@ -897,7 +927,7 @@ router.get('/live-feed', (req, res) => {
   res.flushHeaders();
 
   const clientId = `admin-${decoded.id}-${Date.now()}`;
-  adminSseClients.set(clientId, res);
+  adminSseClients.set(clientId, { res, userId: decoded.id, role: decoded.role, villageId: userVillageId, districtId: userDistrictId });
   console.log(`[SSE] Admin ${decoded.id} connected (${adminSseClients.size} total)`);
 
   res.write(`event: connected\ndata: ${JSON.stringify({ clientId, timestamp: new Date().toISOString() })}\n\n`);

@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Navbar from '../components/Navbar';
+import api from '../services/api';
 import { styles } from './GovernmentSchemesPage.styles';
 const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.MODE === 'production' ? 'https://swasthai-guardian-platform.onrender.com/api' : 'http://localhost:5000/api');
 const API = API_BASE.replace(/\/api$/, '');
@@ -48,18 +50,11 @@ function AadhaarModal({ onClose, onSuccess }) {
     setLoading(true);
     setError('');
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`${API}/api/auth/aadhaar-verify`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ aadhaar: clean }),
-      });
-      const data = await res.json();
-      if (!res.ok) { setError(data.error || 'Verification failed.'); return; }
+      const res = await api.post('/auth/aadhaar-verify', { aadhaar: clean });
       setStep(3);
-      onSuccess(data.masked);
-    } catch {
-      setError('Network error. Please try again.');
+      onSuccess(res.data.masked);
+    } catch (err) {
+      setError(err.response?.data?.error || 'Network error. Please try again.');
     } finally { setLoading(false); }
   };
 
@@ -304,18 +299,17 @@ export default function GovernmentSchemesPage() {
     }
 
     try {
-      const endpoint = all ? '/api/schemes/all' : '/api/schemes';
-      const res = await fetch(`${API}${endpoint}`, { headers: { Authorization: `Bearer ${token}` } });
-      if (res.status === 401) { navigate('/login'); return; }
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to fetch schemes');
+      const endpoint = all ? '/schemes/all' : '/schemes';
+      const res = await api.get(endpoint);
+      const data = res.data;
       setSchemes(data.schemes || []);
       setProfile(data.profile || null);
       saveCache(data);
     } catch (err) {
+      if (err.response?.status === 401) { navigate('/login'); return; }
       const cached = loadCache();
       if (cached) { setSchemes(cached.schemes || []); setProfile(cached.profile || null); setError('⚠️ Showing cached data (offline mode)'); }
-      else setError(err.message || 'Failed to load schemes.');
+      else setError(err.response?.data?.error || err.message || 'Failed to load schemes.');
     } finally { setLoading(false); }
   }, [navigate, isOffline]);
 
@@ -333,6 +327,7 @@ export default function GovernmentSchemesPage() {
 
   return (
     <div style={styles.page}>
+      <Navbar />
       {/* Background gradient orbs */}
       <div style={styles.orb1} />
       <div style={styles.orb2} />

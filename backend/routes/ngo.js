@@ -126,12 +126,24 @@ router.post('/maternal', auth, checkRole(['ngo', 'admin']), logAudit('create', '
     riskLevel = validated.risk_level;
   } catch (err) {
     req.log('warn', 'AI Service failed or timed out — applying local pregnancy risk fallback', { error: err.message });
-    // Local clinical fallback logic
     let score = 0;
     if (patientVitals.systolic_bp >= 140 || patientVitals.diastolic_bp >= 90) score += 3;
     if (patientVitals.bs >= 7.8) score += 3;
     if (age < 18 || age > 35) score += 2;
-    riskLevel = score >= 5 ? 'High Risk' : score >= 3 ? 'Medium Risk' : 'Low Risk';
+    const computedRisk = score >= 5 ? 'High Risk' : score >= 3 ? 'Medium Risk' : 'Low Risk';
+    const fallbackObj = {
+      risk_level: computedRisk,
+      vector_score: score,
+      factors_assessed: ['systolic_bp', 'diastolic_bp', 'bs', 'age'].filter(f => {
+        if (f === 'systolic_bp' && patientVitals.systolic_bp >= 140) return true;
+        if (f === 'diastolic_bp' && patientVitals.diastolic_bp >= 90) return true;
+        if (f === 'bs' && patientVitals.bs >= 7.8) return true;
+        if (f === 'age' && (age < 18 || age > 35)) return true;
+        return false;
+      })
+    };
+    const validated = validateAiOutput(PregnancyRiskSchema, fallbackObj, 'Pregnancy Risk Fallback');
+    riskLevel = validated.risk_level;
   }
   const saved = await db.run(
     'INSERT INTO pregnancy_data (name, age, trimester, "dueDate", "riskLevel", "villageId", recorded_by, client_request_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
@@ -188,11 +200,19 @@ router.post('/malnutrition', auth, checkRole(['ngo', 'admin']), async (req, res)
     action = validated.action;
   } catch (err) {
     req.log('warn', 'AI Service failed or timed out — applying local malnutrition fallback', { error: err.message });
-    // Local clinical fallback logic
     const heightM = height / 100;
-    bmi = Number((weight / (heightM * heightM)).toFixed(2));
-    status = bmi < 15 ? 'Moderate Acute Malnutrition' : 'Normal';
-    action = status === 'Normal' ? 'Healthy growth.' : 'Consult ASHA worker for supplementary nutrition.';
+    const computedBmi = Number((weight / (heightM * heightM)).toFixed(2));
+    const computedStatus = computedBmi < 15 ? 'Moderate Acute Malnutrition' : 'Normal';
+    const computedAction = computedStatus === 'Normal' ? 'Healthy growth.' : 'Consult ASHA worker for supplementary nutrition.';
+    const fallbackObj = {
+      status: computedStatus,
+      bmi: computedBmi,
+      action: computedAction
+    };
+    const validated = validateAiOutput(MalnutritionSchema, fallbackObj, 'Malnutrition Fallback');
+    status = validated.status;
+    bmi = validated.bmi;
+    action = validated.action;
   }
   const saved = await db.run(
     'INSERT INTO malnutrition_data ("childName", "ageMonths", weight, height, status, "villageId", client_request_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
@@ -262,6 +282,7 @@ const referralSchema = z.object({
   reason:        z.string().min(3).max(500),
   priority:      z.enum(['routine', 'urgent', 'emergency']).default('routine'),
   notes:         z.string().max(1000).optional(),
+  clientRequestId: z.string().max(120).optional()
 });
 
 // POST /api/ngo/referral — ASHA submits a patient referral
@@ -276,21 +297,40 @@ router.post('/referral', auth, checkRole(['ngo', 'admin']), logAudit('create', '
   }
 
   const { patient_name, patient_phone, referred_to, reason, priority, notes } = parsed.data;
+  const clientRequestId = cleanClientRequestId(parsed.data.clientRequestId);
   const villageId   = req.user.villageId || 'unassigned';
   const referred_by = req.user.id;
 
+  if (clientRequestId) {
+    const existing = await db.get(
+      'SELECT id, patient_name, referred_to, priority, "villageId", status FROM referrals WHERE client_request_id = ?',
+      [clientRequestId]
+    );
+    if (existing) {
+      return res.status(200).json({
+        success: true,
+        referralId: existing.id,
+        message: `Referral for ${existing.patient_name} to ${existing.referred_to} recorded.`,
+        data: { patient_name: existing.patient_name, referred_to: existing.referred_to, priority: existing.priority, villageId: existing.villageId, status: existing.status },
+        duplicate: true,
+        clientRequestId
+      });
+    }
+  }
+
   try {
     const result = await db.run(
-      `INSERT INTO referrals (patient_name, patient_phone, "villageId", referred_by, referred_to, reason, priority, notes, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
-      [patient_name, patient_phone || null, villageId, referred_by, referred_to, reason, priority, notes || null]
+      `INSERT INTO referrals (patient_name, patient_phone, "villageId", referred_by, referred_to, reason, priority, notes, status, client_request_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)`,
+      [patient_name, patient_phone || null, villageId, referred_by, referred_to, reason, priority, notes || null, clientRequestId]
     );
 
     res.status(201).json({
       success: true,
       referralId: result.lastID,
       message: `Referral for ${patient_name} to ${referred_to} recorded.`,
-      data: { patient_name, referred_to, priority, villageId, status: 'pending' }
+      data: { patient_name, referred_to, priority, villageId, status: 'pending' },
+      clientRequestId
     });
   } catch (err) {
     console.error('[REFERRAL] Insert error:', err.message);
@@ -381,28 +421,60 @@ router.put('/referral/:id/outcome', auth, checkRole(['ngo', 'admin']), enforceRe
 router.put('/referrals/:id/outcome', auth, checkRole(['ngo', 'admin']), enforceReferralAccess, logAudit('update_outcome', 'referrals'), handleReferralOutcome);
 
 // POST /vaccinations — register child vaccination record
+const VaccinationSchema = z.object({
+  child_name: z.string().min(1).max(120),
+  parent_phone: z.string().regex(/^\+?[0-9]{7,15}$/).optional().or(z.literal('')),
+  vaccine_name: z.string().min(1).max(120),
+  scheduled_date: z.string().max(30).optional().or(z.literal('')),
+  given_date: z.string().max(30).optional().or(z.literal('')),
+  status: z.enum(['scheduled', 'missed', 'given']).default('scheduled'),
+  villageId: z.string().max(60).optional(),
+  clientRequestId: z.string().max(120).optional()
+});
+
 router.post('/vaccinations', auth, checkRole(['ngo', 'admin']), enforceVillageScope, logAudit('create', 'vaccination_records'), async (req, res) => {
   const db = req.app.locals.db;
-  const { child_name, parent_phone, vaccine_name, scheduled_date, given_date, status = 'scheduled', villageId } = req.body;
-
-  if (!child_name || !vaccine_name) {
-    return res.status(400).json({ success: false, error: { code: 'INVALID_INPUT', message: 'child_name and vaccine_name are required.' } });
+  const parsed = VaccinationSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({
+      success: false,
+      error: { code: 'VALIDATION_ERROR', message: 'Invalid vaccination data', details: parsed.error.errors }
+    });
   }
 
+  const { child_name, parent_phone, vaccine_name, scheduled_date, given_date, status, villageId } = parsed.data;
+  const clientRequestId = cleanClientRequestId(parsed.data.clientRequestId);
   const userVillageId = req.user.role === 'admin' ? (villageId || 'unassigned') : (req.user.villageId || 'unassigned');
   const recordedBy = req.user.id;
 
+  if (clientRequestId) {
+    const existing = await db.get(
+      'SELECT id, child_name, vaccine_name FROM vaccination_records WHERE client_request_id = ?',
+      [clientRequestId]
+    );
+    if (existing) {
+      return res.status(200).json({
+        success: true,
+        vaccinationId: existing.id,
+        message: `Vaccination record for ${existing.child_name} registered successfully.`,
+        duplicate: true,
+        clientRequestId
+      });
+    }
+  }
+
   try {
     const result = await db.run(
-      `INSERT INTO vaccination_records (child_name, parent_phone, vaccine_name, scheduled_date, given_date, status, "villageId", recorded_by)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [child_name, parent_phone || null, vaccine_name, scheduled_date || null, given_date || null, status, userVillageId, recordedBy]
+      `INSERT INTO vaccination_records (child_name, parent_phone, vaccine_name, scheduled_date, given_date, status, "villageId", recorded_by, client_request_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [child_name, parent_phone || null, vaccine_name, scheduled_date || null, given_date || null, status, userVillageId, recordedBy, clientRequestId]
     );
 
     res.status(201).json({
       success: true,
       vaccinationId: result.lastID,
-      message: `Vaccination record for ${child_name} registered successfully.`
+      message: `Vaccination record for ${child_name} registered successfully.`,
+      clientRequestId
     });
   } catch (err) {
     console.error('[VACCINATION] Insert error:', err.message);
