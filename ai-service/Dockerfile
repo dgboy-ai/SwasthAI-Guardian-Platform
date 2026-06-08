@@ -13,13 +13,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# Train fallback RF + deep SymptomNet if artifacts are missing (gitignored .pkl files)
-RUN python train_disease_model.py && \
-    (test -f deep_disease_model.pkl || python train_deep_model.py)
+# Generate dataset and train fast fallback RF model
+RUN python generate_dataset.py && python train_disease_model.py
 
 EXPOSE 8000
 
-RUN useradd -m -u 1001 swasthai
+RUN useradd -m -u 1001 swasthai && chown -R swasthai:swasthai /app
 USER swasthai
 
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

@@ -51,5 +51,15 @@ jobs:
       - name: Verify FastAPI Server Startup Health Check
         run: |
           python -m uvicorn main:app --host 127.0.0.1 --port 8000 &
-          sleep 4
-          curl -f http://127.0.0.1:8000/health
+          echo "Waiting for FastAPI server to download models and start..."
+          # Try connecting to the health endpoint up to 12 times with 5s delay (total 60s max)
+          for i in {1..12}; do
+            if curl -s -f http://127.0.0.1:8000/health > /dev/null; then
+              echo "✅ AI Server is healthy and online!"
+              exit 0
+            fi
+            echo "Server not ready yet, retrying in 5 seconds... (Attempt $i/12)"
+            sleep 5
+          done
+          echo "❌ AI Server failed to start within 60 seconds."
+          exit 1
