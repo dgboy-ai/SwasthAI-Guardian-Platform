@@ -383,11 +383,11 @@ try:
     elif os.path.exists(DEEP_MODEL_PATH):
         print("[INFO] Deep Learning Model exists but is disabled (ENABLE_DEEP_MODEL=false).")
 
-    # 2. Load Random Forest Model (Fallback)
+    # 2. Load Logistic Regression Model (Fallback)
     if os.path.exists(MODEL_PATH):
-        print("[...] Loading Random Forest Fallback Model...")
+        print("[...] Loading Logistic Regression Fallback Model...")
         disease_pipeline = joblib.load(MODEL_PATH)
-        print("[OK] Random Forest model loaded.")
+        print("[OK] Logistic Regression model loaded.")
     
     if not deep_model_bundle and not disease_pipeline:
         print("[WARNING] No models found. AI service will be limited.")

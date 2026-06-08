@@ -17,7 +17,13 @@ export default function Navbar() {
   const location = useLocation();
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const getNetworkState = () => {
+    const simulated = localStorage.getItem('simulated_network_state');
+    if (simulated === 'offline') return false;
+    if (simulated === 'online') return true;
+    return navigator.onLine;
+  };
+  const [isOnline, setIsOnline] = useState(getNetworkState);
   const [installPrompt, setInstallPrompt] = useState(null);
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -65,7 +71,11 @@ export default function Navbar() {
   }, []);
 
   useEffect(() => {
-    const goOnline  = () => setIsOnline(true);
+    const goOnline  = () => {
+      const simulated = localStorage.getItem('simulated_network_state');
+      if (simulated === 'offline') return;
+      setIsOnline(true);
+    };
     const goOffline = () => setIsOnline(false);
     window.addEventListener('online',  goOnline);
     window.addEventListener('offline', goOffline);
@@ -363,12 +373,14 @@ export default function Navbar() {
 
       {/* Offline Status Banner */}
       {!isOnline && (
-        <div className="w-full bg-amber-50 border-b border-amber-200 px-4 py-2 flex items-center gap-2">
-          <WifiOff className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-          <p className="text-[10px] font-black text-amber-700 uppercase tracking-widest flex-1">
-            {t.nav?.offline_mode || 'Offline Mode'} — {t.nav?.offline_desc || 'Symptom Checker works. Voice & AI need internet.'}
-          </p>
-          <span className="text-[9px] text-amber-400 font-medium shrink-0">No data used</span>
+        <div className="w-full bg-amber-50 border-b border-amber-200 py-2">
+          <div className="max-w-7xl mx-auto px-4 lg:px-8 flex items-center gap-2">
+            <WifiOff className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+            <p className="text-[10px] font-black text-amber-700 uppercase tracking-widest flex-1">
+              {t.nav?.offline_mode || 'Offline Mode'} — {t.nav?.offline_desc || 'Symptom Checker works. Voice & AI need internet.'}
+            </p>
+            <span className="text-[9px] text-amber-400 font-medium shrink-0">No data used</span>
+          </div>
         </div>
       )}
 

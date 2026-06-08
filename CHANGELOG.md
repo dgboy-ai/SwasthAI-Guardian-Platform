@@ -2,6 +2,19 @@
 
 All notable changes and feature developments completed during the hackathon window are documented in this file chronologically.
 
+## June 8, 2026
+### Added
+- **Production RAM Optimizations & OOM Fix**:
+  - Replaced the memory-heavy Random Forest model (487MB on disk and ~800MB RAM overhead) with a **Multinomial Logistic Regression model**. The new model achieves **71.1% accuracy** (a 19.3% boost over the 51.8% RF fallback) and is only **5.5MB** on disk, allowing the FastAPI service to boot under Render's strict 512MB RAM Free Tier.
+  - Implemented **pre-computed RAG embeddings** (`kb_embeddings.npy` — 373KB) for the 243 health chunks, eliminating the need to load PyTorch and `sentence-transformers` on startup (saving ~700MB RAM).
+  - Integrated the **free Hugging Face Inference API** for query vectorization, backed by a robust token-based **Jaccard similarity fallback** for offline resilience.
+  - Updated RAG and model documentation in `docs/ai_architecture.md` and the master `README.md`.
+- **Frontend UI & State Harmonization**:
+  - Wrapped Navbar offline alert banners in standard max-width layouts for centered desktop alignment.
+  - Unified simulated network state triggers between the `Navbar` toggle, local storage keys, and the `OfflineToast` notifications.
+- **CI Workflow and Docker Tweaks**:
+  - Adjusted `.github/workflows/ci.yml` and the server startup test configurations to run the uvicorn health check cleanly.
+
 ## June 7, 2026
 ### Added
 - **Production API Fallback & Vercel Fix**: Resolved JSON parsing failures caused by Vercel returning HTML error pages when querying relative paths without a configured proxy. Exposes fallback routing directly to the live Render backend (`https://swasthai-guardian-platform.onrender.com/api`) inside the Axios API client, Schemes page, and Admin SSE feed.

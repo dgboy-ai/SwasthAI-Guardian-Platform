@@ -73,14 +73,19 @@ const FALLBACK_LANG = 'hi'; // Default: Hindi
 
 export default function OfflineToast() {
   const { lang } = useLanguage();
-  const [isOnline, setIsOnline] = useState(navigator.onLine);
-  const [toastType, setToastType] = useState(null); // 'offline' | 'online' | null
+  const getNetworkState = () => {
+    const simulated = localStorage.getItem('simulated_network_state');
+    if (simulated === 'offline') return false;
+    if (simulated === 'online') return true;
+    return navigator.onLine;
+  };
+
+  const [isOnline, setIsOnline] = useState(getNetworkState);
+  const [toastType, setToastType] = useState(() => {
+    return getNetworkState() ? null : 'offline';
+  });
   const [expanded, setExpanded] = useState(false);
-  // wasOnlineRef is intentionally initialized from navigator.onLine.
-  // On first mount, if the device is already online, wasOnlineRef.current = true,
-  // preventing the "Back Online" toast from showing redundantly on initial load.
-  // This is correct behavior to avoid spamming the user.
-  const wasOnlineRef = useRef(navigator.onLine);
+  const wasOnlineRef = useRef(getNetworkState());
   const onlineTimerRef = useRef(null);
 
   const m = OFFLINE_MSGS[lang] || OFFLINE_MSGS[FALLBACK_LANG];
@@ -95,6 +100,8 @@ export default function OfflineToast() {
     };
 
     const handleOnline = () => {
+      const simulated = localStorage.getItem('simulated_network_state');
+      if (simulated === 'offline') return;
       setIsOnline(true);
       // Show "Back Online" briefly only if we were previously offline
       if (!wasOnlineRef.current) {

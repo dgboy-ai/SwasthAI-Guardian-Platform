@@ -18,71 +18,104 @@ import time
 from collections import defaultdict, deque
 
 import numpy as np
+import requests
 
-# ── Fix 4: Persist model to workspace cache — prevents ~400 MB re-download ────
-# Set before any sentence_transformers import so the library respects the path.
-_MODEL_CACHE = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".model_cache")
-os.environ.setdefault("SENTENCE_TRANSFORMERS_HOME", _MODEL_CACHE)
-os.environ.setdefault("HF_HUB_DISABLE_SYMLINKS_WARNING", "1")  # suppress noisy Windows symlink warning
 from groq import Groq
 
-# ── Fix 3: Load calibrated threshold from rag_config.py (written by calibrate_rag.py) ──
-# Falls back to 0.28 if calibration hasn't been run yet.
+# ── Fix 3: Load calibrated threshold from rag_config.py ──
 try:
     from rag_config import RAG_CALIBRATED_THRESHOLD as _THRESHOLD
     print(f"[RAG] Using calibrated threshold: {_THRESHOLD}")
 except ImportError:
     _THRESHOLD = 0.28
-    print("[RAG] rag_config.py not found — using default threshold 0.28. Run calibrate_rag.py to tune.")
+    print("[RAG] rag_config.py not found — using default threshold 0.28.")
 
-# ── Fix 1: Import 200+ chunk knowledge base (with 2-sentence overlap) ─────────
-# health_kb_data.py replaces the old 35-chunk inline list.
-# Each chunk: {text, source, urgency}. Urgency: P1 Critical → P4 Low.
+# ── Fix 1: Import 200+ chunk knowledge base ──
 from health_kb_data import HEALTH_KNOWLEDGE
 
 # ── Conversation Memory Store ───────────────────────────────────────────────────
-# In-memory session cache: {session_id: deque of {role, content} dicts}
-# Kept to last MAX_HISTORY turns per session to limit token usage.
-# Frontend should also send its own history on every request (dual-track approach).
-MAX_HISTORY = 6   # last 6 messages (3 user + 3 assistant) ≈ ~600 tokens context
+MAX_HISTORY = 6   # last 6 messages
 _session_store: dict[str, deque] = defaultdict(lambda: deque(maxlen=MAX_HISTORY))
 
-
-
-
-# ── Pre-Loaded Embeddings (Loaded on module startup to prevent request latency spikes) ──
-from sentence_transformers import SentenceTransformer
-
-# Pre-extract plain text for embedding
+# ── Precomputed Embeddings Loading ──────────────────────────────────────────────
 _TEXTS = [chunk["text"] for chunk in HEALTH_KNOWLEDGE]
-print(f"[RAG] Knowledge base loaded: {len(HEALTH_KNOWLEDGE)} chunks (with 2-sentence overlap).")
+print(f"[RAG] Knowledge base loaded: {len(HEALTH_KNOWLEDGE)} chunks.")
 
-print("[RAG] Pre-loading multilingual embedding model at startup...")
-_embedder = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
-print("[RAG] Pre-computing knowledge base embeddings...")
-_kb_embeddings = _embedder.encode(_TEXTS, normalize_embeddings=True)
-print(f"[RAG] Embedding model and {len(HEALTH_KNOWLEDGE)} knowledge chunks pre-loaded successfully!")
-
-def _get_embedder():
-    return _embedder
+_kb_embeddings_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "kb_embeddings.npy")
+if os.path.exists(_kb_embeddings_path):
+    print(f"[RAG] Loading pre-computed embeddings from {_kb_embeddings_path}...")
+    _kb_embeddings = np.load(_kb_embeddings_path)
+    print(f"[RAG] Pre-computed embeddings loaded successfully. Shape: {_kb_embeddings.shape}")
+else:
+    print(f"[WARNING] Pre-computed embeddings not found at {_kb_embeddings_path}! Falling back to zero-vector array.")
+    _kb_embeddings = np.zeros((len(HEALTH_KNOWLEDGE), 384), dtype=np.float32)
 
 def _get_kb_embeddings():
     return _kb_embeddings
 
+def _get_query_embedding_hf(query: str) -> np.ndarray:
+    """Get L2-normalized embedding using Hugging Face's Inference API."""
+    api_url = "https://api-inference.huggingface.co/pipeline/feature-extraction/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+    headers = {}
+    hf_token = os.getenv("HF_TOKEN")
+    if hf_token:
+        headers["Authorization"] = f"Bearer {hf_token}"
+        
+    for attempt in range(2):
+        try:
+            response = requests.post(api_url, headers=headers, json={"inputs": [query]}, timeout=8)
+            if response.status_code == 200:
+                res_data = response.json()
+                if isinstance(res_data, list) and len(res_data) > 0:
+                    emb = res_data[0]
+                    # If model is loading, wait and retry
+                    if isinstance(emb, dict) and "estimated_time" in emb:
+                        wait_t = min(10, float(emb.get("estimated_time", 5)))
+                        print(f"[RAG] Model loading on Hugging Face. Waiting {wait_t}s...")
+                        time.sleep(wait_t)
+                        continue
+                    emb = np.array(emb, dtype=np.float32)
+                    norm = np.linalg.norm(emb)
+                    if norm > 0:
+                        emb = emb / norm
+                    return emb
+            print(f"[RAG] Hugging Face API response error {response.status_code}: {response.text}")
+        except Exception as e:
+            print(f"[RAG] Hugging Face API connection failed: {e}")
+        time.sleep(1.0)
+    raise RuntimeError("Hugging Face API failed")
 
 def _retrieve(query: str, top_k: int = 3) -> tuple[list[dict], float]:
     """
-    Cosine similarity retrieval — returns full structured knowledge objects and the maximum similarity score.
-    Each object has {text, source, urgency} for grounded citation display.
-    Zero external dependency: uses numpy dot product on L2-normalized vectors.
+    Cosine similarity retrieval using pre-computed embeddings and HF Inference API.
+    Gracefully falls back to Jaccard word-overlap similarity if the API fails.
     """
-    embedder = _get_embedder()
     kb_embs = _get_kb_embeddings()
-    query_emb = embedder.encode([query], normalize_embeddings=True)[0]
-    scores = np.dot(kb_embs, query_emb)
-    max_score = float(np.max(scores)) if len(scores) > 0 else 0.0
-    top_indices = np.argsort(scores)[-top_k:][::-1]
-    return [HEALTH_KNOWLEDGE[i] for i in top_indices], max_score
+    try:
+        query_emb = _get_query_embedding_hf(query)
+        scores = np.dot(kb_embs, query_emb)
+        max_score = float(np.max(scores)) if len(scores) > 0 else 0.0
+        top_indices = np.argsort(scores)[-top_k:][::-1]
+        return [HEALTH_KNOWLEDGE[i] for i in top_indices], max_score
+    except Exception as e:
+        print(f"[RAG] HF retrieval failed: {e}. Falling back to keyword Jaccard overlap.")
+        # Lightweight token-based Jaccard similarity fallback
+        query_words = set(query.lower().split())
+        if not query_words:
+            return HEALTH_KNOWLEDGE[:top_k], 0.0
+            
+        scores = []
+        for chunk in HEALTH_KNOWLEDGE:
+            chunk_words = set(chunk["text"].lower().split())
+            intersection = query_words.intersection(chunk_words)
+            union = query_words.union(chunk_words)
+            jaccard = len(intersection) / len(union) if union else 0.0
+            scores.append(jaccard)
+            
+        scores = np.array(scores)
+        max_score = float(np.max(scores)) if len(scores) > 0 else 0.0
+        top_indices = np.argsort(scores)[-top_k:][::-1]
+        return [HEALTH_KNOWLEDGE[i] for i in top_indices], max_score
 
 
 # ── RAG Chat Function ───────────────────────────────────────────────────────────

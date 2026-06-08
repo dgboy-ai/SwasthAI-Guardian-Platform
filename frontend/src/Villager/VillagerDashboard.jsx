@@ -4,7 +4,7 @@ import SymptomChecker from './SymptomChecker';
 // Ambulance import removed — always navigate to /ambulance page (GPS-enabled full page)
 import {
   Truck, Mic, PhoneCall, BrainCircuit, Scan,
-  User, Droplets, Bell, WifiOff, Zap, PlusCircle,
+  User, Droplets, Bell, WifiOff, Wifi, Zap, PlusCircle,
   GraduationCap, Shield, Activity, HeartPulse, Landmark
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -32,14 +32,16 @@ export default function VillagerDashboard() {
     <div className={`min-h-screen font-inter antialiased selection:bg-emerald-100 selection:text-emerald-900 transition-colors duration-700 ${isOffline ? 'bg-slate-100 grayscale-[0.2]' : 'bg-[#F7F9FB]'}`}>
       <Navbar role="villager" />
 
-      {/* OFFLINE INDICATOR BAR */}
-      <div className={`fixed top-[88px] left-0 right-0 z-40 transition-all duration-500 overflow-hidden flex items-center justify-center ${isOffline ? 'h-10 bg-slate-800' : 'h-0 bg-transparent'}`}>
-        <span className="text-[10px] font-black text-white uppercase tracking-[0.4em] flex items-center gap-3">
-          <WifiOff className="w-3 h-3 text-emerald-400" /> {t.villagerDashboard?.offline_active || 'Offline Protocol Active'}
-        </span>
-      </div>
-
       <main className="max-w-5xl mx-auto px-6 pt-12 md:pt-20 pb-32">
+        {/* OFFLINE INDICATOR BAR (Relative to layout, prevents overlapping) */}
+        {isOffline && (
+          <div className="mb-6 py-3 px-6 bg-slate-900 text-white rounded-2xl flex items-center justify-center border border-slate-800 shadow-lg animate-in fade-in slide-in-from-top-4 duration-500">
+            <span className="text-[10px] font-black text-white uppercase tracking-[0.4em] flex items-center gap-3">
+              <WifiOff className="w-4 h-4 text-emerald-400 shrink-0" />
+              {t.villagerDashboard?.offline_active || 'Offline Protocol Active'}
+            </span>
+          </div>
+        )}
 
         {/* WELCOME HEADER */}
         <header className="mb-10 flex items-end justify-between animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -52,10 +54,10 @@ export default function VillagerDashboard() {
           <div className="flex items-center gap-4">
             <button
               onClick={toggleDashboardOffline}
-              className={`p-3 rounded-full transition-all border ${isOffline ? 'bg-slate-800 border-slate-700 text-emerald-400' : 'bg-white border-slate-200 text-slate-400 hover:text-emerald-600 hover:border-emerald-200'}`}
+              className={`p-3 rounded-full transition-all border ${isOffline ? 'bg-slate-900 border-slate-800 text-rose-500 shadow-lg' : 'bg-white border-slate-200 text-slate-400 hover:text-emerald-600 hover:border-emerald-200'}`}
               title={isOffline ? 'Go Online' : 'Go Offline'}
             >
-              {isOffline ? <Zap className="w-5 h-5" /> : <WifiOff className="w-5 h-5" />}
+              {isOffline ? <WifiOff className="w-5 h-5" /> : <Wifi className="w-5 h-5" />}
             </button>
           </div>
         </header>

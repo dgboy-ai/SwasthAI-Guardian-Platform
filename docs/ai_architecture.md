@@ -5,7 +5,7 @@
 We use a tiered ensemble approach designed for clinical reliability in low-connectivity rural settings:
 
 *   **Primary Tier — SymptomNet** (Deep Learning MLP): Powered by multilingual Transformer embeddings (`paraphrase-multilingual-MiniLM-L12-v2`) for deep semantic understanding of symptoms described in any of the **7 supported languages** (English, Hindi, Hinglish, Marathi, Tamil, Telugu, Bengali).
-*   **Secondary Tier — Random Forest Fallback**: Keyword-based classifier that cross-checks neural output for robust verification when SymptomNet confidence is borderline.
+*   **Secondary Tier — Logistic Regression Fallback**: Keyword-based classifier that cross-checks neural output for robust verification when SymptomNet confidence is borderline.
 *   **Tertiary Safety Tier — Safety First**: If neural confidence drops below 40% (due to highly ambiguous symptom descriptions), the system refuses to guess or risk a hallucination. Instead, it falls back immediately to an offline-capable rule-engine based directly on MoHFW/WHO protocols — delivering verified first-aid instructions instead of unsafe predictions.
 
 ---
@@ -15,14 +15,14 @@ We use a tiered ensemble approach designed for clinical reliability in low-conne
 | Metric | Specification |
 |---|---|
 | **Deep Model** | **SymptomNet** (Transformer-based Deep Learning MLP) |
-| **Fallback Engine** | Random Forest + Gradient Boosting Ensemble |
+| **Fallback Engine** | Logistic Regression (Multinomial with balanced class weights) |
 | **Dataset Size** | 52,900 high-quality samples across 7 languages |
 | **Inference Latency** | < 2.5s on standard CPU (no GPU required) |
 | **Evaluation Method** | 5-Fold Stratified CV + 15% independent hold-out test set |
-| **Hold-out Accuracy** | **64.6%** (SymptomNet) \| **51.8%** (RF Fallback) |
+| **Hold-out Accuracy** | **64.6%** (SymptomNet) \| **71.1%** (Logistic Regression Fallback) |
 | **Random Baseline** | ~1% — 101 classes, so 64.6% is ~65× better than chance |
 
-> **Why 64.6% is strong**: Classifying 101 distinct diseases from free-text symptom descriptions in 7 languages is significantly harder than a 2- or 10-class problem. Random chance = 0.99%. Our model achieves 64.6% on a completely unseen hold-out set — that is not a gap; that is the honest frontier for this task complexity.
+> **Why 64.6% and 71.1% are strong**: Classifying 101 distinct diseases from free-text symptom descriptions in 7 languages is significantly harder than a 2- or 10-class problem. Random chance = 0.99%. Our fallback model achieves 71.1% on a completely unseen hold-out set — that is not a gap; that is the honest frontier for this task complexity.
 
 #### 📋 Supported Disease Classes (101)
 *   **Vector-borne**: Malaria, Dengue, Chikungunya, Kala-Azar, Japanese Encephalitis.
@@ -40,13 +40,13 @@ Both models are validated under a rigorous, two-stage clinical evaluation framew
 - **Stage 1 — 5-Fold Stratified Cross-Validation** (the primary statistical measure):
   - Dataset split across 5 folds with `StratifiedKFold(n_splits=5, shuffle=True, random_state=42)` — every disease class appears in every fold's validation set, preventing class imbalance bias.
   - For **SymptomNet**: multilingual Transformer embeddings are pre-computed once before folding begins; only the MLP trains 5× (fold-by-fold CV scores logged to `deep_model_accuracy.txt` on every run).
-  - For **Random Forest**: the full TF-IDF + classifier pipeline is re-fit per fold via `cross_val_score`.
+  - For **Logistic Regression**: the full TF-IDF + classifier pipeline is re-fit per fold via `cross_val_score`.
   - CV scores reported as **mean ± std** across all 5 folds.
 
 - **Stage 2 — Independent Hold-Out Test** (15% stratified split, `random_state=42`):
   - A completely unseen slice of **~7,935 samples** used as the final benchmark — never touched during training or CV.
   - **SymptomNet**: **64.6% hold-out accuracy**.
-  - **Random Forest Fallback**: **51.8% hold-out accuracy**.
+  - **Logistic Regression Fallback**: **71.1% hold-out accuracy**.
   - Full per-class precision/recall/F1 reports saved to `deep_model_accuracy.txt` and `model_accuracy.txt`.
 
 ---

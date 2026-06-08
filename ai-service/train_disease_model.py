@@ -3,7 +3,7 @@ SwasthAI Guardian - Disease Prediction Model Training Script
 Trains an Ensemble Voting Classifier on the generated multilingual clinical symptoms dataset.
 """
 import pandas as pd, joblib
-from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier, VotingClassifier
+from sklearn.linear_model import LogisticRegression
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.metrics import classification_report, accuracy_score
@@ -22,16 +22,15 @@ if __name__ == "__main__":
     X, y = df["symptoms"].astype(str), df["disease"]
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.15, random_state=42, stratify=y)
 
-    # Random Forest Classifier (Fast & highly parallelized)
-    rf = RandomForestClassifier(n_estimators=250, max_depth=50, min_samples_split=2,
-                                 class_weight="balanced", random_state=42, n_jobs=-1)
+    # Logistic Regression (Extremely fast, low memory, and highly accurate for text classification)
+    clf = LogisticRegression(max_iter=1000, C=1.0, class_weight="balanced", random_state=42)
 
     pipeline = Pipeline([
         ("tfidf", TfidfVectorizer(ngram_range=(1, 2), min_df=1, max_features=10000, sublinear_tf=True)),
-        ("clf", rf)
+        ("clf", clf)
     ])
 
-    print("[...] Training Random Forest Classifier...")
+    print("[...] Training Logistic Regression Classifier...")
     pipeline.fit(X_train, y_train)
 
     if os.getenv("GITHUB_ACTIONS"):
@@ -58,7 +57,7 @@ if __name__ == "__main__":
     with open(accuracy_file, "w", encoding="utf-8") as f:
         f.write("SwasthAI Guardian - Disease Prediction Model\n")
         f.write("=" * 50 + "\n")
-        f.write("Algorithm     : Random Forest Classifier\n")
+        f.write("Algorithm     : Logistic Regression Classifier\n")
         f.write("Vectorizer    : TF-IDF (unigrams + bigrams)\n")
         f.write(f"Training set  : {len(X_train)} samples\n")
         f.write(f"Test set      : {len(X_test)} samples\n")
