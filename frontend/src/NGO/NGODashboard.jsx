@@ -142,18 +142,41 @@ export default function NGODashboard() {
   const [loadingOutbreaks, setLoadingOutbreaks] = useState(false);
   const [workload, setWorkload]         = useState(null);
 
+  const [reportData, setReportData]     = useState(null);
+  const [loadingReport, setLoadingReport] = useState(false);
+  const [reportErr, setReportErr]       = useState(null);
+
+  const fetchReportData = async () => {
+    setLoadingReport(true);
+    setReportErr(null);
+    try {
+      const res = await ngoService.getImpactReport();
+      if (res.success) {
+        setReportData(res.data);
+      } else {
+        setReportErr(res.error || 'Failed to generate report');
+      }
+    } catch (e) {
+      setReportErr(typeof e === 'string' ? e : e?.message || 'Failed to load report data.');
+    } finally {
+      setLoadingReport(false);
+    }
+  };
+
   /* Fetch both on mount so overview counts are available */
   useEffect(() => {
     fetchAmbulances();
     fetchPads();
     fetchOutbreaks();
     fetchWorkload();
+    fetchReportData();
   }, []);
 
   /* Also re-fetch when switching into a tab */
   useEffect(() => {
     if (activeTab === 'ambulances') fetchAmbulances();
     if (activeTab === 'pads')       fetchPads();
+    if (activeTab === 'impact')     fetchReportData();
   }, [activeTab]);
 
   /* Auto-refresh every 15 s while on that tab */
@@ -253,6 +276,7 @@ export default function NGODashboard() {
     { id: 'summary',    label: 'Overview',        icon: Activity },
     { id: 'ambulances', label: 'Ambulance Alerts', icon: Truck,   count: ambulances.filter(r => r.status === 'pending').length },
     { id: 'pads',       label: 'Pad Requests',     icon: Package, count: pads.filter(r => r.status === 'pending').length },
+    { id: 'impact',     label: 'Impact Analytics', icon: Shield },
   ];
 
   return (
@@ -586,6 +610,316 @@ export default function NGODashboard() {
           </div>
         )}
 
+        {/* ── IMPACT ANALYTICS ── */}
+        {activeTab === 'impact' && (
+          <div className="animate-in fade-in duration-700 space-y-6 no-print">
+            <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm p-6 md:p-10">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-6 border-b border-slate-50">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl"><Shield className="w-6 h-6" /></div>
+                  <div>
+                    <h2 className="text-xl font-black text-slate-900">NGO Impact Analytics</h2>
+                    <p className="text-xs text-slate-400 font-medium mt-0.5">B2B Grant & Operational Telemetry</p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={fetchReportData} disabled={loadingReport}
+                    className="flex items-center gap-2 px-4 py-2 bg-slate-50 text-slate-600 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-emerald-50 hover:text-emerald-700 transition-colors disabled:opacity-50">
+                    <RefreshCw className={`w-3.5 h-3.5 ${loadingReport ? 'animate-spin' : ''}`} />
+                    Refresh
+                  </button>
+                  <button onClick={() => window.print()} disabled={!reportData || loadingReport}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-md shadow-emerald-100 disabled:opacity-50">
+                    Export PDF Report
+                  </button>
+                </div>
+              </div>
+
+              {reportErr && <ErrorBanner message={reportErr} />}
+
+              {loadingReport ? (
+                <div className="space-y-4">
+                  <SkeletonCard />
+                  <SkeletonCard />
+                </div>
+              ) : !reportData ? (
+                <div className="text-center py-16">
+                  <p className="font-black text-slate-400 text-sm">Failed to generate report</p>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {/* HEALTH SCORECARD */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="md:col-span-1 bg-slate-900 text-white rounded-3xl p-6 flex flex-col justify-between relative overflow-hidden">
+                      <div className="relative z-10">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Health Scorecard</p>
+                        <h3 className="text-sm font-bold text-slate-300">Operational Index</h3>
+                      </div>
+                      <div className="relative z-10 my-6 text-center">
+                        <span className="text-6xl font-black text-emerald-400 tracking-tighter">{reportData.scorecard.score}</span>
+                        <span className="text-xs font-black text-slate-400">/100</span>
+                      </div>
+                      <div className="relative z-10 bg-white/5 border border-white/10 rounded-xl p-3 text-[10px] text-slate-400 font-bold leading-relaxed">
+                        Score calculated from vaccination rates, referral completion times, and emergency response performance indicators.
+                      </div>
+                    </div>
+
+                    <div className="md:col-span-2 grid grid-cols-2 gap-4">
+                      {[
+                        { label: 'Referral Closure Rate', val: `${reportData.scorecard.referralClosureRate}%`, sub: 'Closed vs Total Referrals', color: 'emerald' },
+                        { label: 'Vaccination Rate', val: `${reportData.scorecard.vaccinationCompletionRate}%`, sub: 'Given vs Scheduled shots', color: 'blue' },
+                        { label: 'Avg Emergency Response', val: `${reportData.scorecard.avgResponseTime}m`, sub: 'Request to complete state', color: 'rose' },
+                        { label: 'High-Risk Pregnancy', val: reportData.scorecard.highRiskPregnancies, sub: 'Active clinical tracking', color: 'amber' },
+                      ].map((item, idx) => (
+                        <div key={idx} className="bg-slate-50 border border-slate-100 rounded-3xl p-5 flex flex-col justify-between">
+                          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{item.label}</p>
+                          <p className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight my-2">{item.val}</p>
+                          <p className="text-[9px] text-slate-400 font-bold">{item.sub}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* RISK WATCHLIST & RECOMMENDED ACTIONS */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* RISK WATCHLIST */}
+                    <div className="border border-slate-100 rounded-3xl p-6 bg-white shadow-sm">
+                      <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest mb-4 flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse" />
+                        Risk Watchlist
+                      </h3>
+                      <div className="space-y-3">
+                        {[
+                          { label: 'High-Risk Pregnancies', count: reportData.watchlist.highRiskPregnancies, color: 'text-rose-700 bg-rose-50/50 border-rose-100' },
+                          { label: 'Open Referrals', count: reportData.watchlist.openReferrals, color: 'text-amber-700 bg-amber-50/50 border-amber-100' },
+                          { label: 'Overdue Vaccinations', count: reportData.watchlist.overdueVaccinations, color: 'text-violet-700 bg-violet-50/50 border-violet-100' },
+                          { label: 'Pending Emergency Cases', count: reportData.watchlist.pendingEmergencies, color: 'text-red-700 bg-red-50/50 border-red-100' },
+                        ].map((item, idx) => (
+                          <div key={idx} className={`flex items-center justify-between p-3 border rounded-2xl ${item.color}`}>
+                            <span className="text-[10px] font-black uppercase tracking-wider">{item.label}</span>
+                            <span className="text-lg font-black">{item.count}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* RECOMMENDED ACTIONS */}
+                    <div className="border border-slate-100 rounded-3xl p-6 bg-white shadow-sm flex flex-col justify-between">
+                      <div>
+                        <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest mb-4">Recommended Actions</h3>
+                        <ul className="space-y-3">
+                          {reportData.recommendedActions.map((action, idx) => (
+                            <li key={idx} className="text-xs text-slate-600 font-bold flex items-start gap-2">
+                              <span className="text-emerald-600 text-base leading-none">•</span>
+                              <span>{action}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                      <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-4">
+                        💡 Data-driven priority checklist for field workers
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* MoM COMPARISONS */}
+                  <div className="border border-slate-100 rounded-3xl p-6 bg-slate-50/50">
+                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest mb-4">Month-Over-Month Performance Trends</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {[
+                        { label: 'Pregnancies Tracked', val: reportData.momTrends.pregnancies.current, change: reportData.momTrends.pregnancies.change },
+                        { label: 'Vaccinations Completed', val: reportData.momTrends.vaccinations.current, change: reportData.momTrends.vaccinations.change },
+                        { label: 'Referrals Closed', val: reportData.momTrends.referrals.current, change: reportData.momTrends.referrals.change },
+                      ].map((item, idx) => {
+                        const isUp = item.change >= 0;
+                        return (
+                          <div key={idx} className="bg-white border border-slate-100 rounded-2xl p-4 flex justify-between items-center shadow-sm">
+                            <div>
+                              <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">{item.label}</p>
+                              <p className="text-xl font-black text-slate-900 mt-1">{item.val}</p>
+                            </div>
+                            <span className={`text-[10px] font-black px-2.5 py-1 rounded-full ${isUp ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>
+                              {isUp ? '↑' : '↓'} {Math.abs(item.change)}%
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* TOP PERFORMERS */}
+                  <div className="border border-slate-100 rounded-3xl p-6 bg-slate-900 text-white">
+                    <h3 className="text-sm font-black uppercase tracking-widest text-slate-400 mb-4">Top Performance Leaderboard</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {[
+                        { label: 'Top ASHA Worker', val: reportData.topPerformers.topASHA, emoji: '🏆' },
+                        { label: 'Top Village', val: reportData.topPerformers.topVillage, emoji: '📍' },
+                        { label: 'Most Improved Village', val: reportData.topPerformers.improvedVillage, emoji: '📈' },
+                      ].map((item, idx) => (
+                        <div key={idx} className="bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center gap-3">
+                          <span className="text-2xl">{item.emoji}</span>
+                          <div>
+                            <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">{item.label}</p>
+                            <p className="text-xs font-black text-white mt-0.5">{item.val}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* EXECUTIVE SUMMARY */}
+                  <div className="border border-slate-100 rounded-3xl p-6">
+                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest mb-2">Generated Executive Summary</h3>
+                    <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-medium bg-slate-50 p-4 rounded-2xl italic border border-slate-100">
+                      "{reportData.summary}"
+                    </p>
+                  </div>
+
+                  {/* FUNDING IMPACT SNAPSHOT */}
+                  <div className="bg-emerald-950 text-white rounded-[2rem] p-6 md:p-8 relative overflow-hidden shadow-xl">
+                    <div className="absolute right-[-5%] top-[-10%] opacity-5"><Shield className="w-56 h-56" /></div>
+                    <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                      <div className="space-y-2">
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-300">Grant Application Helper</p>
+                        <h3 className="text-xl sm:text-2xl font-black tracking-tight leading-none">Funding Impact Snapshot</h3>
+                        <p className="text-xs text-emerald-100/70 font-medium">Downloadable metric summary to support operations & fundraising proposals.</p>
+                      </div>
+                      <div className="grid grid-cols-2 gap-x-6 gap-y-3 bg-white/5 border border-white/10 rounded-2xl p-4 md:p-6 shrink-0 w-full md:w-auto">
+                        <div>
+                          <p className="text-[8px] font-black uppercase tracking-widest text-emerald-300">ASHA Workers Supported</p>
+                          <p className="text-lg font-black">{reportData.fundingSnapshot.ashaWorkersSupported}</p>
+                        </div>
+                        <div>
+                          <p className="text-[8px] font-black uppercase tracking-widest text-emerald-300">Villages Reached</p>
+                          <p className="text-lg font-black">{reportData.fundingSnapshot.villagesReached}</p>
+                        </div>
+                        <div>
+                          <p className="text-[8px] font-black uppercase tracking-widest text-emerald-300">Pregnancies Monitored</p>
+                          <p className="text-lg font-black">{reportData.fundingSnapshot.pregnanciesMonitored}</p>
+                        </div>
+                        <div>
+                          <p className="text-[8px] font-black uppercase tracking-widest text-emerald-300">Vaccinations Completed</p>
+                          <p className="text-lg font-black">{reportData.fundingSnapshot.vaccinationsCompleted}</p>
+                        </div>
+                        <div>
+                          <p className="text-[8px] font-black uppercase tracking-widest text-emerald-300">Referral Closure Rate</p>
+                          <p className="text-lg font-black">{reportData.fundingSnapshot.referralClosureRate}%</p>
+                        </div>
+                        <div className="border-t border-white/10 pt-1.5 col-span-2">
+                          <p className="text-[8px] font-black uppercase tracking-widest text-emerald-300">Estimated Rural Beneficiaries</p>
+                          <p className="text-xl font-black text-emerald-300">{reportData.fundingSnapshot.estimatedBeneficiaries}+</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ── PRINT-ONLY REPORT TEMPLATE ── */}
+        {reportData && (
+          <div className="print-report hidden">
+            <div style={{ fontFamily: 'Georgia, serif', color: '#111', padding: '40px', maxWidth: '800px', margin: '0 auto', border: '1px solid #ccc' }}>
+              <div style={{ textAlign: 'center', marginBottom: '30px', borderBottom: '2px solid #111', paddingBottom: '15px' }}>
+                <h1 style={{ margin: '0 0 5px 0', fontSize: '28px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '1px' }}>SWASTHAI GUARDIAN PLATFORM</h1>
+                <p style={{ margin: 0, fontSize: '14px', fontWeight: 'bold', color: '#555' }}>MONTHLY OPERATIONS & IMPACT ANALYTICS REPORT</p>
+                <p style={{ margin: '5px 0 0 0', fontSize: '11px', color: '#888' }}>Generated: {new Date(reportData.generatedAt).toLocaleString()}</p>
+              </div>
+
+              <div style={{ marginBottom: '25px' }}>
+                <h3 style={{ margin: '0 0 8px 0', fontSize: '16px', borderBottom: '1px solid #aaa', paddingBottom: '3px' }}>1. Executive Summary</h3>
+                <p style={{ margin: 0, fontSize: '13px', lineHeight: '1.6', fontStyle: 'italic' }}>{reportData.summary}</p>
+              </div>
+
+              <div style={{ marginBottom: '25px' }}>
+                <h3 style={{ margin: '0 0 8px 0', fontSize: '16px', borderBottom: '1px solid #aaa', paddingBottom: '3px' }}>2. District Health Scorecard</h3>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginTop: '10px' }}>
+                  <div>
+                    <p style={{ margin: '3px 0', fontSize: '12px' }}><strong>District Health Score:</strong> {reportData.scorecard.score}/100</p>
+                    <p style={{ margin: '3px 0', fontSize: '12px' }}><strong>Referral Closure Rate:</strong> {reportData.scorecard.referralClosureRate}%</p>
+                    <p style={{ margin: '3px 0', fontSize: '12px' }}><strong>Vaccination Completion Rate:</strong> {reportData.scorecard.vaccinationCompletionRate}%</p>
+                  </div>
+                  <div>
+                    <p style={{ margin: '3px 0', fontSize: '12px' }}><strong>Average Emergency Response:</strong> {reportData.scorecard.avgResponseTime} mins</p>
+                    <p style={{ margin: '3px 0', fontSize: '12px' }}><strong>High-Risk Pregnancies Flagged:</strong> {reportData.scorecard.highRiskPregnancies}</p>
+                    <p style={{ margin: '3px 0', fontSize: '12px' }}><strong>ASHA Workers Active:</strong> {reportData.scorecard.activeASHAs}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ marginBottom: '25px' }}>
+                <h3 style={{ margin: '0 0 8px 0', fontSize: '16px', borderBottom: '1px solid #aaa', paddingBottom: '3px' }}>3. Risk Watchlist & Action Checklist</h3>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginTop: '10px' }}>
+                  <div>
+                    <h4 style={{ margin: '0 0 5px 0', fontSize: '12px', textTransform: 'uppercase' }}>Risk Watchlist:</h4>
+                    <p style={{ margin: '3px 0', fontSize: '11px' }}>• High-Risk Pregnancies: {reportData.watchlist.highRiskPregnancies}</p>
+                    <p style={{ margin: '3px 0', fontSize: '11px' }}>• Open Referrals: {reportData.watchlist.openReferrals}</p>
+                    <p style={{ margin: '3px 0', fontSize: '11px' }}>• Overdue Vaccinations: {reportData.watchlist.overdueVaccinations}</p>
+                    <p style={{ margin: '3px 0', fontSize: '11px' }}>• Pending Emergencies: {reportData.watchlist.pendingEmergencies}</p>
+                  </div>
+                  <div>
+                    <h4 style={{ margin: '0 0 5px 0', fontSize: '12px', textTransform: 'uppercase' }}>Recommended Actions:</h4>
+                    {reportData.recommendedActions.map((action, idx) => (
+                      <p key={idx} style={{ margin: '3px 0', fontSize: '11px', lineHeight: '1.4' }}>• {action}</p>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ marginBottom: '25px' }}>
+                <h3 style={{ margin: '0 0 8px 0', fontSize: '16px', borderBottom: '1px solid #aaa', paddingBottom: '3px' }}>4. Top Performance Leaderboard</h3>
+                <p style={{ margin: '3px 0', fontSize: '12px' }}><strong>Top ASHA Worker:</strong> {reportData.topPerformers.topASHA}</p>
+                <p style={{ margin: '3px 0', fontSize: '12px' }}><strong>Top Village:</strong> {reportData.topPerformers.topVillage}</p>
+                <p style={{ margin: '3px 0', fontSize: '12px' }}><strong>Most Improved Village:</strong> {reportData.topPerformers.improvedVillage}</p>
+              </div>
+
+              <div style={{ marginBottom: '25px' }}>
+                <h3 style={{ margin: '0 0 8px 0', fontSize: '16px', borderBottom: '1px solid #aaa', paddingBottom: '3px' }}>5. Funding Impact Snapshot</h3>
+                <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px', fontSize: '12px' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '1.5px solid #111', textAlign: 'left' }}>
+                      <th style={{ padding: '6px 0' }}>Impact Metric</th>
+                      <th style={{ padding: '6px 0', textAlign: 'right' }}>Quantified Output</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr style={{ borderBottom: '1px solid #eee' }}>
+                      <td style={{ padding: '6px 0' }}>ASHA Workers Supported</td>
+                      <td style={{ padding: '6px 0', textAlign: 'right' }}>{reportData.fundingSnapshot.ashaWorkersSupported}</td>
+                    </tr>
+                    <tr style={{ borderBottom: '1px solid #eee' }}>
+                      <td style={{ padding: '6px 0' }}>Villages Reached</td>
+                      <td style={{ padding: '6px 0', textAlign: 'right' }}>{reportData.fundingSnapshot.villagesReached}</td>
+                    </tr>
+                    <tr style={{ borderBottom: '1px solid #eee' }}>
+                      <td style={{ padding: '6px 0' }}>Pregnancies Monitored</td>
+                      <td style={{ padding: '6px 0', textAlign: 'right' }}>{reportData.fundingSnapshot.pregnanciesMonitored}</td>
+                    </tr>
+                    <tr style={{ borderBottom: '1px solid #eee' }}>
+                      <td style={{ padding: '6px 0' }}>Vaccinations Completed</td>
+                      <td style={{ padding: '6px 0', textAlign: 'right' }}>{reportData.fundingSnapshot.vaccinationsCompleted}</td>
+                    </tr>
+                    <tr style={{ borderBottom: '1px solid #eee' }}>
+                      <td style={{ padding: '6px 0' }}>Referral Closure Rate</td>
+                      <td style={{ padding: '6px 0', textAlign: 'right' }}>{reportData.fundingSnapshot.referralClosureRate}%</td>
+                    </tr>
+                    <tr style={{ fontWeight: 'bold' }}>
+                      <td style={{ padding: '8px 0' }}>Estimated Beneficiaries Reached</td>
+                      <td style={{ padding: '8px 0', textAlign: 'right' }}>{reportData.fundingSnapshot.estimatedBeneficiaries}+</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div style={{ marginTop: '50px', textAlign: 'center', fontSize: '10px', color: '#777', borderTop: '1px solid #ddd', paddingTop: '10px' }}>
+                <p style={{ margin: 0 }}>This is an audited health operations report generated by SwasthAI Guardian Platform.</p>
+                <p style={{ margin: '3px 0 0 0' }}>Target: {reportData.villageId} · Code: SW-REP-{new Date().toISOString().slice(0, 7).replace('-', '')}</p>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
 
       {/* Modals removed in favor of full page-level offline-capable routes */}

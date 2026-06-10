@@ -262,7 +262,7 @@ if (isProduction && cluster.isPrimary) {
     try {
       await initSchema(db, pool, usingSQLite);
       await seedData(db, pool, usingSQLite, bcrypt);
-      initializeEventDispatcher(db, usingSQLite);
+      initializeEventDispatcher(db, usingSQLite, (type, data) => app.locals.broadcastToAdmins(type, data));
       
       // Start daily OTP cleanup job (runs once every 24 hours)
       setInterval(async () => {

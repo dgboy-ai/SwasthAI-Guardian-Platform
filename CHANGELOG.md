@@ -2,8 +2,39 @@
 
 All notable changes and feature developments completed during the hackathon window are documented in this file chronologically.
 
+## June 10, 2026
+### Added
+- **Explainable AI (XAI) Maternal Pregnancy Risk Panel**:
+  - Implemented mathematical weight contribution scoring and WHO/MoHFW specific guidelines inside `ai-service/main.py`.
+  - Added SQLite/PostgreSQL cross-compatible table columns (`pregnancy_data` table) and auto-migrations on server boot.
+  - Implemented matching local fallback XAI calculator logic in backend routes (`ngo.js`) for reliable offline demo runs.
+  - Built risk velocity trends, contributing factor cards, indicator badges, and clinical advice boxes in the SPA frontend (`MaternalHealthPage.jsx`).
+- **Pediatric Skin Triage Scanner (Child Mode)**:
+  - Linked the child nutrition panel shortcut (`/skin-disease?childMode=true`) to the primary computer vision camera scanner.
+  - Designed pediatric safety disclaimers, red-flag emergency checks (fever, breathing difficulty, lethargy), and automatic urgent escalation overrides.
+  - Adapted triage outcome recommendation text to child-safe advice protocols (e.g. skin hydration, pediatric consults, avoiding adult steroid creams).
+  - Softened screening vocabulary to "AI Triage Screening" and "Suggested Triage" to present clinical triage as screening assistance instead of diagnostics.
+  - Integrated the **multilingual Interactive Bedside Glass Test (Glass Triage) Guide** directly inside the Pediatric Scanner layout, supporting English, Hindi, Marathi, Tamil, Telugu, Bengali, and Hinglish. It outlines step-by-step instructions (Press Firmly, Observe Blanching, Safety Interpretation) to help users screen for non-blanching emergency indicators.
+
 ## June 8, 2026
 ### Added
+- **Centralized Role-Based Access Control & IDOR Prevention**:
+  - Created centralized [policy.js](file:///c:/projects/SwasthAI-Guardian-Platform/backend/middleware/policy.js) middleware offering standard security filters (`checkRole`, `enforceVillageScope`, `enforceReferralAccess`, `enforceAmbulanceAccess`).
+  - Secured all backend routers (`routes/admin.js`, `routes/ngo.js`, `routes/villager.js`) to restrict non-admin users strictly to their tenant scope and prevent cross-village data leakage.
+- **Idempotency Key Enforcement & Replay De-duplication**:
+  - Modified [schema.js](file:///c:/projects/SwasthAI-Guardian-Platform/backend/db/schema.js) to include `client_request_id` columns, migrations, and unique indexes on `referrals` and `vaccination_records` tables for PostgreSQL and SQLite.
+  - Implemented deduplication logic in `POST /referral`, `POST /vaccinations`, and `POST /villager/phq2` endpoints to prevent duplicate entries during offline sync replays. Derived auto-referrals are uniquely keyed (`ref-${clientRequestId}`) to guarantee deduplication.
+- **SSE Tenant Scoping & Live Feed Security**:
+  - Updated the `/live-feed` stream in `routes/admin.js` to look up the connecting user's role and village scope to resolve their `districtId`.
+  - Configured `broadcastToAdmins` to filter outgoing events, ensuring scoped administrative clients only receive events matching their assigned village or district.
+- **Universal AI Output & Fallback Schema Compliance**:
+  - Enforced schema validation using `validateAiOutput` on both the success and fallback/offline paths for `/symptoms`, `/predict/seasonal-risk`, `/health-assistant`, `/maternal`, and `/malnutrition` endpoints, preventing unvalidated fallback responses.
+- **Sensitive PII Log Scrubbing**:
+  - Introduced `redactSensitiveData` inside `server.js` logger middleware to automatically redact demographic data (names, phones, emails, passwords, tokens) from logged metadata objects.
+  - Scrubbed patient names and specific house addresses from event listener console logs in [eventDispatcher.js](file:///c:/projects/SwasthAI-Guardian-Platform/backend/eventDispatcher.js).
+- **Background Task Monitoring & Alerting (Demo Reliability)**:
+  - Enabled the event dispatcher to publish live `dlq_alert` events over the admin SSE stream immediately upon routing failed events to the Dead-Letter Queue.
+  - Added a diagnostic route `GET /api/admin/dlq` restricted to `admin` role to check DLQ file contents.
 - **Admin View Modularization**:
   - Refactored the massive [AdminDashboard.jsx](file:///c:/projects/SwasthAI-Guardian-Platform/frontend/src/Admin/AdminDashboard.jsx) (~1,800 lines of code) by extracting all sub-views and telemetry panels into standalone components inside a new [components](file:///c:/projects/SwasthAI-Guardian-Platform/frontend/src/Admin/components) directory.
   - Extracted [CommandCenterView.jsx](file:///c:/projects/SwasthAI-Guardian-Platform/frontend/src/Admin/components/CommandCenterView.jsx), [OutbreakRadarView.jsx](file:///c:/projects/SwasthAI-Guardian-Platform/frontend/src/Admin/components/OutbreakRadarView.jsx), [AmbulanceFeedView.jsx](file:///c:/projects/SwasthAI-Guardian-Platform/frontend/src/Admin/components/AmbulanceFeedView.jsx), [OfflineVillagesView.jsx](file:///c:/projects/SwasthAI-Guardian-Platform/frontend/src/Admin/components/OfflineVillagesView.jsx), [AIIntelligenceView.jsx](file:///c:/projects/SwasthAI-Guardian-Platform/frontend/src/Admin/components/AIIntelligenceView.jsx), [ReportsView.jsx](file:///c:/projects/SwasthAI-Guardian-Platform/frontend/src/Admin/components/ReportsView.jsx), [SystemStatusView.jsx](file:///c:/projects/SwasthAI-Guardian-Platform/frontend/src/Admin/components/SystemStatusView.jsx), and [MaternalNutritionView.jsx](file:///c:/projects/SwasthAI-Guardian-Platform/frontend/src/Admin/components/MaternalNutritionView.jsx).
@@ -24,6 +55,8 @@ All notable changes and feature developments completed during the hackathon wind
   - Unified simulated network state triggers between the `Navbar` toggle, local storage keys, and the `OfflineToast` notifications.
 - **CI Workflow and Docker Tweaks**:
   - Adjusted `.github/workflows/ci.yml` and the server startup test configurations to run the uvicorn health check cleanly.
+- **Government Schemes Page Fix**:
+  - Restored `<Navbar />` rendering on the Government Schemes Page and transitioned all direct `fetch` operations to the proxy-configured Axios `api` client to resolve CORS blocks and loading states.
 
 ## June 7, 2026
 ### Added

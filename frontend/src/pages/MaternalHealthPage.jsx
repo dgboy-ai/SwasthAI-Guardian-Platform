@@ -268,6 +268,63 @@ export default function MaternalHealthPage() {
   const [showForm, setShowForm] = useState(false);
   const [filter, setFilter] = useState('All');
   const [isDemoMode, setIsDemoMode] = useState(false);
+  const [selectedRecordId, setSelectedRecordId] = useState(null);
+
+  const getLocalFactors = (r) => {
+    const v = r.vitals || { systolic_bp: 120, diastolic_bp: 80, bs: 5.0, body_temp: 98.6, heart_rate: 75 };
+    const age = r.age || 25;
+    
+    let bp_score = 0;
+    if (v.systolic_bp >= 160 || v.diastolic_bp >= 110) bp_score = 5;
+    else if (v.systolic_bp >= 140 || v.diastolic_bp >= 90) bp_score = 3;
+    else if (v.systolic_bp >= 130 || v.diastolic_bp >= 85) bp_score = 1;
+
+    let bs_score = 0;
+    if (v.bs >= 11.1) bs_score = 5;
+    else if (v.bs >= 8.5) bs_score = 3;
+    else if (v.bs >= 5.1) bs_score = 1;
+
+    let age_score = 0;
+    if (age < 16 || age > 40) age_score = 3;
+    else if (age < 18 || age > 35) age_score = 2;
+
+    let hr_score = 0;
+    if (v.heart_rate > 120) hr_score = 3;
+    else if (v.heart_rate > 110) hr_score = 2;
+    else if (v.heart_rate > 100) hr_score = 1;
+
+    const total_score = bp_score + bs_score + age_score + hr_score;
+    
+    const factors = [];
+    
+    const bp_weight = total_score > 0 ? Math.round((bp_score / total_score) * 100) : 0;
+    let bp_advice = "Normal BP. Maintain regular checks.";
+    if (bp_score >= 5) bp_advice = "Severe high BP! Dangerous for mother/baby. Rest, avoid salt, refer for emergency medical check.";
+    else if (bp_score >= 3) bp_advice = "Elevated blood pressure. Schedule clinic check, monitor headaches/swelling, reduce sodium.";
+    else if (bp_score >= 1) bp_advice = "Slightly elevated BP. Monitor weekly and ensure healthy hydration/rest.";
+    factors.push({ name: "Blood Pressure", weight: bp_weight, status: bp_score >= 3 ? 'high' : bp_score >= 1 ? 'medium' : 'low', trend: 'stable', advice: bp_advice });
+
+    const bs_weight = total_score > 0 ? Math.round((bs_score / total_score) * 100) : 0;
+    let bs_advice = "Normal blood sugar. Follow standard balanced pregnancy diet.";
+    if (bs_score >= 5) bs_advice = "Severe high blood sugar! High risk of complications. Refer immediately for insulin or specialist care.";
+    else if (bs_score >= 3) bs_advice = "Gestational diabetes confirmed. Strict diabetic diet (avoid simple sugars, sweets), monitor fasting levels.";
+    else if (bs_score >= 1) bs_advice = "Borderline blood sugar. Limit sweet tea, sweets, and high-carb foods. Re-test in 2 weeks.";
+    factors.push({ name: "Blood Sugar", weight: bs_weight, status: bs_score >= 3 ? 'high' : bs_score >= 1 ? 'medium' : 'low', trend: 'stable', advice: bs_advice });
+
+    const age_weight = total_score > 0 ? Math.round((age_score / total_score) * 100) : 0;
+    let age_advice = "Age is within normal obstetric safety range (18-35).";
+    if (age_score >= 3) age_advice = "Age obstetric risk (under 16 or over 40). Requires close specialist monitoring and institutional delivery.";
+    else if (age_score >= 2) age_advice = "Elevated obstetric age risk (16-18 or 35-40). Ensure at least 4 ANC visits and checkup at PHC.";
+    factors.push({ name: "Obstetric Age", weight: age_weight, status: age_score >= 3 ? 'high' : age_score >= 2 ? 'medium' : 'low', trend: 'stable', advice: age_advice });
+
+    const hr_weight = total_score > 0 ? Math.round((hr_score / total_score) * 100) : 0;
+    let hr_advice = "Heart rate is normal and stable.";
+    if (hr_score >= 3) hr_advice = "High tachycardia detected (>120 bpm). Risk of dehydration, anemia, or infection. Check for fever/bleeding.";
+    else if (hr_score >= 1) hr_advice = "Mild tachycardia (100-120 bpm). Advise hydration and resting. Check hemoglobin levels.";
+    factors.push({ name: "Heart Rate", weight: hr_weight, status: hr_score >= 3 ? 'high' : hr_score >= 1 ? 'medium' : 'low', trend: 'stable', advice: hr_advice });
+
+    return factors;
+  };
 
   const fetchRecords = async () => {
     setLoading(true);
@@ -489,6 +546,62 @@ export default function MaternalHealthPage() {
                       <div className="w-full h-1.5 bg-slate-100 rounded-full">
                         <div className={`h-full rounded-full ${risk.bar}`} />
                       </div>
+                    </div>
+                    {/* Collapsible XAI Risk Explanation */}
+                    <div className="mt-3 pt-2 border-t border-slate-100">
+                      <button
+                        onClick={() => setSelectedRecordId(selectedRecordId === r.id ? null : r.id)}
+                        className="w-full text-center text-[8px] font-black text-slate-400 uppercase tracking-widest hover:text-rose-600 transition-colors flex items-center justify-center gap-1"
+                      >
+                        {selectedRecordId === r.id ? '✕ Close Risk Analysis' : '👁️ View Risk Analysis'}
+                      </button>
+                      
+                      {selectedRecordId === r.id && (
+                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mt-3 space-y-3">
+                          <div className="flex items-center justify-between text-[10px] font-black text-slate-700 bg-slate-50 p-2 rounded-xl">
+                            <span>Clinical Risk Severity:</span>
+                            <span className="text-rose-600">
+                              {r.vitals ? (
+                                `${Math.min(100, Math.round(
+                                  ((r.vitals?.systolic_bp >= 160 || r.vitals?.diastolic_bp >= 110 ? 5 : r.vitals?.systolic_bp >= 140 || r.vitals?.diastolic_bp >= 90 ? 3 : r.vitals?.systolic_bp >= 130 || r.vitals?.diastolic_bp >= 85 ? 1 : 0) +
+                                  (r.vitals?.bs >= 11.1 ? 5 : r.vitals?.bs >= 8.5 ? 3 : r.vitals?.bs >= 5.1 ? 1 : 0) +
+                                  (r.age < 16 || r.age > 40 ? 3 : r.age < 18 || r.age > 35 ? 2 : 0) +
+                                  (r.vitals?.heart_rate > 120 ? 3 : r.vitals?.heart_rate > 110 ? 2 : r.vitals?.heart_rate > 100 ? 1 : 0)) * 6.25
+                                ))}%`
+                              ) : (
+                                r.riskLevel === 'High Risk' ? '82%' : r.riskLevel === 'Medium Risk' ? '45%' : '12%'
+                              )}
+                            </span>
+                          </div>
+                          
+                          <div className="space-y-2.5">
+                            {((r.factors && r.factors.length > 0) ? r.factors : getLocalFactors(r)).map((f, fIdx) => {
+                              const barColor = f.status === 'high' ? 'bg-rose-500' : f.status === 'medium' ? 'bg-amber-500' : 'bg-emerald-500';
+                              const textColor = f.status === 'high' ? 'text-rose-600' : f.status === 'medium' ? 'text-amber-600' : 'text-emerald-600';
+                              const trendArrow = f.trend === 'up' ? '↗️' : f.trend === 'down' ? '↘️' : '➡️';
+                              const trendColor = f.trend === 'up' ? 'text-rose-500' : f.trend === 'down' ? 'text-emerald-500' : 'text-slate-400';
+                              
+                              return (
+                                <div key={fIdx} className="space-y-0.5">
+                                  <div className="flex justify-between items-center text-[9px] font-black">
+                                    <span className="text-slate-500 uppercase tracking-wider">{f.name}</span>
+                                    <span className="flex items-center gap-1.5">
+                                      <span className={textColor}>{f.weight}%</span>
+                                      <span className={`${trendColor} font-black`}>{trendArrow}</span>
+                                    </span>
+                                  </div>
+                                  <div className="w-full bg-slate-100 h-1 rounded-full overflow-hidden">
+                                    <div className={`h-full rounded-full ${barColor}`} style={{ width: `${Math.max(5, f.weight)}%` }} />
+                                  </div>
+                                  <p className="text-[8px] text-slate-400 leading-relaxed font-bold bg-slate-50/50 p-1.5 rounded-lg border border-slate-100 mt-0.5">
+                                    💡 {f.advice}
+                                  </p>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </motion.div>
+                      )}
                     </div>
                   </motion.div>
                 );

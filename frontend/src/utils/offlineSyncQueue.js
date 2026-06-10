@@ -277,14 +277,17 @@ export async function syncAllQueues() {
     // 5. Fire Back-End event dispatcher notification for successful recovery
     if (syncCount > 0) {
       const durationMs = Date.now() - startTime;
-      console.log(`✅ [OfflineSyncQueue] Synergetic restoration success! Replayed ${syncCount} records in ${durationMs}ms`);
+      const stats = await getQueueStats();
+      const pendingCount = stats.totalPending;
+      console.log(`✅ [OfflineSyncQueue] Synergetic restoration success! Replayed ${syncCount} records in ${durationMs}ms. Remaining pending: ${pendingCount}`);
       
       try {
         await api.post('/villager/sync-health', {
           recordCount: syncCount,
           durationMs,
           syncBatchId,
-          clientRequestIds: syncedClientRequestIds
+          clientRequestIds: syncedClientRequestIds,
+          pendingCount
         });
       } catch (syncLogErr) {
         console.warn('Could not post sync metrics to event dispatcher:', syncLogErr.message);

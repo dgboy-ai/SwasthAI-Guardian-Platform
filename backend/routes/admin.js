@@ -7,8 +7,15 @@ import { checkRole } from '../middleware/policy.js';
 import dynamoHelper from '../dynamodb.js';
 import { seedDemoData } from '../db/seed.js';
 import { logAudit } from '../middleware/audit.js';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 const router = express.Router();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const DLQ_PATH = path.join(__dirname, '../failed_events_dlq.json');
 
 const adminSseClients = new Map(); // clientId → res
 const MAX_SSE_CLIENTS = 20;
@@ -42,6 +49,11 @@ function requestedDistrict(req) {
 export function broadcastToAdmins(eventType, data) {
   adminSseClients.forEach((clientObj, clientId) => {
     const { res, villageId, districtId } = clientObj;
+
+    // Strict multi-tenant/district scoping check
+    if (districtId && data.districtId && data.districtId !== districtId) {
+      return;
+    }
 
     // Scoping check: If the admin user has a villageId limit, filter the stream data
     if (villageId) {
@@ -290,20 +302,27 @@ router.get('/report', auth, checkRole(['admin']), async (req, res) => {
   }
 });
 
-// Clusters protected by IP allowlist + agent secret check
+// Clusters protected by admin JWT or agent secret check
 router.get('/clusters', async (req, res) => {
   const db = req.app.locals.db;
   const usingSQLite = req.app.locals.usingSQLite;
 
-  const remoteIp = req.socket.remoteAddress;
-  const isLocal = ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(remoteIp);
-  
   const agentSecret = req.headers['x-agent-secret'];
-  const expectedSecret = process.env.AGENT_SECRET;
-  const isSecretValid = expectedSecret && agentSecret === expectedSecret;
+  const isAgent = process.env.AGENT_SECRET && agentSecret === process.env.AGENT_SECRET;
 
-  if (!isLocal && !isSecretValid) {
-    return sendError(res, 403, 'FORBIDDEN', 'Access Denied: Internal use or secret required');
+  let isAuthedAdmin = false;
+  const authHeader = req.headers.authorization;
+  if (authHeader) {
+    try {
+      const decoded = jwt.verify(authHeader.replace('Bearer ', ''), process.env.JWT_SECRET);
+      if (decoded && decoded.role === 'admin') {
+        isAuthedAdmin = true;
+      }
+    } catch (_) {}
+  }
+
+  if (!isAgent && !isAuthedAdmin) {
+    return sendError(res, 403, 'FORBIDDEN', 'Forbidden');
   }
 
   try {
@@ -396,6 +415,7 @@ router.post('/outbreak-alert', async (req, res) => {
     if (typeof req.app.locals.broadcastToAdmins === 'function') {
       req.app.locals.broadcastToAdmins('outbreak', {
         villageId,
+        districtId,
         disease,
         classification: disease,
         action,
@@ -465,6 +485,7 @@ router.post('/outbreak', auth, checkRole(['admin']), async (req, res) => {
     if (typeof req.app.locals.broadcastToAdmins === 'function') {
       req.app.locals.broadcastToAdmins('outbreak', {
         villageId:      resolvedVillageId,
+        districtId,
         disease:        resolvedDisease,
         classification: resolvedDisease,
         action:         resolvedAction,
@@ -1058,6 +1079,19 @@ router.get('/outbreaks/disease-search', auth, checkRole(['admin']), async (req, 
     res.json({ success: true, count: outbreaks.length, outbreaks });
   } catch (err) {
     sendError(res, 500, 'GSI_QUERY_FAILED', err.message);
+  }
+});
+
+router.get('/dlq', auth, checkRole(['admin']), (req, res) => {
+  try {
+    if (fs.existsSync(DLQ_PATH)) {
+      const raw = fs.readFileSync(DLQ_PATH, 'utf8');
+      const dlq = JSON.parse(raw);
+      return res.json({ success: true, dlq });
+    }
+    return res.json({ success: true, dlq: [] });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 

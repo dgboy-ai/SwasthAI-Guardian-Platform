@@ -556,37 +556,135 @@ async def predict_disease(data: SymptomInput):
 # ── ENDPOINT 2: Pregnancy Risk ────────────────────────────────────────────────
 @app.post("/predict/pregnancy_risk")
 async def predict_maternal_risk(data: PregnancyInput):
-    score = 0
-    # Blood Pressure scoring
-    if data.systolic_bp >= 160 or data.diastolic_bp >= 110: score += 5   # Severe hypertension
-    elif data.systolic_bp >= 140 or data.diastolic_bp >= 90:  score += 3   # Stage 2 hypertension
-    elif data.systolic_bp >= 130 or data.diastolic_bp >= 85:  score += 1   # Elevated
+    bp_score = 0
+    if data.systolic_bp >= 160 or data.diastolic_bp >= 110: bp_score = 5
+    elif data.systolic_bp >= 140 or data.diastolic_bp >= 90:  bp_score = 3
+    elif data.systolic_bp >= 130 or data.diastolic_bp >= 85:  bp_score = 1
 
-    # Blood Sugar in mmol/L (as per model field 'bs')
-    # Gestational diabetes thresholds (WHO ANC): fasting >=5.1, 2hr >=8.5
-    if data.bs >= 11.1:   score += 5   # Severe hyperglycaemia — immediate risk
-    elif data.bs >= 8.5:  score += 3   # Gestational diabetes confirmed
-    elif data.bs >= 5.1:  score += 1   # Impaired fasting — borderline
+    bs_score = 0
+    if data.bs >= 11.1:   bs_score = 5
+    elif data.bs >= 8.5:  bs_score = 3
+    elif data.bs >= 5.1:  bs_score = 1
 
-    # Age risk
-    if data.age < 16 or data.age > 40:   score += 3   # Very high obstetric risk
-    elif data.age < 18 or data.age > 35: score += 2   # Elevated risk
+    age_score = 0
+    if data.age < 16 or data.age > 40:   age_score = 3
+    elif data.age < 18 or data.age > 35: age_score = 2
 
-    # Heart Rate
-    if data.heart_rate > 120:   score += 3   # Tachycardia — potential shock/sepsis
-    elif data.heart_rate > 110: score += 2
-    elif data.heart_rate > 100: score += 1
+    hr_score = 0
+    if data.heart_rate > 120:   hr_score = 3
+    elif data.heart_rate > 110: hr_score = 2
+    elif data.heart_rate > 100: hr_score = 1
 
-    # Body Temperature (Fahrenheit assumed from model)
-    if data.body_temp >= 102.0:   score += 3   # High fever — infection/sepsis risk
-    elif data.body_temp >= 100.4: score += 2   # Low-grade fever
-    elif data.body_temp >= 99.5:  score += 1   # Slightly elevated
+    temp_score = 0
+    if data.body_temp >= 102.0:   temp_score = 3
+    elif data.body_temp >= 100.4: temp_score = 2
+    elif data.body_temp >= 99.5:  temp_score = 1
 
-    risk = "High Risk" if score >= 8 else "Medium Risk" if score >= 4 else "Low Risk"
+    total_score = bp_score + bs_score + age_score + hr_score + temp_score
+    risk = "High Risk" if total_score >= 8 else "Medium Risk" if total_score >= 4 else "Low Risk"
+
+    # Determine status & advice for each factor
+    factors = []
+    
+    # Blood Pressure advice
+    bp_weight = 0
+    if total_score > 0:
+        bp_weight = int((bp_score / total_score) * 100)
+    bp_status = "high" if bp_score >= 3 else "medium" if bp_score >= 1 else "low"
+    bp_advice = "Normal BP. Maintain regular checks."
+    if bp_score >= 5:
+        bp_advice = "Severe high BP! Dangerous for mother/baby. Rest, avoid salt, refer for emergency medical check."
+    elif bp_score >= 3:
+        bp_advice = "Elevated blood pressure. Schedule clinic check, monitor headaches/swelling, reduce sodium."
+    elif bp_score >= 1:
+        bp_advice = "Slightly elevated BP. Monitor weekly and ensure healthy hydration/rest."
+    factors.append({
+        "name": "Blood Pressure",
+        "weight": bp_weight,
+        "status": bp_status,
+        "trend": "stable",
+        "advice": bp_advice
+    })
+
+    # Blood Sugar advice
+    bs_weight = 0
+    if total_score > 0:
+        bs_weight = int((bs_score / total_score) * 100)
+    bs_status = "high" if bs_score >= 3 else "medium" if bs_score >= 1 else "low"
+    bs_advice = "Normal blood sugar. Follow standard balanced pregnancy diet."
+    if bs_score >= 5:
+        bs_advice = "Severe high blood sugar! High risk of complications. Refer immediately for insulin or specialist care."
+    elif bs_score >= 3:
+        bs_advice = "Gestational diabetes confirmed. Strict diabetic diet (avoid simple sugars, sweets), monitor fasting levels."
+    elif bs_score >= 1:
+        bs_advice = "Borderline blood sugar. Limit sweet tea, sweets, and high-carb foods. Re-test in 2 weeks."
+    factors.append({
+        "name": "Blood Sugar",
+        "weight": bs_weight,
+        "status": bs_status,
+        "trend": "stable",
+        "advice": bs_advice
+    })
+
+    # Age advice
+    age_weight = 0
+    if total_score > 0:
+        age_weight = int((age_score / total_score) * 100)
+    age_status = "high" if age_score >= 3 else "medium" if age_score >= 2 else "low"
+    age_advice = "Age is within normal obstetric safety range (18-35)."
+    if age_score >= 3:
+        age_advice = "Age obstetric risk (under 16 or over 40). Requires close specialist monitoring and institutional delivery."
+    elif age_score >= 2:
+        age_advice = "Elevated obstetric age risk (16-18 or 35-40). Ensure at least 4 ANC visits and checkup at PHC."
+    factors.append({
+        "name": "Obstetric Age",
+        "weight": age_weight,
+        "status": age_status,
+        "trend": "stable",
+        "advice": age_advice
+    })
+
+    # Heart Rate advice
+    hr_weight = 0
+    if total_score > 0:
+        hr_weight = int((hr_score / total_score) * 100)
+    hr_status = "high" if hr_score >= 3 else "medium" if hr_score >= 1 else "low"
+    hr_advice = "Heart rate is normal and stable."
+    if hr_score >= 3:
+        hr_advice = "High tachycardia detected (>120 bpm). Risk of dehydration, anemia, or infection. Check for fever/bleeding."
+    elif hr_score >= 1:
+        hr_advice = "Mild tachycardia (100-120 bpm). Advise hydration and resting. Check hemoglobin levels."
+    factors.append({
+        "name": "Heart Rate",
+        "weight": hr_weight,
+        "status": hr_status,
+        "trend": "stable",
+        "advice": hr_advice
+    })
+
+    # Body Temperature advice
+    temp_weight = 0
+    if total_score > 0:
+        temp_weight = int((temp_score / total_score) * 100)
+    temp_status = "high" if temp_score >= 3 else "medium" if temp_score >= 1 else "low"
+    temp_advice = "Body temperature is normal."
+    if temp_score >= 3:
+        temp_advice = "High fever (>102°F)! Possible infection or sepsis. Cool sponge, give paracetamol, refer immediately."
+    elif temp_score >= 1:
+        temp_advice = "Mild fever (99.5-102°F). Ensure hydration, monitor for infection signs, rest."
+    factors.append({
+        "name": "Body Temperature",
+        "weight": temp_weight,
+        "status": temp_status,
+        "trend": "stable",
+        "advice": temp_advice
+    })
+
     return {
         "risk_level": risk,
-        "vector_score": score,
-        "factors_assessed": ["blood_pressure", "blood_sugar_mmol", "age", "heart_rate", "temperature"]
+        "vector_score": total_score,
+        "factors_assessed": ["blood_pressure", "blood_sugar_mmol", "age", "heart_rate", "temperature"],
+        "factors": factors
     }
 
 # ── ENDPOINT 3: Malnutrition ──────────────────────────────────────────────────

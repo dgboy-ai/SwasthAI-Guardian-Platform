@@ -7,7 +7,7 @@ import { checkRole, enforceVillageScope, enforceReferralAccess, enforceAmbulance
 import dynamoHelper from '../dynamodb.js';
 import eventEmitter from '../eventDispatcher.js';
 import { logAudit } from '../middleware/audit.js';
-import { DiseasePredictionSchema, SeasonalRiskSchema, validateAiOutput } from '../utils/aiValidator.js';
+import { DiseasePredictionSchema, SeasonalRiskSchema, RagChatSchema, validateAiOutput, checkTextGuardrails } from '../utils/aiValidator.js';
 
 const router = express.Router();
 
@@ -20,7 +20,8 @@ const SyncHealthSchema = z.object({
   recordCount: z.coerce.number().int().nonnegative().default(0),
   durationMs: z.coerce.number().int().nonnegative().default(0),
   syncBatchId: z.string().max(120),
-  clientRequestIds: z.array(z.string().max(120)).max(50).default([])
+  clientRequestIds: z.array(z.string().max(120)).max(50).default([]),
+  pendingCount: z.coerce.number().int().nonnegative().default(0)
 });
 
 const Phq2Schema = z.object({
@@ -221,7 +222,7 @@ router.post('/emergency-alert', auth, checkRole(['villager', 'ngo', 'admin']), a
     }
 
     const timestamp  = new Date().toISOString();
-    const requestObj = { requestId, userId, name: userName, location: villageId, priority: 'High', symptoms: message, status: 'pending', timestamp, type: alertType, traceId: req.traceId };
+    const requestObj = { requestId, userId, name: userName, location: villageId, priority: 'High', symptoms: message, status: 'pending', timestamp, type: alertType, traceId: req.traceId, districtId };
 
     // Return success immediately — the DB record is already saved.
     // DynamoDB & SSE broadcast are best-effort (fire-and-forget).
@@ -494,6 +495,7 @@ router.post('/ambulance', auth, checkRole(['villager', 'ngo', 'admin']), logAudi
     (async () => {
       try {
         const districtId = await getDistrictId(db, pool, usingSQLite, req.user.villageId || location);
+        requestObj.districtId = districtId;
         const districtDateBucket = `${districtId}#${timestamp.slice(0, 10)}`;
         await dynamoHelper.put('emergency_streams', {
           districtId,
@@ -719,6 +721,18 @@ router.post('/health-assistant', auth, checkRole(['villager', 'ngo', 'admin']), 
   const { message } = req.body;
   if (!message) return res.status(400).send({ error: 'Message is required.' });
 
+  // Early local text guardrails check (ensures universal coverage regardless of RAG service availability)
+  const guardrailPayload = checkTextGuardrails(message);
+  if (guardrailPayload) {
+    const validated = validateAiOutput(RagChatSchema, guardrailPayload, 'Local Guardrail Trigger');
+    return res.send({
+      reply: validated.reply,
+      sources: validated.sources,
+      urgency: "P4",
+      grounded: false
+    });
+  }
+
   const groqKey = process.env.GROQ_API_KEY;
 
   if (!groqKey || groqKey === 'your_groq_api_key_here') {
@@ -891,6 +905,7 @@ router.post('/villager/sync-health', auth, checkRole(['villager', 'ngo', 'admin'
       durationMs: logItem.durationMs,
       syncBatchId: logItem.syncBatchId,
       clientRequestIds: logItem.clientRequestIds,
+      pendingCount: Number(parsed.data.pendingCount || 0),
       timestamp: logItem.queuedAt,
       traceId: req.traceId
     });

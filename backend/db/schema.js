@@ -73,6 +73,12 @@ export async function initSchema(db, pool, usingSQLite) {
       "villageId" VARCHAR(60),
       recorded_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
       client_request_id VARCHAR(120) UNIQUE DEFAULT NULL,
+      systolic_bp INTEGER DEFAULT NULL,
+      diastolic_bp INTEGER DEFAULT NULL,
+      bs DOUBLE PRECISION DEFAULT NULL,
+      body_temp DOUBLE PRECISION DEFAULT NULL,
+      heart_rate INTEGER DEFAULT NULL,
+      factors_json TEXT DEFAULT NULL,
       created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
     );
@@ -370,6 +376,12 @@ export async function initSchema(db, pool, usingSQLite) {
     await addColIfMissing('users', 'updated_at', 'TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP');
     await addColIfMissing('pregnancy_data', 'recorded_by', 'INTEGER REFERENCES users(id) ON DELETE SET NULL');
     await addColIfMissing('pregnancy_data', 'client_request_id', 'VARCHAR(120) DEFAULT NULL');
+    await addColIfMissing('pregnancy_data', 'systolic_bp', 'INTEGER DEFAULT NULL');
+    await addColIfMissing('pregnancy_data', 'diastolic_bp', 'INTEGER DEFAULT NULL');
+    await addColIfMissing('pregnancy_data', 'bs', 'DOUBLE PRECISION DEFAULT NULL');
+    await addColIfMissing('pregnancy_data', 'body_temp', 'DOUBLE PRECISION DEFAULT NULL');
+    await addColIfMissing('pregnancy_data', 'heart_rate', 'INTEGER DEFAULT NULL');
+    await addColIfMissing('pregnancy_data', 'factors_json', 'TEXT DEFAULT NULL');
     await addColIfMissing('pregnancy_data', 'updated_at', 'TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP');
     await addColIfMissing('symptoms', 'disease', 'VARCHAR(120) DEFAULT NULL');
     await addColIfMissing('symptoms', 'advice', 'TEXT DEFAULT NULL');
@@ -468,6 +480,12 @@ export async function initSchema(db, pool, usingSQLite) {
         "villageId" TEXT,
         recorded_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
         client_request_id TEXT UNIQUE DEFAULT NULL,
+        systolic_bp INTEGER DEFAULT NULL,
+        diastolic_bp INTEGER DEFAULT NULL,
+        bs REAL DEFAULT NULL,
+        body_temp REAL DEFAULT NULL,
+        heart_rate INTEGER DEFAULT NULL,
+        factors_json TEXT DEFAULT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
@@ -749,6 +767,12 @@ export async function initSchema(db, pool, usingSQLite) {
 
     await addSQLiteColIfMissing('pregnancy_data', 'recorded_by', 'INTEGER REFERENCES users(id) ON DELETE SET NULL');
     await addSQLiteColIfMissing('pregnancy_data', 'client_request_id', 'TEXT DEFAULT NULL');
+    await addSQLiteColIfMissing('pregnancy_data', 'systolic_bp', 'INTEGER DEFAULT NULL');
+    await addSQLiteColIfMissing('pregnancy_data', 'diastolic_bp', 'INTEGER DEFAULT NULL');
+    await addSQLiteColIfMissing('pregnancy_data', 'bs', 'REAL DEFAULT NULL');
+    await addSQLiteColIfMissing('pregnancy_data', 'body_temp', 'REAL DEFAULT NULL');
+    await addSQLiteColIfMissing('pregnancy_data', 'heart_rate', 'INTEGER DEFAULT NULL');
+    await addSQLiteColIfMissing('pregnancy_data', 'factors_json', 'TEXT DEFAULT NULL');
     await addSQLiteColIfMissing('pregnancy_data', 'updated_at', 'DATETIME DEFAULT NULL');
 
     await addSQLiteColIfMissing('symptoms', 'disease', 'TEXT DEFAULT NULL');

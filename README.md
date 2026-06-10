@@ -45,6 +45,8 @@ SwasthAI is framed as a B2B district operations platform: the buyer is a distric
 - ✅ **Mental Health PHQ-2 Screener** — Patient Health Questionnaire-2 triage that auto-creates urgent ASHA referrals
 - ✅ **Mission Indradhanush Immunization** — Vaccine scheduling and status tracking (`vaccination_records`) for India's child immunization program
 - ✅ **Passwordless QR-Code Login** — Aadhaar/village-card QR scanning for quick villager login in zero-connectivity zones
+- ✅ **Explainable AI (XAI) Pregnancy Risk Panel** — Dynamic breakdown of maternal contributor weights (blood pressure, blood sugar, etc.), trend velocity tracking, and WHO/MoHFW specific advice guidelines
+- ✅ **Pediatric Skin Triage (Child Mode)** — Auto-escalation of red-flag symptoms (breathing difficulty, high fever, lethargy) directly to emergency status, soft-phrased triage categories, and child-safe safety advice (cautioning against adult steroid/cosmetic creams)
 
 <details>
 <summary>📋 Full technical hardening log (15 more items)</summary>

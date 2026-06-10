@@ -155,6 +155,16 @@ const ngoService = {
     } catch (error) {
       throw error.response?.data?.error || 'Failed to fetch outbreak telemetry';
     }
+  },
+
+  // Impact Analytics Monthly Report
+  getImpactReport: async () => {
+    try {
+      const res = await api.get('/ngo/impact-report');
+      return res.data;
+    } catch (error) {
+      throw error.response?.data?.error || 'Failed to generate impact report';
+    }
   }
 };
 

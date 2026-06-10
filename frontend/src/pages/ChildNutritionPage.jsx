@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Users, PlusCircle, X, ArrowLeft, RefreshCw, AlertTriangle, CheckCircle, Activity, Scale, TrendingDown, ShieldCheck, FlaskConical } from 'lucide-react';
+import { Users, PlusCircle, X, ArrowLeft, RefreshCw, AlertTriangle, CheckCircle, Activity, Scale, TrendingDown, ShieldCheck, FlaskConical, Camera } from 'lucide-react';
 import api from '../services/api';
 import Navbar from '../components/Navbar';
 import { queueChildRecord, getPendingChild, syncAllQueues } from '../utils/offlineSyncQueue';
@@ -323,6 +323,9 @@ export default function ChildNutritionPage() {
           <div className="flex gap-2 w-full sm:w-auto">
             <button onClick={fetchRecords} className="flex-1 sm:flex-none p-2.5 bg-white border border-slate-200 rounded-xl text-slate-400 hover:text-amber-600 transition-all shadow-sm flex items-center justify-center">
               <RefreshCw className="w-4 h-4 sm:w-5 sm:h-5" />
+            </button>
+            <button onClick={() => navigate('/skin-disease?childMode=true')} className="flex-[4] sm:flex-none flex items-center justify-center gap-1.5 px-5 py-3 bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-black text-[10px] sm:text-sm uppercase tracking-widest transition-all shadow-lg shadow-teal-200">
+              <Camera className="w-3 h-3 sm:w-4 sm:h-4" /> Rash Scanner
             </button>
             <button onClick={() => setShowForm(true)} className="flex-[4] sm:flex-none flex items-center justify-center gap-1.5 px-5 py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-black text-[10px] sm:text-sm uppercase tracking-widest transition-all shadow-lg shadow-amber-200">
               <PlusCircle className="w-3 h-3 sm:w-4 sm:h-4" /> New Child

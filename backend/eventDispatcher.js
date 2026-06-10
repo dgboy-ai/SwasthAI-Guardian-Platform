@@ -12,9 +12,12 @@ const eventEmitter = new EventEmitter();
 let pgDb = null;
 let isSQLite = false;
 
-export function initializeEventDispatcher(dbInstance, usingSQLite = false) {
+let broadcastCallback = null;
+
+export function initializeEventDispatcher(dbInstance, usingSQLite = false, broadcastFn = null) {
   pgDb = dbInstance;
   isSQLite = usingSQLite;
+  broadcastCallback = broadcastFn;
   console.log(`📢 Event Dispatcher Initialized with Relational DB reference (usingSQLite: ${usingSQLite}).`);
 }
 
@@ -45,6 +48,25 @@ async function writeToDLQ(eventType, eventData, errorMessage) {
     
     fs.writeFileSync(DLQ_PATH, JSON.stringify(currentDLQ, null, 2), "utf8");
     console.warn(`[DLQ] Saved failed event '${eventType}' to dead-letter queue at ${DLQ_PATH}`);
+
+    if (typeof broadcastCallback === 'function') {
+      try {
+        const villageId = eventData?.villageId || eventData?.location || null;
+        let districtId = null;
+        if (villageId) {
+          districtId = await getDistrictId(pgDb, villageId);
+        }
+        broadcastCallback('dlq_alert', {
+          eventType,
+          error: errorMessage,
+          timestamp: dlqItem.timestamp,
+          villageId,
+          districtId
+        });
+      } catch (broadcastErr) {
+        console.error("[DLQ] Failed to broadcast dlq_alert over SSE:", broadcastErr.message);
+      }
+    }
   } catch (dlqErr) {
     console.error("[CRITICAL DLQ ERROR] Failed to write to dead-letter queue file:", dlqErr.message);
   }
@@ -180,8 +202,8 @@ eventEmitter.on("outbreak_detected", async (eventData) => {
 
 // 3. Listen for sync restorations
 eventEmitter.on("sync_restored", async (eventData) => {
-  const { villageId, recordCount, durationMs, syncBatchId, clientRequestIds = [], timestamp } = eventData;
-  console.log(`[EVENT] sync_restored: ${recordCount} records from ${villageId} synced in ${durationMs}ms`);
+  const { villageId, recordCount, durationMs, syncBatchId, clientRequestIds = [], pendingCount = 0, timestamp } = eventData;
+  console.log(`[EVENT] sync_restored: ${recordCount} records from ${villageId} synced in ${durationMs}ms. Pending: ${pendingCount}`);
   const now = timestamp || new Date().toISOString();
 
   try {
@@ -206,7 +228,7 @@ eventEmitter.on("sync_restored", async (eventData) => {
     });
 
     await callWithRetry(async () => {
-      await dynamoHelper.updateNodeState(villageId, "online", now, 0);
+      await dynamoHelper.updateNodeState(villageId, "online", now, pendingCount);
     });
   } catch (err) {
     console.error(`[EVENT ERROR] sync_restored handling failed:`, err.message);
