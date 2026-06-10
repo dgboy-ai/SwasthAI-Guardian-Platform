@@ -15,6 +15,12 @@ All notable changes and feature developments completed during the hackathon wind
   - Adapted triage outcome recommendation text to child-safe advice protocols (e.g. skin hydration, pediatric consults, avoiding adult steroid creams).
   - Softened screening vocabulary to "AI Triage Screening" and "Suggested Triage" to present clinical triage as screening assistance instead of diagnostics.
   - Integrated the **multilingual Interactive Bedside Glass Test (Glass Triage) Guide** directly inside the Pediatric Scanner layout, supporting English, Hindi, Marathi, Tamil, Telugu, Bengali, and Hinglish. It outlines step-by-step instructions (Press Firmly, Observe Blanching, Safety Interpretation) to help users screen for non-blanching emergency indicators.
+- **NGO Impact Analytics & Monthly Reports (B2B Focus)**:
+  - Developed the B2B NGO analytics backend endpoint `/api/ngo/impact-report` calculating core metrics, outcome percentages (referrals closed, vaccination completion), emergency times, risk watchlists, and village/ASHA leaderboards.
+  - Configured a comprehensive **Funding Impact Snapshot** displaying total rural beneficiaries reached for B2B grant proposals.
+  - Integrated report generation with audit logs inside the database.
+  - Built the `Impact Analytics` interactive tab inside `NGODashboard.jsx` showcasing real-time B2B metrics, MoM trends, and recommended actions.
+  - Engineered zero-dependency PDF report printing styles inside `index.css` via custom `@media print` CSS overrides for clean, professional PDF exports.
 
 ## June 8, 2026
 ### Added
