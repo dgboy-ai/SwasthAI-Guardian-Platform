@@ -862,7 +862,10 @@ async def get_seasonal_risk(villageId: str = "v101", month: int = None):
         "timestamp": datetime.datetime.now().isoformat()
     }
 
-# ── HEALTH CHECK ──────────────────────────────────────────────────────────────
+@app.get("/")
+def read_root():
+    return {"status": "SwasthAI AI Node Online", "health_check": "/health"}
+
 @app.get("/health")
 def health_check():
     return {
