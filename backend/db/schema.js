@@ -1,3 +1,5 @@
+import { GOVERNMENT_SCHEMES } from './seed.js';
+
 export async function initSchema(db, pool, usingSQLite) {
   if (pool) {
     // ── SCHEMA CREATION (Aurora PostgreSQL) ──────────────────────────────────
@@ -396,6 +398,44 @@ export async function initSchema(db, pool, usingSQLite) {
     await addColIfMissing('referrals', 'client_request_id', 'VARCHAR(120) DEFAULT NULL');
     await addColIfMissing('vaccination_records', 'client_request_id', 'VARCHAR(120) DEFAULT NULL');
     await addColIfMissing('audit_logs', 'trace_id', 'VARCHAR(120) DEFAULT NULL');
+    await addColIfMissing('government_schemes', 'start_year', 'INTEGER DEFAULT NULL');
+    await addColIfMissing('government_schemes', 'official_url', 'TEXT DEFAULT NULL');
+    await addColIfMissing('government_schemes', 'why_helps', 'TEXT DEFAULT NULL');
+    await addColIfMissing('government_schemes', 'why_helps_hi', 'TEXT DEFAULT NULL');
+    await addColIfMissing('government_schemes', 'helpline', 'VARCHAR(80) DEFAULT NULL');
+
+    // ── Upsert enriched scheme data for existing + missing schemes ─────────
+    try {
+      for (const sc of GOVERNMENT_SCHEMES) {
+        await pool.query(
+          `INSERT INTO government_schemes
+           (name, name_hi, description, benefit, category, min_age, max_age,
+            gender_eligibility, caste_eligibility, economic_status_eligibility,
+            area_type_eligibility, required_documents, steps,
+            start_year, official_url, why_helps, why_helps_hi, helpline)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
+           ON CONFLICT (name) DO UPDATE SET
+             name_hi=EXCLUDED.name_hi, description=EXCLUDED.description,
+             benefit=EXCLUDED.benefit, why_helps=EXCLUDED.why_helps,
+             why_helps_hi=EXCLUDED.why_helps_hi, start_year=EXCLUDED.start_year,
+             official_url=EXCLUDED.official_url, helpline=EXCLUDED.helpline,
+             steps=EXCLUDED.steps, required_documents=EXCLUDED.required_documents`,
+          [sc.name, sc.name_hi, sc.description, sc.benefit, sc.category,
+           sc.min_age, sc.max_age, sc.gender_eligibility, sc.caste_eligibility,
+           sc.economic_status_eligibility, sc.area_type_eligibility,
+           sc.required_documents, sc.steps,
+           sc.start_year || null, sc.official_url || null,
+           sc.why_helps || null, sc.why_helps_hi || null, sc.helpline || null]
+        );
+      }
+      console.log('[MIGRATION] Schemes upserted — 20 schemes now in DB.');
+    } catch (upErr) {
+      // ON CONFLICT requires unique constraint on name — add it if missing
+      try {
+        await pool.query('ALTER TABLE government_schemes ADD CONSTRAINT gs_name_unique UNIQUE (name)');
+        console.log('[MIGRATION] Added unique constraint on government_schemes.name');
+      } catch (_) {} // Already exists, ignore
+    }
 
     await pool.query(`
       CREATE UNIQUE INDEX IF NOT EXISTS idx_symptoms_client_request       ON symptoms(client_request_id) WHERE client_request_id IS NOT NULL;
@@ -570,6 +610,11 @@ export async function initSchema(db, pool, usingSQLite) {
         area_type_eligibility TEXT DEFAULT 'all',
         required_documents TEXT,
         steps TEXT,
+        start_year INTEGER DEFAULT NULL,
+        official_url TEXT DEFAULT NULL,
+        why_helps TEXT DEFAULT NULL,
+        why_helps_hi TEXT DEFAULT NULL,
+        helpline TEXT DEFAULT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
