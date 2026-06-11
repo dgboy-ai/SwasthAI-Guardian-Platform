@@ -5,7 +5,7 @@ import ngoService from '../services/ngoService';
 import adminService from '../services/adminService';
 
 const AuthContext = createContext(null);
-const DEMO_SECRET = 'demo-only';
+const DEMO_SECRET = 'Demo@1234';
 const demoCredentialHash = (identifier, role, secret = DEMO_SECRET) => btoa(`${identifier}:${role}:${secret}`);
 
 function normalizeOfflineUsers(users) {

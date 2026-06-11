@@ -13,7 +13,7 @@ import {
 // Judge/demo credentials pre-cached for hackathon walkthroughs.
 // Production authentication uses backend-issued tokens and real OTP/password verification.
 const OFFLINE_CACHE_KEY = 'swasthai_offline_user_cache';
-const DEMO_SECRET = 'demo-only';
+const DEMO_SECRET = 'Demo@1234';
 const demoCredentialHash = (id, role, secret = DEMO_SECRET) => btoa(`${id}:${role}:${secret}`);
 const DEMO_CREDENTIALS = [
   { id: '9876543210',       credentialHash: demoCredentialHash('9876543210', 'villager'),       role: 'villager', name: 'Demo Villager' },
