@@ -26,7 +26,7 @@ if __name__ == "__main__":
     clf = LogisticRegression(max_iter=1000, C=1.0, class_weight="balanced", random_state=42)
 
     pipeline = Pipeline([
-        ("tfidf", TfidfVectorizer(ngram_range=(1, 2), min_df=1, max_features=10000, sublinear_tf=True)),
+        ("tfidf", TfidfVectorizer(ngram_range=(1, 2), min_df=1, max_features=3000, sublinear_tf=True)),
         ("clf", clf)
     ])
 

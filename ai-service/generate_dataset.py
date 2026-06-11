@@ -1,4 +1,3 @@
-import pandas as pd
 import random
 import os
 
@@ -1151,6 +1150,7 @@ def get_lang_distribution(disease: str) -> list:
         )
 
 def main():
+    import pandas as pd
     rows = []
     
     print("[...] Starting programmatic multilingual dataset generation for 101 diseases in 7 languages...")

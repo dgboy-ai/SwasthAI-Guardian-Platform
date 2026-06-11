@@ -4,7 +4,7 @@ Algorithm     : Logistic Regression Classifier
 Vectorizer    : TF-IDF (unigrams + bigrams)
 Training set  : 44965 samples
 Test set      : 7935 samples
-CV Accuracy   : 70.6% (+/- 0.6%)
+CV Accuracy   : 70.5% (+/- 0.6%)
 Test Accuracy : 71.1%
 
 Disease Classes (101):
@@ -113,107 +113,107 @@ Disease Classes (101):
 Classification Report:
                              precision    recall  f1-score   support
 
-           Acid Esophagitis       0.85      0.69      0.76        75
-Acute Respiratory Infection       0.81      0.63      0.71       105
-          Allergic Rhinitis       0.55      0.79      0.65        75
+           Acid Esophagitis       0.85      0.68      0.76        75
+Acute Respiratory Infection       0.80      0.63      0.70       105
+          Allergic Rhinitis       0.56      0.79      0.65        75
       Amoebic Liver Abscess       0.79      0.65      0.72        75
-                    Anaemia       0.74      0.56      0.64        75
-            Ancylostomiasis       0.92      0.75      0.82        75
-                     Angina       0.67      0.84      0.75        75
-          Anthrax Cutaneous       0.97      0.80      0.88        75
-               Appendicitis       0.88      0.41      0.56       105
-        Arsenicosis Chronic       0.95      0.97      0.96        75
-                 Ascariasis       0.71      0.72      0.72        75
-                     Asthma       0.98      0.57      0.72       105
-      B12 Deficiency Anemia       0.95      0.72      0.82        75
+                    Anaemia       0.73      0.57      0.64        75
+            Ancylostomiasis       0.90      0.73      0.81        75
+                     Angina       0.67      0.85      0.75        75
+          Anthrax Cutaneous       0.97      0.79      0.87        75
+               Appendicitis       0.90      0.41      0.56       105
+        Arsenicosis Chronic       0.94      0.97      0.95        75
+                 Ascariasis       0.70      0.73      0.71        75
+                     Asthma       1.00      0.58      0.73       105
+      B12 Deficiency Anemia       0.96      0.72      0.82        75
           Blackfoot Disease       0.97      0.93      0.95        75
-        Bovine Tuberculosis       0.81      0.63      0.71        75
-                 Bronchitis       0.38      0.51      0.43        75
-                Brucellosis       0.82      0.65      0.73        75
+        Bovine Tuberculosis       0.82      0.65      0.73        75
+                 Bronchitis       0.38      0.52      0.44        75
+                Brucellosis       0.83      0.65      0.73        75
                        COPD       0.55      0.71      0.62        75
      Carpal Tunnel Syndrome       1.00      0.89      0.94        75
-       Cervical Spondylosis       0.83      0.95      0.88        75
-                 Chickenpox       0.54      0.69      0.61        75
-                Chikungunya       0.73      0.31      0.44       105
+       Cervical Spondylosis       0.84      0.95      0.89        75
+                 Chickenpox       0.54      0.68      0.60        75
+                Chikungunya       0.77      0.31      0.45       105
              Cholelithiasis       0.61      0.79      0.69        75
                     Cholera       0.82      0.72      0.77        75
    Chronic Fatigue Syndrome       0.70      0.84      0.76        75
-     Chronic Kidney Disease       0.94      0.68      0.79        75
-             Conjunctivitis       0.68      0.84      0.75        75
-                   Covid-19       0.96      0.50      0.66       105
-       Deep Vein Thrombosis       0.79      0.73      0.76        75
-                     Dengue       0.86      0.79      0.82        75
+     Chronic Kidney Disease       0.96      0.68      0.80        75
+             Conjunctivitis       0.69      0.87      0.77        75
+                   Covid-19       0.94      0.45      0.61       105
+       Deep Vein Thrombosis       0.80      0.75      0.77        75
+                     Dengue       0.89      0.79      0.84        75
         Depression Clinical       0.95      0.75      0.84        75
                    Diabetes       0.86      0.87      0.86        75
-             Dracunculiasis       0.91      0.95      0.93        75
-           Dry Eye Syndrome       0.91      0.79      0.84        75
-                  Dysentery       0.75      0.71      0.73        75
-                     Eczema       0.60      0.81      0.69        75
-               Farmers Lung       0.75      0.64      0.69        75
+             Dracunculiasis       0.90      0.93      0.92        75
+           Dry Eye Syndrome       0.94      0.79      0.86        75
+                  Dysentery       0.73      0.69      0.71        75
+                     Eczema       0.58      0.83      0.69        75
+               Farmers Lung       0.71      0.64      0.67        75
           Fatty Liver NAFLD       0.39      0.77      0.52        75
-                 Filariasis       0.48      0.68      0.56        75
-             Food Poisoning       0.86      0.53      0.66       105
+                 Filariasis       0.50      0.69      0.58        75
+             Food Poisoning       0.90      0.54      0.68       105
                        GERD       0.55      0.80      0.65        75
-       Gestational Diabetes       0.49      0.87      0.62        75
-           Glaucoma Gradual       1.00      0.89      0.94        75
-                     Goitre       0.82      0.83      0.82        75
+       Gestational Diabetes       0.49      0.88      0.63        75
+           Glaucoma Gradual       1.00      0.91      0.95        75
+                     Goitre       0.81      0.85      0.83        75
                        Gout       0.82      0.91      0.86        75
-             HFMD Childhood       0.91      0.77      0.83        75
-                 Heatstroke       0.50      0.59      0.54       105
-           Hookworm Disease       0.79      0.80      0.79        75
-               Hypertension       0.56      0.76      0.65        75
-            Hyperthyroidism       0.94      0.88      0.91        75
+             HFMD Childhood       0.89      0.77      0.83        75
+                 Heatstroke       0.50      0.56      0.53       105
+           Hookworm Disease       0.81      0.81      0.81        75
+               Hypertension       0.56      0.76      0.64        75
+            Hyperthyroidism       0.94      0.87      0.90        75
              Hypothyroidism       0.91      0.83      0.87        75
-                 IBS Stress       0.77      0.68      0.72        75
-             Insomnia Urban       0.84      0.76      0.80        75
-      Japanese Encephalitis       0.56      0.51      0.53        75
-                   Jaundice       0.88      0.65      0.75        75
-                  Kala-Azar       0.81      0.79      0.80        75
+                 IBS Stress       0.76      0.68      0.72        75
+             Insomnia Urban       0.85      0.76      0.80        75
+      Japanese Encephalitis       0.56      0.53      0.55        75
+                   Jaundice       0.89      0.63      0.73        75
+                  Kala-Azar       0.81      0.77      0.79        75
               Kidney Stones       0.87      0.69      0.77        75
-              Leptospirosis       0.70      0.53      0.61        75
-                Listeriosis       0.42      0.57      0.49        75
+              Leptospirosis       0.69      0.55      0.61        75
+                Listeriosis       0.44      0.59      0.50        75
     Lymphatic Elephantiasis       0.65      0.72      0.68        75
-                    Malaria       0.86      0.63      0.73       105
-              Malaria Vivax       0.70      0.76      0.73        75
-                    Measles       0.75      0.53      0.62        75
-                 Meningitis       0.96      0.64      0.77       105
-                   Migraine       0.43      0.88      0.58        75
-              Murine Typhus       0.85      0.70      0.77       105
-         Nutritional Anemia       0.89      0.67      0.76        75
-  Organophosphate Poisoning       0.94      0.85      0.90        75
-               Osteoporosis       0.45      0.71      0.55        75
-               Otitis Media       0.77      0.63      0.69        75
+                    Malaria       0.87      0.62      0.72       105
+              Malaria Vivax       0.71      0.76      0.74        75
+                    Measles       0.75      0.52      0.61        75
+                 Meningitis       0.96      0.65      0.77       105
+                   Migraine       0.43      0.88      0.57        75
+              Murine Typhus       0.83      0.70      0.76       105
+         Nutritional Anemia       0.92      0.65      0.77        75
+  Organophosphate Poisoning       0.96      0.85      0.90        75
+               Osteoporosis       0.44      0.73      0.55        75
+               Otitis Media       0.72      0.63      0.67        75
               PCOS Hormonal       0.90      0.84      0.87        75
-             Panic Disorder       0.97      0.75      0.84        75
+             Panic Disorder       0.97      0.77      0.86        75
        Peptic Ulcer Disease       0.34      0.40      0.37        75
-                  Pneumonia       0.52      0.31      0.39       105
-              Pre-eclampsia       0.94      0.83      0.88        75
-                  Psoriasis       0.50      0.61      0.55        75
-        Psoriatic Arthritis       0.55      0.29      0.38        75
-                     Rabies       0.70      0.64      0.67        75
-       Rheumatoid Arthritis       0.41      0.91      0.56        75
-                   Ringworm       0.88      0.92      0.90        75
-  Rotavirus Gastroenteritis       0.83      0.67      0.74        75
-                    Scabies       0.54      0.73      0.62        75
-            Sciatica Lumbar       0.85      0.93      0.89        75
-             Scorpion Sting       0.65      0.83      0.73        75
-               Scrub Typhus       0.89      0.74      0.81       105
-                Shigellosis       0.65      0.59      0.62        75
-                  Silicosis       0.64      0.64      0.64        75
-         Skeletal Fluorosis       0.97      0.88      0.92        75
-             Skin Infection       0.74      0.65      0.70        75
-                  Snakebite       0.63      0.76      0.69        75
-                 Stroke TIA       0.94      0.64      0.76        75
-                    Tetanus       0.92      0.79      0.85        75
-                Tonsillitis       0.59      0.77      0.67        75
-              Toxoplasmosis       0.70      0.73      0.71        75
-               Tuberculosis       0.68      0.67      0.67        75
-                    Typhoid       0.66      0.71      0.68        75
-                        UTI       0.82      0.91      0.86        75
+                  Pneumonia       0.57      0.32      0.41       105
+              Pre-eclampsia       0.94      0.81      0.87        75
+                  Psoriasis       0.50      0.63      0.56        75
+        Psoriatic Arthritis       0.56      0.31      0.40        75
+                     Rabies       0.68      0.67      0.67        75
+       Rheumatoid Arthritis       0.40      0.91      0.56        75
+                   Ringworm       0.91      0.91      0.91        75
+  Rotavirus Gastroenteritis       0.84      0.68      0.75        75
+                    Scabies       0.55      0.72      0.62        75
+            Sciatica Lumbar       0.86      0.92      0.89        75
+             Scorpion Sting       0.64      0.80      0.71        75
+               Scrub Typhus       0.88      0.74      0.80       105
+                Shigellosis       0.66      0.59      0.62        75
+                  Silicosis       0.63      0.64      0.64        75
+         Skeletal Fluorosis       0.98      0.87      0.92        75
+             Skin Infection       0.74      0.64      0.69        75
+                  Snakebite       0.62      0.76      0.68        75
+                 Stroke TIA       0.96      0.64      0.77        75
+                    Tetanus       0.95      0.77      0.85        75
+                Tonsillitis       0.58      0.76      0.66        75
+              Toxoplasmosis       0.71      0.75      0.73        75
+               Tuberculosis       0.69      0.67      0.68        75
+                    Typhoid       0.67      0.75      0.70        75
+                        UTI       0.83      0.91      0.87        75
                Valley Fever       0.57      0.73      0.64        75
-                Viral Fever       0.35      0.45      0.39        75
-  Vitamin D Deficiency Pain       0.81      0.80      0.81        75
-             Whooping Cough       0.57      0.83      0.67        75
+                Viral Fever       0.37      0.47      0.41        75
+  Vitamin D Deficiency Pain       0.79      0.80      0.79        75
+             Whooping Cough       0.56      0.81      0.66        75
 
                    accuracy                           0.71      7935
                   macro avg       0.75      0.72      0.72      7935
