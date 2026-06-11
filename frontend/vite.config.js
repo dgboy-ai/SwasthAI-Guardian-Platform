@@ -86,4 +86,19 @@ export default defineConfig({
       }
     })
   ],
+  build: {
+    sourcemap: false,
+    cssCodeSplit: true,
+    minify: 'esbuild',
+    rollupOptions: {
+      cache: false,
+      maxParallelFileOps: 3,
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+          ui: ['lucide-react', 'recharts', 'framer-motion', 'leaflet'],
+        }
+      }
+    }
+  }
 })
