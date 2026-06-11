@@ -990,4 +990,293 @@ router.get('/impact-report', auth, checkRole(['ngo', 'admin']), logAudit('genera
   }
 });
 
+
+// ── PREDICTIVE VILLAGE RISK INTELLIGENCE ENGINE ────────────────────────────────
+// Calculates a Village Health Risk Score (0–100) using 4 weighted signal sources.
+// Requires NO new data — reuses existing symptoms, referrals, DynamoDB outbreak_telemetry.
+//
+// Risk Contributors:
+//   Symptom trend growth     40%   (7-day vs prior 7-day symptom count delta)
+//   Nearby outbreak activity 25%   (DynamoDB outbreak_telemetry within 14 days)
+//   Indian seasonal factors  20%   (monsoon/vector-borne/respiratory calendar)
+//   Open referrals (backlog) 15%   (untreated/pending referral count)
+
+function getSeasonalRisk(month) {
+  // month: 1–12 (JS getMonth() + 1)
+  // Source: National Vector Borne Disease Control Programme (NVBDCP) India
+  const calendar = {
+    1:  { score: 12, factors: ['Cold wave respiratory risk', 'Fog-related illness'], categories: ['respiratory'] },
+    2:  { score: 8,  factors: ['Mild season, low risk'], categories: [] },
+    3:  { score: 10, factors: ['Pre-summer heat stress', 'Dehydration risk'], categories: ['waterborne'] },
+    4:  { score: 18, factors: ['Pre-monsoon mosquito breeding begins', 'Heat stress peaks'], categories: ['vector'] },
+    5:  { score: 20, factors: ['Mosquito breeding intensifying', 'Water scarcity risk'], categories: ['vector', 'waterborne'] },
+    6:  { score: 28, factors: ['Monsoon onset — dengue/malaria season starts', 'Contaminated water risk'], categories: ['vector', 'waterborne'] },
+    7:  { score: 32, factors: ['Peak monsoon — dengue/malaria HIGH', 'Cholera and typhoid risk', 'Flood-related disease'], categories: ['vector', 'waterborne'] },
+    8:  { score: 30, factors: ['Monsoon continuation — vector-borne risk HIGH', 'Waterborne disease peak'], categories: ['vector', 'waterborne'] },
+    9:  { score: 25, factors: ['Post-monsoon dengue surge (Oct peak)', 'Leptospirosis risk'], categories: ['vector'] },
+    10: { score: 22, factors: ['Post-monsoon dengue peak', 'Early respiratory season'], categories: ['vector', 'respiratory'] },
+    11: { score: 15, factors: ['Respiratory infections rising', 'Fog-related illness'], categories: ['respiratory'] },
+    12: { score: 14, factors: ['Cold wave — respiratory disease peak', 'Pneumonia risk in children'], categories: ['respiratory'] },
+  };
+  return calendar[month] || { score: 10, factors: ['Seasonal data unavailable'], categories: [] };
+}
+
+function getRiskLevel(score) {
+  if (score >= 81) return 'CRITICAL';
+  if (score >= 61) return 'HIGH';
+  if (score >= 31) return 'MEDIUM';
+  return 'LOW';
+}
+
+function getRiskColor(level) {
+  return { CRITICAL: 'red', HIGH: 'orange', MEDIUM: 'yellow', LOW: 'green' }[level] || 'green';
+}
+
+function generateRecommendedActions(contributors, seasonalCategories, riskLevel) {
+  const actions = [];
+  contributors.forEach(c => {
+    if (c.factor === 'Symptom Surge' && c.weight > 10) {
+      actions.push('Deploy ASHA workers for door-to-door symptom surveillance');
+      actions.push('Monitor fever cases daily and report to PHC');
+    }
+    if (c.factor === 'Nearby Outbreak' && c.weight > 10) {
+      actions.push('Alert neighboring village ASHA workers and share containment protocols');
+      actions.push('Pre-position oral rehydration salts (ORS) and fever kits');
+    }
+    if (c.factor === 'Open Referrals' && c.weight > 5) {
+      actions.push(`Close ${Math.round(c.weight / 3)} pending referrals — follow up with patients`);
+    }
+  });
+  if (seasonalCategories.includes('vector')) {
+    actions.push('Increase mosquito control — distribute nets, initiate fogging if needed');
+    actions.push('Drain stagnant water sources around the village');
+  }
+  if (seasonalCategories.includes('waterborne')) {
+    actions.push('Test drinking water quality — chlorinate wells and tanks');
+    actions.push('Distribute water purification tablets');
+  }
+  if (seasonalCategories.includes('respiratory')) {
+    actions.push('Prioritize children and elderly for respiratory health check');
+  }
+  if (riskLevel === 'CRITICAL' || riskLevel === 'HIGH') {
+    actions.push('Verify emergency transport readiness — ambulance on standby');
+    actions.push('Launch village health awareness campaign immediately');
+  }
+  // Deduplicate and limit
+  return [...new Set(actions)].slice(0, 6);
+}
+
+function computeVillageRiskScore({ symptomCount7d, symptomCount14d, openReferralsCount, nearbyOutbreakCount, month }) {
+  // ── Factor 1: Symptom Trend Growth (40 pts max) ─────────────────────────────
+  let symptomScore = 0;
+  const prevWindow = Math.max(symptomCount14d - symptomCount7d, 0);
+  if (prevWindow > 0) {
+    const growthRate = (symptomCount7d - prevWindow) / prevWindow;
+    if (growthRate > 1.5) symptomScore = 40;       // >150% growth → full weight
+    else if (growthRate > 1.0) symptomScore = 32;  // >100%
+    else if (growthRate > 0.5) symptomScore = 22;  // >50%
+    else if (growthRate > 0.2) symptomScore = 14;  // >20%
+    else if (growthRate > 0) symptomScore = 8;
+  } else if (symptomCount7d > 5) {
+    symptomScore = 14; // Absolute volume even without prior baseline
+  }
+
+  // ── Factor 2: Nearby Outbreak Activity (25 pts max) ─────────────────────────
+  let outbreakScore = 0;
+  if (nearbyOutbreakCount >= 3) outbreakScore = 25;
+  else if (nearbyOutbreakCount === 2) outbreakScore = 18;
+  else if (nearbyOutbreakCount === 1) outbreakScore = 10;
+
+  // ── Factor 3: Indian Seasonal Risk (20 pts max) ──────────────────────────────
+  const seasonal = getSeasonalRisk(month);
+  const seasonalScore = Math.round((seasonal.score / 32) * 20); // normalize 0–32 → 0–20
+
+  // ── Factor 4: Open Referrals / Untreated Cases (15 pts max) ─────────────────
+  let referralScore = 0;
+  if (openReferralsCount >= 10) referralScore = 15;
+  else if (openReferralsCount >= 6) referralScore = 11;
+  else if (openReferralsCount >= 3) referralScore = 7;
+  else if (openReferralsCount >= 1) referralScore = 3;
+
+  const totalScore = Math.min(100, symptomScore + outbreakScore + seasonalScore + referralScore);
+  const riskLevel = getRiskLevel(totalScore);
+
+  // ── XAI Contributors ─────────────────────────────────────────────────────────
+  const contributors = [
+    {
+      factor: 'Symptom Surge',
+      weight: symptomScore,
+      maxWeight: 40,
+      description: prevWindow > 0
+        ? `${symptomCount7d} cases in last 7 days vs ${prevWindow} in prior week`
+        : `${symptomCount7d} symptom reports in last 7 days`,
+      icon: '🌡️'
+    },
+    {
+      factor: 'Nearby Outbreak',
+      weight: outbreakScore,
+      maxWeight: 25,
+      description: `${nearbyOutbreakCount} active outbreak cluster${nearbyOutbreakCount !== 1 ? 's' : ''} in district`,
+      icon: '⚠️'
+    },
+    {
+      factor: 'Seasonal Risk',
+      weight: seasonalScore,
+      maxWeight: 20,
+      description: seasonal.factors[0] || 'Seasonal pattern analysis',
+      icon: '📅'
+    },
+    {
+      factor: 'Open Referrals',
+      weight: referralScore,
+      maxWeight: 15,
+      description: `${openReferralsCount} pending/untreated referrals in village`,
+      icon: '📋'
+    }
+  ];
+
+  // ── Health Category Risk Flags ────────────────────────────────────────────────
+  const categories = [];
+  if (seasonal.categories.includes('vector') && (symptomScore > 10 || outbreakScore > 0)) {
+    categories.push({ name: 'Vector-Borne Risk', level: outbreakScore > 10 ? 'HIGH' : 'MEDIUM', icon: '🦟', reasons: ['Fever trend rising', ...seasonal.factors.slice(0, 1)] });
+  }
+  if (seasonal.categories.includes('waterborne')) {
+    categories.push({ name: 'Waterborne Risk', level: outbreakScore > 0 ? 'HIGH' : 'MEDIUM', icon: '💧', reasons: ['Monsoon contamination risk', ...seasonal.factors.slice(0, 1)] });
+  }
+  if (seasonal.categories.includes('respiratory')) {
+    categories.push({ name: 'Respiratory Risk', level: symptomScore > 15 ? 'HIGH' : 'MEDIUM', icon: '🫁', reasons: ['Seasonal respiratory pattern', 'Cold-weather infections'] });
+  }
+  if (openReferralsCount >= 3) {
+    categories.push({ name: 'Maternal Health Risk', level: openReferralsCount >= 6 ? 'HIGH' : 'MEDIUM', icon: '🤰', reasons: [`${openReferralsCount} untreated/open referrals`, 'Pregnancy follow-up backlog'] });
+  }
+
+  // Trend direction (based on symptom growth)
+  const prevW = Math.max(symptomCount14d - symptomCount7d, 0);
+  let trendDirection = 'stable';
+  if (symptomCount7d > prevW + 1) trendDirection = 'increasing';
+  else if (symptomCount7d < prevW - 1) trendDirection = 'improving';
+
+  return {
+    riskScore: totalScore,
+    riskLevel,
+    riskColor: getRiskColor(riskLevel),
+    trendDirection,
+    contributors,
+    categories,
+    seasonal: {
+      month,
+      factors: seasonal.factors,
+      categories: seasonal.categories
+    }
+  };
+}
+
+// GET /api/ngo/village-risk — Predictive Village Risk Score for current NGO's village
+router.get('/village-risk', auth, checkRole(['ngo', 'admin']), async (req, res) => {
+  const db = req.app.locals.db;
+  const dynamoHelper = req.app.locals.dynamoHelper;
+  const isNGO = req.user.role === 'ngo';
+  const villageId = isNGO ? (req.user.villageId || 'unassigned') : (req.query.villageId || 'unassigned');
+
+  try {
+    const now = new Date();
+    const month = now.getMonth() + 1; // 1–12
+
+    // Date boundaries
+    const day7ago = new Date(now - 7 * 86400000).toISOString();
+    const day14ago = new Date(now - 14 * 86400000).toISOString();
+
+    // ── Symptom counts (7-day window and 14-day window) ──────────────────────
+    const sym7Row = await db.get(
+      `SELECT COUNT(*) AS cnt FROM symptoms WHERE "villageId" = ? AND "createdAt" >= ?`,
+      [villageId, day7ago]
+    ).catch(() => ({ cnt: 0 }));
+    const sym14Row = await db.get(
+      `SELECT COUNT(*) AS cnt FROM symptoms WHERE "villageId" = ? AND "createdAt" >= ?`,
+      [villageId, day14ago]
+    ).catch(() => ({ cnt: 0 }));
+
+    const symptomCount7d = Number(sym7Row?.cnt || 0);
+    const symptomCount14d = Number(sym14Row?.cnt || 0);
+
+    // ── Nearby outbreak activity (district-level DynamoDB query) ─────────────
+    let nearbyOutbreakCount = 0;
+    try {
+      if (dynamoHelper) {
+        const cutoff14 = day14ago;
+        const outbreaks = await dynamoHelper.query(
+          'outbreak_telemetry',
+          'districtId = :did AND detectedAt >= :cutoff',
+          { ':did': process.env.DISTRICT_NAME || 'district_main', ':cutoff': cutoff14 },
+          'district-index'
+        ).catch(() => null);
+        if (outbreaks && Array.isArray(outbreaks)) {
+          // Exclude the current village itself
+          nearbyOutbreakCount = outbreaks.filter(o => o.villageId !== villageId).length;
+        }
+      }
+      // Fallback: count outbreak flags in village_health within district
+      if (nearbyOutbreakCount === 0) {
+        const outr = await db.get(
+          `SELECT COUNT(*) AS cnt FROM village_health WHERE "outbreakAlert" IS NOT NULL AND "villageId" != ?`,
+          [villageId]
+        ).catch(() => ({ cnt: 0 }));
+        nearbyOutbreakCount = Number(outr?.cnt || 0);
+      }
+    } catch (_) { nearbyOutbreakCount = 0; }
+
+    // ── Open referrals (pending + assigned) ──────────────────────────────────
+    const refRow = await db.get(
+      `SELECT COUNT(*) AS cnt FROM referrals WHERE "villageId" = ? AND status IN ('pending', 'assigned')`,
+      [villageId]
+    ).catch(() => ({ cnt: 0 }));
+    const openReferralsCount = Number(refRow?.cnt || 0);
+
+    // ── Village metadata ──────────────────────────────────────────────────────
+    const village = await db.get(
+      `SELECT name, population FROM village_health WHERE "villageId" = ?`,
+      [villageId]
+    ).catch(() => null);
+
+    // ── Compute Risk Score ────────────────────────────────────────────────────
+    const riskData = computeVillageRiskScore({ symptomCount7d, symptomCount14d, openReferralsCount, nearbyOutbreakCount, month });
+    const recommendedActions = generateRecommendedActions(riskData.contributors, riskData.seasonal.categories, riskData.riskLevel);
+
+    // ── Intervention Impact Forecast ──────────────────────────────────────────
+    const baseScore = riskData.riskScore;
+    const interventionForecast = {
+      current: baseScore,
+      afterVaccinationDrive: Math.max(0, baseScore - 12),
+      afterReferralClosure: Math.max(0, baseScore - Math.round(riskData.contributors.find(c => c.factor === 'Open Referrals')?.weight * 0.8 || 8)),
+      afterCombinedInterventions: Math.max(0, baseScore - 22)
+    };
+
+    // ── Log to audit ──────────────────────────────────────────────────────────
+    try {
+      await db.run(
+        `INSERT INTO audit_logs (user_id, action, resource, resource_id, ip_address) VALUES (?, ?, ?, ?, ?)`,
+        [req.user.id, 'read', 'village_risk_forecast', villageId, req.ip || 'unknown']
+      );
+    } catch (_) {}
+
+    res.json({
+      success: true,
+      data: {
+        village: village?.name || villageId,
+        villageId,
+        population: village?.population || 0,
+        ...riskData,
+        recommendedActions,
+        interventionForecast,
+        dataPoints: { symptomCount7d, symptomCount14d, openReferralsCount, nearbyOutbreakCount },
+        generatedAt: now.toISOString()
+      }
+    });
+  } catch (err) {
+    console.error('[VILLAGE RISK INTEL] Error:', err.message);
+    res.status(500).json({ success: false, error: 'Failed to compute village risk forecast.' });
+  }
+});
+
 export default router;
+

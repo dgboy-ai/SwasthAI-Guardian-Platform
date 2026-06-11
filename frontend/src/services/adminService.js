@@ -207,7 +207,27 @@ const adminService = {
     } catch (error) {
       throw error.response?.data?.error || 'Failed to fetch audit logs';
     }
+  },
+
+  // Predictive Village Risk Intelligence
+  getDistrictRiskHeatmap: async () => {
+    try {
+      const res = await api.get('/admin/district-risk-heatmap');
+      return res.data;
+    } catch (error) {
+      throw error.response?.data?.error || 'Failed to fetch district risk heatmap';
+    }
+  },
+
+  getVillageRiskDetail: async (villageId) => {
+    try {
+      const res = await api.get(`/admin/village-risk/${encodeURIComponent(villageId)}`);
+      return res.data;
+    } catch (error) {
+      throw error.response?.data?.error || 'Failed to fetch village risk detail';
+    }
   }
 };
 
 export default adminService;
+

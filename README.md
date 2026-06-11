@@ -47,6 +47,9 @@ SwasthAI is framed as a B2B district operations platform: the buyer is a distric
 - ✅ **Passwordless QR-Code Login** — Aadhaar/village-card QR scanning for quick villager login in zero-connectivity zones
 - ✅ **Explainable AI (XAI) Pregnancy Risk Panel** — Dynamic breakdown of maternal contributor weights (blood pressure, blood sugar, etc.), trend velocity tracking, and WHO/MoHFW specific advice guidelines
 - ✅ **Pediatric Skin Triage (Child Mode)** — Auto-escalation of red-flag symptoms (breathing difficulty, high fever, lethargy) directly to emergency status, soft-phrased triage categories, and child-safe safety advice (cautioning against adult steroid/cosmetic creams)
+- ✅ **NGO Impact Analytics & B2B Monthly Reports** — Real-time grant-proof dashboard for NGOs/CSR partners: referral closure rates, vaccination completion rates, Risk Watchlist (high-risk pregnancies, overdue vaccinations, emergency cases), Top Performers leaderboard, and Recommended Actions engine. PDF export via browser print.
+- ✅ **Predictive Village Risk Intelligence (Early Warning System — Layer 2)** — Dual-layer public health intelligence: Layer 1 (Outbreak Radar) detects active clusters; Layer 2 (new) *forecasts elevated village risk before outbreaks begin* using a weighted 4-signal engine (symptom trend growth 40%, nearby outbreak proximity 25%, NVBDCP Indian seasonal calendar 20%, referral backlog 15%). District-level heatmap for admins, XAI contributor breakdown, health category risk flags, actionable prevention checklist, and an Intervention Impact Forecast simulator showing projected risk reduction from vaccination drives, referral closure, and combined interventions.
+
 
 <details>
 <summary>📋 Full technical hardening log (15 more items)</summary>

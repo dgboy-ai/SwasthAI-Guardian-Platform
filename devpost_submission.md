@@ -1,6 +1,6 @@
 # SwasthAI Guardian: Integrated Rural Health Platform
 
-> **Note to Judges:** Our attached demo video showcases the V1 foundation of our platform. Below is the documentation for our **V2 Production Upgrade**, which introduces Grounded RAG, Offline Login,  Local Offline Maternal/Child Sync, and an Autonomous Outbreak Agent. check GitHub Readme.md for v1 and v2 differences
+> **Note to Judges:** Our attached demo video showcases the V1 foundation of our platform. Below is the documentation for our **V3 Production Upgrade**, which introduces Grounded RAG, Offline Login, Local Offline Maternal/Child Sync, Autonomous Outbreak Agent, NGO B2B Impact Analytics, and the Predictive Village Risk Intelligence Early Warning System. Check GitHub Readme.md for full changelog.
 
 A production-grade, AI-powered B2B district health operations platform for rural India. It connects villagers, ASHA health workers, NGOs, and district health offices through real machine learning, offline-first workflows, regional language support, and live AWS database proof.
 
@@ -29,7 +29,8 @@ Most health applications simply call a third-party AI API and display the result
 | **"Sakhi" Women's Health AI** | Generic conversational LLM chatbot. | Our private conversational AI for women's health is now powered by a **Grounded RAG** system with **243 knowledge chunks** (2-sentence sliding-window overlap, 15+ clinical categories) from WHO/MoHFW/FOGSI/ASHA/UNICEF sources. The retrieval threshold is **calibrated to 0.45** via a 50-query precision/recall grid search (F1=1.00). Sakhi now has **full conversation memory** — dual-track (frontend localStorage history + server-side session cache), so she remembers context across turns. Every answer cites its source and fails over to the top KB chunk if Groq is unavailable. |
 | **Under-the-Hood Offline Sync (Maternal & Child Health)** | Required active internet connection for patient registrations. | NGO/ASHA workers can now register maternal pregnancy vitals and child nutrition assessments in zero-signal zones. The app computes risk levels and growth status instantly client-side using **local clinical heuristic engines** (WHO blood pressure criteria and BMI Z-score indexes), queuing records locally with visual **"Sync Pending"** indicators, and silently uploading them as soon as the browser detects an internet signal. |
 | **Edge Visual Guardrails & Image Compression** | Standard high-resolution photo uploads, prone to failure on spotty connections. | Before analyzing skin photos, a **browser-side JavaScript Canvas analysis layer** downscales the image to a 16x16 grid in sub-milliseconds to verify skin tone presence, standard deviation (blank checks), and structural edge density (blur checks). A server-side Pillow validator provides a secondary confirmation pass. If passed, the image is compressed from 5MB+ down to less than 200KB on-the-fly using the browser-image-compression library to guarantee successful uploads over 2G/3G connections. |
-| **Agentic Outbreak Radar** | None / Manual epidemiology reporting. | An autonomous background AI agent scans village clinical data every 30 minutes. If it detects a localized symptom cluster (e.g., 5+ cases of fever in one village within 24 hours), it triggers instant, targeted notifications for both District Admins and local ASHA workers to stop outbreaks before they become epidemics. |
+| **Agentic Outbreak Radar (Layer 1)** | None / Manual epidemiology reporting. | An autonomous background AI agent scans village clinical data every 30 minutes. If it detects a localized symptom cluster (e.g., 5+ cases of fever in one village within 24 hours), it triggers instant, targeted notifications for both District Admins and local ASHA workers to stop outbreaks before they become epidemics. |
+| **Predictive Village Risk Intelligence (Layer 2)** | Outbreak alerts only — no proactive risk forecasting. | A new Early Warning System forecasts elevated village-level health risk *before outbreaks begin*, using a transparent weighted engine: symptom trend growth (40%), nearby outbreak proximity (25%), Indian seasonal NVBDCP calendar (20%), and referral backlog (15%). Admins see a district-wide risk heatmap; each village has a drilldown with XAI contributor bars, health category flags, recommended prevention actions, and an Intervention Impact Forecast simulator showing projected risk reduction. NGO workers see their village's Risk Forecast tab. Works offline with graceful demo fallback. |
 | **Hardened Offline-First Login** | Required active network signal to log in. | We engineered a clearly labeled **Judge/Demo Offline Login**. Demo credentials are pre-seeded into a local credential-hash cache on the first page load for evaluation. Production replacement is documented as encrypted device credential cache or WebAuthn/device-bound refresh tokens; the app displays visible offline/demo mode labeling so this is not mistaken for production security. |
 | **Smart Share Peer-to-Peer** | Standard app store or download link distribution. | A high-visibility Share Button generates a **Dynamic QR Code**, allowing villagers and ASHA workers to distribute the PWA instantly without needing an app store or internet connection. |
 | **Full Native Localization & Voice** | Basic English-only, text-only interface. | The entire platform dynamically supports **7 languages natively** (English, Hindi, Hinglish, Marathi, Tamil, Telugu, and Bengali) with Voice-to-Text integration ensuring non-literate users can interact with complex medical AI seamlessly. |
@@ -115,6 +116,8 @@ The Admin dashboard includes a Production Evidence panel that calls `/api/health
 *   **Child Nutrition Monitor** with Z-score, BMI, and malnutrition analysis operating entirely offline.
 *   **Village Health Dashboard** for local population health statistics.
 *   **AI Outbreak Alerts** for disease cluster detection in assigned villages.
+*   **🔮 Risk Forecast Tab** — AI-powered predictive village risk score (0–100) with XAI contributor breakdown (symptom surge, seasonal risk, nearby outbreaks, referral backlog), health category flags, recommended prevention actions, and Intervention Impact Forecast simulator.
+*   **📊 Impact Analytics & B2B Monthly Reports** — Grant-proof dashboard with referral closure rates, vaccination completion rates, Risk Watchlist, Top Performers leaderboard, Recommended Actions engine, and PDF export.
 *   **Emergency Ambulance Feed** for local emergency requests.
 *   **Smart Share QR System** to instantly distribute the app in rural areas.
 *   **Offline Login & Sync** for low-connectivity environments.
@@ -124,7 +127,8 @@ The Admin dashboard includes a Production Evidence panel that calls `/api/health
 ### 🏛️ Admin Features
 
 *   **District Analytics Dashboard** with real-time village health insights.
-*   **Agentic Outbreak Radar** for autonomous epidemic detection.
+*   **Agentic Outbreak Radar (Layer 1)** for autonomous epidemic detection — identifies active clusters every 30 minutes.
+*   **🗺️ Predictive Village Risk Intelligence (Layer 2)** — District-wide risk heatmap with color-coded village cards (GREEN→RED), sorted by risk score. Click any village to open a drilldown with XAI contributor bars, intervention impact forecast, and recommended actions. Complements the Outbreak Radar with proactive early warning signals.
 *   **Village Registry Management** for ASHA/NGO worker assignments.
 *   **CSV Export System** for compliant government health reporting.
 *   **Emergency Request Monitoring** with dynamic ambulance feeds.
@@ -191,6 +195,8 @@ The Admin dashboard includes a Production Evidence panel that calls `/api/health
 *   Developed **under-the-hood text and image guardrails** that protect the model against noise.
 *   Developed complete **offline Login, Registration, and maternal/child sync** registry.
 *   Created an **autonomous AI outbreak detection system** running on 30-minute intervals.
+*   Built a **Predictive Village Risk Intelligence engine** — a transparent, weighted 4-signal forecasting system (symptom trends, seasonal NVBDCP calendar, outbreak proximity, referral backlogs) giving India's health system proactive early warning before epidemics begin.
+*   Delivered **B2B NGO Impact Analytics** with grant-proof metrics, leaderboards, risk watchlists, and PDF exports — turning operational data into actionable intelligence for NGO grant applications.
 *   Achieved **100% multilingual translation key synchronization (366 unique keys)** across **7 Indian languages** (including Hinglish) with voice interaction.
 *   Designed a highly polished, production-grade offline-first PWA.
 *   Built a **V2 Clinical Heuristic Fallback** that refuses uncertain disease guesses and returns conservative ASHA-grounded next steps when models are uncertain.

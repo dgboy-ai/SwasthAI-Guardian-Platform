@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import {
   LayoutDashboard, Radio, Heart, Baby, Truck,
   WifiOff, BrainCircuit, BarChart3, Settings,
-  Bell, ChevronRight, ChevronLeft, X, HeartPulse
+  Bell, ChevronRight, ChevronLeft, X, HeartPulse, TrendingUp
 } from 'lucide-react';
 import adminService from '../services/adminService';
 import api from '../services/api';
@@ -17,12 +17,14 @@ import AIIntelligenceView from './components/AIIntelligenceView';
 import ReportsView from './components/ReportsView';
 import SystemStatusView from './components/SystemStatusView';
 import MaternalNutritionView from './components/MaternalNutritionView';
+import PredictiveRiskView from './components/PredictiveRiskView';
 import { stackStatusMeta, timeAgo } from './components/utils';
 
 /* ─── Sidebar nav ─────────────────────────────────────────────────────────── */
 const NAV_ITEMS = [
   { id: 'command', label: 'Command Center', icon: LayoutDashboard },
   { id: 'outbreak', label: 'Outbreak Radar', icon: Radio },
+  { id: 'risk-intel', label: 'Risk Intelligence', icon: TrendingUp, badge: 'NEW' },
   { id: 'maternal', label: 'Maternal Health', icon: Heart },
   { id: 'nutrition', label: 'Child Nutrition', icon: Baby },
   { id: 'ambulance', label: 'Ambulance Feed', icon: Truck },
@@ -466,7 +468,10 @@ export default function AdminDashboard() {
               >
                 <item.icon className={`w-4 h-4 shrink-0 ${active ? 'text-white' : 'text-white/50'}`} style={active && sidebarCollapsed ? { color: '#ffffff' } : {}} />
                 {!sidebarCollapsed && (
-                  <span className={`text-[12.5px] font-semibold truncate animate-in fade-in duration-200 ${active ? 'font-bold' : ''}`}>{item.label}</span>
+                  <span className={`text-[12.5px] font-semibold truncate animate-in fade-in duration-200 ${active ? 'font-bold' : ''} flex items-center gap-1.5`}>
+                    {item.label}
+                    {item.badge && <span className="px-1 py-0.5 bg-violet-400 text-white text-[7px] font-black rounded uppercase tracking-wider">{item.badge}</span>}
+                  </span>
                 )}
                 {active && !sidebarCollapsed && <ChevronRight className="w-3.5 h-3.5 ml-auto opacity-70 shrink-0" />}
               </button>
@@ -633,6 +638,10 @@ export default function AdminDashboard() {
               alertError={alertError}
               downloadReport={downloadReport}
             />
+          )}
+
+          {activeView === 'risk-intel' && (
+            <PredictiveRiskView judgeDemoMode={judgeDemoMode} />
           )}
 
           {activeView === 'ambulance' && (

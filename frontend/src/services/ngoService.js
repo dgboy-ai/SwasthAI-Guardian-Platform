@@ -157,6 +157,17 @@ const ngoService = {
     }
   },
 
+  // Predictive Village Risk Intelligence
+  getVillageRisk: async (villageId) => {
+    try {
+      const params = villageId ? `?villageId=${encodeURIComponent(villageId)}` : '';
+      const res = await api.get(`/ngo/village-risk${params}`);
+      return res.data;
+    } catch (error) {
+      throw error.response?.data?.error || 'Failed to fetch village risk forecast';
+    }
+  },
+
   // Impact Analytics Monthly Report
   getImpactReport: async () => {
     try {

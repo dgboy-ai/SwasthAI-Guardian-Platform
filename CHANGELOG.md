@@ -2,6 +2,16 @@
 
 All notable changes and feature developments completed during the hackathon window are documented in this file chronologically.
 
+## June 11, 2026
+### Added
+- **AWS Database Cloud Integration (Aurora PostgreSQL & DynamoDB)**:
+  - Configured and deployed production-ready Amazon Aurora PostgreSQL Serverless v2 cluster (`swasthai-cluster`) running under custom budget caps (0.5 to 1.0 ACUs) to optimize credits.
+  - Initialized all relational tables (symptoms, pregnancy, malnutrition, referrals, vaccinations, audit logs) on AWS database cluster via automated Node.js backend migrations.
+  - Bootstrapped and optimized 4 Amazon DynamoDB tables (`outbreak_telemetry`, `sync_queues`, `village_node_state`, `emergency_streams`) on AWS with correct composite primary keys, TTL policies (`expiresAt`), and Global Secondary Indexes (`disease-index`, `district-time-index`, `status-index`, `priority-index`, `district-date-index`) to prevent table scans.
+  - Implemented production-grade AWS IAM credential authentication policies (`AmazonDynamoDBFullAccess` for `swasthai-app-user`) to secure data transfers.
+  - Successfully executed remote seeding operations, populating the live cloud database with default operational datasets.
+  - Custom-configured deployment metadata settings (district: `Gwalior`, state: `Madhya Pradesh`) in environment configurations to target localized regional deployment.
+
 ## June 10, 2026
 ### Added
 - **Explainable AI (XAI) Maternal Pregnancy Risk Panel**:
@@ -21,6 +31,36 @@ All notable changes and feature developments completed during the hackathon wind
   - Integrated report generation with audit logs inside the database.
   - Built the `Impact Analytics` interactive tab inside `NGODashboard.jsx` showcasing real-time B2B metrics, MoM trends, and recommended actions.
   - Engineered zero-dependency PDF report printing styles inside `index.css` via custom `@media print` CSS overrides for clean, professional PDF exports.
+- **Predictive Village Risk Intelligence (Early Warning System) — Layer 2**:
+  - Designed and implemented a **dual-layer public health intelligence architecture**:
+    - Layer 1 (existing): Outbreak Radar — "What is happening right now?"
+    - Layer 2 (new): Predictive Village Risk Intelligence — "What may happen next?"
+  - Built a weighted, multi-signal **Village Health Risk Score engine** (0–100) using:
+    - Symptom trend growth (40%): 7-day vs prior 7-day symptom count delta
+    - Nearby outbreak cluster activity (25%): DynamoDB `outbreak_telemetry` within 14 days
+    - Indian seasonal risk calendar (20%): NVBDCP-sourced month-by-month vector/waterborne/respiratory risk scoring
+    - Open referral backlog (15%): pending/assigned referral count per village
+  - Added `GET /api/ngo/village-risk` endpoint (NGO-scoped) with XAI contributor breakdown, health category flags, trend direction, recommended actions, and intervention impact forecast.
+  - Added `GET /api/admin/district-risk-heatmap` endpoint — district-wide ranking of all villages by risk score.
+  - Added `GET /api/admin/village-risk/:villageId` endpoint — admin unscoped single-village risk drilldown.
+  - Created new `PredictiveRiskView.jsx` Admin component:
+    - District risk heatmap with color-coded village cards (GREEN/YELLOW/ORANGE/RED) sorted by score descending
+    - Village drilldown panel with XAI contributor bars, health category flag cards, and recommended actions checklist
+    - **Intervention Impact Forecast simulator** showing projected score reduction for: vaccination drive, referral closure, combined interventions
+    - Dual-layer architecture explainer banner
+    - Filter bar by risk level (ALL / CRITICAL / HIGH / MEDIUM / LOW)
+  - Added `Risk Intelligence` nav item with `NEW` badge to Admin Dashboard sidebar
+  - Added `🔮 Risk Forecast` tab to NGO Dashboard with:
+    - Large animated risk score gauge with level color coding
+    - Trend direction indicator (↑ Increasing / ↓ Improving / → Stable)
+    - XAI contributor breakdown bars (4 factors with % weights and progress animation)
+    - Health category risk flags (Vector-Borne, Respiratory, Waterborne, Maternal Health)
+    - Recommended prevention actions checklist
+    - Collapsible Intervention Impact Forecast simulator
+  - Fully offline-capable with graceful demo fallback — works in Judge Demo Mode
+  - Zero new data sources required — all signals reuse existing `symptoms`, `referrals`, `village_health`, and DynamoDB tables
+  - Frontend production build: ✓ built in 8.57s — zero errors
+
 
 ## June 8, 2026
 ### Added

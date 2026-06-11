@@ -25,32 +25,35 @@ This document contains step-by-step instructions to configure Amazon Web Service
 
 ---
 
-## Phase 1: AWS Database Provisioning (Free Tier)
+## Phase 1: AWS Database Provisioning (#H0Hackathon Compliance)
 
-### Step 1.1: Set up Amazon RDS (PostgreSQL Database)
+### Step 1.1: Set up Amazon Aurora PostgreSQL (Serverless v2)
 1. Sign in to the [AWS Management Console](https://aws.amazon.com/console/).
 2. In the search bar at the top, type **RDS** and click on the RDS service.
 3. Click the orange **Create database** button.
-4. Choose **Standard create** and select **PostgreSQL** as the Engine type.
-5. Under **Templates**, select **Free tier** (this is critical to ensure zero charges).
+4. Choose **Standard create** and select **Aurora (PostgreSQL Compatible)** as the Engine type.
+5. Under **Templates**, select **Dev/Test** (or default to Serverless v2).
 6. Under **Settings**:
-   - **DB instance identifier**: `swasthai-db`
+   - **DB cluster identifier**: `swasthai-cluster`
    - **Master username**: `postgres`
    - **Master password**: Set a strong password (write this down).
-7. Under **Connectivity**:
+7. Under **Instance configuration**:
+   - Select **Serverless v2**.
+   - Set Capacity range: **Minimum ACUs = 0.5**, **Maximum ACUs = 1.0** (this minimizes credit consumption).
+8. Under **Connectivity**:
    - **Publicly accessible**: Select **Yes** (required so Render/Vercel can connect).
    - Under **VPC security group**, choose **Create new** and name it `swasthai-db-security-group`.
-8. Scroll to the bottom and click **Create database**.
-9. Once created (status changes to *Available*), click on the DB name and copy the **Endpoint** URL (e.g., `swasthai-db.xxxx.ap-south-1.rds.amazonaws.com`).
+9. Scroll to the bottom and click **Create database**.
+10. Once created (status changes to *Available*), click on the DB cluster name, go to the **Connectivity & security** tab, and copy the **Writer Endpoint** URL (e.g., `swasthai-cluster.cluster-xxxx.ap-south-1.rds.amazonaws.com`).
 
 #### Configure DB Security Group for Connections:
-1. In the database details panel, click on the active Security Group link.
-2. Under **Inbound rules**, click **Edit inbound rules**.
+1. In the database details panel (Connectivity & security), click on the active VPC Security Group link.
+2. Select the security group, click the **Inbound rules** tab, and click **Edit inbound rules**.
 3. Add a rule: Type = **PostgreSQL**, Port = `5432`, Source = **Anywhere-IPv4** (`0.0.0.0/0`). Save the rules.
 
-Your PostgreSQL connection string (`DATABASE_URL`) will be:
+Your Aurora PostgreSQL connection string (`DATABASE_URL`) will be:
 ```
-postgresql://postgres:<your_password>@<your-rds-endpoint>:5432/postgres
+postgresql://postgres:<your_password>@<your-aurora-writer-endpoint>:5432/postgres
 ```
 
 ---
@@ -63,35 +66,49 @@ postgresql://postgres:<your_password>@<your-rds-endpoint>:5432/postgres
 - **Table name**: `outbreak_telemetry`
 - **Partition key**: `villageId` (String)
 - **Sort key**: `detectedAt` (String)
-- Click **Create table**. Once created, select the table → **Indexes** tab → **Create local/global index**:
-  - **Index type**: Global secondary index
-  - **Partition key**: `disease` (String)
-  - **Sort key**: `detectedAt` (String)
-  - **Index name**: `disease-index`
+- Click **Create table**. Once created, select the table → **Indexes** tab → **Create index** (Global secondary index):
+  - **Index 1**:
+    - **Partition key**: `disease` (String)
+    - **Sort key**: `detectedAt` (String)
+    - **Index name**: `disease-index`
+    - **Attribute projections**: All
+  - **Index 2**:
+    - **Partition key**: `districtId` (String)
+    - **Sort key**: `detectedAt` (String)
+    - **Index name**: `district-time-index`
+    - **Attribute projections**: All
 
 #### 2. Sync Queues Table
 - **Table name**: `sync_queues`
 - **Partition key**: `deviceId` (String)
 - **Sort key**: `queuedAt` (String)
-- Once created, add GSI:
+- Once created, select the table → **Indexes** tab → **Create index**:
   - **Partition key**: `status` (String)
   - **Sort key**: `queuedAt` (String)
   - **Index name**: `status-index`
+  - **Attribute projections**: All
 
 #### 3. Village Node State Table
 - **Table name**: `village_node_state`
 - **Partition key**: `villageId` (String)
-- Once created, scroll down to **Additional settings** → **Time to Live (TTL)** → Click **Turn on**:
+- Once created, scroll down to **Additional settings** or the **Indexes/TTL** tab → **Time to Live (TTL)** → Click **Turn on** or **Manage TTL**:
   - **TTL attribute**: `expiresAt`
 
 #### 4. Emergency Streams Table
 - **Table name**: `emergency_streams`
 - **Partition key**: `districtId` (String)
 - **Sort key**: `streamId` (String)
-- Once created, add GSI:
-  - **Partition key**: `priority` (String)
-  - **Sort key**: `streamId` (String)
-  - **Index name**: `priority-index`
+- Once created, select the table → **Indexes** tab → **Create index**:
+  - **Index 1**:
+    - **Partition key**: `priority` (String)
+    - **Sort key**: `streamId` (String)
+    - **Index name**: `priority-index`
+    - **Attribute projections**: All
+  - **Index 2**:
+    - **Partition key**: `districtDateBucket` (String)
+    - **Sort key**: `timestamp` (String)
+    - **Index name**: `district-date-index`
+    - **Attribute projections**: All
 
 ---
 

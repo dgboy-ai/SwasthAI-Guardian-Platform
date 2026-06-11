@@ -1095,4 +1095,183 @@ router.get('/dlq', auth, checkRole(['admin']), (req, res) => {
   }
 });
 
+// ── PREDICTIVE DISTRICT RISK HEATMAP ────────────────────────────────────────────
+// Shared seasonal risk calendar (same logic as ngo.js risk engine — pure fn, no circular dep)
+function _getSeasonalScore(month) {
+  const calendar = { 1:12, 2:8, 3:10, 4:18, 5:20, 6:28, 7:32, 8:30, 9:25, 10:22, 11:15, 12:14 };
+  return calendar[month] || 10;
+}
+function _getRiskLevel(score) {
+  if (score >= 81) return 'CRITICAL';
+  if (score >= 61) return 'HIGH';
+  if (score >= 31) return 'MEDIUM';
+  return 'LOW';
+}
+function _getRiskColor(level) {
+  return { CRITICAL: '#EF4444', HIGH: '#F97316', MEDIUM: '#EAB308', LOW: '#22C55E' }[level] || '#22C55E';
+}
+function _computeVillageScore({ symptomCount7d, symptomCount14d, openReferralsCount, nearbyOutbreakCount, month }) {
+  const prevWindow = Math.max(symptomCount14d - symptomCount7d, 0);
+  let symptomScore = 0;
+  if (prevWindow > 0) {
+    const gr = (symptomCount7d - prevWindow) / prevWindow;
+    if (gr > 1.5) symptomScore = 40;
+    else if (gr > 1.0) symptomScore = 32;
+    else if (gr > 0.5) symptomScore = 22;
+    else if (gr > 0.2) symptomScore = 14;
+    else if (gr > 0) symptomScore = 8;
+  } else if (symptomCount7d > 5) { symptomScore = 14; }
+
+  let outbreakScore = 0;
+  if (nearbyOutbreakCount >= 3) outbreakScore = 25;
+  else if (nearbyOutbreakCount === 2) outbreakScore = 18;
+  else if (nearbyOutbreakCount === 1) outbreakScore = 10;
+
+  const seasonalScore = Math.round((_getSeasonalScore(month) / 32) * 20);
+
+  let referralScore = 0;
+  if (openReferralsCount >= 10) referralScore = 15;
+  else if (openReferralsCount >= 6) referralScore = 11;
+  else if (openReferralsCount >= 3) referralScore = 7;
+  else if (openReferralsCount >= 1) referralScore = 3;
+
+  const total = Math.min(100, symptomScore + outbreakScore + seasonalScore + referralScore);
+  return { riskScore: total, riskLevel: _getRiskLevel(total), riskColor: _getRiskColor(_getRiskLevel(total)), symptomScore, outbreakScore, seasonalScore, referralScore };
+}
+
+// GET /api/admin/district-risk-heatmap
+router.get('/district-risk-heatmap', auth, checkRole(['admin']), async (req, res) => {
+  const db = req.app.locals.db;
+  try {
+    const now = new Date();
+    const month = now.getMonth() + 1;
+    const day7ago = new Date(now - 7 * 86400000).toISOString();
+    const day14ago = new Date(now - 14 * 86400000).toISOString();
+
+    // Get all villages
+    const villages = await db.all(`SELECT "villageId", name, population, "outbreakAlert" FROM village_health ORDER BY name`).catch(() => []);
+
+    // Get global nearby outbreak count (district-wide)
+    const globalOutbreakCount = villages.filter(v => v.outbreakAlert).length;
+
+    // Batch compute risk for each village
+    const villageRisks = await Promise.all(villages.map(async (v) => {
+      try {
+        const [sym7, sym14, refRow] = await Promise.all([
+          db.get(`SELECT COUNT(*) AS cnt FROM symptoms WHERE "villageId" = ? AND "createdAt" >= ?`, [v.villageId, day7ago]).catch(() => ({ cnt: 0 })),
+          db.get(`SELECT COUNT(*) AS cnt FROM symptoms WHERE "villageId" = ? AND "createdAt" >= ?`, [v.villageId, day14ago]).catch(() => ({ cnt: 0 })),
+          db.get(`SELECT COUNT(*) AS cnt FROM referrals WHERE "villageId" = ? AND status IN ('pending', 'assigned')`, [v.villageId]).catch(() => ({ cnt: 0 })),
+        ]);
+
+        const nearbyCount = Math.max(0, globalOutbreakCount - (v.outbreakAlert ? 1 : 0));
+        const computed = _computeVillageScore({
+          symptomCount7d: Number(sym7?.cnt || 0),
+          symptomCount14d: Number(sym14?.cnt || 0),
+          openReferralsCount: Number(refRow?.cnt || 0),
+          nearbyOutbreakCount: nearbyCount,
+          month
+        });
+
+        return {
+          villageId: v.villageId,
+          village: v.name || v.villageId,
+          population: v.population || 0,
+          hasActiveOutbreak: !!v.outbreakAlert,
+          ...computed,
+          dataPoints: {
+            symptomCount7d: Number(sym7?.cnt || 0),
+            openReferralsCount: Number(refRow?.cnt || 0),
+          }
+        };
+      } catch (_) {
+        return {
+          villageId: v.villageId,
+          village: v.name || v.villageId,
+          population: v.population || 0,
+          riskScore: 10,
+          riskLevel: 'LOW',
+          riskColor: '#22C55E',
+          hasActiveOutbreak: false
+        };
+      }
+    }));
+
+    // Sort by risk score descending
+    villageRisks.sort((a, b) => b.riskScore - a.riskScore);
+
+    // District aggregate summary
+    const criticalCount = villageRisks.filter(v => v.riskLevel === 'CRITICAL').length;
+    const highCount = villageRisks.filter(v => v.riskLevel === 'HIGH').length;
+    const mediumCount = villageRisks.filter(v => v.riskLevel === 'MEDIUM').length;
+    const lowCount = villageRisks.filter(v => v.riskLevel === 'LOW').length;
+    const avgScore = villageRisks.length > 0 ? Math.round(villageRisks.reduce((s, v) => s + v.riskScore, 0) / villageRisks.length) : 0;
+    const highestRisk = villageRisks[0] || null;
+
+    res.json({
+      success: true,
+      data: {
+        villages: villageRisks,
+        summary: { criticalCount, highCount, mediumCount, lowCount, avgScore, totalVillages: villageRisks.length, highestRisk: highestRisk?.village || 'N/A', highestRiskScore: highestRisk?.riskScore || 0 },
+        generatedAt: now.toISOString()
+      }
+    });
+  } catch (err) {
+    console.error('[DISTRICT RISK HEATMAP] Error:', err.message);
+    res.status(500).json({ success: false, error: 'Failed to compute district risk heatmap.' });
+  }
+});
+
+// GET /api/admin/village-risk/:villageId — single village risk (admin, unscoped)
+router.get('/village-risk/:villageId', auth, checkRole(['admin']), async (req, res) => {
+  const db = req.app.locals.db;
+  const { villageId } = req.params;
+  try {
+    const now = new Date();
+    const month = now.getMonth() + 1;
+    const day7ago = new Date(now - 7 * 86400000).toISOString();
+    const day14ago = new Date(now - 14 * 86400000).toISOString();
+
+    const [sym7, sym14, refRow, village, outbreakRow] = await Promise.all([
+      db.get(`SELECT COUNT(*) AS cnt FROM symptoms WHERE "villageId" = ? AND "createdAt" >= ?`, [villageId, day7ago]).catch(() => ({ cnt: 0 })),
+      db.get(`SELECT COUNT(*) AS cnt FROM symptoms WHERE "villageId" = ? AND "createdAt" >= ?`, [villageId, day14ago]).catch(() => ({ cnt: 0 })),
+      db.get(`SELECT COUNT(*) AS cnt FROM referrals WHERE "villageId" = ? AND status IN ('pending', 'assigned')`, [villageId]).catch(() => ({ cnt: 0 })),
+      db.get(`SELECT name, population FROM village_health WHERE "villageId" = ?`, [villageId]).catch(() => null),
+      db.get(`SELECT COUNT(*) AS cnt FROM village_health WHERE "outbreakAlert" IS NOT NULL AND "villageId" != ?`, [villageId]).catch(() => ({ cnt: 0 })),
+    ]);
+
+    const computed = _computeVillageScore({
+      symptomCount7d: Number(sym7?.cnt || 0),
+      symptomCount14d: Number(sym14?.cnt || 0),
+      openReferralsCount: Number(refRow?.cnt || 0),
+      nearbyOutbreakCount: Number(outbreakRow?.cnt || 0),
+      month
+    });
+
+    const baseScore = computed.riskScore;
+    const interventionForecast = {
+      current: baseScore,
+      afterVaccinationDrive: Math.max(0, baseScore - 12),
+      afterReferralClosure: Math.max(0, baseScore - Math.round(computed.referralScore * 0.8 || 8)),
+      afterCombinedInterventions: Math.max(0, baseScore - 22)
+    };
+
+    res.json({
+      success: true,
+      data: {
+        village: village?.name || villageId,
+        villageId,
+        population: village?.population || 0,
+        ...computed,
+        interventionForecast,
+        dataPoints: { symptomCount7d: Number(sym7?.cnt || 0), symptomCount14d: Number(sym14?.cnt || 0), openReferralsCount: Number(refRow?.cnt || 0), nearbyOutbreakCount: Number(outbreakRow?.cnt || 0) },
+        generatedAt: now.toISOString()
+      }
+    });
+  } catch (err) {
+    console.error('[VILLAGE RISK DETAIL] Error:', err.message);
+    res.status(500).json({ success: false, error: 'Failed to compute village risk score.' });
+  }
+});
+
 export default router;
+

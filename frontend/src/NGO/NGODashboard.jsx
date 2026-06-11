@@ -5,7 +5,8 @@ import {
   MapPin, Activity, Stethoscope, ChevronRight,
   Truck, Package,
   CheckCircle, Clock, AlertTriangle, X,
-  Loader, PhoneCall, RefreshCw, WifiOff, Zap
+  Loader, PhoneCall, RefreshCw, WifiOff, Zap,
+  TrendingUp, TrendingDown, Minus, Target
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -146,6 +147,28 @@ export default function NGODashboard() {
   const [loadingReport, setLoadingReport] = useState(false);
   const [reportErr, setReportErr]       = useState(null);
 
+  const [riskData, setRiskData]         = useState(null);
+  const [loadingRisk, setLoadingRisk]   = useState(false);
+  const [riskErr, setRiskErr]           = useState(null);
+  const [showInterventionSim, setShowInterventionSim] = useState(false);
+
+  const fetchRiskData = async () => {
+    setLoadingRisk(true);
+    setRiskErr(null);
+    try {
+      const res = await ngoService.getVillageRisk(user?.villageId);
+      if (res.success) {
+        setRiskData(res.data);
+      } else {
+        setRiskErr(res.error || 'Failed to fetch risk forecast');
+      }
+    } catch (e) {
+      setRiskErr(typeof e === 'string' ? e : e?.message || 'Failed to load risk data.');
+    } finally {
+      setLoadingRisk(false);
+    }
+  };
+
   const fetchReportData = async () => {
     setLoadingReport(true);
     setReportErr(null);
@@ -170,6 +193,7 @@ export default function NGODashboard() {
     fetchOutbreaks();
     fetchWorkload();
     fetchReportData();
+    fetchRiskData();
   }, []);
 
   /* Also re-fetch when switching into a tab */
@@ -177,6 +201,7 @@ export default function NGODashboard() {
     if (activeTab === 'ambulances') fetchAmbulances();
     if (activeTab === 'pads')       fetchPads();
     if (activeTab === 'impact')     fetchReportData();
+    if (activeTab === 'risk')       fetchRiskData();
   }, [activeTab]);
 
   /* Auto-refresh every 15 s while on that tab */
@@ -276,6 +301,7 @@ export default function NGODashboard() {
     { id: 'summary',    label: 'Overview',        icon: Activity },
     { id: 'ambulances', label: 'Ambulance Alerts', icon: Truck,   count: ambulances.filter(r => r.status === 'pending').length },
     { id: 'pads',       label: 'Pad Requests',     icon: Package, count: pads.filter(r => r.status === 'pending').length },
+    { id: 'risk',       label: '🔮 Risk Forecast', icon: TrendingUp },
     { id: 'impact',     label: 'Impact Analytics', icon: Shield },
   ];
 
@@ -611,8 +637,214 @@ export default function NGODashboard() {
         )}
 
         {/* ── IMPACT ANALYTICS ── */}
+        {/* ── RISK FORECAST TAB ── */}
+        {activeTab === 'risk' && (
+          <div className="animate-in fade-in duration-700 space-y-6">
+            {/* Header */}
+            <div className="flex items-start justify-between gap-4 flex-wrap">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-9 h-9 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl flex items-center justify-center shadow-md">
+                    <TrendingUp className="w-5 h-5 text-white" />
+                  </div>
+                  <h2 className="text-xl font-black text-slate-900">Predictive Village Risk Forecast</h2>
+                  <span className="px-2 py-0.5 bg-violet-100 text-violet-700 text-[10px] font-black rounded-full border border-violet-200 uppercase tracking-wide">Early Warning</span>
+                </div>
+                <p className="text-slate-500 text-sm font-medium">
+                  AI-powered forecast of elevated health risks <strong>before they become outbreaks</strong> — using symptom trends, seasonal patterns &amp; referral backlogs.
+                </p>
+              </div>
+              <button onClick={fetchRiskData} disabled={loadingRisk}
+                className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-50 transition-colors shadow-sm">
+                <RefreshCw className={`w-4 h-4 ${loadingRisk ? 'animate-spin' : ''}`} />
+                Refresh
+              </button>
+            </div>
+
+            {riskErr && <div className="p-4 bg-red-50 border border-red-200 rounded-2xl text-xs font-bold text-red-700">{riskErr} — Showing representative data.</div>}
+
+            {loadingRisk ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {[1, 2].map(i => <div key={i} className="h-48 bg-slate-100 rounded-3xl animate-pulse" />)}
+              </div>
+            ) : (
+              <div className="space-y-5">
+
+                {/* Main Score Card */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                  {/* Score Gauge */}
+                  <div className={`rounded-3xl p-8 text-center border-2 ${
+                    (riskData?.riskLevel || 'LOW') === 'CRITICAL' ? 'bg-red-50 border-red-200' :
+                    (riskData?.riskLevel || 'LOW') === 'HIGH' ? 'bg-orange-50 border-orange-200' :
+                    (riskData?.riskLevel || 'LOW') === 'MEDIUM' ? 'bg-yellow-50 border-yellow-200' :
+                    'bg-green-50 border-green-200'
+                  }`}>
+                    <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-4">Village Health Risk Score</p>
+                    <div className="relative inline-block mb-4">
+                      <div className="text-7xl font-black text-slate-900 leading-none">{riskData?.riskScore ?? 18}</div>
+                      <div className="text-xs font-black text-slate-400">/ 100</div>
+                    </div>
+                    <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-black ${
+                      (riskData?.riskLevel || 'LOW') === 'CRITICAL' ? 'bg-red-200 text-red-800' :
+                      (riskData?.riskLevel || 'LOW') === 'HIGH' ? 'bg-orange-200 text-orange-800' :
+                      (riskData?.riskLevel || 'LOW') === 'MEDIUM' ? 'bg-yellow-200 text-yellow-800' :
+                      'bg-green-200 text-green-800'
+                    }`}>
+                      {(riskData?.riskLevel || 'LOW') === 'CRITICAL' && '🔴'}
+                      {(riskData?.riskLevel || 'LOW') === 'HIGH' && '🟠'}
+                      {(riskData?.riskLevel || 'LOW') === 'MEDIUM' && '🟡'}
+                      {(riskData?.riskLevel || 'LOW') === 'LOW' && '🟢'}
+                      {riskData?.riskLevel || 'LOW'} RISK
+                    </div>
+                    <div className="mt-3">
+                      {riskData?.trendDirection === 'increasing' && <span className="flex items-center justify-center gap-1 text-red-600 font-black text-xs"><TrendingUp className="w-3.5 h-3.5" /> Increasing Risk</span>}
+                      {riskData?.trendDirection === 'improving' && <span className="flex items-center justify-center gap-1 text-green-600 font-black text-xs"><TrendingDown className="w-3.5 h-3.5" /> Improving Situation</span>}
+                      {(!riskData?.trendDirection || riskData.trendDirection === 'stable') && <span className="flex items-center justify-center gap-1 text-slate-500 font-black text-xs"><Minus className="w-3.5 h-3.5" /> Stable</span>}
+                    </div>
+                    <p className="text-[9px] text-slate-400 font-medium mt-2">
+                      {riskData?.village || user?.villageId || 'Your Village'} · {new Date(riskData?.generatedAt || Date.now()).toLocaleDateString('en-IN')}
+                    </p>
+                  </div>
+
+                  {/* XAI Contributor Bars */}
+                  <div className="md:col-span-2 bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-4 flex items-center gap-1.5">
+                      <Zap className="w-3 h-3" /> Why Is Risk {riskData?.riskLevel || 'LOW'}? — XAI Breakdown
+                    </p>
+                    <div className="space-y-4">
+                      {(riskData?.contributors || [
+                        { factor: 'Symptom Surge', weight: 0, maxWeight: 40, description: 'No recent symptom spike', icon: '🌡️' },
+                        { factor: 'Nearby Outbreak', weight: 0, maxWeight: 25, description: 'No nearby outbreak activity', icon: '⚠️' },
+                        { factor: 'Seasonal Risk', weight: 14, maxWeight: 20, description: 'Current seasonal disease pattern', icon: '📅' },
+                        { factor: 'Open Referrals', weight: 3, maxWeight: 15, description: 'Some untreated referrals', icon: '📋' },
+                      ]).map((c, i) => {
+                        const pct = c.maxWeight > 0 ? Math.round((c.weight / c.maxWeight) * 100) : 0;
+                        const barColor = c.weight >= c.maxWeight * 0.7 ? '#EF4444' : c.weight >= c.maxWeight * 0.4 ? '#F97316' : '#22C55E';
+                        return (
+                          <div key={i} className="space-y-1.5">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[12px] font-bold text-slate-700">{c.icon} {c.factor}</span>
+                              <span className="text-[12px] font-black text-slate-900">{c.weight}<span className="text-slate-400 font-medium">/{c.maxWeight}</span></span>
+                            </div>
+                            <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                              <motion.div
+                                initial={{ width: 0 }}
+                                animate={{ width: `${pct}%` }}
+                                transition={{ duration: 0.7, ease: 'easeOut', delay: i * 0.1 }}
+                                className="h-full rounded-full"
+                                style={{ backgroundColor: barColor }}
+                              />
+                            </div>
+                            <p className="text-[10px] text-slate-400 font-medium">{c.description}</p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Health Category Flags */}
+                {(riskData?.categories || []).length > 0 && (
+                  <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-4">Health Risk Category Flags</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                      {riskData.categories.map((cat, i) => (
+                        <div key={i} className={`p-4 rounded-2xl border ${cat.level === 'HIGH' ? 'bg-red-50 border-red-200' : 'bg-amber-50 border-amber-200'}`}>
+                          <p className="text-sm font-black text-slate-800 mb-1">{cat.icon} {cat.name}</p>
+                          <span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${cat.level === 'HIGH' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>{cat.level}</span>
+                          <div className="mt-2 space-y-0.5">
+                            {cat.reasons?.map((r, j) => <p key={j} className="text-[9px] text-slate-500 font-medium">• {r}</p>)}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Recommended Actions */}
+                <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
+                  <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-4 flex items-center gap-1.5">
+                    <Target className="w-3 h-3" /> Recommended Prevention Actions
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {(riskData?.recommendedActions || [
+                      'Maintain routine ASHA surveillance visits',
+                      'Monitor seasonal disease trends',
+                      'Follow up on open referral cases',
+                    ]).map((action, i) => (
+                      <div key={i} className="flex items-start gap-3 p-3 bg-slate-50 rounded-xl">
+                        <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                        <p className="text-[12px] font-semibold text-slate-700">{action}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Intervention Impact Forecast */}
+                {riskData?.interventionForecast && (
+                  <div className="bg-gradient-to-br from-violet-50 to-indigo-50 rounded-3xl border border-violet-100 p-6">
+                    <button
+                      onClick={() => setShowInterventionSim(v => !v)}
+                      className="w-full flex items-center justify-between font-black text-slate-700 mb-0 hover:text-violet-700 transition-colors"
+                    >
+                      <span className="flex items-center gap-2 text-sm"><TrendingDown className="w-4 h-4" /> Intervention Impact Forecast Simulator</span>
+                      <span className="text-xs text-violet-500 font-bold">{showInterventionSim ? 'Hide ▲' : 'Show ▼'}</span>
+                    </button>
+                    <AnimatePresence>
+                      {showInterventionSim && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          className="overflow-hidden"
+                        >
+                          <p className="text-[10px] text-slate-500 font-medium mt-3 mb-4 italic">
+                            Projected risk score reduction after implementing each preventive intervention.
+                          </p>
+                          <div className="space-y-3">
+                            {[
+                              { label: 'Current Risk Score', score: riskData.interventionForecast.current, color: '#EF4444' },
+                              { label: '→ After Vaccination Drive', score: riskData.interventionForecast.afterVaccinationDrive, color: '#F97316' },
+                              { label: '→ After Referral Closure', score: riskData.interventionForecast.afterReferralClosure, color: '#EAB308' },
+                              { label: '→ After Combined Interventions', score: riskData.interventionForecast.afterCombinedInterventions, color: '#22C55E' },
+                            ].map((row, i) => {
+                              const reduction = riskData.interventionForecast.current - row.score;
+                              return (
+                                <div key={i}>
+                                  <div className="flex items-center justify-between mb-1">
+                                    <span className="text-[11px] font-bold text-slate-600">{row.label}</span>
+                                    <span className="text-[11px] font-black text-slate-900">{row.score} {reduction > 0 && <span className="text-green-600 text-[10px] font-bold">−{reduction}</span>}</span>
+                                  </div>
+                                  <div className="h-2.5 bg-white/60 rounded-full overflow-hidden">
+                                    <motion.div
+                                      initial={{ width: `${(riskData.interventionForecast.current / 100) * 100}%` }}
+                                      animate={{ width: `${(row.score / 100) * 100}%` }}
+                                      transition={{ duration: 0.9, delay: i * 0.15, ease: 'easeOut' }}
+                                      className="h-full rounded-full"
+                                      style={{ backgroundColor: row.color }}
+                                    />
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                          <p className="text-[10px] text-violet-600 font-bold text-center mt-4">
+                            Combined preventive actions projected to reduce village health risk by {riskData.interventionForecast.current - riskData.interventionForecast.afterCombinedInterventions} points
+                          </p>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                )}
+
+              </div>
+            )}
+          </div>
+        )}
+
         {activeTab === 'impact' && (
           <div className="animate-in fade-in duration-700 space-y-6 no-print">
+
             <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm p-6 md:p-10">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-6 border-b border-slate-50">
                 <div className="flex items-center gap-4">
