@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
+import { showToast } from '../utils/toast';
 import {
   LayoutDashboard, Radio, Heart, Baby, Truck,
   WifiOff, BrainCircuit, BarChart3, Settings,
@@ -333,10 +334,10 @@ export default function AdminDashboard() {
         caseCount: 7,
         symptomPattern: selected.pattern
       });
-      alert('Outbreak simulation triggered successfully! SSE live feed will update in real-time.');
+      showToast('Outbreak simulation triggered successfully! SSE live feed will update in real-time.');
     } catch (err) {
       console.error(err);
-      alert(err.message || 'Failed to simulate outbreak event.');
+      showToast(err.message || 'Failed to simulate outbreak event.', 'error');
     } finally {
       setSimulatingOutbreak(false);
     }

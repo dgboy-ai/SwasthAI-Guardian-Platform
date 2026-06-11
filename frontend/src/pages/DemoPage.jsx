@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { showToast } from '../utils/toast';
 import {
   Shield, Activity, Heart, Baby, Truck, Radio, BrainCircuit,
   Users, MapPin, WifiOff, Zap, ArrowRight, CheckCircle, Globe,
@@ -104,7 +105,7 @@ export default function DemoPage() {
       await loginPassword(id, password, role);
       navigate(`/${role}`);
     } catch (err) {
-      alert(err.message || 'Demo login failed.');
+      showToast(err.message || 'Demo login failed.', 'error');
     } finally {
       setDemoLoading(null);
     }

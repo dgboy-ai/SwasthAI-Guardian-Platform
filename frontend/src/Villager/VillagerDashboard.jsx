@@ -71,17 +71,17 @@ export default function VillagerDashboard() {
           <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
             <div className="space-y-2">
               <span className="px-3 py-1 bg-white/20 text-white border border-white/20 text-[9px] font-black uppercase tracking-widest rounded-full">
-                🌟 Highly Recommended / अनुशंसित
+                {t.villagerDashboard?.guided_mode_tag || '🌟 Highly Recommended'}
               </span>
               <h2 className="text-3xl font-black tracking-tight leading-none">
-                Guided Care Mode / मार्गदर्शित मोड
+                {t.villagerDashboard?.guided_mode_title || 'Guided Care Mode'}
               </h2>
               <p className="text-emerald-50 font-medium text-sm sm:text-base leading-relaxed opacity-95 max-w-2xl">
-                Bilingual voice support, large tactile buttons & offline-capable health assessment (Fever, Pregnancy, SOS, Sakhi chat & Child Health).
+                {t.villagerDashboard?.guided_mode_desc || 'Bilingual voice support, large tactile buttons & offline-capable health assessment (Fever, Pregnancy, SOS, Sakhi chat & Child Health).'}
               </p>
             </div>
             <div className="inline-flex py-4 px-8 bg-white text-emerald-800 rounded-2xl text-xs font-black uppercase tracking-widest group-hover:px-10 transition-all shadow-md shrink-0">
-              Start Guided Care →
+              {t.villagerDashboard?.guided_mode_cta || 'Start Guided Care →'}
             </div>
           </div>
         </Link>

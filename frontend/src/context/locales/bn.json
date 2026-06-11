@@ -1,4 +1,4 @@
-﻿{
+{
   "ambulance": {
     "accident": "সড়ক দুর্ঘটনা",
     "accident_hi": "",
@@ -124,8 +124,10 @@
     "varanasi_node": "বারাণসী নোড V-01",
     "vision_loss": "হঠাৎ দৃষ্টিশক্তি হ্রাস",
     "voice_assist": "অ্যাপের সাথে কথা বলুন",
+    "triage_label": "প্রস্তাবিত বিভাগ",
     "vomiting": "বমি",
-    "weakness": "অত্যন্ত দুর্বলতা"
+    "weakness": "অত্যন্ত দুর্বলতা",
+    "what_to_do": "কী করবেন"
   },
   "everything_you_need": "ভালো স্বাস্থ্যের জন্য",
   "footer": {
@@ -285,12 +287,24 @@
     "check_symptoms": "লক্ষণ পরীক্ষা",
     "dashboard": "ড্যাশবোর্ড",
     "home": "হোম",
-    "menstrual_health": "মাতৃ কল্যাণ",
+    "menstrual_health": "মাসিক স্বাস্থ্য",
     "offline_desc": "উপসর্গ পরীক্ষক কাজ করছে। ভয়েস এবং এআই এর জন্য ইন্টারনেট প্রয়োজন।",
     "offline_mode": "অফলাইন মোড",
     "profile": "প্রোফাইল",
     "services": "সেবাসমূহ",
-    "skin_care": "ত্বকের যত্ন"
+    "skin_care": "ত্বকের যত্ন",
+    "schemes": "সরকারি যোজনা 📋",
+    "admin_hub": "জেলা হাব",
+    "share": "শেয়ার",
+    "app_download": "অ্যাপ ডাউনলোড",
+    "app_download_prompt": "অ্যাপ ডাউনলোড / Download App",
+    "share_title": "SwasthAI শেয়ার করুন",
+    "share_subtitle": "গ্রাম স্বাস্থ্য QR কোড",
+    "share_scan_desc": "অন্য ফোনে অবিলম্বে অ্যাপটি খুলতে এই কোডটি স্ক্যান করুন।",
+    "copy_link": "অ্যাপ লিংক কপি করুন",
+    "link_copied": "লিংক কপি করা হয়েছে!",
+    "install_phone": "এই ফোনে ইনস্টল করুন",
+    "space_offline": "মাত্র 2MB সাইজ • অফলাইনে কাজ করে"
   },
   "network_connected": "নেটওয়ার্ক সংযুক্ত",
   "network_uptime": "নেটওয়ার্ক আপটাইম",

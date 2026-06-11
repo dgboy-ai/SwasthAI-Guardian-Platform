@@ -2,6 +2,7 @@ import React from 'react';
 import { BrainCircuit } from 'lucide-react';
 import ConfBadge from './ConfBadge';
 import AIReasoningTrace from './AIReasoningTrace';
+import { showToast } from '../../utils/toast';
 
 const DEFAULT_RECS = [
   { color: 'border-l-rose-500', action: 'Deploy Now', btnCls: 'bg-emerald-600 hover:bg-emerald-700', text: 'Fever Cluster detected in Village 47 — High fever + body ache reported in 6 cases', conf: 0.91 },
@@ -48,7 +49,7 @@ export default function AIIntelligenceView({ recs, judgeDemoMode }) {
               <div className="flex items-center gap-2 shrink-0">
                 <ConfBadge pct={r.conf} />
                 <button 
-                  onClick={() => alert(`Initiated: ${r.action} plan for warning.`)}
+                  onClick={() => showToast(`Initiated: ${r.action} plan for warning.`, 'info')}
                   className={`px-3 py-1.5 rounded-lg text-[10px] font-black text-white ${r.btnCls} transition-colors shadow-sm`}
                 >
                   {r.action}

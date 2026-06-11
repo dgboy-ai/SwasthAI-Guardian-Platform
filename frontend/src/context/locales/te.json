@@ -1,4 +1,4 @@
-﻿{
+{
   "ambulance": {
     "accident": "రోడ్డు ప్రమాదం",
     "accident_hi": "",
@@ -124,8 +124,10 @@
     "varanasi_node": "వారణాసి నోడ్ V-01",
     "vision_loss": "అకస్మాత్తుగా చూపు కోల్పోవడం",
     "voice_assist": "యాప్‌తో మాట్లాడండి",
+    "triage_label": "సూచించిన వర్గం",
     "vomiting": "వాంతులు",
-    "weakness": "అత్యంత బలహీనత"
+    "weakness": "అత్యంత బలహీనత",
+    "what_to_do": "ఏమి చేయాలి"
   },
   "everything_you_need": "కావలసినదంతా",
   "footer": {
@@ -282,15 +284,27 @@
   "nav": {
     "about": "మా గురించి",
     "ambulance": "అంబులెన్స్",
-    "check_symptoms": "రోగనిర్ధారణ",
+    "check_symptoms": "లక్షణాల పరీక్ష",
     "dashboard": "డాష్‌బోర్డ్",
     "home": "హోమ్",
-    "menstrual_health": "మాతృ ఆరోగ్యం",
-    "offline_desc": "లక్షణ తనిఖీ పని చేస్తుంది. వాయిస్ మరియు AI కోసం ఇంటర్నెట్ అవసరం.",
+    "menstrual_health": "నెలసరి",
+    "offline_desc": "లక్షణాల పరీక్ష ఆఫ్‌లైన్‌లో పనిచేస్తుంది. వాయిస్ & AI కి ఇంటర్నెట్ అవసరం.",
     "offline_mode": "ఆఫ్‌లైన్ మోడ్",
     "profile": "ప్రొఫైల్",
     "services": "సేవలు",
-    "skin_care": "చర్మానికి రక్షణ"
+    "skin_care": "చర్మ సంరక్షణ",
+    "schemes": "పథకాలు 📋",
+    "admin_hub": "జిల్లా హబ్",
+    "share": "షేర్ చేయి",
+    "app_download": "యాప్ డౌన్‌లోడ్",
+    "app_download_prompt": "యాప్ డౌన్‌లోడ్ / Download App",
+    "share_title": "SwasthAI షేర్ చేయి",
+    "share_subtitle": "గ్రామ ఆరోగ్య QR కోడ్",
+    "share_scan_desc": "మరొక ఫోన్‌లో యాప్‌ను వెంటనే తెరవడానికి ఈ కోడ్‌ను స్కాన్ చేయండి.",
+    "copy_link": "యాప్ లింక్ కాపీ చేయి",
+    "link_copied": "లింక్ కాపీ అయింది!",
+    "install_phone": "ఈ ఫోన్‌లో ఇన్‌స్టాల్ చేయి",
+    "space_offline": "కేవలం 2MB స్థలం అవసరం • ఆఫ్‌లైన్‌లో పనిచేస్తుంది"
   },
   "network_connected": "నెట్‌వర్క్ కనెక్ట్ అయింది",
   "network_uptime": "నెట్‌వర్క్ అప్‌టైమ్",

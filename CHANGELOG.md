@@ -21,6 +21,11 @@ All notable changes and feature developments completed during the hackathon wind
   - Implemented responsive mobile tabs (`lg:hidden`) separating inputs, checklist selection, and results to guarantee zero vertical scrolling on mobile phones.
   - Constrained layout height (`lg:h-[calc(100vh-185px)] lg:overflow-hidden`) on desktop and laptop viewports to prevent page-level vertical scrollbars and provide clean, inner card scroll containers.
   - Added automated preset execution logic inside `handleQuickFill` to automatically run diagnostic analysis and switch tabs to the results view on trigger.
+- **Pre-Demo Production Bug Fixes**:
+  - Replaced native browser `alert()` popups with a custom DOM-based toast notification engine (`showToast`) in Admin dashboards (Command Center, Outbreak Radar, AI Intelligence).
+  - Resolved dynamic class purge issues in `NGODashboard.jsx` stats grid cards (e.g. `bg-${item.color}-50`) by mapping colors statically to prevent Tailwind from removing them during production builds.
+  - Eliminated a duplicate inline `<footer>` tag rendering on the `LandingPage.jsx`.
+  - Corrected the Landing Page CTA button path from `/monitor` (restricted admin path causing redirects) to `/demo` (public Demo Hub).
 
 ## June 10, 2026
 ### Added

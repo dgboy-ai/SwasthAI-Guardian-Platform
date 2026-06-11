@@ -1,6 +1,7 @@
 import React from 'react';
 import { Radio, MapPin, Activity, Shield } from 'lucide-react';
 import { timeAgo, outbreakStatusStyle } from './utils';
+import { showToast } from '../../utils/toast';
 
 export default function OutbreakRadarView({
   OB,
@@ -72,7 +73,7 @@ export default function OutbreakRadarView({
             </span>
           )}
           <button
-            onClick={() => alert('ASHA Network Broadcast Signal Dispatched.')}
+            onClick={() => showToast('ASHA Network Broadcast Signal Dispatched.')}
             className="px-4 py-2 bg-emerald-50 text-emerald-700 border border-emerald-100 hover:bg-emerald-100 rounded-xl text-[10.5px] font-black uppercase tracking-wider transition-all shadow-sm"
           >
             Notify ASHA Network
@@ -84,7 +85,7 @@ export default function OutbreakRadarView({
             Export Outbreak Report
           </button>
           <button
-            onClick={() => alert('AI Briefing Summary: Fever signals registered in Village 47 have triggered a P1 response dispatch. Resource reallocation completed.')}
+            onClick={() => showToast('AI Briefing Summary: Fever signals registered in Village 47 have triggered a P1 response dispatch. Resource reallocation completed.', 'info')}
             className="px-4 py-2 bg-blue-50 text-blue-700 border border-blue-100 hover:bg-blue-100 rounded-xl text-[10.5px] font-black uppercase tracking-wider transition-all shadow-sm"
           >
             Generate AI Briefing

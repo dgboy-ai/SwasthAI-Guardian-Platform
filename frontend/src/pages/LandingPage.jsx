@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { VERSION, COPYRIGHT_YEAR } from '../constants/version';
+import { showToast } from '../utils/toast';
 import { 
   HeartPulse, Activity, Shield, Users, ArrowRight, BrainCircuit, 
   Truck, Globe, Zap, CheckCircle, MapPin, PhoneCall, WifiOff, Mic, ShieldCheck, Play,
@@ -249,7 +250,7 @@ export default function LandingPage() {
       await loginPassword(id, password, role);
       navigate(`/${role}`);
     } catch (err) {
-      alert(err.message || 'Demo login failed.');
+      showToast(err.message || 'Demo login failed.', 'error');
     } finally {
       setDemoLoading(null);
     }
@@ -683,11 +684,11 @@ export default function LandingPage() {
             <p className="text-indigo-200 text-sm mt-1">5 districts, 100+ cases, real-time event dispatch — no backend required.</p>
           </div>
           <button
-            onClick={() => navigate('/monitor')}
-            aria-label="Open Observability Dashboard"
+            onClick={() => navigate('/demo')}
+            aria-label="Open Demo Portal"
             className="shrink-0 px-8 py-4 bg-white text-indigo-700 rounded-full font-black uppercase tracking-wide text-sm shadow-xl hover:scale-105 active:scale-95 focus-visible:ring-4 focus-visible:ring-white focus-visible:ring-offset-2 outline-none transition-all flex items-center gap-3"
           >
-            <Play className="w-4 h-4" /> Open Dashboard
+            <Play className="w-4 h-4" /> Open Demo Portal
           </button>
         </div>
       </section>
@@ -707,10 +708,7 @@ export default function LandingPage() {
          </div>
       </section>
 
-      {/* FOOTER */}
-      <footer className="bg-slate-50 py-12 border-t border-slate-100 text-center font-black uppercase text-[10px] text-slate-300 tracking-[0.4em]">
-         <p>© {COPYRIGHT_YEAR} SwasthAI Guardian {VERSION} · Rural Health Sovereignty</p>
-      </footer>
+
 
       <style dangerouslySetInnerHTML={{ __html: `
         @keyframes pulse-red {

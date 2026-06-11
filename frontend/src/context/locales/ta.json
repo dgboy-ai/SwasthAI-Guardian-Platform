@@ -1,4 +1,4 @@
-﻿{
+{
   "ambulance": {
     "accident": "சாலை விபத்து",
     "accident_hi": "",
@@ -124,8 +124,10 @@
     "varanasi_node": "வாரணாசி முனை V-01",
     "vision_loss": "திடீர் பார்வை இழப்பு",
     "voice_assist": "பயன்பாட்டில் பேசுங்கள்",
+    "triage_label": "பரிந்துரைக்கப்பட்ட வகை",
     "vomiting": "வாந்தி",
-    "weakness": "அதிகப்படியான சோர்வு"
+    "weakness": "அதிகப்படியான சோர்வு",
+    "what_to_do": "என்ன செய்வது"
   },
   "everything_you_need": "நல்ல ஆரோக்கியத்திற்கு",
   "footer": {
@@ -282,15 +284,27 @@
   "nav": {
     "about": "எங்களைப் பற்றி",
     "ambulance": "ஆம்புலன்ஸ்",
-    "check_symptoms": "பரிசோதிக்க",
+    "check_symptoms": "அறிகுறி சோதனை",
     "dashboard": "டாஷ்போர்டு",
     "home": "முகப்பு",
-    "menstrual_health": "தாய்மை நலம்",
+    "menstrual_health": "மாதவிடாய்",
     "offline_desc": "அறிகுறி சோதனையாளர் வேலை செய்கிறார். குரல் மற்றும் AI க்கு இணையம் தேவை.",
     "offline_mode": "ஆஃப்லைன் பயன்முறை",
     "profile": "சுயவிவரம்",
     "services": "சேவைகள்",
-    "skin_care": "சரும பராமரிப்பு"
+    "skin_care": "தோல் பராமரிப்பு",
+    "schemes": "திட்டங்கள் 📋",
+    "admin_hub": "மாவட்ட மையம்",
+    "share": "பகிர்",
+    "app_download": "செயலி பதிவிறக்கம்",
+    "app_download_prompt": "செயலியைப் பதிவிறக்கு / Download App",
+    "share_title": "SwasthAI பகிர்",
+    "share_subtitle": "கிராம சுகாதார QR குறியீடு",
+    "share_scan_desc": "மற்றொரு தொலைபேசியில் உடனடியாக பயன்பாட்டைத் திறக்க இந்த குறியீட்டை ஸ்கேன் செய்யவும்.",
+    "copy_link": "செயலி இணைப்பை நகலெடு",
+    "link_copied": "இணைப்பு நகலெடுக்கப்பட்டது!",
+    "install_phone": "இந்த தொலைபேசியில் நிறுவவும்",
+    "space_offline": "2MB இடம் மட்டுமே தேவை • ஆஃப்லைனில் வேலை செய்கிறது"
   },
   "network_connected": "நெட்வொர்க் இணைக்கப்பட்டது",
   "network_uptime": "தொடரமைப்பு நேரம்",

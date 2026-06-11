@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
+import { showToast } from '../utils/toast';
 import api from '../services/api';
 import {
   getCachedSymptomResult,
@@ -229,9 +230,11 @@ export default function SymptomCheckerPage() {
     } catch (err) {
       console.error('Symptom analysis failed:', err);
       if (err.response?.status === 401) {
-        alert('Your session has expired. Please log in again.');
+        showToast('Your session has expired. Please log in again.', 'error');
         localStorage.removeItem('token');
-        window.location.href = '/login';
+        setTimeout(() => {
+          window.location.href = '/login';
+        }, 1500);
       } else {
         const tier = getSeverityTier(symptomsToUse, '', otherToUse);
         const finalRes = { ...tier, offline: true, error: true };
@@ -469,45 +472,6 @@ export default function SymptomCheckerPage() {
           )}
         </AnimatePresence>
 
-        {/* SANDBOX TEST PRESETS BAR */}
-        <div className="bg-slate-900 text-white rounded-xl shadow-md px-3 py-2 mb-3 flex items-center gap-2 overflow-x-auto shrink-0">
-          <span className="px-1.5 py-0.5 bg-emerald-500/20 text-emerald-300 text-[8px] font-black uppercase tracking-widest rounded shrink-0">
-            Sandbox
-          </span>
-          <span className="text-[9px] font-bold text-slate-400 shrink-0 hidden sm:block">Quick-Fill:</span>
-          <div className="flex gap-1.5 shrink-0">
-            <button
-              onClick={() => handleQuickFill('mild')}
-              className="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 rounded-md text-[9px] font-bold border border-slate-700 hover:border-emerald-500 text-slate-100 flex items-center gap-1 transition-all whitespace-nowrap"
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" /> Mild Cold
-            </button>
-            <button
-              onClick={() => handleQuickFill('moderate')}
-              className="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 rounded-md text-[9px] font-bold border border-slate-700 hover:border-amber-500 text-slate-100 flex items-center gap-1 transition-all whitespace-nowrap"
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" /> Moderate
-            </button>
-            <button
-              onClick={() => handleQuickFill('severe')}
-              className="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 rounded-md text-[9px] font-bold border border-slate-700 hover:border-rose-500 text-slate-100 flex items-center gap-1 transition-all whitespace-nowrap"
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" /> Severe
-            </button>
-            <button
-              onClick={() => handleQuickFill('voice_hi')}
-              className="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 rounded-md text-[9px] font-bold border border-slate-700 hover:border-emerald-400 text-slate-100 flex items-center gap-1 transition-all whitespace-nowrap"
-            >
-              🗣️ Hindi
-            </button>
-            <button
-              onClick={() => handleQuickFill('voice_en')}
-              className="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 rounded-md text-[9px] font-bold border border-slate-700 hover:border-emerald-400 text-slate-100 flex items-center gap-1 transition-all whitespace-nowrap"
-            >
-              🗣️ English
-            </button>
-          </div>
-        </div>
 
         <div className="flex lg:hidden gap-1 p-1 bg-slate-100/80 rounded-xl border border-slate-200/50 mb-3 shadow-sm select-none shrink-0">
           <button onClick={() => setActiveTab('input')} className={`flex-1 py-1.5 text-center rounded-lg font-black text-[10px] uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 ${ activeTab === 'input' ? 'bg-white text-emerald-800 shadow-sm border border-slate-200/50' : 'text-slate-500 hover:text-slate-700' }`}>

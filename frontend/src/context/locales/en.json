@@ -1,4 +1,4 @@
-﻿{
+{
   "ambulance": {
     "accident": "Road Accident",
     "accident_hi": "",
@@ -44,7 +44,7 @@
     "terminal_access": "Open Access"
   },
   "diseaseChecker": {
-    "ai_axis": "SMART HEALTH CHECK",
+    "ai_axis": "SKIN AI SCANNER",
     "analyze_photo": "Analyze Photo",
     "bleeding": "Heavy Bleeding",
     "breathing": "Difficulty Breathing",
@@ -91,18 +91,18 @@
     "privacy_desc": "Image data remains local. Neural processing is localized to your regional node.",
     "privacy_main": "Your photo stays private — analyzed only on this device",
     "privacy_sub": "Your photo is not sent to anyone.",
-    "processing": "Checking symptoms...",
+    "processing": "Scanning skin photo...",
     "processing_img": "Photo is analyzed for redness & inflammation",
     "question_count": "Question",
     "remove_restart": "Cancel",
     "res_mild_advice": "Keep the area clean and dry. If it does not improve in 3-4 days, please see an ASHA worker.",
     "res_mild_title": "Mild Skin Issue",
     "res_moderate_advice": "The photo shows some skin changes that need attention. Visit your nearby PHC or ASHA worker within 2-3 days.",
-    "res_moderate_title": "Visit ASHA Worker Soon",
-    "res_urgent_advice": "The photo shows signs of skin inflammation. Please visit your nearest primary health centre immediately.",
-    "res_urgent_title": "Visit Health Worker Today",
+    "res_moderate_title": "Seek ASHA Worker Soon",
+    "res_urgent_advice": "The photo shows signs of significant skin inflammation. Please consult a doctor immediately.",
+    "res_urgent_title": "Seek Doctor Today",
     "retake": "Retake Photo",
-    "scanner_desc": "Upload a clear clinical-view photo for instant AI analysis and diagnostic mapping.",
+    "scanner_desc": "Take or upload a clear photo of the skin issue for instant AI check.",
     "severe_advice": "Please go to the nearest hospital immediately. We have sent an alert to help you.",
     "severe_msg": "Warning: Your symptoms look serious. You need to see a doctor now.",
     "severe_title": "Urgent Medical Alert",
@@ -124,8 +124,10 @@
     "varanasi_node": "Varanasi Node V-01",
     "vision_loss": "Sudden Vision Loss",
     "voice_assist": "Speak to App",
+    "triage_label": "Suggested Triage",
     "vomiting": "Vomiting",
-    "weakness": "Extreme Weakness"
+    "weakness": "Extreme Weakness",
+    "what_to_do": "What to do"
   },
   "everything_you_need": "Everything You Need",
   "footer": {
@@ -282,15 +284,27 @@
   "nav": {
     "about": "About Us",
     "ambulance": "Ambulance",
-    "check_symptoms": "Check Symptoms",
+    "check_symptoms": "Symptom Check",
     "dashboard": "Dashboard",
     "home": "Home",
-    "menstrual_health": "Menstrual Health",
+    "menstrual_health": "Menstrual",
     "offline_desc": "Symptom Checker works. Voice & AI need internet.",
     "offline_mode": "Offline Mode",
     "profile": "Profile",
     "services": "Services",
-    "skin_care": "Skin Care"
+    "skin_care": "Skin Scan",
+    "schemes": "Schemes 📋",
+    "admin_hub": "District Hub",
+    "share": "Share",
+    "app_download": "App Download",
+    "app_download_prompt": "App Download Karein / डाउनलोड करें",
+    "share_title": "Share SwasthAI",
+    "share_subtitle": "Village Health QR Code",
+    "share_scan_desc": "Scan this code to open the app instantly on another phone. इसे दूसरे फ़ोन से स्कैन करें।",
+    "copy_link": "Copy App Link",
+    "link_copied": "Link Copied!",
+    "install_phone": "Install on this Phone",
+    "space_offline": "Requires only 2MB space • Works Offline"
   },
   "network_connected": "Network Connected",
   "network_uptime": "Network Uptime",
@@ -394,7 +408,11 @@
     "skin_scanner_desc": "Upload photos to check for skin infections or rashes with Deep Learning.",
     "use_without_internet": "Use Without Internet",
     "voice_assistant": "Voice Assistant",
-    "voice_assistant_desc": "Just speak to the app in your language. No typing needed at all!"
+    "voice_assistant_desc": "Just speak to the app in your language. No typing needed at all!",
+    "guided_mode_tag": "🌟 Highly Recommended",
+    "guided_mode_title": "Guided Care Mode",
+    "guided_mode_desc": "Bilingual voice support, large tactile buttons & offline-capable health assessment (Fever, Pregnancy, SOS, Sakhi chat & Child Health).",
+    "guided_mode_cta": "Start Guided Care →"
   },
   "villages_reached": "Villages Reached",
   "welcome_back": "Welcome back. How can we help you today?",

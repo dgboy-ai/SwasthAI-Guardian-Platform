@@ -5,7 +5,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { 
   HeartPulse, User, LogOut, Menu, X, Shield, 
   Activity, Truck, Scan, Home, Globe, Droplets, Mic, BookOpen,
-  WifiOff, Wifi, Download, Share2, QrCode, Copy, Check, Sparkles
+  WifiOff, Wifi, Download, Share2, QrCode, Copy, Check, Sparkles, Plus
 } from 'lucide-react';
 import { QRCodeCanvas } from 'qrcode.react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -137,7 +137,7 @@ export default function Navbar() {
 
         {/* Villager Navigation Links (Desktop Only) */}
         {user && user.role === 'villager' && (
-          <div className="hidden lg:flex items-center gap-1">
+          <div className="hidden xl:flex items-center gap-1">
             {villagerLinks(t).map(link => (
               <Link 
                 key={link.path}
@@ -157,7 +157,7 @@ export default function Navbar() {
 
         {/* NGO Navigation Links (Desktop Only) */}
         {user && user.role === 'ngo' && (
-          <div className="hidden lg:flex items-center gap-1">
+          <div className="hidden xl:flex items-center gap-1">
             {ngoLinks(t).map(link => (
               <Link 
                 key={link.path}
@@ -177,7 +177,7 @@ export default function Navbar() {
 
         {/* Admin links */}
         {user && user.role === 'admin' && (
-          <div className="hidden lg:flex items-center gap-1">
+          <div className="hidden xl:flex items-center gap-1">
             <Link to="/admin" className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-black uppercase tracking-wide transition-all ${isActive('/admin') ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'text-slate-500 hover:text-emerald-600 hover:bg-slate-50'}`}>
               <Home className="w-3.5 h-3.5" /> {t.nav?.admin_hub || 'District Hub'}
             </Link>
@@ -205,27 +205,27 @@ export default function Navbar() {
           {/* Share App Button (Permanent) */}
           <button
             onClick={() => setShareModalOpen(true)}
-            className="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-slate-100 text-slate-700 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all border border-slate-200"
+            className="hidden xl:flex items-center gap-2 px-3 py-1.5 bg-slate-100 text-slate-700 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all border border-slate-200"
             title="Share App / QR Code"
           >
-            <Share2 className="w-3 h-3" /> Share
+            <Share2 className="w-3 h-3" /> {t.nav?.share || 'Share'}
           </button>
 
           {/* PWA Download Button (Desktop) */}
           {installPrompt && (
             <button
               onClick={handleInstallClick}
-              className="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-emerald-100 text-emerald-700 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-200 transition-all border border-emerald-200"
+              className="hidden xl:flex items-center gap-2 px-3 py-1.5 bg-emerald-100 text-emerald-700 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-200 transition-all border border-emerald-200"
             >
-              <Download className="w-3 h-3" /> App Download
+              <Download className="w-3 h-3" /> {t.nav?.app_download || 'App Download'}
             </button>
           )}
 
-          <div className="hidden lg:block w-px h-6 bg-slate-200 mx-1" />
+          <div className="hidden xl:block w-px h-6 bg-slate-200 mx-1" />
 
           {/* Auth Buttons */}
           {user ? (
-            <div className="hidden lg:flex items-center gap-2">
+            <div className="hidden xl:flex items-center gap-2">
               <Link
                 to="/profile"
                 className={`w-9 h-9 flex items-center justify-center rounded-xl transition-all border ${
@@ -246,7 +246,7 @@ export default function Navbar() {
               </button>
             </div>
           ) : (
-            <Link to="/login" className="hidden lg:block px-5 py-2.5 bg-emerald-600 text-white text-[11px] font-black uppercase tracking-widest rounded-xl hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-200">
+            <Link to="/login" className="hidden xl:block px-5 py-2.5 bg-emerald-600 text-white text-[11px] font-black uppercase tracking-widest rounded-xl hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-200">
               {t.login || 'Sign In'}
             </Link>
           )}
@@ -254,7 +254,7 @@ export default function Navbar() {
           {/* Mobile Menu Button */}
           <button 
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden p-1.5 sm:p-2 bg-slate-100 rounded-lg text-slate-900 border border-slate-200 shrink-0"
+            className="xl:hidden p-1.5 sm:p-2 bg-slate-100 rounded-lg text-slate-900 border border-slate-200 shrink-0"
             aria-label="Toggle navigation menu"
           >
             {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
@@ -264,7 +264,7 @@ export default function Navbar() {
 
       {/* Mobile Menu - slides down */}
       {mobileMenuOpen && (
-        <div className="lg:hidden absolute top-full left-0 right-0 bg-white border-b border-slate-100 shadow-2xl p-3 sm:p-4 z-50 overflow-y-auto max-h-[80vh]">
+        <div className="xl:hidden absolute top-full left-0 right-0 bg-white border-b border-slate-100 shadow-2xl p-3 sm:p-4 z-50 overflow-y-auto max-h-[80vh]">
           <div className="flex flex-col gap-2">
             
             {/* PWA Download Button (Mobile) */}
@@ -275,7 +275,7 @@ export default function Navbar() {
               >
                 <div className="flex items-center gap-3">
                   <Download className="w-5 h-5 group-hover:bounce" />
-                  App Download Karein / डाउनलोड करें
+                  {t.nav?.app_download_prompt || 'App Download / डाउनलोड करें'}
                 </div>
                 <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
                   <Plus className="w-4 h-4" />
@@ -386,7 +386,6 @@ export default function Navbar() {
         </div>
       )}
 
-
       </nav>
 
       {/* 📱 Bottom Navigation Bar — Critical for one-handed rural mobile use */}
@@ -446,8 +445,8 @@ export default function Navbar() {
                     <QrCode className="w-6 h-6" />
                   </div>
                   <div>
-                    <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter">Share SwasthAI</h3>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Village Health QR Code</p>
+                    <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter">{t.nav?.share_title || 'Share SwasthAI'}</h3>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t.nav?.share_subtitle || 'Village Health QR Code'}</p>
                   </div>
                 </div>
 
@@ -456,8 +455,7 @@ export default function Navbar() {
                     <QRCodeCanvas value={appUrl} size={180} level="H" />
                   </div>
                   <p className="text-[11px] font-bold text-slate-500 text-center px-4">
-                    Scan this code to open the app instantly on another phone.<br/>
-                    इसे दूसरे फ़ोन से स्कैन करें।
+                    {t.nav?.share_scan_desc || 'Scan this code to open the app instantly on another phone.'}
                   </p>
                 </div>
 
@@ -467,9 +465,9 @@ export default function Navbar() {
                     className="w-full h-14 bg-slate-900 text-white rounded-2xl font-black uppercase text-[10px] tracking-[0.2em] flex items-center justify-center gap-3 hover:bg-emerald-600 transition-all"
                   >
                     {copied ? (
-                      <><Check className="w-4 h-4" /> Link Copied!</>
+                      <><Check className="w-4 h-4" /> {t.nav?.link_copied || 'Link Copied!'}</>
                     ) : (
-                      <><Copy className="w-4 h-4" /> Copy App Link</>
+                      <><Copy className="w-4 h-4" /> {t.nav?.copy_link || 'Copy App Link'}</>
                     )}
                   </button>
                   
@@ -478,14 +476,14 @@ export default function Navbar() {
                       onClick={() => { setShareModalOpen(false); handleInstallClick(); }}
                       className="w-full h-14 bg-emerald-100 text-emerald-700 rounded-2xl font-black uppercase text-[10px] tracking-[0.2em] flex items-center justify-center gap-3 hover:bg-emerald-200 transition-all border border-emerald-200"
                     >
-                      <Download className="w-4 h-4" /> Install on this Phone
+                      <Download className="w-4 h-4" /> {t.nav?.install_phone || 'Install on this Phone'}
                     </button>
                   )}
                 </div>
 
                 <div className="mt-8 pt-8 border-t border-slate-100">
                   <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] text-center">
-                    Requires only 2MB space • Works Offline
+                    {t.nav?.space_offline || 'Requires only 2MB space • Works Offline'}
                   </p>
                 </div>
               </div>

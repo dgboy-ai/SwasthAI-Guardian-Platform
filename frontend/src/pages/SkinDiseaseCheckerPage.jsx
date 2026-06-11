@@ -88,51 +88,138 @@ const analyzePhotoPixels = (imgElement) => {
   return { photoScore, rednessPercent, irregularPercent, inflammationRatio, skinCoverage, lowQuality: false };
 };
 
-// ── DYNAMIC CONFIRMING QUESTIONS (secondary, adjusts photo score) ─────────────
-const getQuestionsList = (isChild) => {
-  const base = [
-    {
-      id: 'duration',
-      q: 'How long has this rash been present?',
-      h: 'यह कितने समय से है?',
-      opts: [
-        { v: '1-2days', l: 'Just started (1-2 days) / अभी शुरू हुआ', e: '📅', score: 0 },
-        { v: '3-7days', l: '3 to 7 days / 3-7 दिन से', e: '📆', score: 1 },
-        { v: 'week+', l: 'More than a week / हफ्ते से ज्यादा', e: '🗓️', score: 2 },
-      ],
-    },
-    {
-      id: 'spreading',
-      q: 'Is it spreading rapidly?',
-      h: 'क्या यह तेजी से फैल रहा है?',
-      opts: [
-        { v: 'no', l: 'No, confined to same spot / नहीं, सामान्य स्थान पर है', e: '✅', score: 0 },
-        { v: 'yes', l: 'Yes, spreading to other areas / हाँ, अन्य क्षेत्रों में फैल रहा है', e: '⚠️', score: 3 },
-      ],
-    },
-    {
-      id: 'pain',
-      q: 'Is there pain, itching, or burning?',
-      h: 'क्या दर्द, खुजली या जलन है?',
-      opts: [
-        { v: 'no', l: 'None or mild / कोई दर्द या जलन नहीं', e: '😌', score: 0 },
-        { v: 'mild', l: 'Mild discomfort / थोड़ी परेशानी', e: '😐', score: 1 },
-        { v: 'yes', l: 'Yes, painful or intense / हाँ, अधिक दर्द या जलन है', e: '😣', score: 2 },
-      ],
-    },
-  ];
+// ── DYNAMIC CONFIRMING QUESTIONS (language-aware, single language per locale) ──
+const QUESTIONS_BY_LANG = {
+  en: {
+    duration: { q: 'How long has this rash been present?', opts: [
+      { v: '1-2days', l: 'Just started (1–2 days)', e: '📅', score: 0 },
+      { v: '3-7days', l: '3 to 7 days', e: '📆', score: 1 },
+      { v: 'week+',  l: 'More than a week', e: '🗓️', score: 2 },
+    ]},
+    spreading: { q: 'Is it spreading to other areas?', opts: [
+      { v: 'no',  l: 'No — same spot', e: '✅', score: 0 },
+      { v: 'yes', l: 'Yes — spreading', e: '⚠️', score: 3 },
+    ]},
+    pain: { q: 'Is there pain, itching, or burning?', opts: [
+      { v: 'no',   l: 'No pain or itching', e: '😌', score: 0 },
+      { v: 'mild', l: 'Mild discomfort',    e: '😐', score: 1 },
+      { v: 'yes',  l: 'Yes, quite painful', e: '😣', score: 2 },
+    ]},
+    redflags: { q: 'Does the child show any danger signs?', opts: [
+      { v: 'none',   l: 'No danger signs', e: '😊', score: 0 },
+      { v: 'danger', l: 'High fever / breathing difficulty / lethargy', e: '🚨', score: 6 },
+    ]},
+  },
+  hi: {
+    duration: { q: 'यह चकत्ता कितने समय से है?', opts: [
+      { v: '1-2days', l: 'अभी शुरू हुआ (1-2 दिन)', e: '📅', score: 0 },
+      { v: '3-7days', l: '3 से 7 दिन', e: '📆', score: 1 },
+      { v: 'week+',  l: 'एक हफ्ते से ज्यादा', e: '🗓️', score: 2 },
+    ]},
+    spreading: { q: 'क्या यह अन्य जगहों पर फैल रहा है?', opts: [
+      { v: 'no',  l: 'नहीं — एक ही जगह है', e: '✅', score: 0 },
+      { v: 'yes', l: 'हाँ — फैल रहा है', e: '⚠️', score: 3 },
+    ]},
+    pain: { q: 'क्या दर्द, खुजली या जलन है?', opts: [
+      { v: 'no',   l: 'कोई दर्द नहीं', e: '😌', score: 0 },
+      { v: 'mild', l: 'थोड़ी तकलीफ है', e: '😐', score: 1 },
+      { v: 'yes',  l: 'हाँ, बहुत दर्द है', e: '😣', score: 2 },
+    ]},
+    redflags: { q: 'क्या बच्चे में कोई खतरे के लक्षण हैं?', opts: [
+      { v: 'none',   l: 'कोई लक्षण नहीं', e: '😊', score: 0 },
+      { v: 'danger', l: 'तेज बुखार / सांस में तकलीफ / सुस्ती', e: '🚨', score: 6 },
+    ]},
+  },
+  mr: {
+    duration: { q: 'हे पुरळ किती दिवसांपासून आहे?', opts: [
+      { v: '1-2days', l: 'नुकतेच सुरू झाले (1-2 दिवस)', e: '📅', score: 0 },
+      { v: '3-7days', l: '3 ते 7 दिवस', e: '📆', score: 1 },
+      { v: 'week+',  l: 'एका आठवड्यापेक्षा जास्त', e: '🗓️', score: 2 },
+    ]},
+    spreading: { q: 'हे इतर ठिकाणी पसरत आहे का?', opts: [
+      { v: 'no',  l: 'नाही — एकाच जागी आहे', e: '✅', score: 0 },
+      { v: 'yes', l: 'हो — पसरत आहे', e: '⚠️', score: 3 },
+    ]},
+    pain: { q: 'वेदना, खाज किंवा जळजळ आहे का?', opts: [
+      { v: 'no',   l: 'नाही', e: '😌', score: 0 },
+      { v: 'mild', l: 'थोडी अस्वस्थता', e: '😐', score: 1 },
+      { v: 'yes',  l: 'हो, खूप वेदना आहे', e: '😣', score: 2 },
+    ]},
+    redflags: { q: 'मुलामध्ये काही धोक्याची चिन्हे आहेत का?', opts: [
+      { v: 'none',   l: 'धोक्याची चिन्हे नाहीत', e: '😊', score: 0 },
+      { v: 'danger', l: 'तीव्र ताप / श्वास घेण्यास त्रास / सुस्ती', e: '🚨', score: 6 },
+    ]},
+  },
+  ta: {
+    duration: { q: 'இந்த சொறி எவ்வளவு நாளாக உள்ளது?', opts: [
+      { v: '1-2days', l: 'இப்போது தொடங்கியது (1-2 நாள்)', e: '📅', score: 0 },
+      { v: '3-7days', l: '3 முதல் 7 நாட்கள்', e: '📆', score: 1 },
+      { v: 'week+',  l: 'ஒரு வாரத்திற்கும் மேல்', e: '🗓️', score: 2 },
+    ]},
+    spreading: { q: 'இது மற்ற இடங்களுக்கு பரவுகிறதா?', opts: [
+      { v: 'no',  l: 'இல்லை — அதே இடத்தில்', e: '✅', score: 0 },
+      { v: 'yes', l: 'ஆம் — பரவுகிறது', e: '⚠️', score: 3 },
+    ]},
+    pain: { q: 'வலி, அரிப்பு அல்லது எரிச்சல் உள்ளதா?', opts: [
+      { v: 'no',   l: 'இல்லை', e: '😌', score: 0 },
+      { v: 'mild', l: 'சிறிய அசௌகரியம்', e: '😐', score: 1 },
+      { v: 'yes',  l: 'ஆம், மிகவும் வலிக்கிறது', e: '😣', score: 2 },
+    ]},
+    redflags: { q: 'குழந்தைக்கு ஏதேனும் ஆபத்து அறிகுறிகள் உள்ளதா?', opts: [
+      { v: 'none',   l: 'ஆபத்து அறிகுறிகள் இல்லை', e: '😊', score: 0 },
+      { v: 'danger', l: 'அதிக காய்ச்சல் / சுவாசக் கஷ்டம் / சோர்வு', e: '🚨', score: 6 },
+    ]},
+  },
+  te: {
+    duration: { q: 'ఈ దద్దుర్లు ఎంత కాలంగా ఉన్నాయి?', opts: [
+      { v: '1-2days', l: 'ఇప్పుడే మొదలైంది (1-2 రోజులు)', e: '📅', score: 0 },
+      { v: '3-7days', l: '3 నుండి 7 రోజులు', e: '📆', score: 1 },
+      { v: 'week+',  l: 'ఒక వారం కంటే ఎక్కువ', e: '🗓️', score: 2 },
+    ]},
+    spreading: { q: 'ఇది ఇతర ప్రాంతాలకు వ్యాపిస్తుందా?', opts: [
+      { v: 'no',  l: 'లేదు — అదే చోట', e: '✅', score: 0 },
+      { v: 'yes', l: 'అవును — వ్యాపిస్తుంది', e: '⚠️', score: 3 },
+    ]},
+    pain: { q: 'నొప్పి, దురద లేదా మంట ఉందా?', opts: [
+      { v: 'no',   l: 'లేదు', e: '😌', score: 0 },
+      { v: 'mild', l: 'తేలికపాటి అసౌకర్యం', e: '😐', score: 1 },
+      { v: 'yes',  l: 'అవును, చాలా నొప్పిగా ఉంది', e: '😣', score: 2 },
+    ]},
+    redflags: { q: 'పిల్లవాడికి ఏదైనా ప్రమాద సంకేతాలు ఉన్నాయా?', opts: [
+      { v: 'none',   l: 'ప్రమాద సంకేతాలు లేవు', e: '😊', score: 0 },
+      { v: 'danger', l: 'తీవ్ర జ్వరం / శ్వాస తీసుకోవడంలో ఇబ్బంది / అలసట', e: '🚨', score: 6 },
+    ]},
+  },
+  bn: {
+    duration: { q: 'এই র‍্যাশ কতদিন ধরে আছে?', opts: [
+      { v: '1-2days', l: 'এইমাত্র শুরু হয়েছে (১-২ দিন)', e: '📅', score: 0 },
+      { v: '3-7days', l: '৩ থেকে ৭ দিন', e: '📆', score: 1 },
+      { v: 'week+',  l: 'এক সপ্তাহের বেশি', e: '🗓️', score: 2 },
+    ]},
+    spreading: { q: 'এটি কি অন্য জায়গায় ছড়িয়ে পড়ছে?', opts: [
+      { v: 'no',  l: 'না — একই জায়গায় আছে', e: '✅', score: 0 },
+      { v: 'yes', l: 'হ্যাঁ — ছড়িয়ে পড়ছে', e: '⚠️', score: 3 },
+    ]},
+    pain: { q: 'ব্যথা, চুলকানি বা জ্বালা আছে কি?', opts: [
+      { v: 'no',   l: 'না', e: '😌', score: 0 },
+      { v: 'mild', l: 'সামান্য অস্বস্তি', e: '😐', score: 1 },
+      { v: 'yes',  l: 'হ্যাঁ, অনেক ব্যথা', e: '😣', score: 2 },
+    ]},
+    redflags: { q: 'শিশুর মধ্যে কোনো বিপদের লক্ষণ আছে কি?', opts: [
+      { v: 'none',   l: 'কোনো বিপদের লক্ষণ নেই', e: '😊', score: 0 },
+      { v: 'danger', l: 'তীব্র জ্বর / শ্বাসকষ্ট / অলসতা', e: '🚨', score: 6 },
+    ]},
+  },
+};
 
-  if (isChild) {
-    base.push({
-      id: 'redflags',
-      q: 'Are any of these danger signs present in the child?',
-      h: 'क्या बच्चे में इनमें से कोई खतरे के लक्षण हैं?',
-      opts: [
-        { v: 'none', l: 'No danger signs / कोई लक्षण नहीं', e: '😊', score: 0 },
-        { v: 'danger', l: 'High fever, breathing difficulty, or lethargy / तेज बुखार, सांस लेने में तकलीफ, या बेहोशी/सुस्ती', e: '🚨', score: 6 }
-      ]
-    });
-  }
+const getQuestionsList = (isChild, lang = 'en') => {
+  const L = QUESTIONS_BY_LANG[lang] || QUESTIONS_BY_LANG.en;
+  const base = [
+    { id: 'duration',  ...L.duration  },
+    { id: 'spreading', ...L.spreading },
+    { id: 'pain',      ...L.pain      },
+  ];
+  if (isChild) base.push({ id: 'redflags', ...L.redflags });
   return base;
 };
 
@@ -367,7 +454,7 @@ export default function SkinDiseaseCheckerPage() {
   const wt = WARNING_TRANSLATIONS[currentLang] || WARNING_TRANSLATIONS.en;
   const gt = GLASS_TEST_TRANSLATIONS[currentLang] || GLASS_TEST_TRANSLATIONS.en;
 
-  const QUESTIONS_LIST = getQuestionsList(childMode);
+  const QUESTIONS_LIST = getQuestionsList(childMode, lang || 'en');
 
   const [step, setStep] = useState('upload');
   const [showWarningSigns, setShowWarningSigns] = useState(false);
@@ -581,7 +668,7 @@ export default function SkinDiseaseCheckerPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] font-inter pt-10 lg:pt-14 pb-12 px-4 sm:px-6">
+    <div className="relative min-h-screen bg-[#F8FAFC] font-inter flex flex-col">
       <Navbar />
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-3xl h-[400px] bg-teal-50/60 rounded-full blur-[120px] -z-10 pointer-events-none" />
 
@@ -628,14 +715,11 @@ export default function SkinDiseaseCheckerPage() {
         )}
       </AnimatePresence>
 
-      <main className="max-w-2xl mx-auto mt-6">
+      <main className="max-w-2xl mx-auto px-4 sm:px-6 pt-14 sm:pt-20 pb-20 w-full flex-1 flex flex-col">
         {/* HEADER */}
         <header className="mb-5 sm:mb-8 text-center">
           {childMode ? (
             <>
-              <div className="flex items-center justify-center gap-1.5 text-rose-600 font-black uppercase tracking-widest text-[8px] sm:text-[10px] mb-1.5 sm:mb-3">
-                <Camera className="w-3 h-3 sm:w-4 sm:h-4" /> Pediatric Rash Scanner
-              </div>
               <h1 className="text-xl sm:text-3xl md:text-4xl font-black text-slate-900 tracking-tight leading-tight mb-1.5 sm:mb-2">
                 Pediatric Skin Triage <span className="text-xs bg-rose-100 text-rose-700 px-2 py-0.5 rounded-full font-black align-middle ml-1">CHILD MODE</span>
               </h1>
@@ -645,9 +729,6 @@ export default function SkinDiseaseCheckerPage() {
             </>
           ) : (
             <>
-              <div className="flex items-center justify-center gap-1.5 text-teal-600 font-black uppercase tracking-widest text-[8px] sm:text-[10px] mb-1.5 sm:mb-3">
-                <Camera className="w-3 h-3 sm:w-4 sm:h-4" /> {t.diseaseChecker?.title || 'Skin Health Check'}
-              </div>
               <h1 className="text-xl sm:text-3xl md:text-4xl font-black text-slate-900 tracking-tight leading-tight mb-1.5 sm:mb-2">
                 {t.diseaseChecker?.ai_axis || 'Check Your Skin'}
               </h1>
@@ -903,8 +984,7 @@ export default function SkinDiseaseCheckerPage() {
 
               <AnimatePresence mode="wait">
                 <motion.div key={currentQ} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-                  <h2 className="text-xl font-black text-slate-900 mb-1">{QUESTIONS_LIST[currentQ].q}</h2>
-                  <p className="text-sm font-bold text-slate-400 mb-5">{QUESTIONS_LIST[currentQ].h}</p>
+                  <h2 className="text-xl font-black text-slate-900 mb-5">{QUESTIONS_LIST[currentQ].q}</h2>
                   <div className="grid grid-cols-1 gap-3">
                     {QUESTIONS_LIST[currentQ].opts.map((opt) => (
                       <button key={opt.v} onClick={() => handleAnswer(QUESTIONS_LIST[currentQ].id, opt.v)}
@@ -942,7 +1022,6 @@ export default function SkinDiseaseCheckerPage() {
                   <div>
                     <p className="text-[9px] font-black uppercase tracking-widest text-white/60 mb-0.5">AI Triage Screening</p>
                     <h2 className="text-xl sm:text-2xl font-black uppercase tracking-tighter">{result.title}</h2>
-                    <p className="text-[11px] sm:text-sm font-bold text-white/70">{result.titleH}</p>
                   </div>
 
                   {/* Photo metrics — shows what the photo told us */}
@@ -960,14 +1039,13 @@ export default function SkinDiseaseCheckerPage() {
                   )}
 
                   <div className="p-4 bg-black/10 rounded-2xl border border-white/10">
-                    <p className="text-[10px] font-black text-white/50 uppercase tracking-widest mb-1">Suggested Triage / संभावित श्रेणी</p>
+                    <p className="text-[10px] font-black text-white/50 uppercase tracking-widest mb-1">{t.diseaseChecker?.triage_label || 'Suggested Triage'}</p>
                     <p className="text-lg font-black">{result.condition}</p>
                   </div>
 
                   <div className="p-3.5 bg-black/10 rounded-2xl border border-white/10">
-                    <p className="text-[9px] font-black text-white/50 uppercase tracking-widest mb-1.5">What to do / क्या करें</p>
+                    <p className="text-[9px] font-black text-white/50 uppercase tracking-widest mb-1.5">{t.diseaseChecker?.what_to_do || 'What to do'}</p>
                     <p className="text-[13px] sm:text-sm font-bold leading-relaxed">{result.advice}</p>
-                    <p className="text-[11px] text-white/60 font-bold mt-1.5">{result.adviceH}</p>
                   </div>
 
                   <div className="flex items-center gap-3 p-3.5 bg-white/10 rounded-2xl">

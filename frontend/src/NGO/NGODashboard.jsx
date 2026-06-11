@@ -15,6 +15,7 @@ import SkeletonCard from '../components/SkeletonCard';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { getQueueStats } from '../utils/offlineSyncQueue';
+import { showToast } from '../utils/toast';
 
 /* ─── Rule-based Triage Classifier (Tristha Track: Ticket Classification) ── */
 // Classifies incoming health requests into P1-P4 urgency levels
@@ -293,7 +294,7 @@ export default function NGODashboard() {
       // Rollback on failure
       setPads(prevPads);
       setAmbulances(prevAmbulances);
-      alert('Failed to update status: ' + (typeof e === 'string' ? e : e?.message));
+      showToast('Failed to update status: ' + (typeof e === 'string' ? e : e?.message), 'error');
     }
   };
 
@@ -421,22 +422,31 @@ export default function NGODashboard() {
                 { label: 'Pending Pad Reqs',  val: pads.filter(r=>r.status==='pending').length,          icon: Package,       color: 'rose'  },
                 { label: 'Ambulance Total',   val: ambulances.length,                                    icon: Activity,      color: 'amber' },
                 { label: 'Pad Reqs Total',    val: pads.length,                                          icon: Stethoscope,   color: 'purple'},
-              ].map((item, idx) => (
-                <motion.div 
-                  initial={{ opacity: 0, y: 15 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: idx * 0.05, duration: 0.3 }}
-                  whileHover={{ y: -4, scale: 1.01 }}
-                  key={item.label} 
-                  className="bg-white rounded-[1.5rem] border border-slate-100 shadow-sm p-5 hover:shadow-md transition-all duration-300 cursor-default"
-                >
-                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center mb-4 bg-${item.color}-50 text-${item.color}-500`}>
-                    <item.icon className="w-4 h-4" />
-                  </div>
-                  <p className="text-3xl font-black text-slate-900">{item.val}</p>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">{item.label}</p>
-                </motion.div>
-              ))}
+              ].map((item, idx) => {
+                const cardColorsMap = {
+                  red: 'bg-red-50 text-red-500',
+                  rose: 'bg-rose-50 text-rose-500',
+                  amber: 'bg-amber-50 text-amber-500',
+                  purple: 'bg-purple-50 text-purple-500',
+                };
+                const colorClass = cardColorsMap[item.color] || 'bg-slate-50 text-slate-500';
+                return (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: idx * 0.05, duration: 0.3 }}
+                    whileHover={{ y: -4, scale: 1.01 }}
+                    key={item.label} 
+                    className="bg-white rounded-[1.5rem] border border-slate-100 shadow-sm p-5 hover:shadow-md transition-all duration-300 cursor-default"
+                  >
+                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center mb-4 ${colorClass}`}>
+                      <item.icon className="w-4 h-4" />
+                    </div>
+                    <p className="text-3xl font-black text-slate-900">{item.val}</p>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">{item.label}</p>
+                  </motion.div>
+                );
+              })}
             </div>
 
             {/* ── AI URGENCY MATRIX (Tristha Track: Intelligent Ticket Classification) ── */}
