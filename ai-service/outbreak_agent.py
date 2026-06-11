@@ -188,7 +188,11 @@ def run_outbreak_agent():
         clusters = _fetch_symptom_clusters()
 
         for cluster in clusters:
-            if cluster.get("count", 0) < 3:
+            try:
+                count = int(cluster.get("count", 0))
+            except (ValueError, TypeError):
+                count = 0
+            if count < 3:
                 continue  # Ignore tiny clusters (< 3 cases not epidemiologically significant)
 
             result = _classify_cluster(cluster, groq_api_key)

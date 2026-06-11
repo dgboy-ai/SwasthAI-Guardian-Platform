@@ -2,7 +2,7 @@ export const styles = {
   page: {
     minHeight: '100vh',
     background: 'linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #f0f9ff 100%)',
-    padding: '0 0 60px',
+    padding: '0 0 80px',
     position: 'relative',
     overflow: 'hidden',
     fontFamily: "'Inter', 'Segoe UI', sans-serif",
@@ -77,8 +77,8 @@ export const styles = {
   },
   count: { padding: '8px 20px', fontSize: 13, color: '#6b7280', position: 'relative', zIndex: 1 },
   grid: {
-    display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-    gap: 16, padding: '8px 20px', position: 'relative', zIndex: 1,
+    display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))',
+    gap: 16, padding: '8px 16px', position: 'relative', zIndex: 1,
   },
   card: {
     background: '#fff', borderRadius: 14, border: '1px solid #e5e7eb',
@@ -102,7 +102,7 @@ export const styles = {
   // Modals
   overlay: {
     position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
-    display: 'flex', alignItems: 'center', justifycontent: 'center',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
     zIndex: 1000, padding: 16, backdropFilter: 'blur(4px)',
   },
   modal: {

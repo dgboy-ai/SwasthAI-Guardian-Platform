@@ -19,7 +19,10 @@ export default {
           800: '#166534',
           900: '#14532d',
         }
-      }
+      },
+      screens: {
+        'xs': '480px',
+      },
     },
   },
   plugins: [],

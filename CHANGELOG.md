@@ -11,6 +11,16 @@ All notable changes and feature developments completed during the hackathon wind
   - Implemented production-grade AWS IAM credential authentication policies (`AmazonDynamoDBFullAccess` for `swasthai-app-user`) to secure data transfers.
   - Successfully executed remote seeding operations, populating the live cloud database with default operational datasets.
   - Custom-configured deployment metadata settings (district: `Gwalior`, state: `Madhya Pradesh`) in environment configurations to target localized regional deployment.
+- **User Authentication & Sign-in Upgrades**:
+  - Enhanced registration input validation (`RegisterSchema`) using Zod preprocess guards to convert empty string fields (`""`) to `null`, preventing validation errors on optional phone/email fields.
+  - Expanded password-based login (`/auth/login-password`) to accept `username` as a valid identifier in addition to `phone` and `email`, fixing sign-in issues for accounts created with customized usernames.
+- **Symptom Checker UI Polish, Responsive optimization & Judge Sandbox**:
+  - Integrated a premium **Judge Testing Sandbox** quick-fill scenarios panel to instantly populate and test mild (cold), moderate (dehydration), and severe (cardiac) presets with matching symptoms and descriptions.
+  - Added interactive **Speech-to-Text Voice Input Simulations** (English & Hindi) that dynamically render voice recording animations and transcribe text word-by-word, verifying regional natural language processing.
+  - Revamped the "Analyze Symptoms" action button with vibrant green pulses and interactive hover states when active, replacing the gray appearance with a high-fidelity visual cue.
+  - Implemented responsive mobile tabs (`lg:hidden`) separating inputs, checklist selection, and results to guarantee zero vertical scrolling on mobile phones.
+  - Constrained layout height (`lg:h-[calc(100vh-185px)] lg:overflow-hidden`) on desktop and laptop viewports to prevent page-level vertical scrollbars and provide clean, inner card scroll containers.
+  - Added automated preset execution logic inside `handleQuickFill` to automatically run diagnostic analysis and switch tabs to the results view on trigger.
 
 ## June 10, 2026
 ### Added

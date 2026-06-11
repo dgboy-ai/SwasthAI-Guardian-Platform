@@ -603,14 +603,14 @@ router.get('/schemes', auth, checkRole(['villager', 'ngo', 'admin']), async (req
         `SELECT * FROM government_schemes
          WHERE (min_age = 0 OR min_age <= $1)
            AND (max_age = 120 OR max_age >= $2)
-           AND (gender_eligibility = 'all' OR gender_eligibility = $3 OR $4 IS NULL)
+           AND (gender_eligibility = 'all' OR gender_eligibility = $3::text OR $4::text = 'any')
            AND (
              economic_status_eligibility = 'all'
-             OR economic_status_eligibility = $5
-             OR $6 IS NULL
+             OR economic_status_eligibility = $5::text
+             OR $6::text = 'any'
            )
          ORDER BY id`,
-        [age || 25, age || 25, gender || 'all', gender || null, economic_status || null, economic_status || null]
+        [age || 25, age || 25, gender || 'all', gender ? gender : 'any', economic_status || '', economic_status ? economic_status : 'any']
       );
       rows = resSchemes.rows;
     } else {

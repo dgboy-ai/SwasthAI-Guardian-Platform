@@ -26,8 +26,8 @@ const authLimiter = rateLimit({
 
 // Zod Input Validation Schemas
 const RegisterSchema = z.object({
-  phone: z.string().regex(/^\d{10}$/, 'Phone number must be exactly 10 digits').optional().nullable(),
-  email: z.string().email('Invalid email address').optional().nullable(),
+  phone: z.preprocess(val => (val === '' ? null : val), z.string().regex(/^\d{10}$/, 'Phone number must be exactly 10 digits').optional().nullable()),
+  email: z.preprocess(val => (val === '' ? null : val), z.string().email('Invalid email address').optional().nullable()),
   username: z.string().min(3, 'Username must be at least 3 characters'),
   name: z.string().min(1, 'Name is required'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
@@ -227,7 +227,7 @@ router.post('/login-password', authLimiter, async (req, res) => {
   }
 
   const { identifier, password, role } = parseResult.data;
-  const user = await db.get('SELECT * FROM users WHERE (email = ? OR phone = ?) AND role = ?', [identifier, identifier, role]);
+  const user = await db.get('SELECT * FROM users WHERE (email = ? OR phone = ? OR username = ?) AND role = ?', [identifier, identifier, identifier, role]);
 
   if (!user) return res.status(401).send({ error: 'Invalid credentials.' });
 
