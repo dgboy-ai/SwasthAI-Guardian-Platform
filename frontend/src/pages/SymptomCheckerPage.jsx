@@ -50,20 +50,20 @@ export default function SymptomCheckerPage() {
     return () => { window.removeEventListener('online', go); window.removeEventListener('offline', nogo); };
   }, []);
 
-  const dc = t.diseaseChecker || {};
+  const sc = t.symptom || {};
 
   const symptomList = [
-    { id: 'fever', label: 'Fever', hindi: 'बुखार', severe: false, icon: Thermometer },
-    { id: 'cough', label: 'Cough', hindi: 'खाँसी', severe: false, icon: Wind },
-    { id: 'chest_pain', label: 'Chest Pain', hindi: 'सीने में दर्द', severe: true, icon: Activity },
-    { id: 'breathing', label: 'Breathing Issue', hindi: 'सांस की तकलीफ', severe: true, icon: Wind },
-    { id: 'bleeding', label: 'Bleeding', hindi: 'खून आना', severe: true, icon: Droplets },
-    { id: 'headache', label: 'Headache', hindi: 'सिर दर्द', severe: false, icon: Info },
-    { id: 'vomiting', label: 'Vomiting', hindi: 'उल्टी', severe: false, icon: BriefcaseMedical },
-    { id: 'weakness', label: 'Weakness', hindi: 'कमज़ोरी', severe: false, icon: HeartPulse },
-    { id: 'dizziness', label: 'Dizziness', hindi: 'चक्कर आना', severe: false, icon: Info },
-    { id: 'vision_loss', label: 'Vision Loss', hindi: 'आंख के आगे अंधेरा', severe: true, icon: Scan },
-    { id: 'paralysis', label: 'Limb Weakness', hindi: 'एक तरफ़ कमज़ोरी', severe: true, icon: ShieldCheck },
+    { id: 'fever',      label: sc.fever      || 'Fever',          severe: false, icon: Thermometer },
+    { id: 'cough',      label: sc.cough      || 'Cough',          severe: false, icon: Wind },
+    { id: 'chest_pain', label: sc.chest_pain || 'Chest Pain',     severe: true,  icon: Activity },
+    { id: 'breathing',  label: sc.breathing  || 'Breathing Issue', severe: true, icon: Wind },
+    { id: 'bleeding',   label: sc.bleeding   || 'Bleeding',       severe: true,  icon: Droplets },
+    { id: 'headache',   label: sc.headache   || 'Headache',       severe: false, icon: Info },
+    { id: 'vomiting',   label: sc.vomiting   || 'Vomiting',       severe: false, icon: BriefcaseMedical },
+    { id: 'weakness',   label: sc.weakness   || 'Weakness',       severe: false, icon: HeartPulse },
+    { id: 'dizziness',  label: sc.dizziness  || 'Dizziness',      severe: false, icon: Info },
+    { id: 'vision_loss',label: sc.vision_loss|| 'Vision Loss',    severe: true,  icon: Scan },
+    { id: 'paralysis',  label: sc.paralysis  || 'Limb Weakness',  severe: true,  icon: ShieldCheck },
   ];
 
   const handleSymptomChange = (id) => {
@@ -80,29 +80,23 @@ export default function SymptomCheckerPage() {
     if (hasSevereSymptom || aiCritical || count >= 4) {
       return {
         type: 'severe',
-        title: 'Go to Hospital Now',
-        titleHindi: 'अभी अस्पताल जाएं',
-        message: `You have ${count} serious symptom(s). Go to the nearest hospital or doctor IMMEDIATELY. Do not delay.`,
-        messageHindi: `आपके ${count} गंभीर लक्षण हैं। अभी नज़दीकी सरकारी अस्पताल या डॉक्टर के पास जाएं।`,
-        advice: 'Nearest Government Hospital / District Hospital — Emergency Ward',
+        title:       sc.severe_title   || 'Go to Hospital Now',
+        message:    (sc.severe_msg     || 'You have {count} serious symptom(s). Go to the nearest hospital IMMEDIATELY.').replace('{count}', count),
+        advice:      sc.severe_advice  || 'Nearest Government Hospital — Emergency Ward',
       };
     } else if (count >= 2) {
       return {
         type: 'moderate',
-        title: 'See a Doctor Today',
-        titleHindi: 'आज डॉक्टर से मिलें',
-        message: `You have ${count} symptom(s). Visit your nearest Primary Health Centre (PHC) or doctor today.`,
-        messageHindi: `आपने ${count} लक्षण बताए हैं। आज ही नज़दीकी PHC या डॉक्टर से मिलें।`,
-        advice: 'Nearest Primary Health Centre (PHC) — or contact your ASHA worker',
+        title:       sc.moderate_title  || 'See a Doctor Today',
+        message:    (sc.moderate_msg    || 'You have {count} symptom(s). Visit your nearest PHC or doctor today.').replace('{count}', count),
+        advice:      sc.moderate_advice || 'Nearest Primary Health Centre (PHC)',
       };
     } else {
       return {
         type: 'mild',
-        title: 'Rest & Monitor',
-        titleHindi: 'आराम करें',
-        message: 'Your symptom appears mild. Rest well and drink clean water. If not better in 24 hours, contact your ASHA worker.',
-        messageHindi: 'आपका लक्षण हल्का लग रहा है। आराम करो, साफ पानी पियो। 24 घंटे में ठीक न हो तो ASHA दीदी से मिलें।',
-        advice: 'Contact ASHA Worker if no improvement within 24 hours',
+        title:       sc.mild_title  || 'Rest & Monitor',
+        message:     sc.mild_msg    || 'Your symptom appears mild. Rest well and drink clean water.',
+        advice:      sc.mild_advice || 'Contact ASHA Worker if no improvement within 24 hours',
       };
     }
   };
@@ -159,41 +153,15 @@ export default function SymptomCheckerPage() {
   const speakResult = (resultObj) => {
     if (!window.speechSynthesis) return;
     window.speechSynthesis.cancel();
-
-    if (isPlayingAudio) {
-      setIsPlayingAudio(false);
-      return;
-    }
-
-    const titleText = lang === 'hi' ? resultObj.titleHindi : resultObj.title;
-    const messageText = lang === 'hi' ? resultObj.messageHindi : resultObj.message;
-    const rawAiResult = resultObj.aiResult || '';
-
-    // Auto-translate or read the diagnosis out loud in Hindi if selected
-    let translationText = '';
-    if (lang === 'hi' && rawAiResult) {
-      translationText = rawAiResult
-        .replace(/Viral Fever & Cold/g, 'सामान्य वायरल बुखार और सर्दी')
-        .replace(/Acute Respiratory Infection/g, 'तीव्र श्वसन संक्रमण')
-        .replace(/Snakebite/g, 'सांप का काटना')
-        .replace(/Heatstroke/g, 'लू लगना')
-        .replace(/Chickenpox/g, 'चेचक छोटी माता')
-        .replace(/Measles/g, 'खसरा')
-        .replace(/Anaemia/g, 'एनीमिया खून की कमी')
-        .replace(/reliable advice/gi, 'अहम पोषण व आराम सलाह');
-    } else {
-      translationText = rawAiResult;
-    }
-
-    const fullUtteranceText = `${titleText}. ${messageText}. ${translationText ? 'Diagnosis: ' + translationText : ''}`;
-    const utterance = new SpeechSynthesisUtterance(fullUtteranceText);
-    utterance.lang = lang === 'hi' ? 'hi-IN' : 'en-US';
+    if (isPlayingAudio) { setIsPlayingAudio(false); return; }
+    const fullText = `${resultObj.title}. ${resultObj.message}. ${resultObj.aiResult ? resultObj.aiResult : ''}`;
+    const utterance = new SpeechSynthesisUtterance(fullText);
+    const langMap = { hi:'hi-IN', ta:'ta-IN', mr:'mr-IN', te:'te-IN', bn:'bn-IN', en:'en-IN' };
+    utterance.lang = langMap[lang] || 'en-IN';
     utterance.rate = 0.95;
-
     utterance.onstart = () => setIsPlayingAudio(true);
-    utterance.onend = () => setIsPlayingAudio(false);
+    utterance.onend   = () => setIsPlayingAudio(false);
     utterance.onerror = () => setIsPlayingAudio(false);
-
     window.speechSynthesis.speak(utterance);
   };
 
@@ -492,9 +460,9 @@ export default function SymptomCheckerPage() {
             >
               <WifiOff className="w-4 h-4 text-amber-600 shrink-0" />
               <div>
-                <p className="text-[11px] font-black text-amber-800">इंटरनेट नहीं है — ऑफ़लाइन मोड / Offline Mode Active</p>
+                <p className="text-[11px] font-black text-amber-800">{sc.offline_msg || 'No internet — Offline Mode Active'}</p>
                 <p className="text-[9px] text-amber-700 font-bold leading-normal">
-                  You can check boxes or type/speak symptoms. Our offline model will process them.
+                  {sc.offline_sub || 'You can check boxes or type/speak symptoms.'}
                 </p>
               </div>
             </motion.div>
@@ -541,43 +509,15 @@ export default function SymptomCheckerPage() {
           </div>
         </div>
 
-        {/* MOBILE COMPATIBILITY TABS */}
         <div className="flex lg:hidden gap-1 p-1 bg-slate-100/80 rounded-xl border border-slate-200/50 mb-3 shadow-sm select-none shrink-0">
-          <button
-            onClick={() => setActiveTab('input')}
-            className={`flex-1 py-1.5 text-center rounded-lg font-black text-[10px] uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 ${
-              activeTab === 'input'
-                ? 'bg-white text-emerald-800 shadow-sm border border-slate-200/50'
-                : 'text-slate-500 hover:text-slate-700'
-            }`}
-          >
-            🗣️ Describe
+          <button onClick={() => setActiveTab('input')} className={`flex-1 py-1.5 text-center rounded-lg font-black text-[10px] uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 ${ activeTab === 'input' ? 'bg-white text-emerald-800 shadow-sm border border-slate-200/50' : 'text-slate-500 hover:text-slate-700' }`}>
+            🗣️ {sc.describe_tab || 'Describe'}
           </button>
-          <button
-            onClick={() => setActiveTab('checklist')}
-            className={`flex-1 py-1.5 text-center rounded-lg font-black text-[10px] uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 ${
-              activeTab === 'checklist'
-                ? 'bg-white text-emerald-800 shadow-sm border border-slate-200/50'
-                : 'text-slate-500 hover:text-slate-700'
-            }`}
-          >
-            📋 Checklist {selectedSymptoms.length > 0 && (
-              <span className="px-1.5 py-0.2 bg-emerald-100 text-emerald-800 text-[8px] rounded-full font-bold">
-                {selectedSymptoms.length}
-              </span>
-            )}
+          <button onClick={() => setActiveTab('checklist')} className={`flex-1 py-1.5 text-center rounded-lg font-black text-[10px] uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 ${ activeTab === 'checklist' ? 'bg-white text-emerald-800 shadow-sm border border-slate-200/50' : 'text-slate-500 hover:text-slate-700' }`}>
+            📋 {sc.checklist_tab || 'Checklist'} {selectedSymptoms.length > 0 && (<span className="px-1.5 py-0.2 bg-emerald-100 text-emerald-800 text-[8px] rounded-full font-bold">{selectedSymptoms.length}</span>)}
           </button>
-          <button
-            onClick={() => setActiveTab('result')}
-            className={`flex-1 py-1.5 text-center rounded-lg font-black text-[10px] uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 ${
-              activeTab === 'result'
-                ? 'bg-white text-emerald-800 shadow-sm border border-slate-200/50'
-                : 'text-slate-500 hover:text-slate-700'
-            }`}
-          >
-            🩺 Diagnosis {result && (
-              <span className={`w-1.5 h-1.5 rounded-full ${severityConfig[result.type]?.bg || 'bg-emerald-500'} animate-pulse`} />
-            )}
+          <button onClick={() => setActiveTab('result')} className={`flex-1 py-1.5 text-center rounded-lg font-black text-[10px] uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 ${ activeTab === 'result' ? 'bg-white text-emerald-800 shadow-sm border border-slate-200/50' : 'text-slate-500 hover:text-slate-700' }`}>
+            🩺 {sc.diagnosis_tab || 'Diagnosis'} {result && (<span className={`w-1.5 h-1.5 rounded-full ${severityConfig[result.type]?.bg || 'bg-emerald-500'} animate-pulse`} />)}
           </button>
         </div>
 
@@ -591,10 +531,10 @@ export default function SymptomCheckerPage() {
             <div className="relative z-10 flex items-center justify-between">
               <div>
                 <span className="inline-block px-1.5 py-0.2 bg-emerald-100 text-emerald-800 text-[8px] font-black uppercase tracking-widest rounded mb-0.5">
-                  Primary Input
+                  {sc.primary_input || 'Primary Input'}
                 </span>
                 <h3 className="text-xs sm:text-sm font-black text-slate-900 tracking-tight flex items-center gap-1">
-                  🗣️ Speak or Type Symptoms
+                  🗣️ {sc.speak_type || 'Speak or Type Symptoms'}
                 </h3>
               </div>
             </div>
@@ -634,56 +574,35 @@ export default function SymptomCheckerPage() {
 
               {/* Simulation triggers inside Speak Card */}
               <div className="flex items-center gap-1.5 mt-2 bg-white px-2 py-0.5 rounded-full border border-slate-100 shadow-sm z-10 text-[8px]">
-                <span className="font-bold text-slate-400">Simulate:</span>
-                <button
-                  type="button"
-                  onClick={() => handleQuickFill('voice_hi')}
-                  className="font-black text-emerald-600 hover:text-emerald-700"
-                >
-                  Hindi
-                </button>
+                <span className="font-bold text-slate-400">{sc.simulate || 'Simulate:'}</span>
+                <button type="button" onClick={() => handleQuickFill('voice_hi')} className="font-black text-emerald-600 hover:text-emerald-700">हिंदी</button>
                 <span className="text-slate-200">|</span>
-                <button
-                  type="button"
-                  onClick={() => handleQuickFill('voice_en')}
-                  className="font-black text-emerald-600 hover:text-emerald-700"
-                >
-                  English
-                </button>
+                <button type="button" onClick={() => handleQuickFill('voice_en')} className="font-black text-emerald-600 hover:text-emerald-700">English</button>
               </div>
             </div>
 
-            {/* TEXT BOX */}
             <div className="relative flex-1 flex flex-col min-h-[70px]">
-              <p className="text-[8.5px] font-black text-slate-400 uppercase tracking-widest mb-1">Or Describe Symptoms / या नीचे लिखें</p>
+              <p className="text-[8.5px] font-black text-slate-400 uppercase tracking-widest mb-1">{sc.or_describe || 'Or Describe Symptoms'}</p>
               <textarea
                 value={otherSymptom}
                 onChange={(e) => setOtherSymptom(e.target.value)}
-                placeholder="Type here or use voice/sandbox presets..."
+                placeholder={sc.placeholder || 'Type here or use voice/sandbox presets...'}
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-[11px] font-semibold text-slate-700 placeholder:text-slate-300 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/5 outline-none transition-all flex-1 min-h-[70px] resize-none"
               />
             </div>
 
-            {/* LANGUAGES STATUS STRIP */}
+            {/* LANGUAGES STATUS STRIP — show all langs from current chain */}
             <div className="flex items-center justify-between text-[7px] font-black uppercase tracking-widest text-slate-400">
               <div className="flex gap-1">
-                {['hi-IN', 'en-IN', 'ta-IN'].map(l => (
-                  <span
-                    key={l}
-                    className={`px-1.5 py-0.5 rounded border transition-all ${
-                      voiceLang === l
-                        ? 'bg-rose-100 border-rose-300 text-rose-600'
-                        : 'bg-slate-50 border-slate-100 text-slate-400'
-                    }`}
-                  >
-                    {LANG_LABELS[l]}
-                  </span>
+                {(LANG_CHAIN[lang] || ['hi-IN','en-IN','ta-IN','mr-IN','te-IN','bn-IN']).map(l => (
+                  <span key={l} className={`px-1.5 py-0.5 rounded border transition-all ${
+                    voiceLang === l ? 'bg-rose-100 border-rose-300 text-rose-600' : 'bg-slate-50 border-slate-100 text-slate-400'
+                  }`}>{LANG_LABELS[l]}</span>
                 ))}
               </div>
-              <span>Auto-Language detect</span>
+              <span>{sc.auto_detect || 'Auto-Language Detect'}</span>
             </div>
 
-            {/* ANALYZE / SUBMIT BUTTON */}
             <motion.button
               whileHover={!(selectedSymptoms.length === 0 && !otherSymptom) ? { y: -1, scale: 1.01 } : {}}
               whileTap={{ scale: 0.98 }}
@@ -695,11 +614,10 @@ export default function SymptomCheckerPage() {
                   : 'bg-emerald-600 text-white shadow-md hover:bg-emerald-700'
               }`}
             >
-              {loading ? (
-                <><RefreshCw className="w-3 h-3 animate-spin" /> Analyzing...</>
-              ) : (
-                <><BrainCircuit className="w-3.5 h-3.5" /> Analyze Symptoms</>
-              )}
+              {loading
+                ? <><RefreshCw className="w-3 h-3 animate-spin" /> {sc.analyzing || 'Analyzing...'}</>
+                : <><BrainCircuit className="w-3.5 h-3.5" /> {sc.analyze || 'Analyze Symptoms'}</>
+              }
             </motion.button>
 
             {/* Speech simulation overlays */}
@@ -723,16 +641,13 @@ export default function SymptomCheckerPage() {
                     ))}
                   </div>
                   <span className="text-[8px] font-black text-rose-600 uppercase tracking-widest mb-0.5 animate-pulse">
-                    Listening {voiceLang ? `(${LANG_LABELS[voiceLang]})` : ''}
+                    {sc.listening || 'Listening'} {voiceLang ? `(${LANG_LABELS[voiceLang]})` : ''}
                   </span>
                   <p className="text-[10px] font-bold text-rose-800 italic max-w-xs truncate px-2">
                     {interimText || '"Listening..."'}
                   </p>
-                  <button
-                    onClick={stopVoice}
-                    className="mt-3 px-2.5 py-1 bg-rose-600 text-white rounded-full text-[8px] font-black uppercase tracking-widest shadow hover:bg-rose-700"
-                  >
-                    Cancel ✕
+                  <button onClick={stopVoice} className="mt-3 px-2.5 py-1 bg-rose-600 text-white rounded-full text-[8px] font-black uppercase tracking-widest shadow hover:bg-rose-700">
+                    {sc.cancel || 'Cancel'} ✕
                   </button>
                 </motion.div>
               )}
@@ -743,10 +658,10 @@ export default function SymptomCheckerPage() {
           <div className={`bg-white rounded-2xl border border-slate-100 shadow-sm p-3.5 flex flex-col gap-3 h-full ${activeTab === 'checklist' ? 'flex' : 'hidden lg:flex'}`}>
             <div>
               <span className="inline-block px-1.5 py-0.2 bg-slate-100 text-slate-600 text-[8px] font-black uppercase tracking-widest rounded mb-0.5">
-                Quick Select
+                {sc.quick_select || 'Quick Select'}
               </span>
               <h3 className="text-xs sm:text-sm font-black text-slate-900 tracking-tight flex items-center gap-1.5">
-                🤒 Predefined Symptoms List
+                🤒 {sc.predefined_list || 'Predefined Symptoms List'}
               </h3>
             </div>
 
@@ -773,7 +688,6 @@ export default function SymptomCheckerPage() {
                       <p className={`font-black text-[10px] leading-tight truncate ${isSelected ? 'text-slate-900' : 'text-slate-700'}`}>
                         {item.label}
                       </p>
-                      <p className="text-[8px] text-slate-400 font-bold leading-none mt-0.5 truncate">{item.hindi}</p>
                     </div>
                     {item.severe && (
                       <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0 animate-pulse" title="Severe Symptom" />
@@ -783,11 +697,10 @@ export default function SymptomCheckerPage() {
               })}
             </div>
             
-            {/* Quick Status bar */}
             <div className="mt-auto pt-2 border-t border-slate-100 flex items-center justify-between text-[8px] font-black uppercase tracking-wider text-slate-400">
-              <span>Selected Symptoms:</span>
+              <span>{sc.selected_symptoms || 'Selected Symptoms:'}</span>
               <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-full font-bold">
-                {selectedSymptoms.length} Selected
+                {selectedSymptoms.length} {sc.selected_count || 'Selected'}
               </span>
             </div>
           </div>
@@ -812,24 +725,21 @@ export default function SymptomCheckerPage() {
                       <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center mb-2 border border-emerald-100/50">
                         <Activity className="w-5 h-5 text-emerald-600" />
                       </div>
-                      <h3 className="text-[10px] font-black text-slate-800 uppercase tracking-wider">How it works / जांच कैसे करें</h3>
+                      <h3 className="text-[10px] font-black text-slate-800 uppercase tracking-wider">{sc.how_it_works || 'How it works'}</h3>
                       <p className="text-[9.5px] text-slate-400 font-bold mt-1 max-w-[200px]">
-                        Choose symptoms or use presets. Triage reports load instantly.
+                        {sc.choose_symptoms || 'Choose symptoms or use presets. Triage reports load instantly.'}
                       </p>
                     </div>
                     
                     <div className="space-y-1.5 flex-1">
                       {[
-                        { num: '1️⃣', text: 'Select symptoms or speak info', textHi: 'लक्षण चुनें या बोलें' },
-                        { num: '2️⃣', text: 'Tap Analyze Symptoms button', textHi: 'जांच बटन दबाएं' },
-                        { num: '3️⃣', text: 'Get immediate AI advice & steps', textHi: 'तत्काल डॉक्टर सलाह पाएं' },
+                        { num: '1️⃣', text: sc.step1 || 'Select symptoms or speak info' },
+                        { num: '2️⃣', text: sc.step2 || 'Tap Analyze Symptoms button' },
+                        { num: '3️⃣', text: sc.step3 || 'Get immediate AI advice & steps' },
                       ].map((item, i) => (
                         <div key={i} className="flex items-center gap-2.5 p-2 bg-slate-50/50 rounded-lg border border-slate-100">
                           <span className="text-[10px] shrink-0">{item.num}</span>
-                          <div className="min-w-0">
-                            <p className="text-[9px] font-black leading-tight text-slate-800 truncate">{item.text}</p>
-                            <p className="text-[7.5px] font-semibold leading-none text-slate-400 truncate mt-0.5">{item.textHi}</p>
-                          </div>
+                          <p className="text-[9px] font-black leading-tight text-slate-800 truncate">{item.text}</p>
                         </div>
                       ))}
                     </div>
@@ -855,7 +765,7 @@ export default function SymptomCheckerPage() {
                     </div>
                     <div>
                       <p className="text-emerald-600 font-black uppercase tracking-widest text-[8px] mb-0.5">
-                        {isOnline ? 'AI Diagnosing...' : 'Analyzing Locally...'}
+                        {isOnline ? (sc.ai_diagnosing || 'AI Diagnosing...') : (sc.analyzing_locally || 'Analyzing Locally...')}
                       </p>
                       <div className="w-24 h-0.75 bg-slate-100 rounded-full overflow-hidden mx-auto mt-1.5">
                         <motion.div
@@ -887,67 +797,46 @@ export default function SymptomCheckerPage() {
                           {React.createElement(severityConfig[result.type]?.icon, { className: 'w-3 h-3' })}
                         </div>
                         <div>
-                          <p className="text-[8px] font-black text-white/70 uppercase tracking-widest leading-none">Assessment</p>
-                          <span className="text-[8px] font-black px-1.5 py-0.2 bg-white/25 rounded text-white mt-0.5 inline-block uppercase">
-                            {result.type}
-                          </span>
+                          <p className="text-[7px] font-black text-white/50 uppercase tracking-widest mb-0.5">{sc.assessment || 'Assessment'}</p>
+                          <span className="text-[8px] font-black px-1.5 py-0.2 bg-white/25 rounded text-white mt-0.5 inline-block uppercase">{result.type}</span>
                         </div>
-                        <button
-                          onClick={() => speakResult(result)}
-                          className={`ml-auto p-1 bg-white/10 hover:bg-white/20 border border-white/20 rounded text-white transition-all flex items-center justify-center ${
-                            isPlayingAudio ? 'animate-pulse scale-105 bg-white/20' : ''
-                          }`}
-                          title="Read out loud / बोलकर सुनें"
-                        >
+                        <button onClick={() => speakResult(result)} className={`ml-auto p-1 bg-white/10 hover:bg-white/20 border border-white/20 rounded text-white transition-all flex items-center justify-center ${ isPlayingAudio ? 'animate-pulse scale-105 bg-white/20' : '' }`} title="Read out loud">
                           <Volume2 className="w-3 h-3" />
                         </button>
                       </div>
 
                       <div>
                         <h2 className="text-xs sm:text-sm font-black tracking-tight leading-tight">{result.title}</h2>
-                        <p className="text-white/70 font-bold text-[9px] mt-0.5">{result.titleHindi}</p>
                       </div>
 
                       <p className="text-[9.5px] font-semibold leading-relaxed text-white/95">{result.message}</p>
-                      <p className="text-[8.5px] font-medium text-white/70 leading-relaxed italic">{result.messageHindi}</p>
 
                       {result.aiResult && (
                         <div className="p-2 bg-black/15 border border-white/10 rounded-lg">
-                          <p className="text-[7px] font-black text-white/50 uppercase tracking-widest mb-0.5">AI Diagnosis Summary</p>
+                          <p className="text-[7px] font-black text-white/50 uppercase tracking-widest mb-0.5">{sc.ai_diagnosis || 'AI Diagnosis Summary'}</p>
                           <p className="text-[10px] font-bold leading-snug">{result.aiResult}</p>
                         </div>
                       )}
 
                       <div className="p-2 bg-black/15 border border-white/10 rounded-lg">
-                        <p className="text-[7px] font-black text-white/50 uppercase tracking-widest mb-0.5">Where to Go</p>
+                        <p className="text-[7px] font-black text-white/50 uppercase tracking-widest mb-0.5">{sc.where_to_go || 'Where to Go'}</p>
                         <p className="text-[9.5px] font-bold leading-normal">{result.advice}</p>
                       </div>
 
                       {result.offline && (
                         <div className="p-2 bg-black/20 border border-white/10 rounded-lg text-[9px] font-semibold">
-                          <p className="font-black text-white/90">OFFLINE ASSESSMENT</p>
-                          <p className="text-white/75 mt-0.5">Using local fallback algorithms.</p>
+                          <p className="font-black text-white/90">{sc.offline_assessment || 'OFFLINE ASSESSMENT'}</p>
+                          <p className="text-white/75 mt-0.5">{sc.offline_local || 'Using local fallback algorithms.'}</p>
                         </div>
                       )}
                     </div>
 
                     <div className="flex gap-2 mt-3 shrink-0 relative z-10">
-                      <button
-                        onClick={downloadReport}
-                        className="flex-1 py-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-lg font-black text-[9px] uppercase tracking-widest transition-all flex items-center justify-center gap-1"
-                      >
-                        <Download className="w-3 h-3" /> Report
+                      <button onClick={downloadReport} className="flex-1 py-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-lg font-black text-[9px] uppercase tracking-widest transition-all flex items-center justify-center gap-1">
+                        <Download className="w-3 h-3" /> {sc.report || 'Report'}
                       </button>
-                      <button
-                        onClick={() => {
-                          setResult(null);
-                          setSelectedSymptoms([]);
-                          setOtherSymptom('');
-                          setActiveTab('input');
-                        }}
-                        className="flex-1 py-2 bg-white/20 hover:bg-white/30 border border-white/30 text-white rounded-lg font-black text-[9px] uppercase tracking-widest transition-all flex items-center justify-center gap-1"
-                      >
-                        🔄 Check More
+                      <button onClick={() => { setResult(null); setSelectedSymptoms([]); setOtherSymptom(''); setActiveTab('input'); }} className="flex-1 py-2 bg-white/20 hover:bg-white/30 border border-white/30 text-white rounded-lg font-black text-[9px] uppercase tracking-widest transition-all flex items-center justify-center gap-1">
+                        🔄 {sc.check_more || 'Check More'}
                       </button>
                     </div>
                   </motion.div>
@@ -961,7 +850,7 @@ export default function SymptomCheckerPage() {
               <div className="flex items-center gap-2 bg-emerald-50/70 border border-emerald-100 rounded-xl p-2 flex-1">
                 <Hospital className="w-4.5 h-4.5 text-emerald-600 shrink-0" />
                 <div className="min-w-0">
-                  <p className="text-[7px] font-black text-slate-400 uppercase tracking-wider">Health</p>
+                  <p className="text-[7px] font-black text-slate-400 uppercase tracking-wider">{sc.health_line || 'Health'}</p>
                   <p className="text-xs font-black text-emerald-600 leading-none">104</p>
                 </div>
               </div>
@@ -969,7 +858,7 @@ export default function SymptomCheckerPage() {
               <div className="flex items-center gap-2 bg-rose-50/70 border border-rose-100 rounded-xl p-2 flex-1">
                 <Stethoscope className="w-4.5 h-4.5 text-rose-500 shrink-0" />
                 <div className="min-w-0">
-                  <p className="text-[7px] font-black text-slate-400 uppercase tracking-wider">Ambulance</p>
+                  <p className="text-[7px] font-black text-slate-400 uppercase tracking-wider">{sc.ambulance || 'Ambulance'}</p>
                   <p className="text-xs font-black text-rose-500 leading-none">108</p>
                 </div>
               </div>
