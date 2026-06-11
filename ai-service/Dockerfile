@@ -21,4 +21,4 @@ EXPOSE 8000
 RUN useradd -m -u 1001 swasthai && chown -R swasthai:swasthai /app
 USER swasthai
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]

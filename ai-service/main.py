@@ -399,6 +399,11 @@ try:
     if not deep_model_bundle and not disease_pipeline:
         print("[WARNING] No models found. AI service will be limited.")
 
+    # Force garbage collection to clean up memory allocated during unpickling
+    import gc
+    gc.collect()
+    print("[OK] Garbage collection forced after model load.")
+
 except Exception as e:
     print(f"[ERROR] Model loading failed: {e}")
 
