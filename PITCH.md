@@ -95,6 +95,7 @@ Most health applications simply call a third-party AI API and display the result
 ## How we built it
 
 ### Frontend
+*   Vercel v0 (Used for scaffolding the initial layout structures, dashboard components, and form designs)
 *   React 18 + Vite
 *   Tailwind CSS (Luminous Emerald design system)
 *   Service Workers + LocalStorage/IndexedDB

@@ -4,6 +4,17 @@ All notable changes and feature developments completed during the hackathon wind
 
 ## June 11, 2026
 ### Added
+- **Child Nutrition Dashboard Refinement**:
+  - Revamped `ChildNutritionPage.jsx` with a modern status-colored border system, compact key metrics grid cards, and a persistent action dock optimized for mobile views.
+- **Role-Based Routing Adjustments**:
+  - Updated access controls in `App.jsx` to permit `ngo` (ASHA) role users to access the pediatric skin scanner route (`/skin-disease`), improving field diagnostic capabilities.
+- **SQL Aggregation Strict Mode Fix**:
+  - Corrected SQL queries in `backend/routes/ngo.js` to run under strict `GROUP BY` configurations by ensuring select fields match group conditions correctly.
+- **Admin UI Polish & Data Visualizations**:
+  - Upgraded font sizes and legibility across admin metrics cards in `CommandCenterView.jsx` and `ProductionEvidencePanel.jsx`.
+  - Replaced flag emoji references with clean SVG vectors, resolved profile clickability, and shortened pool labels (e.g. `"PG Pool"`).
+- **Vulnerability Risk Intelligence Visual Upgrades**:
+  - Redesigned the epidemiological details and risk metrics panel in `PredictiveRiskView.jsx` to include professional health gradient meters and color-coded status indicator borders.
 - **AWS Database Cloud Integration (Aurora PostgreSQL & DynamoDB)**:
   - Configured and deployed production-ready Amazon Aurora PostgreSQL Serverless v2 cluster (`swasthai-cluster`) running under custom budget caps (0.5 to 1.0 ACUs) to optimize credits.
   - Initialized all relational tables (symptoms, pregnancy, malnutrition, referrals, vaccinations, audit logs) on AWS database cluster via automated Node.js backend migrations.

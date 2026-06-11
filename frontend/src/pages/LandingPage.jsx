@@ -324,11 +324,11 @@ export default function LandingPage() {
               className="flex flex-col sm:flex-row items-center gap-3 sm:gap-6 w-full max-w-xl px-4 mb-8"
             >
                <button 
-                 onClick={() => navigate('/symptoms')}
-                 aria-label="Start Symptoms Health Check"
+                 onClick={() => navigate('/demo')}
+                 aria-label="Explore Demo Portal"
                  className="w-full py-4 sm:py-6 bg-emerald-600 text-white rounded-full font-black uppercase tracking-widest shadow-2xl hover:bg-emerald-700 focus-visible:ring-4 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 outline-none transition-all flex items-center justify-center gap-4 text-[11px] sm:text-sm group"
                >
-                  {t.nav?.check_symptoms || 'Start Health Check'}
+                  Explore Demo Portal
                   <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-2 transition-transform" />
                </button>
                <button 

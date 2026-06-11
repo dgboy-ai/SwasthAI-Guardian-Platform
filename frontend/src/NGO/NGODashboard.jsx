@@ -314,36 +314,73 @@ export default function NGODashboard() {
 
         {/* 🚨 AI OUTBREAK ALERT BANNER 🚨 */}
         <AnimatePresence>
-          {outbreaks.length > 0 && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="mb-8 p-6 bg-red-600 rounded-[2rem] text-white shadow-2xl shadow-red-600/20 relative overflow-hidden group"
-            >
-              <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:rotate-12 transition-transform duration-1000">
-                <AlertTriangle className="w-40 h-40" />
-              </div>
-              <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
-                <div className="flex items-center gap-5">
-                  <div className="w-14 h-14 bg-white/20 backdrop-blur-xl rounded-2xl flex items-center justify-center animate-pulse">
-                    <Shield className="w-7 h-7 text-white" />
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-black uppercase tracking-tighter leading-none mb-1">Neural Outbreak Detected</h2>
-                    <p className="text-red-100 text-xs font-bold">The AI Agent has detected a disease cluster in your village area.</p>
-                  </div>
+          {(() => {
+            const filteredOutbreaks = outbreaks.filter(ob => {
+              if (!ob.classification) return false;
+              const name = ob.classification.toLowerCase();
+              if (name === 'unknown' || name === 'sync restored' || name === 'sync success') return false;
+              return true;
+            });
+
+            if (filteredOutbreaks.length === 0) return null;
+
+            return (
+              <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="mb-8 bg-rose-50 border border-rose-200 rounded-[2rem] p-6 shadow-sm relative overflow-hidden"
+              >
+                <div className="absolute top-0 right-0 p-8 opacity-[0.03] pointer-events-none">
+                  <AlertTriangle className="w-40 h-40 text-rose-900" />
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  {outbreaks.map((ob, idx) => (
-                    <div key={idx} className="bg-white/10 backdrop-blur-md border border-white/20 px-4 py-2 rounded-xl">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-red-200">Alert #{idx+1}</p>
-                      <p className="text-sm font-black">{ob.classification}</p>
+                <div className="flex items-start gap-4 relative z-10">
+                  <div className="w-12 h-12 bg-rose-500 text-white rounded-2xl flex items-center justify-center shrink-0 shadow-lg shadow-rose-500/20">
+                    <AlertTriangle className="w-6 h-6 animate-pulse" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
+                      <div>
+                        <h2 className="text-lg font-black text-rose-900 uppercase tracking-wide">Active Disease Outbreaks ({filteredOutbreaks.length})</h2>
+                        <p className="text-rose-600 text-xs font-semibold mt-0.5">The autonomous AI Outbreak Agent has identified active clusters in your sector.</p>
+                      </div>
+                      <span className="px-3 py-1 bg-rose-500 text-white text-[9px] font-black uppercase tracking-widest rounded-full">Immediate Action Required</span>
                     </div>
-                  ))}
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
+                      {filteredOutbreaks.slice(0, 4).map((ob, idx) => {
+                        const parts = ob.classification.split(' - ');
+                        const title = parts[0] || 'Unknown Alert';
+                        const details = parts[1] || '';
+
+                        return (
+                          <div key={idx} className="bg-white border border-rose-100 rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow text-left">
+                            <div className="flex items-center gap-2 mb-2 relative">
+                              <span className="w-2 h-2 rounded-full bg-rose-600 animate-ping absolute" />
+                              <span className="w-2 h-2 rounded-full bg-rose-600 relative inline-block shrink-0" />
+                              <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider pl-1.5 break-words">
+                                Alert #{idx + 1}: {title}
+                              </h3>
+                            </div>
+                            {details && (
+                              <p className="text-[11px] text-slate-500 font-medium leading-relaxed bg-rose-50/40 border border-rose-50 p-2.5 rounded-xl mt-1.5">
+                                {details}
+                              </p>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {filteredOutbreaks.length > 4 && (
+                      <p className="text-[10px] font-black text-rose-600 uppercase tracking-widest mt-4 text-center">
+                        + {filteredOutbreaks.length - 4} more outbreaks active in the district
+                      </p>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </motion.div>
-          )}
+              </motion.div>
+            );
+          })()}
         </AnimatePresence>
 
         {/* Header */}

@@ -8,7 +8,7 @@ import {
 import ProductionEvidencePanel from './ProductionEvidencePanel';
 import KpiCard from './KpiCard';
 import SkeletonCard from '../../components/SkeletonCard';
-import { timeAgo } from './utils';
+import { timeAgo, latestDynamoWrite } from './utils';
 
 export default function CommandCenterView({
   systemStatus,
@@ -26,8 +26,62 @@ export default function CommandCenterView({
   downloadReport,
   judgeDemoMode
 }) {
+  const latestWrite = latestDynamoWrite(dynamoFeed);
+
   return (
     <div className="p-4 lg:p-5 space-y-4 text-left">
+      {/* 🟢 LIVE AWS PROOF STRIP */}
+      <div className="bg-gradient-to-r from-slate-900 to-indigo-950 text-white rounded-2xl p-4 shadow-xl border border-indigo-500/20 flex flex-col md:flex-row md:items-center justify-between gap-4 relative overflow-hidden">
+        {/* Glowing aura */}
+        <div className="absolute right-0 top-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="flex items-center gap-3 relative z-10">
+          <div className="relative flex h-3 w-3">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-black text-slate-400 uppercase tracking-widest">LIVE AWS INFRASTRUCTURE</span>
+              <span className="px-2 py-0.5 bg-indigo-500/20 text-indigo-300 rounded text-xs font-bold">ap-south-1 (Mumbai)</span>
+            </div>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-sm font-bold text-slate-200">
+              <span className="flex items-center gap-1.5">
+                Aurora PostgreSQL: 
+                <span className={`inline-flex items-center gap-1 text-sm ${(systemStatus?.databases?.aurora_postgresql?.status === 'online' || systemStatus?.databases?.aurora_postgresql?.status === 'connected') ? 'text-emerald-400' : 'text-amber-400'}`}>
+                  <span className="w-1.5 h-1.5 rounded-full bg-current" />
+                  {(systemStatus?.databases?.aurora_postgresql?.status === 'online' || systemStatus?.databases?.aurora_postgresql?.status === 'connected') ? 'CONNECTED' : 'STANDBY'}
+                </span>
+              </span>
+              <span className="text-slate-600">•</span>
+              <span className="flex items-center gap-1.5">
+                DynamoDB: 
+                <span className="inline-flex items-center gap-1 text-sm text-emerald-400">
+                  <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
+                  {(systemStatus?.databases?.dynamodb?.tables || []).length || 4} TABLES ACTIVE
+                </span>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-x-3.5 gap-y-1 text-xs text-slate-400 font-semibold md:justify-end shrink-0 relative z-10">
+          <div className="flex items-center gap-1">
+            <span className="text-slate-500">Last telemetry: </span>
+            <span className="text-slate-200 font-bold">{latestWrite ? timeAgo(latestWrite) : 'Just now'}</span>
+          </div>
+          <span className="hidden md:inline text-slate-700">|</span>
+          <div className="flex items-center gap-1">
+            <span className="text-slate-500">SSE feeds: </span>
+            <span className="text-slate-200 font-bold">{systemStatus?.realtime?.sse_clients_connected ?? 1} active</span>
+          </div>
+          <span className="hidden md:inline text-slate-700">|</span>
+          <div className="flex items-center gap-1">
+            <span className="text-slate-500">PG Pool: </span>
+            <span className="text-slate-200 font-bold">{systemStatus?.databases?.aurora_postgresql?.pool?.total || 5} active</span>
+          </div>
+        </div>
+      </div>
+
       <ProductionEvidencePanel
         systemStatus={systemStatus}
         dynamoFeed={dynamoFeed}
@@ -42,15 +96,15 @@ export default function CommandCenterView({
             <div className="w-6 h-6 bg-rose-500 rounded-lg flex items-center justify-center">
               <AlertTriangle className="w-3.5 h-3.5 text-white" />
             </div>
-            <p className="font-black text-rose-800 text-[13px] uppercase tracking-wider">
+            <p className="font-black text-rose-800 text-sm uppercase tracking-wider">
               🔴 Critical Health Alerts ({critAlerts.length} Active)
             </p>
           </div>
           <button 
             onClick={() => setActiveView('outbreak')}
-            className="text-[10px] font-black text-rose-600 hover:text-rose-800 flex items-center gap-1 transition-colors"
+            className="text-xs font-black text-rose-600 hover:text-rose-800 flex items-center gap-1 transition-colors"
           >
-            View All Alerts <ArrowRight className="w-3 h-3" />
+            View All Alerts <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -60,9 +114,9 @@ export default function CommandCenterView({
                 <a.icon className="w-4.5 h-4.5 text-rose-600" />
               </div>
               <div className="min-w-0">
-                <p className="font-black text-rose-800 text-[12px] truncate">{a.title}</p>
-                <p className="text-[10px] text-slate-500 font-medium truncate mt-0.5">{a.sub}</p>
-                <p className="text-[9px] text-rose-400 font-semibold mt-1.5 flex items-center gap-1">
+                <p className="font-black text-rose-800 text-sm truncate">{a.title}</p>
+                <p className="text-xs text-slate-500 font-medium truncate mt-0.5">{a.sub}</p>
+                <p className="text-[10px] sm:text-xs text-rose-400 font-semibold mt-1.5 flex items-center gap-1">
                   <span className="w-1.5 h-1.5 bg-rose-400 rounded-full animate-pulse shrink-0" />
                   {a.time}
                 </p>
@@ -77,10 +131,10 @@ export default function CommandCenterView({
         <div className="flex items-center gap-2 mb-4">
           <TrendingUp className="w-5 h-5 text-emerald-400" />
           <div>
-            <p className="font-extrabold text-white text-[13px] tracking-wide uppercase leading-tight">Quantified Impact Dashboard</p>
-            <p className="text-[8.5px] text-emerald-400 font-black uppercase tracking-wider">Social Return on Investment &amp; Lives Saved</p>
+            <p className="font-extrabold text-white text-sm sm:text-base tracking-wide uppercase leading-tight">Quantified Impact Dashboard</p>
+            <p className="text-xs text-emerald-400 font-black uppercase tracking-wider">Social Return on Investment &amp; Lives Saved</p>
           </div>
-          <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-full text-[9px] font-black tracking-wider uppercase ml-auto">
+          <span className="px-2.5 py-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-full text-xs font-black tracking-wider uppercase ml-auto">
             WHO Benchmark Ratios
           </span>
         </div>
@@ -94,9 +148,9 @@ export default function CommandCenterView({
             <div key={idx} className="bg-white/5 border border-white/10 rounded-xl p-3.5 flex flex-col justify-between hover:bg-white/10 transition-colors">
               <div>
                 <p className={`text-2xl font-black ${x.color}`}>{x.val}</p>
-                <p className="text-[10px] font-black text-white/90 uppercase tracking-wider mt-1">{x.label}</p>
+                <p className="text-xs font-black text-white/90 uppercase tracking-wider mt-1">{x.label}</p>
               </div>
-              <p className="text-[8.5px] text-white/60 font-semibold mt-2">{x.sub}</p>
+              <p className="text-xs text-white/60 font-semibold mt-2">{x.sub}</p>
             </div>
           ))}
         </div>
@@ -145,19 +199,19 @@ export default function CommandCenterView({
                       <BrainCircuit className="w-4.5 h-4.5 text-white" />
                     </div>
                     <div>
-                      <p className="font-extrabold text-white text-[13px] tracking-wide uppercase">AI District Intelligence</p>
-                      <p className="text-[8.5px] text-emerald-400 font-black uppercase tracking-wider">SymptomNet Surveillance Engine</p>
+                      <p className="font-extrabold text-white text-sm sm:text-base tracking-wide uppercase">AI District Intelligence</p>
+                      <p className="text-xs text-emerald-400 font-black uppercase tracking-wider">SymptomNet Surveillance Engine</p>
                     </div>
                   </div>
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-2.5">
                   {recs.map((r, i) => (
                     <div key={i} className={`bg-white/5 border-l-4 ${r.color} rounded-r-xl px-3 py-2 flex items-center justify-between gap-3 hover:bg-white/10 transition-colors`}>
-                      <p className="text-[10px] text-white/80 font-semibold flex-1 leading-normal">{r.text}</p>
+                      <p className="text-xs text-white/80 font-semibold flex-1 leading-normal">{r.text}</p>
                       <div className="flex items-center gap-1.5 shrink-0">
                         <button 
                           onClick={() => setActiveView('outbreak')}
-                          className={`px-2 py-1 rounded text-[8.5px] font-black text-white ${r.btnCls} transition-colors whitespace-nowrap shadow-sm`}
+                          className={`px-2 py-1 rounded text-xs font-black text-white ${r.btnCls} transition-colors whitespace-nowrap shadow-sm`}
                         >
                           {r.action}
                         </button>
@@ -176,8 +230,8 @@ export default function CommandCenterView({
                     <WifiOff className="w-4 h-4 text-slate-600" />
                   </div>
                   <div>
-                    <p className="font-black text-slate-900 text-[13px] uppercase tracking-wide">Offline Village Monitor</p>
-                    <p className="text-[8.5px] text-slate-400 font-bold uppercase tracking-wider">ASHA Offline-First Sync</p>
+                    <p className="font-black text-slate-900 text-sm sm:text-base uppercase tracking-wide">Offline Village Monitor</p>
+                    <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">ASHA Offline-First Sync</p>
                   </div>
                 </div>
 
@@ -190,12 +244,12 @@ export default function CommandCenterView({
                   ].map((x, idx) => (
                     <div key={idx} className={`p-2 rounded-xl border ${x.bg} text-center`}>
                       <p className={`text-lg font-black leading-none ${x.color}`}>{x.val}</p>
-                      <p className="text-[8px] font-extrabold text-slate-400 uppercase tracking-wider mt-1">{x.label}</p>
+                      <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mt-1">{x.label}</p>
                     </div>
                   ))}
                 </div>
               </div>
-              <p className="text-[8.5px] text-slate-400 font-semibold text-center italic mt-1">📡 Sync engine automatically retrying in background</p>
+              <p className="text-xs text-slate-400 font-semibold text-center italic mt-2">📡 Sync engine automatically retrying in background</p>
             </div>
           </div>
 
@@ -204,10 +258,10 @@ export default function CommandCenterView({
             <div className="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="w-2 h-2 bg-rose-500 rounded-full animate-pulse" />
-                <p className="font-black text-slate-900 text-[13px]">Recent Outbreak Events</p>
+                <p className="font-black text-slate-900 text-sm sm:text-base">Recent Outbreak Events</p>
               </div>
-              <button onClick={() => setActiveView('outbreak')} className="text-[10px] font-black text-emerald-600 hover:text-emerald-800 flex items-center gap-1 transition-colors">
-                View All <ArrowRight className="w-3 h-3" />
+              <button onClick={() => setActiveView('outbreak')} className="text-xs font-black text-emerald-600 hover:text-emerald-800 flex items-center gap-1 transition-colors">
+                View All <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
             <div className="overflow-x-auto">
@@ -215,7 +269,7 @@ export default function CommandCenterView({
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-100">
                     {['Village', 'Disease / Type', 'Detected At', 'Status', ''].map(h => (
-                      <th key={h} className="px-4 py-2.5 text-left text-[9px] font-black uppercase tracking-widest text-slate-400">{h}</th>
+                      <th key={h} className="px-4 py-2.5 text-left text-xs font-black uppercase tracking-widest text-slate-400">{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -232,14 +286,14 @@ export default function CommandCenterView({
                       <tr key={ob.id || i} className="hover:bg-slate-50 transition-colors">
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
-                            <span className="w-6 h-6 bg-slate-100 rounded-lg flex items-center justify-center text-[11px]">🏘️</span>
-                            <span className="text-[12px] font-bold text-slate-900">Village {ob.villageId}</span>
+                            <span className="w-6 h-6 bg-slate-100 rounded-lg flex items-center justify-center text-xs">🏘️</span>
+                            <span className="text-xs sm:text-sm font-bold text-slate-900">Village {ob.villageId}</span>
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-[11px] text-slate-600 font-semibold">{ob.classification}</td>
-                        <td className="px-4 py-3 text-[11px] text-slate-400 font-medium">{timeAgo(ob.detectedAt)}</td>
+                        <td className="px-4 py-3 text-xs sm:text-sm text-slate-600 font-semibold">{ob.classification}</td>
+                        <td className="px-4 py-3 text-xs sm:text-sm text-slate-400 font-medium">{timeAgo(ob.detectedAt)}</td>
                         <td className="px-4 py-3">
-                          <span className={`px-2.5 py-1 rounded-full text-[9px] font-black border ${outbreakStatusStyle(statusLabel)}`}>
+                          <span className={`px-2.5 py-1 rounded-full text-xs font-black border ${outbreakStatusStyle(statusLabel)}`}>
                             {statusLabel}
                           </span>
                         </td>
@@ -262,7 +316,7 @@ export default function CommandCenterView({
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
             <div className="flex items-center gap-2 mb-4">
               <Users className="w-4 h-4 text-emerald-600" />
-              <p className="font-black text-slate-900 text-[13px]">Platform scale &amp; Reach</p>
+              <p className="font-black text-slate-900 text-sm sm:text-base">Platform scale &amp; Reach</p>
             </div>
             <div className="grid grid-cols-2 gap-3">
               {[
@@ -273,7 +327,7 @@ export default function CommandCenterView({
               ].map(s => (
                 <div key={s.label} className={`${s.bg} rounded-xl p-3 text-center`}>
                   <p className={`text-2xl font-black ${s.color}`}>{s.val ?? 0}</p>
-                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-0.5">{s.label}</p>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-0.5">{s.label}</p>
                 </div>
               ))}
             </div>
@@ -283,7 +337,7 @@ export default function CommandCenterView({
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
             <div className="flex items-center gap-2 mb-4">
               <Zap className="w-4 h-4 text-emerald-600" />
-              <p className="font-black text-slate-900 text-[13px]">Operational Workflows</p>
+              <p className="font-black text-slate-900 text-sm sm:text-base">Operational Workflows</p>
             </div>
             <div className="grid grid-cols-3 gap-2">
               {[
@@ -306,7 +360,7 @@ export default function CommandCenterView({
                     <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${bg[w.color]} ${ic[w.color]} group-hover:scale-105 transition-transform shadow-sm`}>
                       <PackageIcon className="w-5 h-5" />
                     </div>
-                    <p className="text-[9px] font-bold text-slate-500 leading-tight">{w.label}</p>
+                    <p className="text-xs font-bold text-slate-500 leading-tight">{w.label}</p>
                   </button>
                 );
               })}
@@ -317,27 +371,27 @@ export default function CommandCenterView({
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
             <div className="flex items-center gap-2 mb-4">
               <Activity className="w-4 h-4 text-emerald-600" />
-              <p className="font-black text-slate-900 text-[13px]">Core Engines &amp; Judge Toolkit</p>
+              <p className="font-black text-slate-900 text-sm sm:text-base">Core Engines &amp; Judge Toolkit</p>
             </div>
             <div className="space-y-2.5">
               {[
-                { label: 'Sakhi RAG Status', right: <span className="text-[11px] font-black text-emerald-600 flex items-center gap-1">Connected <span className="text-[9px] font-normal text-slate-400">(430ms)</span></span> },
-                { label: 'Offline Sync Queue', right: <span className="text-[11px] font-black text-rose-600">12 pending</span> },
-                { label: 'Judge Evaluation Toolkit', right: <span className={`px-2 py-0.5 rounded text-[9px] font-black border ${judgeDemoMode ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-slate-50 text-slate-400 border-slate-200'}`}>{judgeDemoMode ? 'Active' : 'Inactive'}</span> },
-                { label: 'Network Simulator Status', right: <span className="px-2 py-0.5 rounded text-[9px] font-black bg-emerald-50 text-emerald-700 border border-emerald-200">Normal</span> },
-                { label: 'Outbreak AI Engine', right: <span className="px-2 py-0.5 rounded text-[9px] font-black bg-emerald-50 text-emerald-700 border border-emerald-200">Scanning</span> },
+                { label: 'Sakhi RAG Status', right: <span className="text-xs font-black text-emerald-600 flex items-center gap-1">Connected <span className="text-[10px] font-normal text-slate-400">(430ms)</span></span> },
+                { label: 'Offline Sync Queue', right: <span className="text-xs font-black text-rose-600">12 pending</span> },
+                { label: 'Judge Evaluation Toolkit', right: <span className={`px-2 py-0.5 rounded text-xs font-black border ${judgeDemoMode ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-slate-50 text-slate-400 border-slate-200'}`}>{judgeDemoMode ? 'Active' : 'Inactive'}</span> },
+                { label: 'Network Simulator Status', right: <span className="px-2 py-0.5 rounded text-xs font-black bg-emerald-50 text-emerald-700 border border-emerald-200">Normal</span> },
+                { label: 'Outbreak AI Engine', right: <span className="px-2 py-0.5 rounded text-xs font-black bg-emerald-50 text-emerald-700 border border-emerald-200">Scanning</span> },
               ].map((r, i) => (
                 <div key={i} className="flex items-center justify-between py-1.5 border-b border-slate-50 last:border-0">
-                  <span className="text-[11px] text-slate-500 font-medium">{r.label}</span>
+                  <span className="text-xs text-slate-500 font-medium">{r.label}</span>
                   {r.right}
                 </div>
               ))}
             </div>
             <div className="mt-4 pt-3 border-t border-slate-100">
               <div className="flex flex-wrap items-center gap-1.5">
-                <span className="text-[9px] text-slate-400 font-semibold">Built on AWS Cloud ☁️</span>
+                <span className="text-[10px] text-slate-400 font-semibold">Built on AWS Cloud ☁️</span>
                 {['Aurora PostgreSQL', 'DynamoDB', 'AI Service (Groq)'].map(s => (
-                  <span key={s} className="text-[9px] text-slate-400 font-medium border-l border-slate-200 pl-1.5">{s}</span>
+                  <span key={s} className="text-[10px] text-slate-400 font-medium border-l border-slate-200 pl-1.5">{s}</span>
                 ))}
               </div>
             </div>

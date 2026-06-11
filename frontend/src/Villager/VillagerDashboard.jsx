@@ -170,8 +170,8 @@ export default function VillagerDashboard() {
             <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center mb-6 group-hover:bg-emerald-600 group-hover:text-white transition-all shadow-sm">
               <Landmark className="w-6 h-6" />
             </div>
-            <h3 className="text-lg font-black text-slate-900 tracking-tight mb-2">Government Schemes</h3>
-            <p className="text-slate-500 text-xs font-medium leading-relaxed">सरकारी योजनाएँ · Find welfare programs you are eligible for.</p>
+            <h3 className="text-lg font-black text-slate-900 tracking-tight mb-2">{t.schemes?.title || 'Government Schemes'}</h3>
+            <p className="text-slate-500 text-xs font-medium leading-relaxed">{t.schemes?.subtitle || 'Find welfare programs you are eligible for.'}</p>
           </Link>
 
         </div>

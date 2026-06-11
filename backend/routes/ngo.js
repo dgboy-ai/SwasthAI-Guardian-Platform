@@ -919,7 +919,7 @@ router.get('/impact-report', auth, checkRole(['ngo', 'admin']), logAudit('genera
       FROM referrals r 
       JOIN users u ON r.referred_by = u.id 
       WHERE r.status = 'completed'${isNGO ? ' AND r."villageId" = ?' : ''} 
-      GROUP BY u.id 
+      GROUP BY u.id, u.name 
       ORDER BY cnt DESC LIMIT 1
     `, isNGO ? [villageId] : []);
     const topASHA = topASHARow?.name || "Sunita Devi (ASHA)";
@@ -929,7 +929,7 @@ router.get('/impact-report', auth, checkRole(['ngo', 'admin']), logAudit('genera
       FROM referrals r 
       JOIN village_health v ON r."villageId" = v."villageId" 
       WHERE r.status = 'completed'${isNGO ? ' AND r."villageId" = ?' : ''} 
-      GROUP BY v."villageId" 
+      GROUP BY v."villageId", v.name 
       ORDER BY cnt DESC LIMIT 1
     `, isNGO ? [villageId] : []);
     const topVillage = topVillageRow?.name || "Berasia (V-047)";

@@ -58,7 +58,10 @@ function PageLoader() {
 const ProtectedRoute = ({ children, allowedRole }) => {
   const { user } = useAuth();
   if (!user) return <Navigate to="/login" replace />;
-  if (allowedRole && user.role !== allowedRole && user.role !== 'admin') return <Navigate to="/" replace />;
+  if (allowedRole) {
+    const roles = Array.isArray(allowedRole) ? allowedRole : [allowedRole];
+    if (!roles.includes(user.role) && user.role !== 'admin') return <Navigate to="/" replace />;
+  }
   return children;
 };
 
@@ -126,7 +129,7 @@ export default function App() {
               } />
               
               <Route path="/skin-disease" element={
-                <ProtectedRoute allowedRole="villager">
+                <ProtectedRoute allowedRole={["villager", "ngo"]}>
                    <LayoutWrapper><ErrorBoundary><SkinDiseaseCheckerPage /></ErrorBoundary></LayoutWrapper>
                 </ProtectedRoute>
               } />
