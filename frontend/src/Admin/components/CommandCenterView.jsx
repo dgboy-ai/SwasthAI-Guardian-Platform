@@ -24,9 +24,11 @@ export default function CommandCenterView({
   isLoading,
   setActiveView,
   downloadReport,
-  judgeDemoMode
+  judgeDemoMode,
+  liveAmbulanceLocations = {}
 }) {
   const latestWrite = latestDynamoWrite(dynamoFeed);
+  const activeDispatches = Object.values(liveAmbulanceLocations);
 
   return (
     <div className="p-4 lg:p-5 space-y-4 text-left">
@@ -184,6 +186,67 @@ export default function CommandCenterView({
               </>
             )}
           </div>
+
+          {/* 🚑 Live Ambulance WebSocket Telemetry Panel */}
+          {activeDispatches.length > 0 && (
+            <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center shadow-sm">
+                    <Truck className="w-5 h-5 animate-bounce" />
+                  </div>
+                  <div>
+                    <h3 className="font-black text-slate-900 text-[14px] uppercase tracking-wide">Live Dispatch Telemetry</h3>
+                    <p className="text-[11px] text-emerald-600 font-bold uppercase tracking-wider">WebSocket Gateway Stream Connected</p>
+                  </div>
+                </div>
+                <span className="px-2.5 py-1 bg-emerald-100 text-emerald-800 border border-emerald-250 rounded-full text-[10px] font-black tracking-wider uppercase animate-pulse">
+                  {activeDispatches.length} Active Dispatch{activeDispatches.length > 1 ? 'es' : ''}
+                </span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                {activeDispatches.map((loc) => (
+                  <div key={loc.requestId} className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3 hover:border-slate-350 hover:shadow-md transition-all">
+                    <div className="flex items-center justify-between">
+                      <div className="min-w-0">
+                        <p className="text-xs font-black text-slate-800 truncate">Patient: {loc.patientName}</p>
+                        <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-widest mt-0.5">ID: AMB-{loc.requestId}</p>
+                      </div>
+                      <span className={`px-2 py-0.5 rounded text-[9px] font-black border uppercase tracking-wider shrink-0 ${
+                        loc.priority === 'Critical' ? 'bg-rose-50 text-rose-700 border-rose-250 animate-pulse' : 'bg-orange-50 text-orange-700 border-orange-255'
+                      }`}>
+                        {loc.priority}
+                      </span>
+                    </div>
+
+                    <div className="bg-white border border-slate-150 rounded-xl p-2.5 space-y-1 text-[11px] font-medium text-slate-600">
+                      <p className="flex justify-between">
+                        <span className="text-slate-400 font-bold">GPS Lat:</span>
+                        <span className="font-mono text-slate-800">{loc.coords?.lat}</span>
+                      </p>
+                      <p className="flex justify-between">
+                        <span className="text-slate-400 font-bold">GPS Lng:</span>
+                        <span className="font-mono text-slate-800">{loc.coords?.lng}</span>
+                      </p>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between text-[10px] text-slate-500 font-extrabold uppercase tracking-wide">
+                        <span>Progress</span>
+                        <span className="text-emerald-700 font-black">ETA: {loc.eta} min{loc.eta !== 1 ? 's' : ''}</span>
+                      </div>
+                      <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+                        <div 
+                          className="bg-emerald-500 h-full rounded-full transition-all duration-1000"
+                          style={{ width: `${Math.max(5, Math.min(100, ((14 - loc.eta) / 14) * 100))}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Row of AI District Intelligence & Offline Village Monitor */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

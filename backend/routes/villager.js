@@ -491,7 +491,7 @@ router.post('/ambulance', auth, checkRole(['villager', 'ngo', 'admin']), logAudi
     // DynamoDB telemetry & SSE broadcast are best-effort (fire-and-forget).
     res.status(201).json({ status: 'dispatched', eta: '14 mins', requestId });
 
-    // Non-blocking: push to DynamoDB & broadcast to admin SSE stream
+    // Non-blocking: push to DynamoDB & broadcast to admin SSE stream & trigger WebSocket Telemetry Simulation
     (async () => {
       try {
         const districtId = await getDistrictId(db, pool, usingSQLite, req.user.villageId || location);
@@ -508,6 +508,81 @@ router.post('/ambulance', auth, checkRole(['villager', 'ngo', 'admin']), logAudi
           req.app.locals.broadcastToAdmins('ambulance', requestObj);
         }
         console.log(`[AMBULANCE] Request #${requestId} from user ${userId} — ${priority} at ${location} → SSE broadcast OK`);
+
+        // WebSocket route telemetry simulation
+        const wss = req.app.locals.wss;
+        const wsClients = req.app.locals.wsClients;
+        const activeTeles = req.app.locals.activeTeles;
+
+        if (wss) {
+          // Varanasi base coordinates
+          const baseLat = 25.3176;
+          const baseLng = 82.9739;
+          // Extract target coordinates if GPS is present, or create a random target within Varanasi
+          let targetLat = 25.3176 + (Math.random() - 0.5) * 0.06;
+          let targetLng = 82.9739 + (Math.random() - 0.5) * 0.06;
+
+          const gpsMatch = location.match(/GPS:\s*([\d.-]+),\s*([\d.-]+)/);
+          if (gpsMatch) {
+            targetLat = parseFloat(gpsMatch[1]);
+            targetLng = parseFloat(gpsMatch[2]);
+          }
+
+          let step = 0;
+          const totalSteps = 12;
+
+          const intervalId = setInterval(() => {
+            step++;
+            const ratio = step / totalSteps;
+            const currentLat = baseLat + (targetLat - baseLat) * ratio;
+            const currentLng = baseLng + (targetLng - baseLng) * ratio;
+            const currentEta = Math.max(0, Math.ceil(14 * (1 - ratio)));
+
+            const teleData = {
+              type: 'location_update',
+              requestId,
+              coords: { lat: currentLat.toFixed(5), lng: currentLng.toFixed(5) },
+              eta: currentEta,
+              patientName: name,
+              priority: priority || 'High',
+              status: step >= totalSteps ? 'completed' : 'in_progress'
+            };
+
+            // Store in active telemetries map
+            if (step < totalSteps) {
+              activeTeles.set(requestId, teleData);
+            } else {
+              activeTeles.delete(requestId);
+            }
+
+            // Broadcast to all active WebSocket clients
+            const msgStr = JSON.stringify(teleData);
+            if (wsClients) {
+              wsClients.forEach(client => {
+                if (client.readyState === 1) { // OPEN
+                  client.send(msgStr);
+                }
+              });
+            }
+
+            // Fallback: update status in database when completed
+            if (step >= totalSteps) {
+              clearInterval(intervalId);
+              (async () => {
+                try {
+                  if (!usingSQLite && pool) {
+                    await pool.query('UPDATE ambulance_requests SET status = $1 WHERE id = $2', ['completed', requestId]);
+                  } else {
+                    await db.run('UPDATE ambulance_requests SET status = ? WHERE id = ?', ['completed', requestId]);
+                  }
+                  console.log(`[AMBULANCE] Route completed for request #${requestId}. Status updated in DB.`);
+                } catch (dbErr) {
+                  console.warn('[AMBULANCE] Failed to update final status in DB:', dbErr.message);
+                }
+              })();
+            }
+          }, 3000); // Telemetry updates every 3 seconds
+        }
       } catch (telemetryErr) {
         // Telemetry failure is non-critical
         console.warn(`[AMBULANCE] Request #${requestId} saved locally; telemetry/SSE failed (non-critical):`, telemetryErr.message);

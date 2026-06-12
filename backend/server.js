@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import { WebSocketServer, WebSocket } from 'ws';
 import dotenv from 'dotenv';
 import pkg from 'pg';
 const { Pool } = pkg;
@@ -508,7 +509,60 @@ if (isProduction && cluster.isPrimary) {
     });
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
+  const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 SwasthAI Core active on port ${PORT} (Mode: ${process.env.NODE_ENV || 'development'})`);
   });
+
+  // Setup WebSocket Server for Live Ambulance Telemetry
+  const wss = new WebSocketServer({ noServer: true });
+  const activeTeles = new Map(); // requestId -> current telemetry state
+  const wsClients = new Set();
+
+  server.on('upgrade', (request, socket, head) => {
+    const url = new URL(request.url, `http://${request.headers.host}`);
+    if (url.pathname === '/api/telemetry') {
+      wss.handleUpgrade(request, socket, head, (ws) => {
+        wss.emit('connection', ws, request);
+      });
+    } else {
+      socket.destroy();
+    }
+  });
+
+  wss.on('connection', (ws) => {
+    wsClients.add(ws);
+    console.log(`[WS] New client connected. Active: ${wsClients.size}`);
+
+    // Send currently active telemetries on connection
+    activeTeles.forEach((val) => {
+      ws.send(JSON.stringify(val));
+    });
+
+    ws.on('message', (message) => {
+      try {
+        const data = JSON.parse(message);
+        if (data.type === 'location_update') {
+          activeTeles.set(data.requestId, data);
+          // Broadcast to other clients
+          const msgStr = JSON.stringify(data);
+          wsClients.forEach(client => {
+            if (client !== ws && client.readyState === WebSocket.OPEN) {
+              client.send(msgStr);
+            }
+          });
+        }
+      } catch (err) {
+        console.error('[WS error] Parsing failed:', err.message);
+      }
+    });
+
+    ws.on('close', () => {
+      wsClients.delete(ws);
+      console.log(`[WS] Client disconnected. Active: ${wsClients.size}`);
+    });
+  });
+
+  app.locals.wss = wss;
+  app.locals.wsClients = wsClients;
+  app.locals.activeTeles = activeTeles;
 }

@@ -262,6 +262,7 @@ export default function MonitoringDashboard() {
   const [demoRunning, setDemoRunning] = useState(false);
   const [seedLoading, setSeedLoading] = useState(false);
   const [syncWalkthroughStep, setSyncWalkthroughStep] = useState(null);
+  const [p2pStep, setP2pStep] = useState(null);
 
   // ── Simulation state
   const [recentRequests, setRecentRequests] = useState([]);
@@ -660,7 +661,7 @@ export default function MonitoringDashboard() {
               setSimLogs([]);
               addSimLog('🏁 Starting Step-by-Step Offline Sync Walkthrough...', '#10b981');
             }}
-            disabled={demoRunning || syncWalkthroughStep !== null}
+            disabled={demoRunning || syncWalkthroughStep !== null || p2pStep !== null}
             style={{
               padding: '8px 16px',
               background: 'linear-gradient(90deg, #10b981, #059669)',
@@ -669,7 +670,7 @@ export default function MonitoringDashboard() {
               borderRadius: 10,
               fontSize: 11,
               fontWeight: 700,
-              cursor: (demoRunning || syncWalkthroughStep !== null) ? 'not-allowed' : 'pointer',
+              cursor: (demoRunning || syncWalkthroughStep !== null || p2pStep !== null) ? 'not-allowed' : 'pointer',
               boxShadow: '0 4px 12px rgba(16,185,129,0.2)',
               display: 'flex',
               alignItems: 'center',
@@ -677,6 +678,32 @@ export default function MonitoringDashboard() {
             }}
           >
             🔄 Watch Sync
+          </button>
+
+          {/* P2P Offline Relay Simulation */}
+          <button
+            onClick={() => {
+              setP2pStep(0);
+              setSimLogs([]);
+              addSimLog('🏁 Starting P2P Offline Sync Relay Walkthrough...', '#8b5cf6');
+            }}
+            disabled={demoRunning || syncWalkthroughStep !== null || p2pStep !== null}
+            style={{
+              padding: '8px 16px',
+              background: 'linear-gradient(90deg, #8b5cf6, #7c3aed)',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 10,
+              fontSize: 11,
+              fontWeight: 700,
+              cursor: (demoRunning || syncWalkthroughStep !== null || p2pStep !== null) ? 'not-allowed' : 'pointer',
+              boxShadow: '0 4px 12px rgba(139,92,246,0.2)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6
+            }}
+          >
+            📶 P2P Relay Sim
           </button>
 
           {/* One-Click Judge Demo */}
@@ -1304,6 +1331,170 @@ export default function MonitoringDashboard() {
                   }}
                 >
                   Complete Walkthrough
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── P2P Offline Relay Walkthrough Modal Overlay */}
+      {p2pStep !== null && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(5, 5, 15, 0.85)',
+          backdropFilter: 'blur(8px)',
+          zIndex: 9999,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: 20,
+        }}>
+          <div style={{
+            background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+            border: '1px solid rgba(139, 92, 246, 0.3)',
+            borderRadius: 24,
+            width: '100%',
+            maxWidth: 500,
+            padding: 30,
+            boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
+            textAlign: 'left',
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <span style={{ fontSize: 11, fontWeight: 900, color: '#a78bfa', textTransform: 'uppercase', letterSpacing: 2 }}>
+                P2P Relay Step {p2pStep + 1} of 4
+              </span>
+              <button 
+                onClick={() => setP2pStep(null)}
+                style={{ background: 'transparent', border: 'none', color: '#6b7280', fontSize: 18, cursor: 'pointer' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {p2pStep === 0 && (
+              <div>
+                <h3 style={{ fontSize: 18, fontWeight: 800, color: '#fff', margin: '0 0 10px' }}>📴 1. Villager Logged Offline</h3>
+                <p style={{ fontSize: 12, color: '#9ca3af', lineHeight: 1.6 }}>
+                  A pregnant villager in a completely offline village logs a maternal record on her phone. Since there is no internet connection, it is stored locally in her device's cache queue.
+                </p>
+                <div style={{ background: 'rgba(0,0,0,0.3)', padding: 12, borderRadius: 12, border: '1px solid rgba(255,255,255,0.05)', margin: '15px 0' }}>
+                  <div style={{ fontSize: 11, color: '#d1d5db', fontWeight: 700 }}>Villager Device Local Cache:</div>
+                  <div style={{ fontSize: 10, color: '#c084fc', fontFamily: 'monospace', marginTop: 4 }}>
+                    Patient: Kiran Sharma (24 yrs)<br />
+                    Risk Level: Normal Risk<br />
+                    Village: Kharela (v103)<br />
+                    Queue Status: [1 Record Pending]
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    addSimLog('📴 Step 1: Villager logged maternal record locally in Kharela (v103)', '#a78bfa');
+                    setP2pStep(1);
+                  }}
+                  style={{
+                    width: '100%', padding: '12px 0', background: '#ec4899', color: '#fff', border: 'none', borderRadius: 12, fontSize: 12, fontWeight: 700, cursor: 'pointer'
+                  }}
+                >
+                  Simulate Villager Offline Record
+                </button>
+              </div>
+            )}
+
+            {p2pStep === 1 && (
+              <div>
+                <h3 style={{ fontSize: 18, fontWeight: 800, color: '#fff', margin: '0 0 10px' }}>📡 2. ASHA Worker P2P Scan</h3>
+                <p style={{ fontSize: 12, color: '#9ca3af', lineHeight: 1.6 }}>
+                  An ASHA worker arrives in the village. Her device initiates a secure local P2P Bluetooth / Wi-Fi scan to identify nearby devices with unsynced health logs.
+                </p>
+                
+                {/* Pulsing Bluetooth Scan Radar Animation */}
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 100, margin: '15px 0', position: 'relative' }}>
+                  <div style={{
+                    position: 'absolute', width: 60, height: 60, borderRadius: '50%',
+                    border: '2px solid rgba(139, 92, 246, 0.4)',
+                    animation: 'pulse 1.5s infinite ease-out'
+                  }} />
+                  <div style={{
+                    position: 'absolute', width: 40, height: 40, borderRadius: '50%',
+                    border: '2px solid rgba(139, 92, 246, 0.6)',
+                    animation: 'pulse 1.5s infinite ease-out', animationDelay: '0.5s'
+                  }} />
+                  <div style={{
+                    width: 20, height: 20, borderRadius: '50%', background: '#8b5cf6',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 10
+                  }}>
+                    📶
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => {
+                    addSimLog('📶 Step 2: ASHA worker scanned and paired with "Villager-Phone-v103"', '#8b5cf6');
+                    setP2pStep(2);
+                  }}
+                  style={{
+                    width: '100%', padding: '12px 0', background: '#8b5cf6', color: '#fff', border: 'none', borderRadius: 12, fontSize: 12, fontWeight: 700, cursor: 'pointer'
+                  }}
+                >
+                  Scan & Pair Bluetooth
+                </button>
+              </div>
+            )}
+
+            {p2pStep === 2 && (
+              <div>
+                <h3 style={{ fontSize: 18, fontWeight: 800, color: '#fff', margin: '0 0 10px' }}>📦 3. P2P Queue Relay Pull</h3>
+                <p style={{ fontSize: 12, color: '#9ca3af', lineHeight: 1.6 }}>
+                  The villager's records are transferred locally to the ASHA worker's device. The worker's device acts as a **Proxy Sync Agent**, storing the villager's records in her own IndexedDB queue.
+                </p>
+                <div style={{ background: 'rgba(255,255,255,0.04)', padding: 16, borderRadius: 12, border: '1px solid rgba(139,92,246,0.2)', margin: '15px 0', display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ fontSize: 24 }}>📥</div>
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: '#a78bfa' }}>ASHA Proxy: 1 Pending</div>
+                    <div style={{ fontSize: 10, color: '#9ca3af' }}>Villager record relay successfully pulled</div>
+                  </div>
+                </div>
+                <button
+                  onClick={async () => {
+                    // Queue the relayed villager record into the ASHA worker's IndexedDB queue
+                    await queueMaternalRecord({ name: 'Kiran Sharma', age: 24, trimester: 1, riskLevel: 'Normal', villageId: 'v103', relayedBy: 'ASHA-Proxy-103' });
+                    window.dispatchEvent(new Event('swasthai_queue_updated'));
+                    addSimLog('📦 Step 3: Relayed villager record pulled to ASHA worker proxy queue', '#a78bfa');
+                    setP2pStep(3);
+                  }}
+                  style={{
+                    width: '100%', padding: '12px 0', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: 12, fontSize: 12, fontWeight: 700, cursor: 'pointer'
+                  }}
+                >
+                  Establish Connection & Pull Record
+                </button>
+              </div>
+            )}
+
+            {p2pStep === 3 && (
+              <div>
+                <h3 style={{ fontSize: 18, fontWeight: 800, color: '#fff', margin: '0 0 10px' }}>☁️ 4. Proxy Sync to AWS Cloud</h3>
+                <p style={{ fontSize: 12, color: '#9ca3af', lineHeight: 1.6 }}>
+                  The ASHA worker returns to a network coverage zone. Her device automatically reconnects and synchronizes the relayed records directly to the cloud databases.
+                </p>
+                <div style={{ background: 'rgba(16, 185, 129, 0.1)', padding: 14, borderRadius: 12, border: '1px solid rgba(16, 185, 129, 0.2)', margin: '15px 0', fontSize: 11, color: '#34d399', fontWeight: 600 }}>
+                  ASHA Device Reconnected to AWS Hub (Mumbai ap-south-1)
+                </div>
+                <button
+                  onClick={async () => {
+                    addSimLog('☁️ Step 4: Replaying ASHA proxy queue to server...', '#10b981');
+                    await syncAllQueues();
+                    window.dispatchEvent(new Event('swasthai_queue_updated'));
+                    addSimLog('🎉 Step 4: Relayed villager record synced successfully via proxy!', '#34d399');
+                    setP2pStep(null);
+                  }}
+                  style={{
+                    width: '100%', padding: '12px 0', background: 'linear-gradient(90deg, #10b981, #059669)', color: '#fff', border: 'none', borderRadius: 12, fontSize: 12, fontWeight: 700, cursor: 'pointer'
+                  }}
+                >
+                  Upload Proxy Records to AWS
                 </button>
               </div>
             )}

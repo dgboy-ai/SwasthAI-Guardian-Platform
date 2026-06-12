@@ -29,29 +29,11 @@ const P3_KEYWORDS = ['fever','pain','diarrhea','vomiting','swelling','rash','cou
 const URGENCY_TEXT  = { red: 'text-red-400',    orange: 'text-orange-400', amber: 'text-amber-400', slate: 'text-slate-400' };
 const URGENCY_BORDER = { red: 'border-l-red-500', orange: 'border-l-orange-500', amber: 'border-l-amber-500', slate: 'border-l-slate-300' };
 
-// ── P1 Alert Sound — Web Audio API singleton (avoids browser 6-ctx limit) ──
-let _audioCtx = null;
-function getAudioCtx() {
-  if (!_audioCtx || _audioCtx.state === 'closed') {
-    _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  }
-  return _audioCtx;
-}
+import { playTriageAlert } from '../utils/audioAlerts';
+
+// ── Triage Alert Sound — Web Audio API ──
 function playP1Alert() {
-  try {
-    const ctx = getAudioCtx();
-    [0, 0.3, 0.6].forEach(delay => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain); gain.connect(ctx.destination);
-      osc.type = 'square';
-      osc.frequency.setValueAtTime(880, ctx.currentTime + delay);
-      gain.gain.setValueAtTime(0.3, ctx.currentTime + delay);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.25);
-      osc.start(ctx.currentTime + delay);
-      osc.stop(ctx.currentTime + delay + 0.25);
-    });
-  } catch (_) { /* silently ignore if AudioContext unavailable */ }
+  playTriageAlert('P1');
 }
 
 export function classifyUrgency(req) {

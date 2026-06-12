@@ -2,6 +2,7 @@ import React from 'react';
 import { Radio, MapPin, Activity, Shield } from 'lucide-react';
 import { timeAgo, outbreakStatusStyle } from './utils';
 import { showToast } from '../../utils/toast';
+import DistrictOutbreakMap from '../../components/DistrictOutbreakMap';
 
 export default function OutbreakRadarView({
   OB,
@@ -99,6 +100,11 @@ export default function OutbreakRadarView({
         <p className="text-[12px] font-bold text-amber-800 leading-relaxed">
           <strong>District Outbreak Summary:</strong> {OB.length} outbreak clusters detected across 5 villages. AI recommends immediate intervention in Northern Zone.
         </p>
+      </div>
+
+      {/* 🗺️ Real-time Outbreak Heatmap */}
+      <div className="w-full">
+        <DistrictOutbreakMap />
       </div>
 
       {/* Two-Column Layout */}

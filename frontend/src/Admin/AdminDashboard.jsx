@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { showToast } from '../utils/toast';
+import { subscribeTelemetry } from '../utils/liveTelemetry';
+import { playTriageAlert } from '../utils/audioAlerts';
 import {
   LayoutDashboard, Radio, Heart, Baby, Truck,
   WifiOff, BrainCircuit, BarChart3, Settings,
@@ -64,7 +66,27 @@ export default function AdminDashboard() {
   const [lastSync, setLastSync] = useState('Just now');
   const [auditLogs, setAuditLogs] = useState([]);
   const [simulatingOutbreak, setSimulatingOutbreak] = useState(false);
+  const [liveAmbulanceLocations, setLiveAmbulanceLocations] = useState({});
   const lastSyncRef = useRef(Date.now());
+
+  useEffect(() => {
+    const unsubscribe = subscribeTelemetry((data) => {
+      if (data.type === 'location_update') {
+        setLiveAmbulanceLocations(prev => {
+          if (data.status === 'completed') {
+            const next = { ...prev };
+            delete next[data.requestId];
+            return next;
+          }
+          return {
+            ...prev,
+            [data.requestId]: data
+          };
+        });
+      }
+    });
+    return () => unsubscribe();
+  }, []);
 
   const startResizing = (mouseDownEvent) => {
     mouseDownEvent.preventDefault();
@@ -227,6 +249,7 @@ export default function AdminDashboard() {
           setAmbulances(prev => [req, ...(prev || [])].slice(0, 50));
           lastSyncRef.current = Date.now();
           setLastSync('Just now');
+          playTriageAlert(req.priority || 'High');
         } catch (_) { }
       });
 
@@ -234,6 +257,7 @@ export default function AdminDashboard() {
         try {
           const outbreak = JSON.parse(e.data);
           setOutbreaks(prev => [outbreak, ...(prev || [])].slice(0, 50));
+          playTriageAlert('Critical');
         } catch (_) { }
       });
 
@@ -701,6 +725,7 @@ export default function AdminDashboard() {
               setActiveView={setActiveView}
               downloadReport={downloadReport}
               judgeDemoMode={judgeDemoMode}
+              liveAmbulanceLocations={liveAmbulanceLocations}
             />
           )}
 
@@ -725,6 +750,7 @@ export default function AdminDashboard() {
             <AmbulanceFeedView
               AM={AM}
               downloadReport={downloadReport}
+              liveAmbulanceLocations={liveAmbulanceLocations}
             />
           )}
 
