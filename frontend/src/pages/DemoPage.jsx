@@ -16,11 +16,10 @@ const ROLES = [
     roleKey: 'villager',
     icon: Users,
     color: 'from-emerald-500 to-teal-600',
-    border: 'border-emerald-200',
-    bg: 'bg-emerald-50',
-    iconColor: 'text-emerald-700',
+    border: 'border-emerald-500/20',
+    bg: 'bg-emerald-500/10',
+    iconColor: 'text-emerald-400',
     path: '/login',
-    // Matches LoginPage DEMO_CREDENTIALS — use Password mode on login page
     credentials: { identifier: '9876543210', password: 'Demo@1234' },
     features: [
       'AI Symptom Diagnosis (101 diseases, 6 languages + Hinglish)',
@@ -32,15 +31,14 @@ const ROLES = [
     ],
   },
   {
-    role: 'ASHA / NGO Worker',
+    role: 'ASHA Worker',
     roleKey: 'ngo',
     icon: Heart,
     color: 'from-rose-500 to-pink-600',
-    border: 'border-rose-200',
-    bg: 'bg-rose-50',
-    iconColor: 'text-rose-700',
+    border: 'border-rose-500/20',
+    bg: 'bg-rose-500/10',
+    iconColor: 'text-rose-400',
     path: '/login',
-    // Matches LoginPage DEMO_CREDENTIALS — use Password mode on login page
     credentials: { identifier: '9876543211', password: 'Demo@1234' },
     features: [
       'Maternal risk assessment (WHO thresholds)',
@@ -52,13 +50,13 @@ const ROLES = [
     ],
   },
   {
-    role: 'District Admin / CMO',
+    role: 'Admin',
     roleKey: 'admin',
     icon: Shield,
     color: 'from-slate-700 to-slate-900',
-    border: 'border-slate-200',
-    bg: 'bg-slate-100',
-    iconColor: 'text-slate-700',
+    border: 'border-slate-500/20',
+    bg: 'bg-slate-500/10',
+    iconColor: 'text-slate-400',
     path: '/login',
     credentials: { identifier: 'admin@swasthai.in', password: 'Demo@1234' },
     features: [
@@ -94,6 +92,7 @@ export default function DemoPage() {
   const [stats, setStats] = useState(null);
   const [copied, setCopied] = useState(null);
   const [demoLoading, setDemoLoading] = useState(null);
+  const [activeTab, setActiveTab] = useState('villager');
 
   useEffect(() => {
     api.get('/admin/analytics').then(r => setStats(r.data)).catch(() => {});
@@ -173,62 +172,143 @@ export default function DemoPage() {
       {/* Role cards */}
       <div className="max-w-6xl mx-auto px-5 pb-16">
         <h2 className="text-2xl font-black text-white text-center mb-2">Three Perspectives. One Platform.</h2>
-        <p className="text-slate-500 text-sm text-center mb-10 font-medium">Use the demo credentials to log in and explore each role</p>
+        <p className="text-slate-500 text-sm text-center mb-10 font-medium">Select a role to view capabilities and launch the self-guided tour</p>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
-          {ROLES.map(({ role, icon: Icon, color, border, bg, iconColor, path, credentials, features }) => (
-            <div key={role} className={`bg-slate-900 border ${border} rounded-3xl overflow-hidden`}>
-              <div className={`bg-gradient-to-br ${color} p-6`}>
-                <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center mb-3 backdrop-blur">
-                  <Icon className="w-6 h-6 text-white" />
-                </div>
-                <h3 className="text-xl font-black text-white">{role}</h3>
-              </div>
-              <div className="p-5 space-y-4">
-                {/* Credentials */}
-                <div className={`${bg} border ${border} rounded-xl p-3 space-y-2`}>
-                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Demo Login</p>
-                  <p className="text-[8px] font-black text-amber-600 uppercase tracking-widest mb-1.5 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1">
-                    ⚠ Use <span className="underline">Password</span> mode on login page
-                  </p>
-                  {[
-                    { label: 'Phone / Email', val: credentials.identifier },
-                    { label: 'Password', val: credentials.password },
-                  ].map(({ label, val }) => (
-                    <div key={label} className="flex items-center justify-between gap-2">
-                      <div>
-                        <p className="text-[9px] text-slate-500 uppercase font-bold">{label}</p>
-                        <p className={`text-[11px] font-mono font-bold ${iconColor}`}>{val}</p>
-                      </div>
-                      <button
-                        onClick={() => copy(val, `${role}-${label}`)}
-                        className="text-[9px] px-2 py-1 bg-white border border-slate-200 rounded-lg font-black text-slate-500 hover:text-slate-800 transition-colors"
-                      >
-                        {copied === `${role}-${label}` ? '✓' : 'copy'}
-                      </button>
-                    </div>
-                  ))}
-                </div>
-                {/* Features */}
-                <ul className="space-y-1.5">
-                  {features.map(f => (
-                    <li key={f} className="flex items-start gap-2 text-[11px] text-slate-400 font-medium">
-                      <CheckCircle className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
-                      {f}
-                    </li>
-                  ))}
-                </ul>
+        {/* Tab Selector */}
+        <div className="flex justify-center mb-8">
+          <div className="inline-flex p-1.5 bg-slate-900/90 border border-slate-800 rounded-full shadow-2xl">
+            {ROLES.map(({ role, roleKey, icon: Icon }) => {
+              const isActive = activeTab === roleKey;
+              return (
                 <button
-                  disabled={demoLoading !== null}
-                  onClick={() => handleOneClickLogin(credentials.identifier, credentials.password, roleKey)}
-                  className={`flex items-center justify-center gap-2 w-full py-3 bg-gradient-to-r ${color} text-white rounded-xl font-black text-[12px] uppercase tracking-wider hover:opacity-90 disabled:opacity-50 transition-all shadow-lg mt-2`}
+                  key={roleKey}
+                  onClick={() => setActiveTab(roleKey)}
+                  className={`flex items-center gap-2 px-6 py-3 rounded-full text-xs font-bold transition-all duration-300 uppercase tracking-wider ${
+                    isActive
+                      ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/25 scale-105'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
                 >
-                  {demoLoading === roleKey ? 'Logging in...' : `Login as ${role.split('/')[0].trim()}`} <ArrowRight className="w-4 h-4" />
+                  <Icon className="w-4 h-4" />
+                  {role}
                 </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Active Role Content */}
+        {(() => {
+          const currentRole = ROLES.find(r => r.roleKey === activeTab);
+          const Icon = currentRole.icon;
+          return (
+            <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 md:p-8 mb-16 backdrop-blur shadow-2xl transition-all duration-500">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+                {/* Info Panel */}
+                <div className="lg:col-span-7 flex flex-col justify-between space-y-6">
+                  <div>
+                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-full text-[10px] font-black uppercase tracking-widest mb-4">
+                      {currentRole.role} Role Overview
+                    </div>
+                    <h3 className="text-3xl font-black text-white mb-4 flex items-center gap-3">
+                      <span className={`p-2.5 rounded-2xl bg-gradient-to-br ${currentRole.color} text-white`}>
+                        <Icon className="w-7 h-7" />
+                      </span>
+                      Explore the {currentRole.role} Experience
+                    </h3>
+                    <p className="text-slate-400 text-sm leading-relaxed mb-6">
+                      Interact with the platform from the perspective of a {currentRole.role.toLowerCase()}. 
+                      Test the primary features, workflows, and tools built specifically for this workflow.
+                    </p>
+                    
+                    <div className="space-y-3">
+                      <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest mb-2">Key Capabilities Available:</p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {currentRole.features.map(f => (
+                          <div key={f} className="flex items-start gap-2.5 text-xs text-slate-300 font-medium bg-slate-950/40 p-3 rounded-xl border border-slate-800/50">
+                            <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                            <span>{f}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Simulation / Action Card */}
+                <div className="lg:col-span-5 flex flex-col justify-between bg-slate-950/50 border border-slate-800 rounded-2xl p-6 relative overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-transparent pointer-events-none" />
+                  
+                  <div>
+                    <div className="flex justify-between items-center mb-4 border-b border-slate-800 pb-3">
+                      <div>
+                        <h4 className="text-sm font-bold text-white">Guided Auto-Login</h4>
+                        <p className="text-[10px] text-slate-500">Self-guided verification bypass</p>
+                      </div>
+                      <span className="px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-md text-[9px] font-bold uppercase tracking-wider">
+                        No Credentials Required
+                      </span>
+                    </div>
+
+                    <div className="space-y-3 mb-6">
+                      <div className="bg-slate-900 border border-slate-800 rounded-xl p-3.5">
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <span className="text-[9px] text-slate-500 uppercase font-black tracking-wider block">Username/Phone</span>
+                            <span className="text-xs font-mono font-bold text-slate-300">{currentRole.credentials.identifier}</span>
+                          </div>
+                          <button
+                            onClick={() => copy(currentRole.credentials.identifier, `${currentRole.role}-user`)}
+                            className="text-[9px] px-2 py-1 bg-slate-800 border border-slate-700 hover:bg-slate-700 text-slate-400 hover:text-white rounded-lg font-bold transition-colors"
+                          >
+                            {copied === `${currentRole.role}-user` ? '✓' : 'Copy'}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="bg-slate-900 border border-slate-800 rounded-xl p-3.5">
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <span className="text-[9px] text-slate-500 uppercase font-black tracking-wider block">Password</span>
+                            <span className="text-xs font-mono font-bold text-slate-300">{currentRole.credentials.password}</span>
+                          </div>
+                          <button
+                            onClick={() => copy(currentRole.credentials.password, `${currentRole.role}-pass`)}
+                            className="text-[9px] px-2 py-1 bg-slate-800 border border-slate-700 hover:bg-slate-700 text-slate-400 hover:text-white rounded-lg font-bold transition-colors"
+                          >
+                            {copied === `${currentRole.role}-pass` ? '✓' : 'Copy'}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <button
+                      disabled={demoLoading !== null}
+                      onClick={() => handleOneClickLogin(currentRole.credentials.identifier, currentRole.credentials.password, currentRole.roleKey)}
+                      className={`relative flex items-center justify-center gap-2 w-full py-4 bg-gradient-to-r ${currentRole.color} text-white rounded-xl font-black text-sm uppercase tracking-wider hover:opacity-95 disabled:opacity-50 transition-all shadow-xl shadow-emerald-950/40 border border-white/10`}
+                    >
+                      {demoLoading === currentRole.roleKey ? (
+                        <>
+                          <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          <span>Configuring Session...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>Try This →</span>
+                        </>
+                      )}
+                    </button>
+                    <p className="text-[10px] text-slate-500 text-center font-medium">
+                      One-click authentication will load user data and navigate directly to the {currentRole.role} Command Center.
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
-          ))}
-        </div>
+          );
+        })()}
 
         {/* Tech Stack */}
         <div className="bg-slate-900 border border-slate-800 rounded-3xl p-8 mb-10">

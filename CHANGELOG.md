@@ -4,6 +4,10 @@ All notable changes and feature developments completed during the hackathon wind
 
 ## June 12, 2026
 ### Added
+- **Public Demo Mode (/demo route)**:
+  - Redesigned the public `/demo` route into a high-fidelity self-guided tour experience.
+  - Replaced the static card grid layout with interactive, glassy role tabs: **Villager**, **ASHA Worker**, and **Admin**.
+  - Added high-contrast, glowing "Try This →" CTA buttons that bypass manual authentication checks, dynamically logging the user in using pre-seeded sandbox credentials and automatically routing them to their respective role dashboards.
 - **Next-Gen Offline-First RAG & ML Execution**:
   - Compiled PyTorch `SymptomNet` model to `symptomnet.onnx` (opset 18) and generated `symptomNetMeta.js` holding model weights/biases and precomputed 384-dimensional embeddings for 115 multi-lingual symptom keywords.
   - Implemented `localSymptomNet.js` browser-side inference engine, executing model classification fully offline in the browser in under 1ms.
