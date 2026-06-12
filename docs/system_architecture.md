@@ -81,7 +81,7 @@ The SwasthAI architecture is divided into three specialized tiers, built for low
 ### 🤖 AI Service Layer (FastAPI / Python)
 - **SymptomNet**: Multi-layered MLP classifier evaluating risks with local fallback rules.
 - **Sakhi Chatbot**: High-speed multilingual clinical RAG powered by Llama-3.3-70B.
-- **Outbreak Agent**: Background crawler analyzing postgres trends and publishing verified DynamoDB outbreak records.
+- **Outbreak Agent**: Background crawler analyzing PostgreSQL symptom trends to predict, classify, and publish verified DynamoDB outbreak records.
 
 ---
 

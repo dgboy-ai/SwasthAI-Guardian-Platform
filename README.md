@@ -70,12 +70,14 @@ Jump directly into the detailed architecture logs, code reference maps, and setu
 
 ## 🏆 Why SwasthAI Is Architecturally Different
 
-Most health apps call a third-party AI API and display the result. SwasthAI **owns its intelligence**, operates without a stable internet connection, and utilizes a robust, dual-database production-ready architecture:
+Most healthcare apps simply call a third-party LLM API and display the output. SwasthAI **owns its intelligence**, runs offline, and employs a production-grade dual-database architecture:
 
-1. **Dual-Database Strategy**: Transactional records mapped to **Amazon Aurora PostgreSQL** (ACID compliant) & high-velocity telemetry logs routed to **Amazon DynamoDB** (high-throughput NoSQL). These layers are decoupled via an **Event Dispatcher** pattern that ensures non-blocking writes and includes an in-memory mock fallback to guarantee zero initial configuration for judge sandbox runs.
-2. **Autonomous Agentic Outbreak Monitor**: scans clinical trends in PostgreSQL, uses LLM (Groq Llama-3.3-70B) reasoning to identify genuine clusters, writes to DynamoDB, and dispatches live EventSource notifications.
-3. **Fully Production Offline-First Sync Queue**: Patient vitals are collected offline, queued in IndexedDB, and auto-synchronized to PostgreSQL (updating relational health state) and DynamoDB (telemetry logs) when connection returns.
-4. **Sakhi RAG — Grounded & Memory-Aware**: 243 clinical chunks, 2-sentence overlap, calibrated threshold 0.45, and dual-track conversation memory.
+| Pillar | Core Mechanics | Production Edge & AWS Judge Value |
+| :--- | :--- | :--- |
+| **💾 Decoupled Dual-DB** | **Amazon Aurora PostgreSQL** (ACID Clinical Profiles) + **Amazon DynamoDB** (High-throughput Telemetry). | Decoupled via an asynchronous Event Dispatcher pattern. Features a local SQLite/mock fallback for instant, zero-config judge evaluations. |
+| **🤖 Autonomous Agent** | Background daemon queries PostgreSQL symptom clusters to predict and classify imminent outbreaks using Groq Llama-3.3-70B. | Runs asynchronously every 30m; predicts clusters, auto-deduplicates alerts in DynamoDB, and broadcasts real-time Server-Sent Events (SSE). |
+| **🔌 Offline-First Sync** | Transactional client-side **IndexedDB Sync Queue** caches patient vitals and reports during cellular outages. | Replays automatically upon reconnection. Idempotency keys and Last-Write-Wins (LWW) rules guarantee zero database duplication. |
+| **🧠 Grounded RAG** | Low-latency local semantic search engine indexing 243 WHO/MoHFW clinical guideline chunks. | Calibrated threshold (0.45, F1=1.00) and a 6-turn conversation memory prevent model hallucinations. |
 
 ---
 

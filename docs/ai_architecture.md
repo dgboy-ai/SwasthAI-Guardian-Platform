@@ -25,7 +25,8 @@ We use a tiered ensemble approach designed for clinical reliability in low-conne
 | **Hold-out Accuracy** | **64.6%** (SymptomNet) \| **71.1%** (Logistic Regression Fallback) |
 | **Random Baseline** | ~1% — 101 classes, so 64.6% is ~65× better than chance |
 
-> **Why 64.6% and 71.1% are strong**: Classifying 101 distinct diseases from free-text symptom descriptions in 7 languages is significantly harder than a 2- or 10-class problem. Random chance = 0.99%. Our fallback model achieves 71.1% on a completely unseen hold-out set — that is not a gap; that is the honest frontier for this task complexity.
+> [!NOTE]
+> **Statistical Significance**: Classifying 101 distinct disease states from free-text multilingual inputs represents a high-cardinality task. Compared to a random chance baseline of ~0.99%, the fallback model's **71.1% hold-out accuracy** represents robust generalization across languages.
 
 #### 📋 Supported Disease Classes (101)
 *   **Vector-borne**: Malaria, Dengue, Chikungunya, Kala-Azar, Japanese Encephalitis.
@@ -56,7 +57,7 @@ Both models are validated under a rigorous, two-stage clinical evaluation framew
 
 ### 🧠 Sakhi RAG Architecture (Women's Health AI)
 
-Sakhi is not a generic chatbot. Every answer is grounded in verified clinical guidelines and she **remembers the conversation**:
+Sakhi is a memory-aware, clinical RAG assistant designed to ground responses directly in verified medical guidelines:
 
 ```
 User query (any of 7 languages)
@@ -93,4 +94,4 @@ Voice output via SpeechSynthesisUtterance (🔊 button per message)
 ```
 
 > [!IMPORTANT]
-> **The bottom line for judges**: SwasthAI does not just call a third-party LLM API. We own the intelligence. By training custom models, validating them with rigorous 5-fold cross-validation, and grounding LLMs with a custom calibrated RAG, we deliver clinical safety. And if the network drops, the system degrades gracefully to offline heuristic rules—so the AI works even when the internet doesn't.
+> **Architectural Significance**: SwasthAI avoids dependencies on simple third-party prompt-wrapper designs by hosting its own intelligence layer. By combining local, edge-ready ONNX diagnostic classifiers with a calibrated, memory-aware cloud RAG system, the platform ensures clinical safety. When fully offline, it degrades gracefully to local heuristic fallback rules—delivering functionality under severe network limitations.
