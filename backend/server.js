@@ -43,11 +43,14 @@ if (!process.env.JWT_SECRET) {
 
 const isProduction = process.env.NODE_ENV === 'production';
 
-if (isProduction && cluster.isPrimary) {
-  const numCPUs = os.cpus().length;
-  console.log(`Primary ${process.pid} is running. Forking ${numCPUs} workers for load balancing...`);
+const maxWorkers = process.env.WEB_CONCURRENCY 
+  ? parseInt(process.env.WEB_CONCURRENCY) 
+  : (process.env.RENDER === 'true' ? 1 : Math.min(os.cpus().length, 2));
 
-  for (let i = 0; i < numCPUs; i++) {
+if (isProduction && cluster.isPrimary && maxWorkers > 1) {
+  console.log(`Primary ${process.pid} is running. Forking ${maxWorkers} workers for load balancing...`);
+
+  for (let i = 0; i < maxWorkers; i++) {
     cluster.fork();
   }
 
