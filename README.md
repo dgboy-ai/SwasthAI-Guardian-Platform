@@ -35,8 +35,11 @@ SwasthAI is framed as a B2B district operations platform: the buyer is a distric
 > *Required disclosure under the "New & Existing Projects" rule*
 
 **Core architectural additions (the big ones):**
+- ✅ **ONNX In-Browser SymptomNet & Local RAG** — Compiled the neural network to ONNX format, running fully offline in-browser diagnostic classification. Pre-seeded IndexedDB RAG database with clinical guidelines and built a fuzzy token-weighted RAG engine to power completely offline Sakhi queries.
+- ✅ **Secure Offline Credentials Cache** — Replaced insecure base64 credential encoding with proper client-side SHA-256 hashing inside `AuthContext.jsx` for cached offline users.
+- ✅ **Active Health Watchdog Monitor** — Added a background watchdog loop in `server.js` verifying AI service health and Outbreak Agent scans, broadcasting alerts via SSE, and displaying warning banners in the Admin Dashboard on failures.
 - ✅ **AWS Aurora PostgreSQL** wired as the primary production database (replaced SQLite-only baseline)
-- ✅ **Amazon DynamoDB** schema redesigned with composite keys, GSIs, and TTL across 4 tables
+- ✅ **Amazon DynamoDB** schema redesigned with composite keys, GSIs, and TTL across 5 tables
 - ✅ **OutbreakAgent** refactored: now writes outbreak data to DynamoDB via backend API (no local SQLite)
 - ✅ **SSE live feed** (`/api/admin/live-feed`) — admin dashboard receives real-time ambulance and outbreak alerts
 - ✅ **Sakhi RAG expanded** — 35 → **243 knowledge chunks** with 2-sentence sliding-window overlap; threshold calibrated to **0.45** (F1=1.00)
@@ -54,6 +57,10 @@ SwasthAI is framed as a B2B district operations platform: the buyer is a distric
 <details>
 <summary>📋 Full technical hardening log (15 more items)</summary>
 
+- ✅ **Decoupled Event Dispatcher with Retry** — Decoupled relational PostgreSQL writes from NoSQL telemetry, dispatching async events (e.g. `emergency_triggered`) with an automatic 3-attempt database retry loop.
+- ✅ **PII Redaction Layer Fix** — Removed payload mutation checks from the frontend and consolidated all sensitive PII filters to the backend logging layer to preserve query context.
+- ✅ **Unified 403 Forbidden Errors** — Standardized backend auth policy failures to return generic `Access Denied` codes, blocking leakage of user roles or village scope parameters.
+- ✅ **Lazy-Loaded ONNX Assets** — Paged ONNX binaries dynamically only when a user accesses the symptom scanner offline, reducing initial bundle weight.
 - ✅ **Ambulance handler** now writes every SOS dispatch to DynamoDB `emergency_streams` table
 - ✅ **`/api/health/detailed`** — exposes full AWS connection state, DynamoDB schema status, and AI module readiness
 - ✅ **Admin Production Evidence panel** — shows Aurora/DynamoDB status, region, table names, pool counts, production readiness, and latest telemetry writes directly in the UI
@@ -83,7 +90,7 @@ SwasthAI is framed as a B2B district operations platform: the buyer is a distric
 | :--- | :--- | :--- |
 | **Hybrid Diagnostic Engine (DL + ML)** | Simple Random Forest on a 50-class, English-only dataset (~88% accuracy on that simpler task). | **SymptomNet** (Transformer-based Deep Learning) + Logistic Regression fallback — evaluated on **101 disease classes** across 7 languages. Hold-out accuracy: **64.6%** (SymptomNet) \| **71.1%** (Logistic Regression). For context, random chance across 101 classes = ~1%. *(Note: SymptomNet is disabled by default on the Render Live Demo to fit under the 512MB RAM free-tier limit, using the 71.1% Logistic Regression model. Set `ENABLE_DEEP_MODEL=true` in your `.env` to enable it locally).* |
 | **Sakhi RAG (Retrieval-Augmented)** | Generic LLM chatbot prone to hallucinations. 35 inline knowledge chunks, no memory across turns. | **Grounded RAG system** with **243 clinical knowledge chunks** (2-sentence sliding-window overlap), calibrated retrieval threshold **0.45** (F1=1.00), and full 6-turn conversation memory. |
-| **Hardened Offline-First Sync** | Basic local storage that required an active internet connection to function. | **Judge/demo Offline Login** via pre-seeded credential hashes + **Maternal & Child Assessment** caching inside an IndexedDB transactional sync queue. Production path: encrypted device credential cache or WebAuthn/device-bound refresh token. |
+| **Hardened Offline-First Sync** | Basic local storage that required an active internet connection to function. | **Judge/demo Offline Login** via pre-seeded credential hashes (hashed securely using SHA-256 for local storage protection) + **Maternal & Child Assessment** caching inside an IndexedDB transactional sync queue. Production path: encrypted device credential cache or WebAuthn/device-bound refresh token. |
 | **Edge Image Compression** | Standard high-resolution uploads that failed on slow connections. | On-device `browser-image-compression` shrinks images from 5MB+ down to **< 200KB automatically**, making skin scan uploads viable over 2G/EDGE networks. |
 | **Agentic Outbreak Radar** | Manual reporting — a health worker had to notice and file a report. | Autonomous background agent scans village clinical data **every 30 minutes**, clusters symptoms using Groq LLM reasoning, and pushes real-time SSE alerts to admins and ASHA workers. |
 | **API Resilience** | No failover — an LLM outage meant a broken experience. | Groq client wrapped in a **3-attempt exponential backoff loop** (1s → 2s → 4s). On full outage: falls back silently to WHO/ASHA knowledge base — never fails the user. |
@@ -94,7 +101,7 @@ SwasthAI is framed as a B2B district operations platform: the buyer is a distric
 
 Most health apps call a third-party AI API and display the result. SwasthAI **owns its intelligence**, operates without a stable internet connection, and utilizes a robust, dual-database production-ready architecture:
 
-1. **Dual-Database Strategy**: Transactional records mapped to **Amazon Aurora PostgreSQL** (ACID compliant) & high-velocity telemetry logs routed to **Amazon DynamoDB** (high-throughput NoSQL).
+1. **Dual-Database Strategy**: Transactional records mapped to **Amazon Aurora PostgreSQL** (ACID compliant) & high-velocity telemetry logs routed to **Amazon DynamoDB** (high-throughput NoSQL). These layers are decoupled via an **Event Dispatcher** pattern that ensures non-blocking writes and includes an in-memory mock fallback to guarantee zero initial configuration for judge sandbox runs.
 2. **Autonomous Agentic Outbreak Monitor**: scans clinical trends in PostgreSQL, uses LLM (Groq Llama-3.3-70B) reasoning to identify genuine clusters, writes to DynamoDB, and dispatches live EventSource notifications.
 3. **Fully Production Offline-First Sync Queue**: Patient vitals are collected offline, queued in IndexedDB, and auto-synchronized to PostgreSQL (updating relational health state) and DynamoDB (telemetry logs) when connection returns.
 4. **Sakhi RAG — Grounded & Memory-Aware**: 243 clinical chunks, 2-sentence overlap, calibrated threshold 0.45, and dual-track conversation memory.

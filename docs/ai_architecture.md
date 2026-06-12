@@ -6,7 +6,10 @@ We use a tiered ensemble approach designed for clinical reliability in low-conne
 
 *   **Primary Tier — SymptomNet** (Deep Learning MLP): Powered by multilingual Transformer embeddings (`paraphrase-multilingual-MiniLM-L12-v2`) for deep semantic understanding of symptoms described in any of the **7 supported languages** (English, Hindi, Hinglish, Marathi, Tamil, Telugu, Bengali).
 *   **Secondary Tier — Logistic Regression Fallback**: Keyword-based classifier that cross-checks neural output for robust verification when SymptomNet confidence is borderline.
-*   **Tertiary Safety Tier — Safety First**: If neural confidence drops below 40% (due to highly ambiguous symptom descriptions), the system refuses to guess or risk a hallucination. Instead, it falls back immediately to an offline-capable rule-engine based directly on MoHFW/WHO protocols — delivering verified first-aid instructions instead of unsafe predictions.
+*   **Tertiary Safety Tier — Safety First**: If neural and ML confidence falls below **40% (0.40)** inside `ai-service/main.py` (due to highly ambiguous symptom descriptions), the system refuses to guess or risk a hallucination. Instead, it falls back immediately to an offline-capable rule-engine based directly on MoHFW/WHO protocols — delivering verified first-aid instructions instead of unsafe predictions.
+*   **Offline Edge Tier — ONNX + Local RAG**:
+    - **Offline In-Browser Classifier**: The PyTorch model is compiled to ONNX (`symptomnet.onnx` opset 18) and executed locally in the browser under 1ms using `localSymptomNet.js` with vocabulary mappings for 26 symptom categories mapping to the full backend 101-class model. To optimize bundle weight and initial page load, these ONNX weights are lazy-loaded dynamically only when the user goes offline or opens the symptom page.
+    - **Offline Sakhi RAG**: If connection drops, Sakhi uses a local fuzzy token-weighted RAG engine (`searchOfflineKB` inside `semanticCache.js`) running against a pre-seeded IndexedDB database of 20 high-priority WHO/MoHFW clinical guidelines.
 
 ---
 

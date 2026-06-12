@@ -49,7 +49,8 @@ graph TB
     %% Backend Router & Middlewares
     Express --> Auth
     Auth --> Audit
-    Audit -->|Async Write| Aurora
+    Audit -->|Write Relational Logs| Aurora
+    Audit -->|Write Security Logs| Dynamo
     Express --> ED
 
     %% Relational Queries
@@ -63,9 +64,9 @@ graph TB
     %% AI Service Interactions
     Express -->|Symptom Inference / Speech Check| SymptomNet
     Express -->|Conversational RAG request| RAG
-    OutbreakAgent -->|Read cluster telemetry| Dynamo
-    OutbreakAgent -->|Write detected outbreak alert| Aurora
-    OutbreakAgent -->|Push critical alerts| Express
+    OutbreakAgent -->|Read cluster telemetry via API| Express
+    OutbreakAgent -->|POST outbreak alert| Express
+    Express -->|Write outbreak alert| Dynamo
     
     %% Skin Analyzer
     Express -->|Analyze Skin Image| S3
@@ -79,15 +80,18 @@ graph TB
    - Built with React & Vite, hosted on Vercel. 
    - Uses an **Offline Event Replay Engine** powered by IndexedDB to log events (symptoms, pregnancies, emergencies) when offline and replay them automatically on reconnection.
    - Leverages on-device image compression (shrinking high-res image inputs to `<200KB` on-the-fly) to support reliable uploads on slow 2G/EDGE networks.
+   - Executes browser-side ONNX SymptomNet classification and offline RAG fuzzy matching when connectivity is lost.
+   - Hashes offline-cached user login passwords using a secure SHA-256 implementation.
    
 2. **Backend API Service (Express.js)**:
    - Handles route validation, auth checks, and asynchronous audit logs.
    - Hosts the local **Event Dispatcher** which processes events like `symptom_submitted`, `emergency_triggered`, and `maternal_alert` out-of-band to keep route speeds fast.
+   - Runs a **Health Watchdog Monitor** every 30 seconds to check AI service status and verify Outbreak Agent heartbeat scans, dispatching warning feeds via SSE on failure.
 
 3. **AI Microservice (FastAPI + Python)**:
    - **SymptomNet**: A multi-layered MLP Neural Network that evaluates symptom inputs with a heuristic local rules model acting as a fallback if the network is busy/offline.
    - **Sakhi Chatbot**: A Retrieval-Augmented Generation (RAG) assistant running Llama-3.3-70B over an expanded 243-chunk multilingual clinical database.
-   - **Outbreak Agent**: An asynchronous process that scans DynamoDB telemetry logs, groups them by village cluster, and automatically issues outbreak alerts into Aurora Postgres.
+   - **Outbreak Agent**: An autonomous background daemon that requests village symptom clusters from the backend API, classifies them using Groq Llama-3.3 reasoning, checks for duplicates, and POSTs new outbreaks to the backend for DynamoDB storage and SSE broadcast.
 
 ---
 
@@ -192,6 +196,10 @@ Live, high-throughput ambulance dispatch and SOS events.
 - **PK**: `districtId` (HASH) + **SK**: `streamId` (RANGE)
 - **GSI: `priority-index`**: `priority` (HASH) + `streamId` (RANGE) — *Access Pattern: Filter critical P1 emergency alerts.*
 - **GSI: `district-date-index`**: `districtDateBucket` (HASH) + `timestamp` (RANGE) — *Access Pattern: Page emergency events chronologically.*
+
+#### 5. Table: `security_audit_logs`
+Chronological tamper-evident database log of security actions.
+- **PK**: `actor` (HASH) + **SK**: `timestamp` (RANGE) — *Access Pattern: Query security audits by acting administrator.*
 
 ---
 
