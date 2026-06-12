@@ -274,70 +274,70 @@ export default function DiSHAConsentModal({ onConsent }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-xl z-[9999] flex items-center justify-center p-4 overflow-y-auto">
+    <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-xl z-[9999] flex items-start sm:items-center justify-center p-4 overflow-y-auto">
       <motion.div
         initial={{ scale: 0.88, y: 32 }}
         animate={{ scale: 1, y: 0 }}
         transition={{ type: 'spring', stiffness: 280, damping: 26 }}
-        className="bg-white rounded-[1.5rem] sm:rounded-[2.5rem] shadow-2xl w-full max-w-lg p-5 sm:p-8 my-4 relative"
+        className="bg-white rounded-[1.5rem] sm:rounded-[2rem] shadow-2xl w-full max-w-md p-4 sm:p-6 my-auto relative"
       >
         {/* Header */}
-        <div className="flex flex-col items-center text-center mb-5 sm:mb-8">
-          <div className="w-12 h-12 sm:w-16 sm:h-16 bg-emerald-50 rounded-full flex items-center justify-center mb-3 sm:mb-4 ring-4 ring-emerald-100">
-            <ShieldCheck className="w-6 h-6 sm:w-8 sm:h-8 text-emerald-600" />
+        <div className="flex flex-col items-center text-center mb-4 sm:mb-6">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-emerald-50 rounded-full flex items-center justify-center mb-2 sm:mb-3 ring-4 ring-emerald-100">
+            <ShieldCheck className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-600" />
           </div>
-          <div className="flex flex-wrap gap-2 justify-center mb-2 sm:mb-3">
-            <div className="px-3 py-1 bg-emerald-50 text-emerald-700 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.3em] rounded-full border border-emerald-100">
+          <div className="flex flex-wrap gap-1.5 justify-center mb-2 sm:mb-3">
+            <div className="px-2 py-0.5 bg-emerald-50 text-emerald-700 text-[8px] font-black uppercase tracking-[0.2em] rounded-full border border-emerald-100">
               {activeTexts.tag}
             </div>
-            <div className="px-3 py-1 bg-blue-50 text-blue-700 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.3em] rounded-full border border-blue-100 flex items-center gap-1">
+            <div className="px-2 py-0.5 bg-blue-50 text-blue-700 text-[8px] font-black uppercase tracking-[0.2em] rounded-full border border-blue-100 flex items-center gap-1">
               <span className="w-1 h-1 bg-blue-500 rounded-full animate-pulse" />
               Aadhaar Verified
             </div>
-            <div className="px-3 py-1 bg-indigo-50 text-indigo-700 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.3em] rounded-full border border-indigo-100 flex items-center gap-1">
+            <div className="px-2 py-0.5 bg-indigo-50 text-indigo-700 text-[8px] font-black uppercase tracking-[0.2em] rounded-full border border-indigo-100 flex items-center gap-1">
               <span className="w-1 h-1 bg-indigo-500 rounded-full animate-pulse" />
               HIPAA Compliant
             </div>
           </div>
-          <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tighter">
+          <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tighter">
             {activeTexts.title}
           </h2>
-          <p className="text-slate-400 font-bold text-xs sm:text-sm mt-0.5 sm:mt-1">
+          <p className="text-slate-400 font-bold text-[11px] sm:text-xs mt-0.5">
             {activeTexts.subtitle}
           </p>
         </div>
 
         {/* Consent Points */}
-        <div className="space-y-2 sm:space-y-3 mb-5 sm:mb-7">
+        <div className="space-y-2 mb-4 sm:mb-6">
           {activeTexts.points.map(({ icon: Icon, color, title, body, legal }) => (
-            <div key={title} className="flex gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-100">
-              <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl flex items-center justify-center shrink-0 ${color}`}>
-                <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <div key={title} className="flex gap-2.5 p-2.5 rounded-xl border border-slate-100 bg-slate-50/20">
+              <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${color}`}>
+                <Icon className="w-3.5 h-3.5" />
               </div>
               <div>
-                <p className="text-[11px] sm:text-xs font-black text-slate-800 mb-0.5">{title}</p>
-                <p className="text-[10px] sm:text-[11px] text-slate-500 font-medium leading-snug">{body}</p>
-                <p className="text-[9px] sm:text-[10px] text-emerald-600 font-bold mt-1">{legal}</p>
+                <p className="text-[10px] sm:text-[11px] font-black text-slate-800 mb-0.5">{title}</p>
+                <p className="text-[9px] sm:text-[10px] text-slate-500 font-medium leading-snug">{body}</p>
+                <p className="text-[8px] sm:text-[9px] text-emerald-600 font-bold mt-0.5">{legal}</p>
               </div>
             </div>
           ))}
         </div>
 
         {/* Checkbox */}
-        <label className={`flex items-start gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl sm:rounded-2xl border-2 cursor-pointer transition-all mb-5 sm:mb-6 ${
+        <label className={`flex items-start gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all mb-4 sm:mb-5 ${
           checked ? 'bg-emerald-50 border-emerald-400' : 'bg-slate-50 border-slate-200 hover:border-emerald-200'
         }`}>
-          <div className={`w-5 h-5 sm:w-6 sm:h-6 rounded-lg border-2 flex items-center justify-center shrink-0 mt-0.5 transition-all ${
+          <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 mt-0.5 transition-all ${
             checked ? 'bg-emerald-600 border-emerald-600' : 'border-slate-300'
           }`}>
-            {checked && <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-white" />}
+            {checked && <CheckCircle className="w-2.5 h-2.5 text-white" />}
           </div>
           <input type="checkbox" className="hidden" checked={checked} onChange={e => setChecked(e.target.checked)} />
           <div>
-            <p className="text-[11px] sm:text-xs font-black text-slate-800">
+            <p className="text-[10px] sm:text-[11px] font-black text-slate-800">
               {activeTexts.checkbox_title}
             </p>
-            <p className="text-[9px] sm:text-[10px] text-slate-400 font-medium mt-0.5">
+            <p className="text-[8px] sm:text-[9px] text-slate-400 font-medium mt-0.5">
               {activeTexts.checkbox_body}
             </p>
           </div>
@@ -347,20 +347,20 @@ export default function DiSHAConsentModal({ onConsent }) {
         <button
           onClick={handleAccept}
           disabled={!checked || animating}
-          className={`w-full py-4 rounded-2xl font-black text-sm uppercase tracking-widest transition-all flex items-center justify-center gap-3 shadow-lg ${
+          className={`w-full py-3 sm:py-3.5 rounded-xl font-black text-xs sm:text-sm uppercase tracking-widest transition-all flex items-center justify-center gap-3 shadow-lg ${
             checked && !animating
               ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-100 active:scale-[0.98]'
               : 'bg-slate-100 text-slate-300 cursor-not-allowed'
           }`}
         >
           {animating ? (
-            <><CheckCircle className="w-4 h-4" /> {activeTexts.btn_success}</>
+            <><CheckCircle className="w-3.5 h-3.5" /> {activeTexts.btn_success}</>
           ) : (
-            <><ShieldCheck className="w-4 h-4" /> {activeTexts.btn_agree}</>
+            <><ShieldCheck className="w-3.5 h-3.5" /> {activeTexts.btn_agree}</>
           )}
         </button>
 
-        <p className="text-center text-[9px] text-slate-300 font-medium mt-4">
+        <p className="text-center text-[8px] text-slate-300 font-medium mt-3">
           {activeTexts.footer}
         </p>
       </motion.div>
