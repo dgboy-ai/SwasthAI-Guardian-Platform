@@ -1,13 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { showToast } from '../utils/toast';
+import { useAuth } from '../context/AuthContext';
 import { subscribeTelemetry } from '../utils/liveTelemetry';
 import { playTriageAlert } from '../utils/audioAlerts';
 import {
   LayoutDashboard, Radio, Heart, Baby, Truck,
   WifiOff, BrainCircuit, BarChart3, Settings,
   Bell, ChevronRight, ChevronLeft, X, HeartPulse, TrendingUp,
-  AlertTriangle
+  AlertTriangle, LogOut
 } from 'lucide-react';
 import adminService from '../services/adminService';
 import api from '../services/api';
@@ -39,6 +40,8 @@ const NAV_ITEMS = [
 ];
 
 export default function AdminDashboard() {
+  const { logout } = useAuth();
+  const navigate = useNavigate();
   const [activeView, setActiveView] = useState('command');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -578,6 +581,30 @@ export default function AdminDashboard() {
             </button>
           </div>
         </div>
+
+        {/* Logout */}
+        {!sidebarCollapsed && (
+          <div className="px-3 py-2 border-t border-white/5">
+            <button
+              onClick={() => { logout(); navigate('/login'); }}
+              className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors text-sm"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>Secure Logout</span>
+            </button>
+          </div>
+        )}
+        {sidebarCollapsed && (
+          <div className="px-2 py-2 border-t border-white/5 flex justify-center">
+            <button
+              onClick={() => { logout(); navigate('/login'); }}
+              className="flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+              title="Secure Logout"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          </div>
+        )}
 
         {/* Version */}
         {!sidebarCollapsed && (
