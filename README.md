@@ -115,10 +115,10 @@ SwasthAI-Guardian-Platform/
 ---
 
 <details>
-<summary><b>🛠️ Submission Disclosures & Incremental Updates (New vs. Existing Code)</b></summary>
+<summary><b>🛠️ Project Feature Evolution & Architecture Hardening Log</b></summary>
 <br/>
 
-The following are the disclosures of all code, features, optimizations, and technical hardening steps completed during the main development window of this project:
+The following is a detailed log of the key architectural milestones, feature developments, and system hardening updates implemented during the development lifecycle:
 
 ### Core architectural additions (the big ones):
 - **ONNX In-Browser SymptomNet & Local RAG** — Compiled the neural network to ONNX format, running fully offline in-browser diagnostic classification. Pre-seeded IndexedDB RAG database with clinical guidelines and built a fuzzy token-weighted RAG engine to power completely offline Sakhi queries.
