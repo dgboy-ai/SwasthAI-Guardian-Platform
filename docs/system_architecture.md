@@ -6,70 +6,50 @@ This document describes the high-level system architecture and database design d
 
 ## 🏗️ High-Level Architectural Flow
 
-The diagram below details the end-to-end data lifecycle, displaying how offline inputs sync dynamically and route to AWS databases:
+The diagram below details the end-to-end data lifecycle, displaying how offline inputs sync dynamically and route to AWS cloud:
 
 ```mermaid
-graph TB
-    subgraph Client Layer [Client-Side App - Vercel / PWA / Android]
-        UI[React UI Page / Guided Mode]
-        LS[Local Storage & IndexedDB]
-        SQ[Offline Sync Queue]
+graph LR
+    subgraph Client [Client PWA & Edge]
+        UI[React UI] --> LS[Local Storage]
+        LS --> SQ[IndexedDB Sync Queue]
     end
 
-    subgraph CDN and Hosting Layer [CDN & Hosting Layer]
-        Vercel[Vercel Serverless Hosting]
+    subgraph Backend [Express.js API Gateway]
+        Express[Express Router] --> Policy[IDOR Policy Engine]
+        Express --> ED[Event Dispatcher]
+        Express --> WD[Health Watchdog]
     end
 
-    subgraph Application Backend [Render.com / AWS ECS Node.js API]
-        Express[Express.js App Router]
-        Auth[JWT / OTP Auth Middleware]
-        Audit[Audit Logging Middleware]
-        ED[EDA - Event Dispatcher]
+    subgraph AI [FastAPI Python AI]
+        SymptomNet[SymptomNet MLP]
+        RAG[Sakhi RAG]
+        OutbreakAgent[Outbreak Agent]
     end
 
-    subgraph AI Service [FastAPI Microservice]
-        SymptomNet[SymptomNet MLP Classifier]
-        RAG[Sakhi RAG Chatbot - Llama 3.3]
-        OutbreakAgent[Outbreak Agent Outbreak detection]
+    subgraph Cloud [AWS Cloud Datastore]
+        Aurora[(Aurora PostgreSQL)]
+        Dynamo[(Amazon DynamoDB)]
+        S3[(AWS S3 Bucket)]
     end
 
-    subgraph Data Layer [AWS Cloud Datastore]
-        Aurora[(Amazon Aurora PostgreSQL - Transactional SQL)]
-        Dynamo[(Amazon DynamoDB - High-Throughput NoSQL)]
-        S3[(AWS S3 - Skin Condition Images)]
-    end
+    %% Client to Backend Connections
+    UI -->|Direct HTTPS| Express
+    SQ -->|Replay Sync| Express
 
-    %% Client and CDN Interactions
-    UI --> Vercel
-    UI --> LS
-    UI -->|Online| Express
-    LS --> SQ
-    SQ -->|Resumed Connection Replay| Express
+    %% Backend Database Writes
+    Express -->|Transactional SQL| Aurora
+    Express -->|Telemetry Stream| Dynamo
+    Express -->|Pre-signed Url| S3
 
-    %% Backend Router & Middlewares
-    Express --> Auth
-    Auth --> Audit
-    Audit -->|Write Relational Logs| Aurora
-    Audit -->|Write Security Logs| Dynamo
-    Express --> ED
+    %% Event Dispatcher Async Writes
+    ED -->|Deferred Writes| Aurora
+    ED -->|Outbreak/SOS Alerts| Dynamo
 
-    %% Relational Queries
-    Express -->|Transactional CRUD| Aurora
-    ED -->|Maternal & Referral Events| Aurora
-
-    %% Telemetry & Streams
-    Express -->|Telemetry & Heartbeats| Dynamo
-    ED -->|Emergency Streams & Sync Logs| Dynamo
-
-    %% AI Service Interactions
-    Express -->|Symptom Inference / Speech Check| SymptomNet
-    Express -->|Conversational RAG request| RAG
-    OutbreakAgent -->|Read cluster telemetry via API| Express
-    OutbreakAgent -->|POST outbreak alert| Express
-    Express -->|Write outbreak alert| Dynamo
-    
-    %% Skin Analyzer
-    Express -->|Analyze Skin Image| S3
+    %% AI Service Workloads
+    Express -->|Symptom/Vitals Triage| SymptomNet
+    Express -->|Clinical Sakhi query| RAG
+    OutbreakAgent -->|Poll clusters / POST alert| Express
 ```
 
 ---
