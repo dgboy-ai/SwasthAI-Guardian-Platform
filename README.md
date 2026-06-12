@@ -5,30 +5,52 @@
 
 ---
 
-## 🏆 B2B Operations & Value Proposition (Healthcare)
+## 💡 What, Why, and Who is SwasthAI Guardian?
 
-SwasthAI is framed as a B2B district operations platform: the buyer is a district health office, NGO network, or public-health command center that needs ASHA workload visibility, outbreak proof, monthly CMO reporting, and auditable AWS-backed data flows. **Monetization model**: per-district subscription (₹50 000–₹2 00 000/year tiered by population coverage) with premium add-ons for NGO impact analytics and CMO-ready PDF reports.
+### 1. What is SwasthAI?
+SwasthAI is an **offline-first B2B health operations and epidemiologic intelligence platform**. It connects frontline rural healthcare workers (ASHA workers) directly with district command centers, ensuring medical records, maternal-child assessments, and emergency SOS dispatches flow seamlessly—even from zero-connectivity zones.
+
+### 2. Why is it needed?
+Over **600 million rural citizens in India** rely on frontline health workers who operate in remote areas. Without internet access, these workers rely on slow, manual paper tracking. This creates massive delays in detecting infectious outbreaks, results in high rates of maternal/child referral dropout, and leaves healthcare leaders operating in the dark.
+
+### 3. What does it solve?
+* **Zero-Signal Operation**: Frontline workers capture clinical records and vitals offline. The platform uses a local IndexedDB transactional sync queue to replay and synchronize data to a dual-database cloud plane once a signal is detected.
+* **Agentic Outbreak Intelligence**: A background agent analyzes incoming health data using LLM reasoning to forecast and detect localized outbreak clusters before they spread, triggering real-time alerts.
+* **Closed-Loop Referrals**: Connects villagers, ASHA workers, and district doctors to track high-risk pregnancies, child nutrition, and emergency dispatches in real-time.
+
+### 4. Who uses it?
+* **Villagers**: Access local-language voice triage, skin scans, and ambulance dispatches offline.
+* **ASHA Workers (Field Staff)**: Capture maternal vitals, track child immunizations, and manage dispatches offline.
+* **District Admins / Chief Medical Officers (CMOs)**: Monitor live epidemiologic heatmaps, receive outbreak warnings, and export monthly reports.
+* **NGOs & Health Sponsors**: View referral closure rates, vaccination completions, and performance analytics.
+
+---
+
+## 🛠️ Infrastructure Overview
 
 | | |
 |---|---|
 | **AWS Databases Used** | Amazon Aurora PostgreSQL + Amazon DynamoDB |
-| **Frontend Deployment** | Vercel |
-| **AWS Region** | ap-south-1 (Mumbai — correct for India healthcare data) |
+| **Frontend Deployment** | Vercel PWA (Progressive Web App) |
+| **AWS Region** | ap-south-1 (Mumbai — correct for India healthcare data residency) |
 | **Target Market** | India's 600M rural citizens + 1.4M ASHA health workers |
 
 ---
 
-> [!IMPORTANT]
-> ### 📖 Technical Documentation & Codebase Index
-> Jump directly to the detailed architecture logs, code reference maps, and setup guides:
-> 
-> *   **🏗️ System & Database Designs**: [docs/system_architecture.md](docs/system_architecture.md) — End-to-end data flows, Mermaid ERD (Aurora PostgreSQL), DynamoDB composite key schemas, GSIs, access patterns, and local SQLite fallback details.
-> *   **🔬 AI Architecture & Val**: [docs/ai_architecture.md](docs/ai_architecture.md) — PyTorch SymptomNet 5-Fold Stratified CV logs, metrics, and Sakhi RAG parameters.
-> *   **⚙️ Setup & Dev Manual**: [docs/setup_guide.md](docs/setup_guide.md) — Docker Compose environments, env setups, and local dev guides.
-> *   **🔌 Offline Sync Strategy**: [docs/offline_sync_strategy.md](docs/offline_sync_strategy.md) — IndexedDB queue replay, idempotency keys, and conflict resolution rules.
-> *   **📐 Architecture Diagram**: [docs/architecture-diagram.svg](docs/architecture-diagram.svg) — Visual architecture with all layers, data flows, and DynamoDB table details.
-> *   **📁 Complete Repository Map**: [docs/repository_map.md](docs/repository_map.md) — Detailed mapping of files, roles, and codebase directory layout.
-> *   **📈 Build Changelog**: [CHANGELOG.md](CHANGELOG.md) — Chronological log of features, optimizations, and validations built during development.
+## 📖 Technical Documentation & Codebase Index
+
+Jump directly into the detailed architecture logs, code reference maps, and setup guides below:
+
+| Technical Guide | Focus & Key Highlights | Quick Link |
+| :--- | :--- | :--- |
+| **🏗️ System & Database Designs** | End-to-end data flows, database ERDs, DynamoDB composite key schemas, GSIs, access patterns, and SQLite fallbacks. | **[View System Arch ↗](docs/system_architecture.md)** |
+| **🔬 AI Architecture & Val** | SymptomNet 5-Fold Stratified CV, RAG calibration parameters, and ISIC skin triage. | **[View AI Arch ↗](docs/ai_architecture.md)** |
+| **🔌 Offline Sync Strategy** | IndexedDB queue replay, idempotency keys, and Last-Write-Wins (LWW) rules. | **[View Sync Strategy ↗](docs/offline_sync_strategy.md)** |
+| **📁 Complete Repository Map** | Directory-by-directory tree layout, file roles, and component descriptions. | **[View Repo Map ↗](docs/repository_map.md)** |
+| **📈 Build Changelog** | Chronological log of features, optimizations, and validations built during development. | **[View Changelog ↗](CHANGELOG.md)** |
+| **⚙️ Setup & Dev Manual** | Local dev environments, environment variables setup, and Docker compose guides. | **[View Setup Guide ↗](docs/setup_guide.md)** |
+| **📐 Architecture Diagram** | SVG layout mapping Vercel, Aurora PostgreSQL, DynamoDB, and FastAPI. | **[View SVG Diagram ↗](docs/architecture-diagram.svg)** |
+
 ---
 
 ## 🚀 Production Infrastructure Upgrades (Initial Baseline vs. Current Upgrades)
