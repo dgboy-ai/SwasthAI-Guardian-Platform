@@ -161,7 +161,9 @@ erDiagram
 
 ---
 
-### 📊 DynamoDB Table Design (Composite Keys + GSIs)
+## ⚡ DynamoDB Engine Architecture
+
+### 📊 1. Table Schema Design (GSIs & Access Patterns)
 
 Every DynamoDB table is designed around specific access patterns to support zero-signal offline sync and rapid epidemic notifications:
 
@@ -175,7 +177,7 @@ Every DynamoDB table is designed around specific access patterns to support zero
 
 ---
 
-### DynamoDB Production Hardening (5 Fixes Applied)
+### 🛠️ 2. Production Hardening (Query & Code-Level Fixes)
 
 | Fix | Before (naive) | After (production-grade) |
 |---|---|---|
