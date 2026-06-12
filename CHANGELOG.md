@@ -4,6 +4,14 @@ All notable changes and feature developments completed during the hackathon wind
 
 ## June 12, 2026
 ### Fixed & Optimized
+- **Offline Credential Hash Safety**:
+  - Replaced the insecure `btoa()` base64 encoder with a robust, pure JavaScript SHA-256 implementation inside `AuthContext.jsx` for hashing offline user credentials stored in `localStorage`.
+- **System Monitoring Watchdog & SSE Alerts**:
+  - Implemented a background watchdog monitoring loop in `server.js` running on a 30-second interval to check the health of the AI service and monitor the Outbreak Agent heartbeat scans.
+  - Configured SSE stream in `admin.js` to broadcast a `service-alert` event immediately when a service goes down or recovers.
+  - Added a state-driven warning banner in the Admin Dashboard (`AdminDashboard.jsx`) to display active service failure alerts to administrators in real-time.
+- **Unification of 403 Forbidden Responses**:
+  - Unified all authorization check failures in `backend/middleware/policy.js` to return a generic `{ code: 'ACCESS_DENIED', message: 'Access Denied.' }` status payload, preventing leaks of internal user roles or village assignment status.
 - **Calibrated RAG Threshold Alignment**:
   - Hardcoded the calibrated threshold `0.45` as the default fallback in `ai-service/rag_service.py` to ensure high retrieval quality when `rag_config.py` is missing or not deployed.
 - **Symptom Checklist & Offline Mismatch Resolution**:

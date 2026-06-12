@@ -136,6 +136,10 @@ let agentScans = [
   }
 ];
 
+export function getAgentScans() {
+  return agentScans;
+}
+
 router.get('/agent-scans', auth, checkRole(['admin', 'ngo']), (req, res) => {
   res.json(agentScans);
 });
@@ -1084,6 +1088,11 @@ router.get('/live-feed', async (req, res) => {
   console.log(`[SSE] Admin ${decoded.id} connected (${adminSseClients.size} total)`);
 
   res.write(`event: connected\ndata: ${JSON.stringify({ clientId, timestamp: new Date().toISOString() })}\n\n`);
+
+  const activeAlerts = req.app.locals.serviceAlerts || {};
+  Object.entries(activeAlerts).forEach(([service, message]) => {
+    res.write(`event: service-alert\ndata: ${JSON.stringify({ service, status: 'down', message, timestamp: new Date().toISOString() })}\n\n`);
+  });
 
   const heartbeat = setInterval(() => {
     try { 

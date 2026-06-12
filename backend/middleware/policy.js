@@ -7,7 +7,7 @@ export const checkRole = (roles) => (req, res, next) => {
   if (!req.user || !roles.includes(req.user.role)) {
     return res.status(403).json({
       success: false,
-      error: { code: 'ACCESS_DENIED', message: 'Access Denied: Insufficient Permissions' }
+      error: { code: 'ACCESS_DENIED', message: 'Access Denied.' }
     });
   }
   next();
@@ -34,7 +34,7 @@ export const enforceVillageScope = (req, res, next) => {
   if (!userVillageId) {
     return res.status(403).json({
       success: false,
-      error: { code: 'FORBIDDEN_NO_VILLAGE', message: 'Access Denied: User is not assigned to any village.' }
+      error: { code: 'ACCESS_DENIED', message: 'Access Denied.' }
     });
   }
 
@@ -45,10 +45,7 @@ export const enforceVillageScope = (req, res, next) => {
   if (requestedVillageId && requestedVillageId !== userVillageId) {
     return res.status(403).json({
       success: false,
-      error: {
-        code: 'IDOR_PREVENTED',
-        message: `Access Denied: Cannot access data for village '${requestedVillageId}'. Scoped to '${userVillageId}'.`
-      }
+      error: { code: 'ACCESS_DENIED', message: 'Access Denied.' }
     });
   }
 
@@ -86,7 +83,7 @@ export const enforceReferralAccess = async (req, res, next) => {
     if (referral.villageId !== userVillageId) {
       return res.status(403).json({
         success: false,
-        error: { code: 'IDOR_PREVENTED', message: 'Access Denied: This referral belongs to a different village.' }
+        error: { code: 'ACCESS_DENIED', message: 'Access Denied.' }
       });
     }
 
@@ -128,7 +125,7 @@ export const enforceAmbulanceAccess = async (req, res, next) => {
     if (req.user.role === 'villager' && request.user_id !== req.user.id) {
       return res.status(403).json({
         success: false,
-        error: { code: 'IDOR_PREVENTED', message: 'Access Denied: You do not own this request.' }
+        error: { code: 'ACCESS_DENIED', message: 'Access Denied.' }
       });
     }
 
@@ -136,7 +133,7 @@ export const enforceAmbulanceAccess = async (req, res, next) => {
     if (req.user.role === 'ngo' && request.location !== userVillageId) {
       return res.status(403).json({
         success: false,
-        error: { code: 'IDOR_PREVENTED', message: 'Access Denied: This request belongs to a different village.' }
+        error: { code: 'ACCESS_DENIED', message: 'Access Denied.' }
       });
     }
 

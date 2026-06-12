@@ -22,7 +22,7 @@ import { seedData } from './db/seed.js';
 import authRouter from './routes/auth.js';
 import villagerRouter from './routes/villager.js';
 import ngoRouter from './routes/ngo.js';
-import adminRouter, { broadcastToAdmins } from './routes/admin.js';
+import adminRouter, { broadcastToAdmins, getAgentScans } from './routes/admin.js';
 import webhookRouter from './routes/webhooks.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -98,6 +98,7 @@ if (isProduction && cluster.isPrimary) {
   app.locals.ragTraces = ragTraces;
   app.locals.AI_SERVICE_URL = AI_SERVICE_URL;
   app.locals.broadcastToAdmins = broadcastToAdmins;
+  app.locals.serviceAlerts = {};
 
   const redactSensitiveData = (obj) => {
     if (!obj || typeof obj !== 'object') return obj;
@@ -567,6 +568,87 @@ if (isProduction && cluster.isPrimary) {
       console.log(`[WS] Client disconnected. Active: ${wsClients.size}`);
     });
   });
+
+  // ── WATCHDOG MONITORING LOOP ──────────────────────────────────────────
+  let lastAiStatus = 'online';
+  let lastAgentStatus = 'online';
+
+  const monitorWatchdog = async () => {
+    // 1. AI Service Health Check
+    let currentAiStatus = 'online';
+    let aiErrorMsg = '';
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 3000);
+      const aiRes = await fetch(`${AI_SERVICE_URL}/health`, { signal: controller.signal });
+      clearTimeout(timeout);
+      if (!aiRes.ok) {
+        currentAiStatus = 'offline';
+        aiErrorMsg = `AI service returned status ${aiRes.status}`;
+      }
+    } catch (err) {
+      currentAiStatus = 'offline';
+      aiErrorMsg = err.name === 'AbortError' ? 'AI service health check timed out' : `AI service unreachable: ${err.message}`;
+    }
+
+    if (currentAiStatus !== lastAiStatus) {
+      lastAiStatus = currentAiStatus;
+      if (currentAiStatus === 'offline') {
+        app.locals.serviceAlerts['ai-service'] = aiErrorMsg;
+      } else {
+        delete app.locals.serviceAlerts['ai-service'];
+      }
+      broadcastToAdmins('service-alert', {
+        service: 'ai-service',
+        status: currentAiStatus === 'online' ? 'up' : 'down',
+        message: currentAiStatus === 'online' ? 'AI service has recovered and is online.' : aiErrorMsg,
+        timestamp: new Date().toISOString()
+      });
+      console.log(`[WATCHDOG] AI Service status changed to ${currentAiStatus}: ${aiErrorMsg || 'healthy'}`);
+    }
+
+    // 2. Outbreak Agent Heartbeat Check
+    let currentAgentStatus = 'online';
+    let agentErrorMsg = '';
+    try {
+      const scans = getAgentScans();
+      if (!scans || scans.length === 0) {
+        currentAgentStatus = 'offline';
+        agentErrorMsg = 'No outbreak agent scans recorded.';
+      } else {
+        const latestScan = scans[0];
+        const lastScanTime = new Date(latestScan.timestamp).getTime();
+        const diffMinutes = (Date.now() - lastScanTime) / (60 * 1000);
+        // If more than 45 minutes have elapsed since the last scan
+        if (diffMinutes > 45) {
+          currentAgentStatus = 'offline';
+          agentErrorMsg = `Outbreak Agent heartbeat missed. Last scan was ${Math.round(diffMinutes)} minutes ago.`;
+        }
+      }
+    } catch (err) {
+      currentAgentStatus = 'offline';
+      agentErrorMsg = `Failed to check Outbreak Agent status: ${err.message}`;
+    }
+
+    if (currentAgentStatus !== lastAgentStatus) {
+      lastAgentStatus = currentAgentStatus;
+      if (currentAgentStatus === 'offline') {
+        app.locals.serviceAlerts['outbreak-agent'] = agentErrorMsg;
+      } else {
+        delete app.locals.serviceAlerts['outbreak-agent'];
+      }
+      broadcastToAdmins('service-alert', {
+        service: 'outbreak-agent',
+        status: currentAgentStatus === 'online' ? 'up' : 'down',
+        message: currentAgentStatus === 'online' ? 'Outbreak Agent heartbeat restored.' : agentErrorMsg,
+        timestamp: new Date().toISOString()
+      });
+      console.log(`[WATCHDOG] Outbreak Agent status changed to ${currentAgentStatus}: ${agentErrorMsg || 'healthy'}`);
+    }
+  };
+
+  // Run watchdog every 30 seconds
+  const watchdogInterval = setInterval(monitorWatchdog, 30000);
 
   app.locals.wss = wss;
   app.locals.wsClients = wsClients;

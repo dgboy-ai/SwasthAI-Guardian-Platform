@@ -231,7 +231,7 @@ export default function SymptomChecker() {
     } catch (err) {
       console.error('Symptom AI error:', err);
       // Graceful offline fallback using in-browser localSymptomNet prediction
-      const localPred = predictSymptomsOffline(symptomText);
+      const localPred = await predictSymptomsOffline(symptomText);
       const isSevere = selectedSymptoms.some((id) => symptomList.find((s) => s.id === id)?.severe);
       setResult({
         type: isSevere ? 'severe' : 'mild',

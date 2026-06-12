@@ -6,7 +6,8 @@ import { playTriageAlert } from '../utils/audioAlerts';
 import {
   LayoutDashboard, Radio, Heart, Baby, Truck,
   WifiOff, BrainCircuit, BarChart3, Settings,
-  Bell, ChevronRight, ChevronLeft, X, HeartPulse, TrendingUp
+  Bell, ChevronRight, ChevronLeft, X, HeartPulse, TrendingUp,
+  AlertTriangle
 } from 'lucide-react';
 import adminService from '../services/adminService';
 import api from '../services/api';
@@ -58,6 +59,7 @@ export default function AdminDashboard() {
   const [dynamoFeed, setDynamoFeed] = useState(null);
   const [systemError, setSystemError] = useState(null);
   const [systemLoading, setSystemLoading] = useState(true);
+  const [serviceAlerts, setServiceAlerts] = useState({});
   const [districtReport, setDistrictReport] = useState(null);
   const [reportLoading, setReportLoading] = useState(false);
   const [ashaPerformance, setAshaPerformance] = useState([]);
@@ -258,6 +260,21 @@ export default function AdminDashboard() {
           const outbreak = JSON.parse(e.data);
           setOutbreaks(prev => [outbreak, ...(prev || [])].slice(0, 50));
           playTriageAlert('Critical');
+        } catch (_) { }
+      });
+
+      sse.addEventListener('service-alert', (e) => {
+        try {
+          const alert = JSON.parse(e.data);
+          setServiceAlerts(prev => {
+            const next = { ...prev };
+            if (alert.status === 'down') {
+              next[alert.service] = alert.message || `${alert.service} is offline`;
+            } else {
+              delete next[alert.service];
+            }
+            return next;
+          });
         } catch (_) { }
       });
 
@@ -653,6 +670,19 @@ export default function AdminDashboard() {
             })}
           </div>
         </header>
+
+        {/* ⚠️ SERVICE FAILURE ALERTS */}
+        {Object.entries(serviceAlerts).map(([service, msg]) => (
+          <div key={service} className="bg-rose-500 text-white border-b border-rose-600 px-6 py-2.5 flex items-center justify-between shadow-md relative z-20 shrink-0">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-white shrink-0 animate-bounce" />
+              <span className="text-[11px] font-black uppercase tracking-wider bg-rose-950 px-2 py-0.5 rounded border border-rose-700">Service Alert</span>
+              <span className="text-xs font-black uppercase tracking-widest">{service.replace('-', ' ')} down:</span>
+              <span className="text-xs font-bold">{msg}</span>
+            </div>
+            <span className="text-[10px] font-mono opacity-80">Check server logs or service health dashboard</span>
+          </div>
+        ))}
 
         {/* 🟢 PERSISTENT LIVE AWS PROOF BANNER */}
         <div className="bg-gradient-to-r from-slate-900 to-indigo-950 text-white border-b border-indigo-500/20 px-6 py-3.5 shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-4 relative overflow-hidden shrink-0">

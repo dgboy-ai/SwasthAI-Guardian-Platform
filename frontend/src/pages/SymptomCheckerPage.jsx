@@ -246,7 +246,7 @@ export default function SymptomCheckerPage() {
 
       if (!isOnline) {
         // Run Local SymptomNet fully offline
-        const localPred = predictSymptomsOffline(fullText);
+        const localPred = await predictSymptomsOffline(fullText);
         const tier = getSeverityTier(symptomsToUse, localPred.prediction || '', otherToUse);
         const finalRes = {
           ...tier,
@@ -304,7 +304,7 @@ export default function SymptomCheckerPage() {
         }, 1500);
       } else {
         // Server down fallback: run local SymptomNet prediction in-browser
-        const localPred = predictSymptomsOffline(fullText);
+        const localPred = await predictSymptomsOffline(fullText);
         const tier = getSeverityTier(symptomsToUse, localPred.prediction || '', otherToUse);
         const finalRes = {
           ...tier,

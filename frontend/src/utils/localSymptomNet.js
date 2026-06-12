@@ -5,8 +5,6 @@
  * and runs a feedforward pass over the exported SymptomNet neural network weights.
  */
 
-import { CLASSES, VOCAB_EMBEDDINGS, MODEL_WEIGHTS } from './symptomNetMeta.js';
-
 // Clean text and tokenize into words
 function tokenize(text) {
   if (!text) return [];
@@ -25,12 +23,21 @@ function softmax(arr) {
   return exps.map(v => v / sum);
 }
 
+// Lazy-loaded module reference — populated on first call
+let metaModule = null;
+async function getMeta() {
+  if (!metaModule) {
+    metaModule = await import('./symptomNetMeta.js');
+  }
+  return metaModule;
+}
+
 /**
  * Predicts the most likely disease from symptom text using in-browser weights.
  * @param {string} text Symptom descriptions
- * @returns {object} { prediction, disease, confidence, doctor_specialty, model, accuracy, alternatives }
+ * @returns {Promise<object>} { prediction, disease, confidence, doctor_specialty, model, accuracy, alternatives }
  */
-export function predictSymptomsOffline(text) {
+export async function predictSymptomsOffline(text) {
   if (!text || !text.trim()) {
     return {
       prediction: "Uncertain / Need More Info",
@@ -41,6 +48,8 @@ export function predictSymptomsOffline(text) {
       accuracy: "64.8% (Offline MLP)"
     };
   }
+
+  const { CLASSES, VOCAB_EMBEDDINGS, MODEL_WEIGHTS } = await getMeta();
 
   const tokens = tokenize(text);
   const dims = 384;
