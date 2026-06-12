@@ -167,13 +167,13 @@ erDiagram
 
 Every DynamoDB table is designed around specific access patterns to support zero-signal offline sync and rapid epidemic notifications:
 
-| Table Name | Partition Key (PK) | Sort Key (SK) | GSIs / TTL | Access Pattern & Design Purpose |
+| Table Name | Partition Key (PK / Hash) | Sort Key (SK / Range) | GSIs / TTL | Access Pattern & Design Purpose |
 |---|---|---|---|---|
-| **`outbreak_telemetry`** | `villageId` *(HASH)* | `detectedAt` *(RANGE)* | • **GSI:** `disease-index` (`disease` + `detectedAt`) <br>• **GSI:** `district-time-index` (`districtId` + `detectedAt`) | Query disease outbreaks by trend; Query district outbreak timeline. Stores AI-detected village clusters. |
-| **`sync_queues`** | `deviceId` *(HASH)* | `queuedAt` *(RANGE)* | • **GSI:** `status-index` (`status` + `queuedAt`) | Fetch failed sync logs across the fleet. Stores offline client logs during outages. |
-| **`village_node_state`** | `villageId` *(HASH)* | *None* | • **TTL:** `expiresAt` *(Auto-expires after 7 days)* | Monitor node heartbeats. Stale nodes automatically expire from the live dashboard. |
-| **`emergency_streams`** | `districtId` *(HASH)* | `streamId` *(RANGE)* | • **GSI:** `priority-index` (`priority` + `streamId`) <br>• **GSI:** `district-date-index` (`districtDateBucket` + `timestamp`) | Filter critical P1 emergency alerts; Page emergency events chronologically. |
-| **`security_audit_logs`** | `actor` *(HASH)* | `timestamp` *(RANGE)* | • **GSI:** *None (Access Isolation)* <br>• **TTL:** *None (Retained Indefinitely)* | Query security audits by acting admin. Isolated PK lookup blocks cross-actor scanning. |
+| **`outbreak_telemetry`** | `villageId` | `detectedAt` | • **GSI:** `disease-index` (`disease` + `detectedAt`) <br>• **GSI:** `district-time-index` (`districtId` + `detectedAt`) | Query disease outbreaks by trend; Query district outbreak timeline. Stores AI-detected village clusters. |
+| **`sync_queues`** | `deviceId` | `queuedAt` | • **GSI:** `status-index` (`status` + `queuedAt`) | Fetch failed sync logs across the fleet. Stores offline client logs during outages. |
+| **`village_node_state`** | `villageId` | *None* | • **TTL:** `expiresAt` *(Auto-expires after 7 days)* | Monitor node heartbeats. Stale nodes automatically expire from the live dashboard. |
+| **`emergency_streams`** | `districtId` | `streamId` | • **GSI:** `priority-index` (`priority` + `streamId`) <br>• **GSI:** `district-date-index` (`districtDateBucket` + `timestamp`) | Filter critical P1 emergency alerts; Page emergency events chronologically. |
+| **`security_audit_logs`** | `actor` | `timestamp` | • **GSI:** *None (Access Isolation)* <br>• **TTL:** *None (Retained Indefinitely)* | Query security audits by acting admin. Isolated PK lookup blocks cross-actor scanning. |
 
 ---
 
