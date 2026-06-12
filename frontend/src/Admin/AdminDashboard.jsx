@@ -468,102 +468,150 @@ export default function AdminDashboard() {
 
       {/* ══ SIDEBAR ══════════════════════════════════════════════════════════ */}
       <aside
-        style={sidebarCollapsed ? { width: '68px' } : { width: `${sidebarWidth}px` }}
         className={`
           fixed top-0 left-0 h-full z-40 flex flex-col
-          bg-[#043927] text-white relative
+          bg-gradient-to-b from-[#021a10] via-[#042d1d] to-[#010e07]
+          text-white relative
           ${isResizing ? '' : 'transition-all duration-300 ease-in-out'}
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
           lg:translate-x-0 lg:relative lg:z-auto shrink-0
         `}
+        style={{
+          boxShadow: '4px 0 24px rgba(0,0,0,0.4)',
+          width: sidebarCollapsed ? '68px' : `${sidebarWidth}px`
+        }}
       >
         {/* Logo */}
-        <div className="px-4 pt-6 pb-5 border-b border-white/10 flex items-center justify-between">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-9 h-9 bg-[#064E3B] rounded-xl flex items-center justify-center shadow-lg shrink-0 border border-emerald-700/50">
-              <HeartPulse className="w-5 h-5 text-emerald-400" />
-            </div>
-            {!sidebarCollapsed && (
-              <div className="flex-1 min-w-0 animate-in fade-in duration-200">
-                <p className="font-extrabold text-[12.5px] uppercase tracking-wider text-white leading-tight">SWASTHAI GUARDIAN</p>
-                <p className="text-[7.5px] text-emerald-400 font-black mt-0.5 leading-tight uppercase tracking-widest">National Rural Health Command Center</p>
-              </div>
-            )}
+        <div className="px-4 pt-5 pb-4 flex items-center gap-2.5 min-w-0 border-b border-white/5">
+          <div className="w-9 h-9 bg-emerald-600/20 border border-emerald-500/40 rounded-xl flex items-center justify-center shadow-[0_0_18px_rgba(16,185,129,0.2)] shrink-0 relative">
+            <HeartPulse className="w-5 h-5 text-emerald-400" />
+            <span className="absolute -top-0.5 -right-0.5 flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
           </div>
-          <button 
-            className="hidden lg:block text-white/40 hover:text-white ml-1.5 shrink-0" 
-            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            title={sidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
-          >
-            {sidebarCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
-          </button>
-          <button className="lg:hidden text-white/60 hover:text-white" onClick={() => setSidebarOpen(false)}>
+          {!sidebarCollapsed && (
+            <div className="flex-1 min-w-0 animate-in fade-in duration-200">
+              <p className="font-black text-[12px] uppercase tracking-wider text-white leading-tight">SWASTHAI GUARDIAN</p>
+              <p className="text-[7px] text-emerald-400/80 font-bold mt-0.5 leading-tight uppercase tracking-widest">National Rural Command</p>
+            </div>
+          )}
+          <button className="lg:hidden text-emerald-500/60 hover:text-white ml-auto" onClick={() => setSidebarOpen(false)}>
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Nav items */}
-        <nav className="flex-1 py-3 overflow-y-auto min-w-0">
-          {NAV_ITEMS.map(item => {
-            const active = activeView === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => { setActiveView(item.id); setSidebarOpen(false); }}
-                className={`
-                  w-full flex items-center gap-3 px-4 py-3 text-left transition-all duration-150 min-w-0
-                  ${active
-                    ? 'bg-emerald-500 text-white rounded-xl'
-                    : 'text-white/60 hover:text-white hover:bg-white/10 rounded-none'}
-                `}
-                style={active && !sidebarCollapsed ? { margin: '0 8px', width: 'calc(100% - 16px)' } : {}}
-              >
-                <item.icon className={`w-4 h-4 shrink-0 ${active ? 'text-white' : 'text-white/50'}`} style={active && sidebarCollapsed ? { color: '#ffffff' } : {}} />
-                {!sidebarCollapsed && (
-                  <span className={`text-[12.5px] font-semibold truncate animate-in fade-in duration-200 ${active ? 'font-bold' : ''} flex items-center gap-1.5`}>
-                    {item.label}
-                    {item.badge && <span className="px-1 py-0.5 bg-violet-400 text-white text-[7px] font-black rounded uppercase tracking-wider">{item.badge}</span>}
-                  </span>
-                )}
-                {active && !sidebarCollapsed && <ChevronRight className="w-3.5 h-3.5 ml-auto opacity-70 shrink-0" />}
-              </button>
-            );
-          })}
+        <nav className="flex-1 py-3 overflow-y-auto min-w-0 hide-scrollbar" style={{ scrollbarWidth: 'none' }}>
+          <div className="space-y-0.5 px-2">
+            {NAV_ITEMS.map(item => {
+              const active = activeView === item.id;
+              return (
+                <div key={item.id} className="relative group/navitem">
+                  <button
+                    onClick={() => { setActiveView(item.id); setSidebarOpen(false); }}
+                    title={sidebarCollapsed ? item.label : ''}
+                    className={`
+                      w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all duration-200 min-w-0 relative
+                      ${active
+                        ? 'bg-gradient-to-r from-emerald-500/90 to-teal-500/90 text-white font-bold shadow-lg shadow-emerald-900/40'
+                        : 'text-slate-300/70 hover:text-white hover:bg-white/8'}
+                    `}
+                  >
+                    {active && (
+                      <span className="absolute inset-0 rounded-xl" style={{ boxShadow: '0 0 16px rgba(16,185,129,0.25)', pointerEvents: 'none' }} />
+                    )}
+                    <item.icon
+                      className={`w-[18px] h-[18px] shrink-0 transition-all duration-200 ${
+                        active ? 'text-white drop-shadow-sm' : 'text-emerald-400/60 group-hover/navitem:text-emerald-300'
+                      }`}
+                    />
+                    {!sidebarCollapsed && (
+                      <span className={`text-[12px] truncate animate-in fade-in duration-200 flex-1 flex items-center gap-2 ${
+                        active ? 'font-bold text-white' : 'font-medium'
+                      }`}>
+                        {item.label}
+                        {item.badge && (
+                          <span className="px-1.5 py-0.5 bg-violet-500 text-white text-[7px] font-black rounded uppercase tracking-wider">
+                            {item.badge}
+                          </span>
+                        )}
+                      </span>
+                    )}
+                    {active && !sidebarCollapsed && (
+                      <ChevronRight className="w-3.5 h-3.5 ml-auto text-white/60 shrink-0" />
+                    )}
+                  </button>
+
+                </div>
+              );
+            })}
+          </div>
         </nav>
 
         {/* Judge Demo Mode toggle */}
-        <div className="mx-2 mb-3 p-2.5 bg-white/5 rounded-xl border border-white/10 min-w-0">
+        <div className="mx-2 mb-2 p-2.5 bg-white/4 rounded-2xl border border-emerald-500/15 min-w-0">
           <div className="flex items-center justify-between gap-2">
             {!sidebarCollapsed && (
               <div className="animate-in fade-in duration-200 min-w-0">
-                <p className="text-[10px] font-black text-emerald-400 uppercase tracking-wider">Judge Demo Mode</p>
-                <p className="text-[9px] text-white/40 font-medium mt-0.5 truncate">{judgeDemoMode ? 'Seeded active' : 'Off'}</p>
+                <p className="text-[9.5px] font-black text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" style={{ boxShadow: judgeDemoMode ? '0 0 6px #34d399' : 'none' }} />
+                  Judge Tour
+                </p>
+                <p className="text-[8.5px] text-slate-500 font-medium mt-0.5 truncate">{judgeDemoMode ? '✓ Seeded data active' : 'Off — live data'}</p>
               </div>
             )}
             <button
               onClick={() => setJudgeDemoMode(v => !v)}
-              className={`relative w-11 h-6 rounded-full transition-colors duration-200 shrink-0 ${judgeDemoMode ? 'bg-emerald-500' : 'bg-white/20'}`}
+              title={sidebarCollapsed ? (judgeDemoMode ? 'Judge Tour: ON' : 'Judge Tour: OFF') : ''}
+              className={`relative w-10 h-5 rounded-full transition-all duration-300 shrink-0 border ${
+                judgeDemoMode
+                  ? 'bg-emerald-500 border-emerald-400/60 shadow-[0_0_8px_rgba(16,185,129,0.5)]'
+                  : 'bg-slate-700 border-slate-600'
+              }`}
             >
-              <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-all duration-200 ${judgeDemoMode ? 'left-6' : 'left-1'}`} />
+              <span
+                className={`absolute top-0.5 bottom-0.5 aspect-square bg-white rounded-full shadow-sm transition-all duration-300 ${
+                  judgeDemoMode ? 'right-0.5 left-auto' : 'left-0.5 right-auto'
+                }`}
+              />
             </button>
           </div>
         </div>
 
         {/* Version */}
-        <div className="px-4 py-3 border-t border-white/10 text-center lg:text-left">
-          <p className="text-[9px] text-white/30 font-medium truncate">
-            {sidebarCollapsed ? 'v1.4' : `SwasthAI Guardian ${VERSION} · © ${COPYRIGHT_YEAR}`}
-          </p>
-        </div>
+        {!sidebarCollapsed && (
+          <div className="px-4 py-2.5 border-t border-white/5">
+            <p className="text-[8px] text-white/20 font-bold tracking-wider truncate">
+              SwasthAI Guardian v{VERSION} · © {COPYRIGHT_YEAR}
+            </p>
+          </div>
+        )}
 
-        {/* Resize Handle */}
+        {/* Resize Handle (desktop only, when expanded) */}
         {!sidebarCollapsed && (
           <div
             onMouseDown={startResizing}
-            className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-emerald-500/50 active:bg-emerald-600 transition-colors z-50"
-            style={{ marginRight: '-2px' }}
+            className="absolute top-0 right-0 w-1.5 h-full cursor-col-resize z-50 hover:bg-emerald-500/30 active:bg-emerald-500/60 transition-colors"
           />
         )}
+
+        {/* ── Floating Collapse / Expand Toggle ── */}
+        <button
+          onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+          title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          className="hidden lg:flex absolute -right-3.5 top-[72px] z-50 items-center justify-center w-7 h-7 rounded-full border transition-all duration-200 group/collapse"
+          style={{
+            background: 'linear-gradient(135deg, #065f46, #047857)',
+            borderColor: 'rgba(52,211,153,0.35)',
+            boxShadow: '0 2px 12px rgba(0,0,0,0.5), 0 0 0 1px rgba(52,211,153,0.12)'
+          }}
+        >
+          {sidebarCollapsed
+            ? <ChevronRight className="w-3.5 h-3.5 text-emerald-300 group-hover/collapse:text-white transition-colors" />
+            : <ChevronLeft className="w-3.5 h-3.5 text-emerald-300 group-hover/collapse:text-white transition-colors" />
+          }
+        </button>
       </aside>
 
       {/* ══ MAIN AREA ════════════════════════════════════════════════════════ */}
