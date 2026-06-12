@@ -4,6 +4,18 @@ All notable changes and feature developments completed during the hackathon wind
 
 ## June 12, 2026
 ### Fixed & Optimized
+- **REST API Robustness, 404 Handlers & Global Error Catcher**:
+  - Implemented a JSON-safe 404 fallback for all unknown `/api/*` requests in `server.js`.
+  - Added a global Express error-handling middleware to catch and log unhandled throws, preventing Node process crashes and returning clean JSON structures.
+  - Wrapped OTP and password validation handlers inside `routes/auth.js` in try-catch blocks to guarantee robust request processing.
+- **Unified Documentation Indexing & Repository Map**:
+  - Restructured the project's documentation hierarchy, creating a separate dedicated [docs/repository_map.md](docs/repository_map.md) referencing every module file and component.
+  - Updated [README.md](README.md) to integrate the new repository index, significantly streamlining the presentation for AWS hackathon reviewers.
+- **Technical Architecture Accuracy Alignment**:
+  - Documented previously unlisted backend capabilities in `docs/system_architecture.md` including the Dead Letter Queue (DLQ) file writes, `dlq_alert` SSE broadcasts, `policy.js` IDOR rule checker, and the background Health Watchdog Monitor.
+  - Corrected `offline_sync_strategy.md` to reference `clientUpdatedAt` as the exact database field mapping for Last-Write-Wins (LWW) conflict resolution.
+  - Updated `setup_guide.md` to align with the Logistic Regression fallback model and documented the `ENABLE_DEEP_MODEL` environment parameter.
+  - Expanded the Devpost proof checklist in `docs/H0_SUBMISSION_CHECKLIST.md` to include `security_audit_logs` as the 5th DynamoDB table configuration.
 - **Offline Credential Hash Safety**:
   - Replaced the insecure `btoa()` base64 encoder with a robust, pure JavaScript SHA-256 implementation inside `AuthContext.jsx` for hashing offline user credentials stored in `localStorage`.
 - **System Monitoring Watchdog & SSE Alerts**:

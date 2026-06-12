@@ -24,6 +24,13 @@ const SyncHealthSchema = z.object({
   pendingCount: z.coerce.number().int().nonnegative().default(0)
 });
 
+const SkinLogSchema = z.object({
+  condition: z.string().min(1).max(200),
+  severity: z.string().min(1).max(50),
+  rednessPercent: z.coerce.number().min(0).max(100).default(0),
+  irregularPercent: z.coerce.number().min(0).max(100).default(0)
+});
+
 const Phq2Schema = z.object({
   interest_score: z.coerce.number().int().min(0).max(3),
   mood_score: z.coerce.number().int().min(0).max(3),
@@ -282,32 +289,36 @@ router.post('/symptoms', auth, aiLimiter, checkRole(['villager', 'ngo', 'admin']
   let accuracy = '90.0%';
 
   if (clientRequestId) {
-    const existing = !usingSQLite && pool
-      ? (await pool.query(
-          'SELECT id, prediction, disease, advice, confidence, model_used FROM symptoms WHERE client_request_id = $1',
-          [clientRequestId]
-        )).rows[0]
-      : await db.get(
-          'SELECT id, prediction, disease, advice, confidence, model_used FROM symptoms WHERE client_request_id = ?',
-          [clientRequestId]
-        );
+    try {
+      const existing = !usingSQLite && pool
+        ? (await pool.query(
+            'SELECT id, prediction, disease, advice, confidence, model_used FROM symptoms WHERE client_request_id = $1',
+            [clientRequestId]
+          )).rows[0]
+        : await db.get(
+            'SELECT id, prediction, disease, advice, confidence, model_used FROM symptoms WHERE client_request_id = ?',
+            [clientRequestId]
+          );
 
-    if (existing) {
-      return res.send({
-        prediction: existing.prediction,
-        disease: existing.disease,
-        advice: existing.advice,
-        severity: 'P3',
-        doctor_specialty: 'General Physician',
-        confidence: existing.confidence,
-        alternatives: [],
-        model: existing.model_used || 'Offline Rule Matcher',
-        accuracy,
-        alert: null,
-        duplicate: true,
-        recordId: existing.id,
-        clientRequestId
-      });
+      if (existing) {
+        return res.send({
+          prediction: existing.prediction,
+          disease: existing.disease,
+          advice: existing.advice,
+          severity: 'P3',
+          doctor_specialty: 'General Physician',
+          confidence: existing.confidence,
+          alternatives: [],
+          model: existing.model_used || 'Offline Rule Matcher',
+          accuracy,
+          alert: null,
+          duplicate: true,
+          recordId: existing.id,
+          clientRequestId
+        });
+      }
+    } catch (_) {
+      // Duplicate check failed — proceed with fresh evaluation
     }
   }
 
@@ -429,10 +440,14 @@ router.post('/symptoms', auth, aiLimiter, checkRole(['villager', 'ngo', 'admin']
 });
 
 router.post('/skin-log', auth, checkRole(['villager', 'ngo', 'admin']), enforceVillageScope, async (req, res) => {
+  const parseResult = SkinLogSchema.safeParse(req.body);
+  if (!parseResult.success) {
+    return res.status(400).json({ error: parseResult.error.issues.map(i => i.message).join('; ') });
+  }
+  const { condition, severity, rednessPercent, irregularPercent } = parseResult.data;
   const db = req.app.locals.db;
   const pool = req.app.locals.pool;
   const usingSQLite = req.app.locals.usingSQLite;
-  const { condition, severity, rednessPercent, irregularPercent } = req.body;
   const userId = req.user.id;
   const villageId = req.user.role === 'admin' ? (req.body.villageId || req.user.villageId || 'v101') : (req.user.villageId || 'v101');
   try {

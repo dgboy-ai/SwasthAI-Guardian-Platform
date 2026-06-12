@@ -60,7 +60,7 @@ postgresql://postgres:<your_password>@<your-aurora-writer-endpoint>:5432/postgre
 
 ### Step 1.2: Set up DynamoDB Tables
 1. Search for **DynamoDB** in the AWS console.
-2. Click **Create table** and set up the 4 tables in the **ap-south-1** (Mumbai) region exactly as configured:
+2. Click **Create table** and set up the 5 tables in the **ap-south-1** (Mumbai) region exactly as configured:
 
 #### 1. Outbreak Telemetry Table
 - **Table name**: `outbreak_telemetry`
@@ -109,6 +109,13 @@ postgresql://postgres:<your_password>@<your-aurora-writer-endpoint>:5432/postgre
     - **Sort key**: `timestamp` (String)
     - **Index name**: `district-date-index`
     - **Attribute projections**: All
+
+#### 5. Security Audit Logs Table
+- **Table name**: `security_audit_logs`
+- **Partition key**: `actor` (String)
+- **Sort key**: `timestamp` (String)
+- No GSIs required — this table is queried by actor (PK lookup) for compliance audit trails. Click **Create table**.
+- No TTL — audit records are retained indefinitely.
 
 ---
 
@@ -181,7 +188,7 @@ We deploy the Node.js backend and Python FastAPI AI services on **Render.com** (
    - **Root Directory**: `frontend`
 5. Open the **Environment Variables** panel and add:
    - **Key**: `VITE_API_URL`
-   - **Value**: `https://swasthai-backend.onrender.com` (from Step 2.2)
+   - **Value**: `https://swasthai-backend.onrender.com/api` (from Step 2.2 + `/api` suffix)
 6. Click **Deploy**.
 
 Vercel will build your static React App, optimize it as a Progressive Web App (PWA), and make it available under a production SSL URL (e.g. `https://swasthai-guardian.vercel.app`).

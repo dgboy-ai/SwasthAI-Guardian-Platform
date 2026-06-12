@@ -157,93 +157,108 @@ router.post('/register', async (req, res) => {
   }
 });
 
-router.post('/request-otp', async (req, res) => {
-  const db = req.app.locals.db;
-  const usingSQLite = req.app.locals.usingSQLite;
-  const parseResult = RequestOtpSchema.safeParse(req.body);
-  if (!parseResult.success) {
-    return res.status(400).json({ error: zodErrorMessage(parseResult) });
+router.post('/request-otp', authLimiter, async (req, res) => {
+  try {
+    const db = req.app.locals.db;
+    const usingSQLite = req.app.locals.usingSQLite;
+    const parseResult = RequestOtpSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      return res.status(400).json({ error: zodErrorMessage(parseResult) });
+    }
+
+    const { phone } = parseResult.data;
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    await db.run('INSERT INTO otps (phone, otp) VALUES (?, ?)', [phone, otp]);
+    console.log(`[MOCK OTP] Sent to ${phone}: ${otp}`);
+    
+    // Clean up old records on a new OTP request
+    runCleanup(db, usingSQLite).catch(() => {});
+
+    res.send({ message: 'OTP sent successfully (Check server logs)' });
+  } catch (err) {
+    console.error('[Auth] OTP request error:', err);
+    res.status(500).json({ error: 'Failed to send OTP' });
   }
-
-  const { phone } = parseResult.data;
-  const otp = Math.floor(100000 + Math.random() * 900000).toString();
-  await db.run('INSERT INTO otps (phone, otp) VALUES (?, ?)', [phone, otp]);
-  console.log(`[MOCK OTP] Sent to ${phone}: ${otp}`);
-  
-  // Clean up old records on a new OTP request
-  runCleanup(db, usingSQLite).catch(() => {});
-
-  res.send({ message: 'OTP sent successfully (Check server logs)' });
 });
 
 router.post('/login-otp', authLimiter, async (req, res) => {
-  const db = req.app.locals.db;
-  const usingSQLite = req.app.locals.usingSQLite;
-  const parseResult = LoginOtpSchema.safeParse(req.body);
-  if (!parseResult.success) {
-    return res.status(400).json({ error: zodErrorMessage(parseResult) });
-  }
-
-  const { phone, otp, role } = parseResult.data;
-  const isDemoOtp = isDemoOtpAllowed(otp);
-  
-  if (!isDemoOtp) {
-    let record;
-    if (usingSQLite) {
-      record = await db.get(
-        `SELECT * FROM otps WHERE phone = ? AND otp = ? AND "createdAt" >= datetime('now', '-5 minutes') ORDER BY "createdAt" DESC LIMIT 1`,
-        [phone, otp]
-      );
-    } else {
-      record = await db.get(
-        `SELECT * FROM otps WHERE phone = $1 AND otp = $2 AND "createdAt" >= NOW() - INTERVAL '5 minutes' ORDER BY "createdAt" DESC LIMIT 1`,
-        [phone, otp]
-      );
+  try {
+    const db = req.app.locals.db;
+    const usingSQLite = req.app.locals.usingSQLite;
+    const parseResult = LoginOtpSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      return res.status(400).json({ error: zodErrorMessage(parseResult) });
     }
-    if (!record) return res.status(401).send({ error: 'Invalid or expired OTP.' });
+
+    const { phone, otp, role } = parseResult.data;
+    const isDemoOtp = isDemoOtpAllowed(otp);
     
-    // Delete OTP after successful use to prevent reuse
-    await db.run('DELETE FROM otps WHERE phone = ?', [phone]);
+    if (!isDemoOtp) {
+      let record;
+      if (usingSQLite) {
+        record = await db.get(
+          `SELECT * FROM otps WHERE phone = ? AND otp = ? AND "createdAt" >= datetime('now', '-5 minutes') ORDER BY "createdAt" DESC LIMIT 1`,
+          [phone, otp]
+        );
+      } else {
+        record = await db.get(
+          `SELECT * FROM otps WHERE phone = $1 AND otp = $2 AND "createdAt" >= NOW() - INTERVAL '5 minutes' ORDER BY "createdAt" DESC LIMIT 1`,
+          [phone, otp]
+        );
+      }
+      if (!record) return res.status(401).send({ error: 'Invalid or expired OTP.' });
+      
+      // Delete OTP after successful use to prevent reuse
+      await db.run('DELETE FROM otps WHERE phone = ?', [phone]);
+    }
+
+    const user = await db.get('SELECT * FROM users WHERE phone = ? AND role = ?', [phone, role]);
+    if (!user) return res.status(404).send({ error: 'No account found with this phone number for the selected role.' });
+    
+    // Access Token expires in 15m; Refresh Token expires in 30 days
+    const token = jwt.sign({ id: user.id, role: user.role, villageId: user.villageId }, process.env.JWT_SECRET, { expiresIn: '15m' });
+    const refreshToken = await generateRefreshToken(db, user.id);
+
+    res.send({ 
+      token, 
+      refreshToken,
+      user: { id: user.id, name: user.name, username: user.username, role: user.role, villageId: user.villageId } 
+    });
+  } catch (err) {
+    console.error('[Auth] OTP login error:', err);
+    res.status(500).json({ error: 'Login failed' });
   }
-
-  const user = await db.get('SELECT * FROM users WHERE phone = ? AND role = ?', [phone, role]);
-  if (!user) return res.status(404).send({ error: 'No account found with this phone number for the selected role.' });
-  
-  // Access Token expires in 15m; Refresh Token expires in 30 days
-  const token = jwt.sign({ id: user.id, role: user.role, villageId: user.villageId }, process.env.JWT_SECRET, { expiresIn: '15m' });
-  const refreshToken = await generateRefreshToken(db, user.id);
-
-  res.send({ 
-    token, 
-    refreshToken,
-    user: { id: user.id, name: user.name, username: user.username, role: user.role, villageId: user.villageId } 
-  });
 });
 
 router.post('/login-password', authLimiter, async (req, res) => {
-  const db = req.app.locals.db;
-  const parseResult = LoginPasswordSchema.safeParse(req.body);
-  if (!parseResult.success) {
-    return res.status(400).json({ error: zodErrorMessage(parseResult) });
+  try {
+    const db = req.app.locals.db;
+    const parseResult = LoginPasswordSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      return res.status(400).json({ error: zodErrorMessage(parseResult) });
+    }
+
+    const { identifier, password, role } = parseResult.data;
+    const user = await db.get('SELECT * FROM users WHERE (email = ? OR phone = ? OR username = ?) AND role = ?', [identifier, identifier, identifier, role]);
+
+    if (!user) return res.status(401).send({ error: 'Invalid credentials.' });
+
+    const passwordMatch = await bcrypt.compare(password, user.password);
+    if (!passwordMatch) return res.status(401).send({ error: 'Invalid credentials.' });
+
+    // Access Token expires in 15m; Refresh Token expires in 30 days
+    const token = jwt.sign({ id: user.id, role: user.role, villageId: user.villageId }, process.env.JWT_SECRET, { expiresIn: '15m' });
+    const refreshToken = await generateRefreshToken(db, user.id);
+
+    res.send({ 
+      token, 
+      refreshToken,
+      user: { id: user.id, name: user.name, username: user.username, role: user.role, villageId: user.villageId } 
+    });
+  } catch (err) {
+    console.error('[Auth] Password login error:', err);
+    res.status(500).json({ error: 'Login failed' });
   }
-
-  const { identifier, password, role } = parseResult.data;
-  const user = await db.get('SELECT * FROM users WHERE (email = ? OR phone = ? OR username = ?) AND role = ?', [identifier, identifier, identifier, role]);
-
-  if (!user) return res.status(401).send({ error: 'Invalid credentials.' });
-
-  const passwordMatch = await bcrypt.compare(password, user.password);
-  if (!passwordMatch) return res.status(401).send({ error: 'Invalid credentials.' });
-
-  // Access Token expires in 15m; Refresh Token expires in 30 days
-  const token = jwt.sign({ id: user.id, role: user.role, villageId: user.villageId }, process.env.JWT_SECRET, { expiresIn: '15m' });
-  const refreshToken = await generateRefreshToken(db, user.id);
-
-  res.send({ 
-    token, 
-    refreshToken,
-    user: { id: user.id, name: user.name, username: user.username, role: user.role, villageId: user.villageId } 
-  });
 });
 
 // Refresh Token Exchange Endpoint

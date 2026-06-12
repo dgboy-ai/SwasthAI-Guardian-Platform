@@ -7,7 +7,7 @@
 
 ## 🏆 H0 Hackathon — Track 2: Monetizable B2B App (Healthcare)
 
-SwasthAI is framed as a B2B district operations platform: the buyer is a district health office, NGO network, or public-health command center that needs ASHA workload visibility, outbreak proof, monthly CMO reporting, and auditable AWS-backed data flows.
+SwasthAI is framed as a B2B district operations platform: the buyer is a district health office, NGO network, or public-health command center that needs ASHA workload visibility, outbreak proof, monthly CMO reporting, and auditable AWS-backed data flows. **Monetization model**: per-district subscription (₹50 000–₹2 00 000/year tiered by population coverage) with premium add-ons for NGO impact analytics and CMO-ready PDF reports.
 **Sponsor**: Amazon Web Services | **Event**: H0: Hack the Zero Stack with Vercel v0 and AWS Databases
 
 | | |
@@ -26,7 +26,9 @@ SwasthAI is framed as a B2B district operations platform: the buyer is a distric
 > *   **🏗️ System & Database Designs**: [docs/system_architecture.md](docs/system_architecture.md) — End-to-end data flows, Mermaid ERD (Aurora PostgreSQL), DynamoDB composite key schemas, GSIs, access patterns, and local SQLite fallback details.
 > *   **🔬 AI Architecture & Val**: [docs/ai_architecture.md](docs/ai_architecture.md) — PyTorch SymptomNet 5-Fold Stratified CV logs, metrics, and Sakhi RAG parameters.
 > *   **⚙️ Setup & Dev Manual**: [docs/setup_guide.md](docs/setup_guide.md) — Docker Compose environments, env setups, and local dev guides.
-> *   **📁 Complete Repository Map**: Check the [Repository Directory Map](#-repository-structure) below for file references.
+> *   **🔌 Offline Sync Strategy**: [docs/offline_sync_strategy.md](docs/offline_sync_strategy.md) — IndexedDB queue replay, idempotency keys, and conflict resolution rules.
+> *   **📐 Architecture Diagram**: [docs/architecture-diagram.svg](docs/architecture-diagram.svg) — Visual architecture with all layers, data flows, and DynamoDB table details.
+> *   **📁 Complete Repository Map**: [docs/repository_map.md](docs/repository_map.md) — Detailed mapping of files, roles, and codebase directory layout.
 > *   **📈 Build Changelog**: [CHANGELOG.md](CHANGELOG.md) — Chronological log of features, optimizations, and validations built during the hackathon.
 
 ---
@@ -136,64 +138,15 @@ https://swasthai-guardian-platform.onrender.com
 
 ## 📁 Repository Structure
 
+The codebase is organized into three primary modules. For a complete directory-by-directory tree and file description list, see the **[Repository Directory Map](docs/repository_map.md)**.
+
 ```
 SwasthAI-Guardian-Platform/
-├── frontend/                     # React + Vite PWA
-│   └── src/
-│       ├── App.jsx               # Router + ConsentGate (DISHA modal)
-│       ├── index.css             # Design system + mobile optimizations
-│       ├── Admin/                # AdminDashboard.jsx
-│       ├── NGO/                  # NGODashboard.jsx
-│       ├── Villager/             # VillagerDashboard.jsx
-│       ├── pages/                # Feature pages (13 active routes)
-│       │   ├── SymptomCheckerPage.jsx
-│       │   ├── SkinDiseaseCheckerPage.jsx
-│       │   ├── AmbulancePage.jsx
-│       │   ├── MenstrualHealth.jsx   ← Sakhi RAG + Voice I/O
-│       │   ├── MaternalHealthPage.jsx ← Real vitals sliders
-│       │   ├── ChildNutritionPage.jsx
-│       │   └── LoginPage.jsx
-│       ├── components/
-│       │   ├── OfflineToast.jsx      ← YouTube-style offline banner
-│       │   └── DiSHAConsentModal.jsx ← DISHA 2023 consent gate
-│       ├── context/
-│       │   ├── AuthContext.jsx       ← JWT + bcrypt auth
-│       │   └── LanguageContext.jsx   ← 7-language i18n
-│       └── services/
-│           └── api.js                ← 8s timeout + error interceptor
-│
-├── backend/
-│   ├── server.js                 # Express server, SQLite schema with auto-migration
-│   ├── dynamodb.js               # DynamoDB client queries, updates & TTL validations
-│   ├── eventDispatcher.js        # Event bus routing sync & emergency logs to DynamoDB
-│   ├── db/
-│   │   ├── schema.js             # PostgreSQL + SQLite schemas
-│   │   └── seed.js               # Seed scripts with coordinates
-│   └── routes/
-│       ├── admin.js              # Admin endpoints & SSE live feed
-│       ├── villager.js           # Villager endpoints, ambulance logs
-│       └── ngo.js                # NGO pregnancy & child vitals endpoints
-│
-├── ai-service/
-│   ├── main.py                   # FastAPI Hybrid Diagnostic Hub
-│   ├── model_def.py              # SymptomNet PyTorch MLP definition
-│   ├── deep_disease_model.pkl    # Trained PyTorch state & label encoders
-│   ├── disease_model.pkl         # Trained Random Forest model
-│   ├── rag_service.py            # Sakhi RAG service
-│   ├── health_kb_data.py         # 243-chunk knowledge base
-│   ├── calibrate_rag.py          # RAG threshold calibration script
-│   ├── outbreak_agent.py         # Autonomous 30-min epidemic scanner
-│   ├── skin_analyzer.py          # On-device PIL pixel analysis
-│   ├── train_deep_model.py       # Neural network training script
-│   ├── train_disease_model.py    # RF model training script (800+ samples)
-│   ├── test_guardrail.py         # Safety validation suite
-│   ├── test_rural.py             # Rural stress testing script
-│   └── requirements.txt
-│
-├── infra/
-│   └── dynamodb-tables.md        # DynamoDB table schema reference
-│
-└── README.md
+├── frontend/                     # React + Vite PWA (13+ offline-first routes)
+├── backend/                      # Express.js REST API & Event Dispatcher
+├── ai-service/                   # FastAPI SymptomNet MLP, Sakhi RAG & Outbreak Agent
+├── docs/                         # Technical architectures & design documentations
+└── DEPLOYMENT.md                 # Cloud setup guide (Aurora + DynamoDB + Vercel)
 ```
 
 ---

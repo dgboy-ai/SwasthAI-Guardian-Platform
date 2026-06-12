@@ -16,7 +16,7 @@ graph TB
         SQ[Offline Sync Queue]
     end
 
-    subgraph CDN & Hosting Layer
+    subgraph CDN and Hosting Layer [CDN & Hosting Layer]
         Vercel[Vercel Serverless Hosting]
     end
 
@@ -128,8 +128,8 @@ Aurora acts as the consistent transactional store. The relationship chain is des
 erDiagram
     users {
         int id PK
-        string phone UNIQUE
-        string role "villager | ngo | admin"
+        string phone UK
+        string role
         string name
         string villageId FK
         string aadhaarHash
@@ -147,7 +147,7 @@ erDiagram
     pregnancy_data {
         int id PK
         int userId FK
-        string riskLevel "Low | High | Critical"
+        string riskLevel
         string vitalsJson
         timestamp createdAt
     }
@@ -164,7 +164,7 @@ erDiagram
         timestamp createdAt
     }
 
-    users ||--o| village_health : "resides in"
+    users }o--|| village_health : "resides in"
     users ||--o{ pregnancy_data : "has clinical profile"
     users ||--o{ symptoms : "reports symptom logs"
     village_health ||--o{ symptoms : "contains symptom records"

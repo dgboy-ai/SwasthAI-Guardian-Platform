@@ -172,7 +172,7 @@ export default function DemoPage() {
       {/* Role cards */}
       <div className="max-w-6xl mx-auto px-5 pb-16">
         <h2 className="text-2xl font-black text-white text-center mb-2">Three Perspectives. One Platform.</h2>
-        <p className="text-slate-500 text-sm text-center mb-10 font-medium">Select a role to view capabilities and launch the self-guided tour</p>
+        <p className="text-slate-500 text-sm text-center mb-10 font-medium">Select a role below then click "Try This →" to jump straight into the live dashboard</p>
 
         {/* Tab Selector */}
         <div className="flex justify-center mb-8">

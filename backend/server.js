@@ -499,6 +499,17 @@ if (isProduction && cluster.isPrimary) {
     });
   });
 
+  // ── API 404 catch-all — clean JSON for unknown routes ────────────────
+  app.all('/api/*', (req, res) => {
+    res.status(404).json({ error: 'API endpoint not found', path: req.path });
+  });
+
+  // ── Global error handler — never crash on an unhandled throw ──────────
+  app.use((err, req, res, next) => {
+    console.error('[Unhandled Error]', err.stack || err.message || err);
+    res.status(500).json({ error: 'Internal server error' });
+  });
+
   // ── STATIC FILE SERVING (Production) ──────────────────────────────────
   if (process.env.NODE_ENV === 'production') {
     const frontendPath = path.resolve(__dirname, '../frontend/dist');

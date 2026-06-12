@@ -198,19 +198,14 @@ export default function AdminDashboard() {
       try {
         const [status, feed, audit] = await Promise.all([
           adminService.getSystemStatus().catch(err => {
-            console.warn('System status API failed, using healthy demo fallback:', err);
+            console.warn('System status API failed, showing unavailable state:', err);
             return {
-              production_ready: true,
+              production_ready: false,
               databases: {
-                aurora_postgresql: { status: 'connected', engine: 'Amazon Aurora PostgreSQL', region: 'ap-south-1', pool: { total: 5, idle: 4 } },
-                dynamodb: { status: 'connected', region: 'ap-south-1', billing: 'PAY_PER_REQUEST (serverless scaling)', tables: [{ name: 'outbreak_telemetry' }, { name: 'sync_queues' }, { name: 'village_node_state' }, { name: 'emergency_streams' }] }
+                aurora_postgresql: { status: 'unavailable', engine: 'Amazon Aurora PostgreSQL', region: 'ap-south-1' },
+                dynamodb: { status: 'unavailable', region: 'ap-south-1', billing: 'PAY_PER_REQUEST (serverless scaling)' }
               },
-              realtime: { sse_clients_connected: 1 },
-              recent_request_traces: [
-                { method: 'GET', path: '/outbreaks', status: 200, duration: 112, traceId: 'tr-mock-1' },
-                { method: 'GET', path: '/ambulances', status: 200, duration: 94, traceId: 'tr-mock-2' },
-                { method: 'POST', path: '/ngo/malnutrition', status: 201, duration: 148, traceId: 'tr-mock-3' },
-              ]
+              realtime: { sse_clients_connected: 0 }
             };
           }),
           adminService.getDynamoFeed().catch(() => null),
@@ -298,10 +293,10 @@ export default function AdminDashboard() {
     const defaultRep = demoData?.DEMO_REPORT || { villages: { total: 4 }, maternal: { highRiskPregnancies: 28 }, emergencies: { ambulanceRequests: 14 }, outbreakAlerts: { count: 3 } };
     if (!districtReport) return defaultRep;
     return {
-      villages: { total: Math.max(districtReport.villages?.total || 0, defaultRep.villages.total) },
-      maternal: { highRiskPregnancies: Math.max(districtReport.maternal?.highRiskPregnancies || 0, defaultRep.maternal.highRiskPregnancies) },
-      emergencies: { ambulanceRequests: Math.max(districtReport.emergencies?.ambulanceRequests || 0, defaultRep.emergencies.ambulanceRequests) },
-      outbreakAlerts: { count: Math.max(districtReport.outbreakAlerts?.count || 0, defaultRep.outbreakAlerts.count) }
+      villages: { total: Math.max(districtReport.villages?.total || 0, defaultRep.villages?.total || 0) },
+      maternal: { highRiskPregnancies: Math.max(districtReport.maternal?.highRiskPregnancies || 0, defaultRep.maternal?.highRiskPregnancies || 0) },
+      emergencies: { ambulanceRequests: Math.max(districtReport.emergencies?.ambulanceRequests || 0, defaultRep.emergencies?.ambulanceRequests || 0) },
+      outbreakAlerts: { count: Math.max(districtReport.outbreakAlerts?.count || 0, defaultRep.outbreakAlerts?.count || 0) }
     };
   };
 

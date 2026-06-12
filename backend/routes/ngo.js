@@ -256,25 +256,30 @@ router.post('/maternal', auth, checkRole(['ngo', 'admin']), logAudit('create', '
     riskLevel = validated.risk_level;
   }
 
-  const saved = await db.run(
-    'INSERT INTO pregnancy_data (name, age, trimester, "dueDate", "riskLevel", "villageId", recorded_by, client_request_id, systolic_bp, diastolic_bp, bs, body_temp, heart_rate, factors_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-    [
-      name, age, trimester, dueDate, riskLevel, villageId, req.user.id, clientRequestId,
-      patientVitals.systolic_bp, patientVitals.diastolic_bp, patientVitals.bs, patientVitals.body_temp, patientVitals.heart_rate,
-      JSON.stringify(validated.factors || [])
-    ]
-  );
-  if (String(riskLevel || '').toLowerCase().includes('high')) {
-    eventEmitter.emit('maternal_alert', { name, age, villageId, riskLevel, vitals: patientVitals, timestamp: new Date().toISOString(), traceId: req.traceId });
+  try {
+    const saved = await db.run(
+      'INSERT INTO pregnancy_data (name, age, trimester, "dueDate", "riskLevel", "villageId", recorded_by, client_request_id, systolic_bp, diastolic_bp, bs, body_temp, heart_rate, factors_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [
+        name, age, trimester, dueDate, riskLevel, villageId, req.user.id, clientRequestId,
+        patientVitals.systolic_bp, patientVitals.diastolic_bp, patientVitals.bs, patientVitals.body_temp, patientVitals.heart_rate,
+        JSON.stringify(validated.factors || [])
+      ]
+    );
+    if (String(riskLevel || '').toLowerCase().includes('high')) {
+      eventEmitter.emit('maternal_alert', { name, age, villageId, riskLevel, vitals: patientVitals, timestamp: new Date().toISOString(), traceId: req.traceId });
+    }
+    res.send({
+      riskLevel,
+      villageId,
+      recordId: saved.lastID,
+      clientRequestId,
+      vector_score: validated.vector_score,
+      factors: validated.factors
+    });
+  } catch (err) {
+    req.log('error', 'Failed to save pregnancy data', { error: err.message });
+    res.status(500).json({ error: 'Failed to save pregnancy risk assessment' });
   }
-  res.send({
-    riskLevel,
-    villageId,
-    recordId: saved.lastID,
-    clientRequestId,
-    vector_score: validated.vector_score,
-    factors: validated.factors
-  });
 });
 
 router.post('/malnutrition', auth, checkRole(['ngo', 'admin']), async (req, res) => {
@@ -347,11 +352,16 @@ router.post('/malnutrition', auth, checkRole(['ngo', 'admin']), async (req, res)
     bmi = validated.bmi;
     action = validated.action;
   }
-  const saved = await db.run(
-    'INSERT INTO malnutrition_data ("childName", "ageMonths", weight, height, status, "villageId", client_request_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
-    [name, age, weight, height, status, villageId, clientRequestId]
-  );
-  res.send({ status, bmi, action, villageId, recordId: saved.lastID, clientRequestId });
+  try {
+    const saved = await db.run(
+      'INSERT INTO malnutrition_data ("childName", "ageMonths", weight, height, status, "villageId", client_request_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [name, age, weight, height, status, villageId, clientRequestId]
+    );
+    res.send({ status, bmi, action, villageId, recordId: saved.lastID, clientRequestId });
+  } catch (err) {
+    req.log('error', 'Failed to save malnutrition data', { error: err.message });
+    res.status(500).json({ error: 'Failed to save malnutrition assessment' });
+  }
 });
 
 router.get('/ambulances', auth, checkRole(['ngo', 'admin']), async (req, res) => {
