@@ -15,7 +15,7 @@ All notable changes and feature developments completed during the hackathon wind
   - Documented previously unlisted backend capabilities in `docs/system_architecture.md` including the Dead Letter Queue (DLQ) file writes, `dlq_alert` SSE broadcasts, `policy.js` IDOR rule checker, and the background Health Watchdog Monitor.
   - Corrected `offline_sync_strategy.md` to reference `clientUpdatedAt` as the exact database field mapping for Last-Write-Wins (LWW) conflict resolution.
   - Updated `setup_guide.md` to align with the Logistic Regression fallback model and documented the `ENABLE_DEEP_MODEL` environment parameter.
-  - Expanded the Devpost proof checklist in `docs/H0_SUBMISSION_CHECKLIST.md` to include `security_audit_logs` as the 5th DynamoDB table configuration.
+  - Expanded the submission proof checklist in `docs/SUBMISSION_CHECKLIST.md` to include `security_audit_logs` as the 5th DynamoDB table configuration.
 - **Offline Credential Hash Safety**:
   - Replaced the insecure `btoa()` base64 encoder with a robust, pure JavaScript SHA-256 implementation inside `AuthContext.jsx` for hashing offline user credentials stored in `localStorage`.
 - **System Monitoring Watchdog & SSE Alerts**:

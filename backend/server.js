@@ -490,10 +490,8 @@ if (isProduction && cluster.isPrimary) {
         rag_memory: 'dual-track: frontend history + server session deque(maxlen=6)',
         languages:  ['Hindi', 'Hinglish', 'Marathi', 'Tamil', 'Telugu', 'Bengali', 'English']
       },
-      hackathon: {
-        event:      'H0: Hack the Zero Stack with Vercel v0 and AWS Databases',
-        track:      'Track 2 — Monetizable B2B App (Healthcare)',
-        sponsor:    'Amazon Web Services',
+      project_meta: {
+        category:   'Monetizable B2B App (Healthcare)',
         target:     '600 million rural Indians, 1.4 million ASHA workers'
       }
     });

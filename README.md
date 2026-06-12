@@ -1,14 +1,13 @@
 # SwasthAI Guardian 🌿
 ### Offline-First Healthcare Infrastructure for Low-Connectivity Environments
 
-### 🌐 [Live Demo](https://swasthai-guardian-platform.onrender.com) | 🏆 [H0 Hackathon Submission](https://h01.devpost.com) | 📋 [Deployment Guide](DEPLOYMENT.md)
+### 🌐 [Live Demo](https://swasthai-guardian-platform.onrender.com) | 📋 [Deployment Guide](DEPLOYMENT.md)
 
 ---
 
-## 🏆 H0 Hackathon — Track 2: Monetizable B2B App (Healthcare)
+## 🏆 B2B Operations & Value Proposition (Healthcare)
 
 SwasthAI is framed as a B2B district operations platform: the buyer is a district health office, NGO network, or public-health command center that needs ASHA workload visibility, outbreak proof, monthly CMO reporting, and auditable AWS-backed data flows. **Monetization model**: per-district subscription (₹50 000–₹2 00 000/year tiered by population coverage) with premium add-ons for NGO impact analytics and CMO-ready PDF reports.
-**Sponsor**: Amazon Web Services | **Event**: H0: Hack the Zero Stack with Vercel v0 and AWS Databases
 
 | | |
 |---|---|
@@ -116,10 +115,10 @@ SwasthAI-Guardian-Platform/
 ---
 
 <details>
-<summary><b>🛠️ Hackathon Submission Disclosures (May 27 – June 12 Incremental Updates)</b></summary>
+<summary><b>🛠️ Submission Disclosures & Incremental Updates (New vs. Existing Code)</b></summary>
 <br/>
 
-Under the Devpost "New & Existing Projects" rule, the following are the disclosures of all code, features, optimizations, and technical hardening steps completed after the submission window opened on May 27, 2026:
+The following are the disclosures of all code, features, optimizations, and technical hardening steps completed during the main development window of this project:
 
 ### Core architectural additions (the big ones):
 - **ONNX In-Browser SymptomNet & Local RAG** — Compiled the neural network to ONNX format, running fully offline in-browser diagnostic classification. Pre-seeded IndexedDB RAG database with clinical guidelines and built a fuzzy token-weighted RAG engine to power completely offline Sakhi queries.

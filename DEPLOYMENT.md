@@ -25,7 +25,7 @@ This document contains step-by-step instructions to configure Amazon Web Service
 
 ---
 
-## Phase 1: AWS Database Provisioning (#H0Hackathon Compliance)
+## Phase 1: AWS Database Provisioning
 
 ### Step 1.1: Set up Amazon Aurora PostgreSQL (Serverless v2)
 1. Sign in to the [AWS Management Console](https://aws.amazon.com/console/).

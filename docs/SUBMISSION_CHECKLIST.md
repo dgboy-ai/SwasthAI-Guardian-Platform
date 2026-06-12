@@ -1,9 +1,7 @@
-# H0 Hackathon - Winning Submission Checklist (SwasthAI Guardian)
+# Production Submission Checklist (SwasthAI Guardian)
 
-**Event:** H0: Hack the Zero Stack with Vercel v0 and AWS Databases  
-**Primary track:** Track 2 - Monetizable B2B App (Healthcare)  
-**Secondary prize targets:** Best Technical Implementation, Most Impactful, Most Original, Best Design  
-**Deadline:** 30 Jun 2026 @ 5:30am IST  
+**Primary category:** Monetizable B2B App (Healthcare)
+**Evaluation targets:** Best Technical Implementation, Most Impactful, Most Original, Best Design
 
 ---
 
@@ -11,15 +9,15 @@
 
 | Item | Status | Judge-safe acceptance check |
 |------|--------|-----------------------------|
-| Public GitHub + license | [ ] | Repo public, license visible, README explains H0 work completed after May 27, 2026 |
+| Public GitHub + license | [ ] | Repo public, license visible, README explains codebase additions |
 | Text description | [ ] | Explicitly names Aurora PostgreSQL and DynamoDB, and explains why each database is used |
-| Demo video | [ ] | **Less than 3 minutes**; public YouTube preferred; no copyrighted music or third-party trademarks |
+| Demo video | [ ] | **Less than 3 minutes**; public hosting preferred; no copyrighted music or third-party trademarks |
 | Published Vercel app URL | [ ] | Frontend is deployed on Vercel or v0.app, not only Render |
-| Vercel Team ID | [ ] | Added to Devpost submission |
+| Vercel Team ID | [ ] | Added to submission details |
 | Architecture diagram | [ ] | Shows Vercel frontend, backend API, AI service, Aurora PostgreSQL, DynamoDB tables, and data flows |
 | AWS storage proof screenshots | [ ] | Vercel storage/config screenshot plus AWS Aurora/RDS and DynamoDB console screenshots |
 | Test access | [ ] | Demo credentials work and app is available free for judges through the judging period |
-| Bonus content | [ ] | Public blog/video/post says it was created for H0 Hackathon and uses `#H0Hackathon` |
+| Bonus content | [ ] | Optional published project overview blog/video/post |
 
 ---
 
@@ -29,7 +27,7 @@ These are the highest-leverage gaps found in the codebase audit. Complete these 
 
 | Priority | Gap | Why judges care | Action |
 |----------|-----|-----------------|--------|
-| P0 | AWS proof can be confused with mock mode | H0 judges are AWS database specialists; they will look for deliberate, real database integration | Add an Admin "Production Evidence" panel that calls `/api/health/detailed` and shows `production_ready`, Aurora status, DynamoDB status, table names, region, and latest telemetry writes |
+| P0 | AWS proof can be confused with mock mode | Evaluators and technical judges look for deliberate, real database integration | Add an Admin "Production Evidence" panel that calls `/api/health/detailed` and shows `production_ready`, Aurora status, DynamoDB status, table names, region, and latest telemetry writes |
 | P0 | Vercel permissions block marketed features | `frontend/vercel.json` currently disables camera, microphone, and geolocation while the app uses skin scan, voice, and SOS GPS | Change `Permissions-Policy` to allow camera, microphone, and geolocation for the deployed app |
 | P0 | PWA icon assets are missing | `frontend/vite.config.js` references icon files that do not exist in `frontend/public`; installability can fail | Add `favicon.ico`, `apple-touch-icon.png`, `mask-icon.svg`, `icon-192.png`, and `icon-512.png`; run Lighthouse PWA check |
 | P0 | Demo video checklist was over 3 minutes | Official rules say judges are not required to watch beyond 3 minutes | Use the 2:40 script below and keep final video under 2:55 |
@@ -63,7 +61,7 @@ Use this section when assigning implementation tasks. Each item names the likely
 
 ---
 
-## H0 Scoring Strategy
+## Technical Scoring Strategy
 
 The judging rubric has four main criteria. Optimize each one deliberately.
 
@@ -199,7 +197,7 @@ If this sequence works smoothly, the project feels like production software rath
 
 ## Data Model Talking Points
 
-Use these in the architecture diagram, Devpost text, and demo narration.
+Use these in the architecture diagram, submission text, and demo narration.
 
 ### Aurora PostgreSQL
 
@@ -398,7 +396,7 @@ SwasthAI turns disconnected village health work into auditable district intellig
 | P1 | Add explicit tenant/district configuration UX for `district_config` | Monetizable SaaS |
 | P1 | Add role-scoped ASHA workload queue: pending referrals, high-risk pregnancies, missed vaccinations, pending syncs | Impact, design |
 | P1 | Add monthly report export preview with "generated from Aurora + DynamoDB" footnote | B2B SaaS, AWS proof |
-| P2 | Add pricing narrative in Devpost: district license + NGO deployment + support package | Monetizability |
+| P2 | Add pricing narrative in presentation: district license + NGO deployment + support package | Monetizability |
 | P2 | Add an implementation metrics page: API latency, DynamoDB writes, Aurora counts, queue replay duration | Technical implementation |
 
 ---
@@ -438,7 +436,7 @@ The best design angle is not a flashy landing page. It is a calm, credible, high
 
 ## Impact And Originality Push
 
-Use these points in Devpost and the video.
+Use these points in submission text and the video.
 
 - [ ] Impact: "Built for ASHA workers in low-connectivity villages, not for urban hospital desktops."
 - [ ] Impact: Show offline ASHA data capture, reconnect sync, district visibility, and referral closure.
@@ -491,7 +489,7 @@ Expected:
 
 ---
 
-## Required Screenshots For Devpost
+## Required Screenshots For Submission
 
 - [ ] Vercel project overview showing deployed frontend URL.
 - [ ] Vercel environment/config screen proving frontend API wiring.
@@ -521,7 +519,7 @@ Expected:
 | Admin | `admin@swasthai.in` or `9876543212` | OTP `1234` or `Demo@1234` |
 | New ASHA signup | Any valid form data | Passcode `ASHA2026`, password 6+ chars |
 
-Keep the Devpost testing instructions honest: demo OTP is enabled for evaluation; production auth would use real OTP provider/device-bound auth.
+Keep the submission testing instructions honest: demo OTP is enabled for evaluation; production auth would use real OTP provider/device-bound auth.
 
 ---
 
@@ -575,7 +573,7 @@ Keep the Devpost testing instructions honest: demo OTP is enabled for evaluation
 
 ---
 
-## Devpost Writing Checklist
+## Submission Details Writing Checklist
 
 - [ ] Lead with B2B buyer: district health offices, NGOs, PHCs.
 - [ ] Explain monetization: district SaaS license, NGO deployments, support/onboarding, analytics/reporting tier.
@@ -590,7 +588,7 @@ Keep the Devpost testing instructions honest: demo OTP is enabled for evaluation
 
 ## Bonus Content Plan
 
-Publish up to three public pieces for bonus points. Each must say it was created for the H0 Hackathon and include `#H0Hackathon` when shared socially.
+Publish up to three public pieces for bonus points if supported by the event structure.
 
 | Content | Angle | Status |
 |---------|-------|--------|
@@ -620,5 +618,5 @@ Do not submit until every line below is true:
 - [ ] A demo action creates both a relational record and a telemetry event.
 - [ ] Demo video is under 3 minutes.
 - [ ] Architecture diagram and AWS screenshots are uploaded.
-- [ ] Devpost text clearly says which AWS Databases were used.
+- [ ] Submission text clearly says which AWS Databases were used.
 - [ ] No untested feature is shown in the video.

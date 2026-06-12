@@ -68,7 +68,7 @@ SwasthAI-Guardian-Platform/
 │   ├── offline_sync_strategy.md  # IndexedDB conflict rules, LWW timestamps, sync flows
 │   ├── setup_guide.md            # Environment vars, Docker-Compose, local startup guides
 │   ├── repository_map.md         # (This file) Complete codebase index
-│   └── H0_SUBMISSION_CHECKLIST.md# Verification procedures & submission logs
+│   └── SUBMISSION_CHECKLIST.md   # Verification procedures & submission logs
 │
 ├── DEPLOYMENT.md                 # Production deployment steps (AWS + Vercel + Render)
 ├── CHANGELOG.md                  # Chronological features & optimization log

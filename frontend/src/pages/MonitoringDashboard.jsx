@@ -307,7 +307,7 @@ export default function MonitoringDashboard() {
     if (demoRunning) return;
     setDemoRunning(true);
     setSimLogs([]);
-    addSimLog('🏁 Starting SwasthAI H0 Judge Demo Pipeline...', '#6366f1');
+    addSimLog('🏁 Starting SwasthAI Judge Demo Pipeline...', '#6366f1');
     
     // 1. Sim Offline
     addSimLog('🔌 Simulating cellular network drop (OFFLINE)...', '#f59e0b');

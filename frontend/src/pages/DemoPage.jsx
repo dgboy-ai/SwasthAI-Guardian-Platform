@@ -124,7 +124,7 @@ export default function DemoPage() {
         <div className="relative max-w-6xl mx-auto px-5 py-20 text-center">
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-full mb-6">
             <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
-            <span className="text-emerald-400 text-[11px] font-black uppercase tracking-widest">H0 Hackathon — Live Demo</span>
+            <span className="text-emerald-400 text-[11px] font-black uppercase tracking-widest">Platform Live Demo</span>
           </div>
           <h1 className="text-5xl md:text-7xl font-black text-white mb-4 tracking-tight leading-none">
             SwasthAI<br/><span className="text-emerald-400">Guardian</span>
@@ -411,7 +411,7 @@ export default function DemoPage() {
         {/* Footer CTA */}
         <div className="text-center">
           <p className="text-slate-500 text-[11px] font-medium mb-4">
-            Built for H0: Hack the Zero Stack with Vercel v0 and AWS Databases · Track 2 B2B · SwasthAI Guardian {VERSION}
+            SwasthAI Guardian Operations Platform {VERSION}
           </p>
           <div className="flex items-center justify-center gap-4">
             <Link to="/login" className="px-8 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-black text-[13px] uppercase tracking-wider transition-colors shadow-lg">
