@@ -45,6 +45,7 @@ function getDB() {
     };
     req.onsuccess = () => resolve(req.result);
     req.onerror  = () => { console.warn('[SemanticCache] IndexedDB unavailable, using memory fallback.'); resolve(null); };
+    req.onblocked = () => { console.warn('[SemanticCache] IndexedDB blocked by another tab, using memory fallback.'); resolve(null); };
   });
   return dbPromise;
 }

@@ -379,50 +379,9 @@ router.post('/symptoms', auth, aiLimiter, checkRole(['villager', 'ngo', 'admin']
     );
   }
 
-  // Direct DynamoDB write to get actual timestamp
-  let dynamoDbWriteTimestamp = new Date().toISOString();
-  try {
-    const districtId = await getDistrictId(db, pool, usingSQLite, villageId);
-    await dynamoHelper.put("outbreak_telemetry", {
-      villageId,
-      districtId,
-      detectedAt:  dynamoDbWriteTimestamp,
-      eventId:     `EVT-SYM-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-      eventType:   "symptom_submitted",
-      userId,
-      symptoms: text,
-      symptomPattern: text,
-      prediction,
-      classification: prediction,
-      timestamp:   dynamoDbWriteTimestamp,
-      traceId:     req.traceId || null
-    });
-    await dynamoHelper.updateNodeState(villageId, "online", dynamoDbWriteTimestamp, 0);
-  } catch (err) {
-    console.error("Failed to write symptom telemetry to DynamoDB directly in route:", err.message);
-  }
-
-  eventEmitter.emit('symptom_submitted', { userId, villageId, symptoms: text, prediction, timestamp: new Date().toISOString(), clientRequestId, traceId: req.traceId, skipDynamo: true });
-
-
-  const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-  let logs = [];
-  if (!usingSQLite && pool) {
-    const resLogs = await pool.query(
-      `SELECT id FROM symptoms WHERE "villageId" = $1 AND "createdAt" >= $2`,
-      [villageId, oneDayAgo]
-    ).catch(() => ({ rows: [] }));
-    logs = resLogs.rows;
-  } else {
-    logs = await db.all(
-      `SELECT id FROM symptoms WHERE "villageId" = ? AND "createdAt" >= ?`,
-      [villageId, oneDayAgo]
-    ).catch(() => []);
-  }
-  const alert = logs.length > 5 ? `⚠️ CLUSTER ALERT in ${villageId}: ${logs.length} similar cases detected.` : null;
-  if (alert) eventEmitter.emit('outbreak_detected', { villageId, count: logs.length, prediction, timestamp: new Date().toISOString(), traceId: req.traceId });
-
-  res.send({ 
+  // Send response FIRST — then fire off non-blocking telemetry
+  const now = new Date().toISOString();
+  res.send({
     prediction,
     disease,
     advice,
@@ -432,11 +391,44 @@ router.post('/symptoms', auth, aiLimiter, checkRole(['villager', 'ngo', 'admin']
     alternatives,
     model,
     accuracy,
-    alert,
-    dbWriteTimestamp: new Date().toISOString(),
-    dynamoDbWriteTimestamp: dynamoDbWriteTimestamp || new Date().toISOString(),
+    alert: null,
+    dbWriteTimestamp: now,
+    dynamoDbWriteTimestamp: now,
     outbreakAgentNotified: true
   });
+
+  // Non-blocking: DynamoDB telemetry, cluster alerts, event emission
+  eventEmitter.emit('symptom_submitted', { userId, villageId, symptoms: text, prediction, timestamp: now, clientRequestId, traceId: req.traceId, skipDynamo: true });
+
+  getDistrictId(db, pool, usingSQLite, villageId).then(districtId => {
+    const ts = new Date().toISOString();
+    dynamoHelper.put("outbreak_telemetry", {
+      villageId, districtId, detectedAt: ts,
+      eventId: `EVT-SYM-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      eventType: "symptom_submitted", userId, symptoms: text,
+      symptomPattern: text, prediction, classification: prediction,
+      timestamp: ts, traceId: req.traceId || null
+    }).catch(err => console.error("Failed to write symptom telemetry to DynamoDB:", err.message));
+    dynamoHelper.updateNodeState(villageId, "online", ts, 0).catch(() => {});
+  }).catch(() => {});
+
+  const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  (async () => {
+    try {
+      const logs = !usingSQLite && pool
+        ? (await pool.query(
+            `SELECT id FROM symptoms WHERE "villageId" = $1 AND "createdAt" >= $2`,
+            [villageId, oneDayAgo]
+          ).catch(() => ({ rows: [] }))).rows
+        : await db.all(
+            `SELECT id FROM symptoms WHERE "villageId" = ? AND "createdAt" >= ?`,
+            [villageId, oneDayAgo]
+          ).catch(() => []);
+      if (logs.length > 5) {
+        eventEmitter.emit('outbreak_detected', { villageId, count: logs.length, prediction, timestamp: new Date().toISOString(), traceId: req.traceId });
+      }
+    } catch (_) {}
+  })();
 });
 
 router.post('/skin-log', auth, checkRole(['villager', 'ngo', 'admin']), enforceVillageScope, async (req, res) => {

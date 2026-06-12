@@ -618,47 +618,64 @@ export default function AdminDashboard() {
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
 
         {/* Header */}
-        <header className="bg-white border-b border-slate-200 px-5 lg:px-6 py-3 shrink-0 shadow-sm">
-          <div className="flex items-center justify-between gap-3">
-            <button className="lg:hidden p-1.5 -ml-1 rounded-lg text-slate-500 hover:bg-slate-100" onClick={() => setSidebarOpen(true)}>
+        <header className="shrink-0" style={{ background: 'linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)', borderBottom: '1px solid #e2e8f0', boxShadow: '0 1px 12px rgba(0,0,0,0.06)' }}>
+          {/* Top row */}
+          <div className="px-5 lg:px-6 py-3.5 flex items-center justify-between gap-4">
+            <button className="lg:hidden p-1.5 -ml-1 rounded-xl text-slate-500 hover:bg-slate-100 transition-colors" onClick={() => setSidebarOpen(true)}>
               <LayoutDashboard className="w-5 h-5" />
             </button>
-            <div className="min-w-0 flex-1">
-              <h1 className="text-[18px] font-black text-slate-900 leading-tight">District Health Command</h1>
-              <p className="text-[11px] text-slate-400 font-medium">Sehore District, Madhya Pradesh — Live Operations</p>
+
+            {/* Title group */}
+            <div className="min-w-0 flex-1 flex items-center gap-3">
+              <div className="hidden sm:flex flex-col min-w-0">
+                <div className="flex items-center gap-2.5">
+                  <h1 className="text-lg font-black text-slate-900 leading-tight tracking-tight">District Health Command</h1>
+                  <span className="hidden md:flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider"
+                    style={{ background: 'linear-gradient(135deg, #d1fae5, #a7f3d0)', color: '#065f46', border: '1px solid #6ee7b7' }}>
+                    <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                    Live
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-400 font-medium mt-0.5">Sehore District, Madhya Pradesh · Real-time Operations</p>
+              </div>
             </div>
-            <div className="flex items-center gap-2.5 shrink-0">
-              <span className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-full text-[11px] font-black border border-emerald-200">
-                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                System Online
-              </span>
+
+            {/* Right controls */}
+            <div className="flex items-center gap-2 shrink-0">
+              {/* Notification bell */}
               <div className="relative">
                 <button
                   onClick={() => setShowNotifications(!showNotifications)}
-                  className="relative p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors"
+                  className="relative p-2.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors"
                 >
-                  <Bell className="w-5 h-5" />
+                  <Bell className="w-[18px] h-[18px]" />
                   {OB.length > 0 && (
-                    <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full border-2 border-white" />
+                    <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full border-2 border-white animate-pulse" />
                   )}
                 </button>
                 {showNotifications && (
-                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl border border-slate-200 shadow-xl z-50 p-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl border border-slate-200 shadow-2xl z-50 p-4 animate-in fade-in slide-in-from-top-2 duration-200">
                     <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-100">
-                      <p className="font-black text-slate-900 text-xs uppercase tracking-wider">Notifications</p>
-                      <button onClick={() => setShowNotifications(false)} className="text-[10px] font-bold text-slate-400 hover:text-slate-600">Close</button>
+                      <div className="flex items-center gap-2">
+                        <p className="font-black text-slate-900 text-xs uppercase tracking-wider">Notifications</p>
+                        {OB.length > 0 && <span className="px-1.5 py-0.5 bg-rose-500 text-white text-[9px] font-black rounded-full">{OB.length}</span>}
+                      </div>
+                      <button onClick={() => setShowNotifications(false)} className="text-[10px] font-bold text-slate-400 hover:text-slate-600 transition-colors">✕ Close</button>
                     </div>
                     {OB.length === 0 ? (
-                      <p className="text-[11px] text-slate-400 text-center py-4 font-semibold">No new notifications</p>
+                      <div className="text-center py-6">
+                        <p className="text-2xl mb-2">✅</p>
+                        <p className="text-[11px] text-slate-400 font-semibold">All clear — no new alerts</p>
+                      </div>
                     ) : (
                       <div className="space-y-2 max-h-60 overflow-y-auto">
                         {OB.slice(0, 5).map((ob, idx) => (
-                          <div key={idx} className="p-2 hover:bg-slate-50 rounded-xl transition-colors flex gap-2">
-                            <span className="shrink-0">⚠️</span>
+                          <div key={idx} className="p-2.5 hover:bg-slate-50 rounded-xl transition-colors flex gap-2.5 border border-transparent hover:border-slate-100">
+                            <span className="shrink-0 text-base">⚠️</span>
                             <div>
                               <p className="text-[11px] font-bold text-slate-800">{ob.classification}</p>
-                              <p className="text-[9px] text-slate-500 mt-0.5 leading-tight">{ob.symptomPattern}</p>
-                              <p className="text-[8px] text-slate-400 mt-1 font-semibold">{timeAgo(ob.detectedAt)}</p>
+                              <p className="text-[10px] text-slate-500 mt-0.5 leading-tight">{ob.symptomPattern}</p>
+                              <p className="text-[9px] text-slate-400 mt-1 font-semibold">{timeAgo(ob.detectedAt)}</p>
                             </div>
                           </div>
                         ))}
@@ -667,50 +684,52 @@ export default function AdminDashboard() {
                   </div>
                 )}
               </div>
-              <Link to="/profile" className="flex items-center gap-2 pl-2.5 border-l border-slate-200 hover:opacity-80 transition-opacity cursor-pointer">
-                <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-full flex items-center justify-center text-white text-xs font-black shadow-sm">A</div>
-                <span className="hidden sm:block text-sm font-bold text-slate-700">Admin</span>
+
+              {/* Divider */}
+              <div className="w-px h-7 bg-slate-200" />
+
+              {/* Admin avatar */}
+              <Link to="/profile" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+                <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-black shadow-md"
+                  style={{ background: 'linear-gradient(135deg, #10b981, #0d9488)' }}>A</div>
+                <div className="hidden md:block">
+                  <p className="text-xs font-black text-slate-700 leading-none">Admin</p>
+                  <p className="text-[9px] text-slate-400 font-medium mt-0.5">District Officer</p>
+                </div>
               </Link>
-              <div className="hidden sm:flex items-center gap-1.5 pl-2.5 border-l border-slate-200 text-sm">
-                <svg width="18" height="12" viewBox="0 0 30 20" className="rounded-[2px] shadow-sm border border-slate-100 shrink-0">
+
+              {/* India flag */}
+              <div className="hidden sm:flex items-center gap-1.5 pl-2 border-l border-slate-200">
+                <svg width="22" height="15" viewBox="0 0 30 20" className="rounded shadow-sm">
                   <rect width="30" height="20" fill="#128807" />
                   <rect width="30" height="13.33" fill="#FFFFFF" />
                   <rect width="30" height="6.67" fill="#FF9933" />
-                  <circle cx="15" cy="10" r="2" fill="#000080" />
+                  <circle cx="15" cy="10" r="2.5" fill="#000080" />
+                  <circle cx="15" cy="10" r="1.5" fill="none" stroke="#000080" strokeWidth="0.3" />
                 </svg>
-                <span className="hidden md:block text-xs font-bold text-slate-600">Bharat</span>
+                <span className="hidden lg:block text-[10px] font-black text-slate-500 uppercase tracking-wider">Bharat</span>
               </div>
             </div>
           </div>
 
           {/* Status strip */}
-          <div className="flex items-center gap-4 mt-2.5 overflow-x-auto pb-1.5 border-t border-slate-100 pt-2">
+          <div className="px-5 lg:px-6 pb-2.5 flex items-center gap-2 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
             {[
-              { label: 'System Health', status: productionReadyStatus, meta: productionStripMeta },
-              { label: 'Aurora PostgreSQL', status: auroraStripMeta.label, meta: auroraStripMeta },
-              { label: 'DynamoDB', status: dynamoStripMeta.label, meta: dynamoStripMeta },
-              { label: 'AI Service', status: aiStripMeta.label, meta: aiStripMeta },
-              { label: 'Offline Villages', status: S.villages ?? 4, type: 'warn' },
-              { label: 'Pending Syncs', status: '12', type: 'sync' },
-              { label: 'Last Sync', status: lastSync, type: 'time' },
-            ].map(s => {
-              let badgeCls = s.meta?.pill || "bg-emerald-50 text-emerald-700 border-emerald-100";
-              if (s.type === 'warn') {
-                badgeCls = "bg-rose-50 text-rose-700 border-rose-100";
-              } else if (s.type === 'sync') {
-                badgeCls = "bg-amber-50 text-amber-700 border-amber-100";
-              } else if (s.type === 'time') {
-                badgeCls = "bg-slate-50 text-slate-700 border-slate-100";
-              }
-              return (
-                <div key={s.label} className="flex items-center gap-1.5 shrink-0 text-[10.5px] font-bold text-slate-500 bg-slate-50/50 px-2 py-0.5 rounded-md border border-slate-100/80 whitespace-nowrap">
-                  <span>{s.label}:</span>
-                  <span className={`px-1.5 py-0.25 rounded font-black text-[10px] border ${badgeCls}`}>
-                    {s.status}
-                  </span>
-                </div>
-              );
-            })}
+              { label: 'System Health',     val: productionReadyStatus,   dot: productionStripMeta.dot,  bg: 'bg-emerald-50',  text: 'text-emerald-700',  border: 'border-emerald-100' },
+              { label: 'Aurora PostgreSQL', val: auroraStripMeta.label,   dot: auroraStripMeta.dot,      bg: 'bg-emerald-50',  text: 'text-emerald-700',  border: 'border-emerald-100' },
+              { label: 'DynamoDB',          val: dynamoStripMeta.label,   dot: dynamoStripMeta.dot,      bg: 'bg-amber-50',    text: 'text-amber-700',   border: 'border-amber-100' },
+              { label: 'AI Service',        val: aiStripMeta.label,       dot: aiStripMeta.dot,          bg: 'bg-violet-50',   text: 'text-violet-700',  border: 'border-violet-100' },
+              { label: 'Offline Villages',  val: `${S.villages ?? 4}`,    dot: 'bg-rose-500',            bg: 'bg-rose-50',     text: 'text-rose-700',    border: 'border-rose-100' },
+              { label: 'Pending Syncs',     val: '12',                    dot: 'bg-amber-500',           bg: 'bg-amber-50',    text: 'text-amber-700',   border: 'border-amber-100' },
+              { label: 'Last Sync',         val: lastSync,                dot: 'bg-slate-400',           bg: 'bg-slate-50',    text: 'text-slate-600',   border: 'border-slate-200' },
+            ].map(s => (
+              <div key={s.label}
+                className={`flex items-center gap-1.5 shrink-0 px-2.5 py-1 rounded-lg border ${s.bg} ${s.border} whitespace-nowrap`}>
+                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${s.dot}`} />
+                <span className="text-[10px] font-bold text-slate-400">{s.label}:</span>
+                <span className={`text-[10px] font-black ${s.text}`}>{s.val}</span>
+              </div>
+            ))}
           </div>
         </header>
 

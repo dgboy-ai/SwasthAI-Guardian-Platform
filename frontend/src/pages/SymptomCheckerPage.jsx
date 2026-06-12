@@ -188,6 +188,9 @@ export default function SymptomCheckerPage() {
 
     if (symptomsToUse.length === 0 && !otherToUse) return;
     setLoading(true);
+
+    // Safety timeout: never let the spinner spin longer than 25 seconds
+    let loadingSafeTimer = setTimeout(() => { setLoading(false); }, 25000);
     setResult(null);
     setOutbreakAlert(null);
     setActiveTab('result'); // Switch to results view on mobile layout
@@ -240,6 +243,7 @@ export default function SymptomCheckerPage() {
         const tier = getSeverityTier(symptomsToUse, cached.prediction || '', otherToUse);
         const finalRes = { ...tier, aiResult: cached.prediction, fromCache: true };
         setResult(finalRes);
+        clearTimeout(loadingSafeTimer);
         setLoading(false);
         return;
       }
@@ -268,6 +272,7 @@ export default function SymptomCheckerPage() {
         }).catch(qErr => {
           console.warn('Could not queue symptom check offline:', qErr.message);
         });
+        clearTimeout(loadingSafeTimer);
         setLoading(false);
         return;
       }
@@ -330,6 +335,7 @@ export default function SymptomCheckerPage() {
         });
       }
     } finally {
+      clearTimeout(loadingSafeTimer);
       setLoading(false);
     }
   };
