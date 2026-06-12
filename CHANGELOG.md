@@ -18,6 +18,13 @@ All notable changes and feature developments completed during the hackathon wind
 - **Interactive "Watch Sync" Walkthrough**:
   - Built a step-by-step interactive sync guide modal in `MonitoringDashboard.jsx` triggered via a "Watch Sync" button.
   - Guides judges through simulating a network outage, queuing maternal records in IndexedDB offline, verifying queue states, reconnecting, and auto-syncing.
+- **ASHA & NGO Dispatch Upgrades**:
+  - Upgraded Express server to support WebSocket upgrades on path `/api/telemetry` for live ambulance simulation.
+  - Implemented dynamic route location interpolation on `/api/villager/ambulance` to broadcast live coordinates every 3 seconds.
+  - Created `liveTelemetry.js` WebSocket client and integrated a real-time tracking panel in the Admin Command Center dashboard.
+  - Created `audioAlerts.js` leveraging Web Audio API oscillators and gains to play high-fidelity emergency sirens (P1), warnings (P2), and standard chime alerts.
+  - Connected synthesized alerts to SSE stream updates inside the Admin and ASHA/NGO dashboards.
+  - Built a state-based Peer-to-Peer Relay simulator modal inside `MonitoringDashboard.jsx` allowing local Bluetooth record sharing and proxy sync to AWS.
 - **Outbreak Agent Timeline UI**:
   - Created a vertical scan log timeline in `AIIntelligenceView.jsx` to trace Groq Llama-3.3 decisions.
   - Updated `outbreak_agent.py` to transmit scan telemetry heartbeats to the new `POST /api/admin/agent-scan` endpoint.
