@@ -2,7 +2,7 @@
 
 > **For judges who just want to evaluate**: The live app is already deployed.
 > ```
-> https://swasthai-guardian-platform.onrender.com
+> https://swasth-ai-guardian-platform.vercel.app
 > ```
 > Login: select any role → enter any phone number → OTP: `1234`
 > Full AWS health status: `GET https://swasthai-guardian-platform.onrender.com/api/health/detailed`

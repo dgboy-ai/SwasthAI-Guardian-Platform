@@ -1,7 +1,7 @@
 # SwasthAI Guardian 🌿
 ### Offline-First Healthcare Infrastructure for Low-Connectivity Environments
 
-### 🌐 [Live Demo](https://swasthai-guardian-platform.onrender.com) | 📋 [Deployment Guide](DEPLOYMENT.md)
+### 🌐 [Live Demo](https://swasth-ai-guardian-platform.vercel.app) | 📋 [Deployment Guide](DEPLOYMENT.md)
 
 
 ---
@@ -97,7 +97,7 @@ Most health apps call a third-party AI API and display the result. SwasthAI **ow
 GET https://swasthai-guardian-platform.onrender.com/api/health/detailed
 
 # Live application URL
-https://swasthai-guardian-platform.onrender.com
+https://swasth-ai-guardian-platform.vercel.app
 
 # Demo credentials: OTP mode → Enter any phone → OTP: 1234
 # Roles (selectable on login): Villager (default) | NGO | Admin
