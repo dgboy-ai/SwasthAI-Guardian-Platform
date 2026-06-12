@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 
 // ── Offline-First Login Helpers ──────────────────────────────────────────────
-// Judge/demo credentials pre-cached for hackathon walkthroughs.
+// Judge/demo credentials pre-cached for evaluation walkthroughs.
 // Production authentication uses backend-issued tokens and real OTP/password verification.
 const OFFLINE_CACHE_KEY = 'swasthai_offline_user_cache';
 const DEMO_SECRET = 'Demo@1234';
@@ -307,7 +307,7 @@ export default function LoginPage() {
               >
                 <WifiOff className="w-4 h-4 shrink-0 text-amber-600" />
                 <span>
-                  <span className="font-black">Judge/Demo Offline Mode</span> - local-only credentials are enabled for the hackathon walkthrough.
+                  <span className="font-black">Judge/Demo Offline Mode</span> - local-only credentials are enabled for the evaluation walkthrough.
                   <span className="block text-amber-600 font-medium mt-0.5">Production sign-in uses backend OTP/password verification and issued tokens.</span>
                 </span>
               </motion.div>
@@ -439,7 +439,7 @@ export default function LoginPage() {
               </span>
             </motion.button>
 
-            {/* Judge/demo credentials for hackathon judges */}
+            {/* Judge/demo credentials for evaluation */}
             <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl space-y-2.5">
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <p className="text-[10px] font-black uppercase tracking-widest text-emerald-700 flex items-center gap-2">

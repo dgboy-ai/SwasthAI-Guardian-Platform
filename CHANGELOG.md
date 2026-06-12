@@ -1,6 +1,6 @@
 # Changelog — SwasthAI Guardian Platform
 
-All notable changes and feature developments completed during the hackathon window are documented in this file chronologically.
+All notable changes and feature developments completed during the project development window are documented in this file chronologically.
 
 ## June 12, 2026
 ### Fixed & Optimized
@@ -10,7 +10,7 @@ All notable changes and feature developments completed during the hackathon wind
   - Wrapped OTP and password validation handlers inside `routes/auth.js` in try-catch blocks to guarantee robust request processing.
 - **Unified Documentation Indexing & Repository Map**:
   - Restructured the project's documentation hierarchy, creating a separate dedicated [docs/repository_map.md](docs/repository_map.md) referencing every module file and component.
-  - Updated [README.md](README.md) to integrate the new repository index, significantly streamlining the presentation for AWS hackathon reviewers.
+  - Updated [README.md](README.md) to integrate the new repository index, significantly streamlining the presentation for AWS technical reviewers.
 - **Technical Architecture Accuracy Alignment**:
   - Documented previously unlisted backend capabilities in `docs/system_architecture.md` including the Dead Letter Queue (DLQ) file writes, `dlq_alert` SSE broadcasts, `policy.js` IDOR rule checker, and the background Health Watchdog Monitor.
   - Corrected `offline_sync_strategy.md` to reference `clientUpdatedAt` as the exact database field mapping for Last-Write-Wins (LWW) conflict resolution.
@@ -241,7 +241,7 @@ All notable changes and feature developments completed during the hackathon wind
 - **AI Service Environment Configuration**: Added `python-dotenv` support to automatically load `GROQ_API_KEY` at startup in the FastAPI service, resolving the `503` RAG offline fallback issue.
 - **Windows Emoji Console Crash Fix**: Reconfigured outbreak agent stdout to `UTF-8` and replaced emoji log markers with ASCII-safe strings, preventing UnicodeEncodeErrors on Windows environments.
 - **Speech Synthesis Autoplay Control**: Disabled automatic text-to-speech triggers in `SakhiChatbot.jsx` and `SymptomCheckerPage.jsx` to prevent voice playback interference during demo video recording, while preserving manual read-aloud buttons.
-- **Project Audit & Roadmap Status**: Updated the master audit log and hackathon checklist (`audit_and_roadmap.md`) to mark all roadmap phases as fully completed.
+- **Project Audit & Roadmap Status**: Updated the master audit log and project roadmap checklist (`audit_and_roadmap.md`) to mark all roadmap phases as fully completed.
 
 ---
 

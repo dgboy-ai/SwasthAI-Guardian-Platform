@@ -28,7 +28,7 @@ SwasthAI is framed as a B2B district operations platform: the buyer is a distric
 > *   **🔌 Offline Sync Strategy**: [docs/offline_sync_strategy.md](docs/offline_sync_strategy.md) — IndexedDB queue replay, idempotency keys, and conflict resolution rules.
 > *   **📐 Architecture Diagram**: [docs/architecture-diagram.svg](docs/architecture-diagram.svg) — Visual architecture with all layers, data flows, and DynamoDB table details.
 > *   **📁 Complete Repository Map**: [docs/repository_map.md](docs/repository_map.md) — Detailed mapping of files, roles, and codebase directory layout.
-> *   **📈 Build Changelog**: [CHANGELOG.md](CHANGELOG.md) — Chronological log of features, optimizations, and validations built during the hackathon.
+> *   **📈 Build Changelog**: [CHANGELOG.md](CHANGELOG.md) — Chronological log of features, optimizations, and validations built during development.
 ---
 
 ## 🚀 Production Infrastructure Upgrades (Initial Baseline vs. Current Upgrades)

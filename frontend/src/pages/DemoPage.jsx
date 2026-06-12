@@ -335,7 +335,7 @@ export default function DemoPage() {
             </div>
             <div>
               <h3 className="font-black text-white text-lg">Autonomous Outbreak Intelligence Loop</h3>
-              <p className="text-emerald-400/70 text-[11px] font-medium">World-class for a hackathon — no other submission has this</p>
+              <p className="text-emerald-400/70 text-[11px] font-medium">World-class operations architecture — designed for production-level scale</p>
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
