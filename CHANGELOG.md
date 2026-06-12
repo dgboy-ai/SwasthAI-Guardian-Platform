@@ -3,6 +3,28 @@
 All notable changes and feature developments completed during the hackathon window are documented in this file chronologically.
 
 ## June 12, 2026
+### Fixed & Optimized
+- **Calibrated RAG Threshold Alignment**:
+  - Hardcoded the calibrated threshold `0.45` as the default fallback in `ai-service/rag_service.py` to ensure high retrieval quality when `rag_config.py` is missing or not deployed.
+- **Symptom Checklist & Offline Mismatch Resolution**:
+  - Expanded the frontend checkbox checklist options from 11 to 26 symptoms in both `SymptomCheckerPage.jsx` and `SymptomChecker.jsx` to map to the full capability of the 101-class model.
+  - Linked `predictSymptomsOffline()` local model inference into the offline catch blocks of both UIs, allowing full in-browser triage when the network is offline.
+  - Integrated `symptomIdToText` vocabulary mappings for all 26 symptoms to match key labels inside the browser's `localSymptomNet.js` / `symptomNetMeta.js`.
+- **Duplicate Gibberish Detection Cleanup**:
+  - Removed redundant `is_gibberish` checks and function definition in `ai-service/main.py`, optimizing CPU cycles by relying entirely on the first-stage Node.js validation guardrails in `aiValidator.js`.
+- **Production SSL Database Safety**:
+  - Configured secure-by-default SSL connection validation (`rejectUnauthorized: true`) in database configurations.
+- **Cluster WebSocket Robustness & Warnings**:
+  - Added warning indicators and structural comments regarding WebSocket telemetry persistence limitations in Node.js cluster-fork setups.
+- **Robust Rule-Based Symptom Matching**:
+  - Updated `predictDiseaseLocal` in `backend/routes/villager.js` to process token negations (e.g. "no fever") and prioritize longer, more specific multi-word symptom matches.
+- **Request Body Size Limits**:
+  - Implemented a separate `5MB` request limit for skin image triage uploads, while keeping standard JSON requests locked at a secure `10KB`.
+- **Last-Write-Wins (LWW) Sync Policy**:
+  - Configured maternal and child sync endpoints to resolve conflicts using replayed client-side timestamps (`clientUpdatedAt`).
+- **Offline Registration Credentials Cache**:
+  - Aligned local credentials cache keys in `AuthContext.jsx` to permit offline registered villagers to log in without internet connection.
+
 ### Added
 - **Public Demo Mode (/demo route)**:
   - Redesigned the public `/demo` route into a high-fidelity self-guided tour experience.

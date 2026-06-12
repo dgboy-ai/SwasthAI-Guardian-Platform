@@ -270,6 +270,15 @@ eventEmitter.on("emergency_triggered", async (eventData) => {
     await callWithRetry(async () => {
       await dynamoHelper.updateNodeState(resolvedVillageId, "emergency", now, 0);
     });
+
+    if (typeof broadcastCallback === 'function') {
+      broadcastCallback('ambulance', {
+        requestId, name, location: resolvedLocation, villageId: resolvedVillageId,
+        priority: priority || 'High', symptoms,
+        status: 'pending', timestamp: now, traceId: eventData.traceId || null,
+        districtId
+      });
+    }
   } catch (err) {
     console.error(`[EVENT ERROR] emergency_triggered handling failed:`, err.message);
     await writeToDLQ("emergency_triggered", eventData, err.message);

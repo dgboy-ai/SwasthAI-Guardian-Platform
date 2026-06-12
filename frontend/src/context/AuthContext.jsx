@@ -27,7 +27,7 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     // 🌐 Seed the offline database with the official demo accounts so they work offline immediately on fresh devices
     try {
-      const offlineUsers = normalizeOfflineUsers(JSON.parse(localStorage.getItem('offline_users') || '[]'));
+      const offlineUsers = normalizeOfflineUsers(JSON.parse(localStorage.getItem('swasthai_offline_user_cache') || '[]'));
       const defaultDemoUsers = [
         {
           id: 'demo-villager',
@@ -78,7 +78,7 @@ export const AuthProvider = ({ children }) => {
           updated.push(demoUser);
         }
       });
-      localStorage.setItem('offline_users', JSON.stringify(updated));
+      localStorage.setItem('swasthai_offline_user_cache', JSON.stringify(updated));
     } catch (e) {
       console.error('Failed to seed offline database:', e);
     }
@@ -116,7 +116,7 @@ export const AuthProvider = ({ children }) => {
   // 🌐 Offline User Cache: Stores registered credentials locally for offline verification
   const cacheUserOffline = (data) => {
     try {
-      const offlineUsers = JSON.parse(localStorage.getItem('offline_users') || '[]');
+      const offlineUsers = JSON.parse(localStorage.getItem('swasthai_offline_user_cache') || '[]');
       const newUser = {
         id: 'cached-user-' + Date.now(),
         name: data.name,
@@ -136,7 +136,7 @@ export const AuthProvider = ({ children }) => {
         (data.email ? u.email !== data.email : true)
       );
       filtered.push(newUser);
-      localStorage.setItem('offline_users', JSON.stringify(filtered));
+      localStorage.setItem('swasthai_offline_user_cache', JSON.stringify(filtered));
       return newUser;
     } catch (e) {
       console.error('Error caching user offline:', e);
@@ -174,7 +174,7 @@ export const AuthProvider = ({ children }) => {
     // Helper to create offline session — ONLY from verified cache match
     const createOfflineSession = () => {
       try {
-        const offlineUsers = JSON.parse(localStorage.getItem('offline_users') || '[]');
+        const offlineUsers = JSON.parse(localStorage.getItem('swasthai_offline_user_cache') || '[]');
         const matchedUser = offlineUsers.find(u =>
           (u.email && u.email.toLowerCase() === identifier.toLowerCase()) ||
           (u.phone && u.phone === identifier) ||
@@ -239,7 +239,7 @@ export const AuthProvider = ({ children }) => {
   const loginOTP = async (phone, otp, role) => {
     const createOfflineOTPSession = () => {
       try {
-        const offlineUsers = JSON.parse(localStorage.getItem('offline_users') || '[]');
+        const offlineUsers = JSON.parse(localStorage.getItem('swasthai_offline_user_cache') || '[]');
         const matchedUser = offlineUsers.find(u => u.phone === phone && u.role === role);
         if (matchedUser) {
           localStorage.setItem('token', 'offline-mock-token');

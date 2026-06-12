@@ -248,6 +248,7 @@ export async function syncAllQueues() {
           dueDate: m.dueDate,
           vitals: m.vitals,
           clientRequestId: m.clientRequestId || m.id,
+          clientUpdatedAt: m.ts || Date.now(),
           syncBatchId
         });
         await deleteFromStore(STORES.maternal, m.id);
@@ -269,6 +270,7 @@ export async function syncAllQueues() {
           weight: c.weight,
           height: c.height,
           clientRequestId: c.clientRequestId || c.id,
+          clientUpdatedAt: c.ts || Date.now(),
           syncBatchId
         });
         await deleteFromStore(STORES.child, c.id);

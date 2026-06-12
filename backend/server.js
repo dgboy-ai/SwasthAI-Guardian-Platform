@@ -89,7 +89,8 @@ if (isProduction && cluster.isPrimary) {
     },
     credentials: true,
   }));
-  app.use(express.json({ limit: '10kb' })); // JSON-only APIs; image uploads go through AI service directly
+  app.use('/api/skin-log', express.json({ limit: '5mb' })); // Support larger base64 payloads/pixel statistics for skin inspections
+  app.use(express.json({ limit: '10kb' })); // JSON-only APIs; general endpoints limited to 10kb to prevent DOS
 
   const ragTraces = [];
 
@@ -182,7 +183,9 @@ if (isProduction && cluster.isPrimary) {
     try {
       const testPool = new Pool({
         connectionString: process.env.DATABASE_URL || `postgresql://${process.env.DB_USER || 'postgres'}:${process.env.DB_PASSWORD}@${process.env.DB_HOST || 'localhost'}:5432/${process.env.DB_NAME || 'swasthai'}`,
-        ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false,
+        ssl: process.env.DATABASE_URL 
+          ? { rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED !== 'false' } 
+          : false,
         connectionTimeoutMillis: 3000,
       });
       await testPool.query('SELECT 1');
@@ -514,6 +517,9 @@ if (isProduction && cluster.isPrimary) {
   });
 
   // Setup WebSocket Server for Live Ambulance Telemetry
+  // NOTE: In production cluster fork environments, activeTeles is in-memory per-worker.
+  // Telemetry tracking is best-effort per process. For high-availability horizontal scaling,
+  // this state should be coordinated using Redis or synced from the emergency_streams table in DynamoDB.
   const wss = new WebSocketServer({ noServer: true });
   const activeTeles = new Map(); // requestId -> current telemetry state
   const wsClients = new Set();

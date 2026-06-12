@@ -105,19 +105,30 @@ router.post('/maternal', auth, checkRole(['ngo', 'admin']), logAudit('create', '
 
   if (clientRequestId) {
     const existing = await db.get(
-      'SELECT id, "riskLevel", "villageId", systolic_bp, diastolic_bp, bs, body_temp, heart_rate, factors_json FROM pregnancy_data WHERE client_request_id = ?',
+      'SELECT id, "updated_at", "riskLevel", "villageId", systolic_bp, diastolic_bp, bs, body_temp, heart_rate, factors_json FROM pregnancy_data WHERE client_request_id = ?',
       [clientRequestId]
     );
     if (existing) {
-      return res.send({
-        riskLevel: existing.riskLevel,
-        villageId: existing.villageId,
-        recordId: existing.id,
-        duplicate: true,
-        clientRequestId,
-        vector_score: existing.riskLevel.toLowerCase().includes('high') ? 8 : existing.riskLevel.toLowerCase().includes('medium') ? 4 : 0,
-        factors: existing.factors_json ? JSON.parse(existing.factors_json) : []
-      });
+      const dbUpdatedAt = new Date(existing.updated_at || 0).getTime();
+      const incomingTs = Number(req.body.clientUpdatedAt || req.body.ts || 0);
+
+      // Conflict Resolution: If online database record is newer than incoming sync, keep the database record
+      if (dbUpdatedAt >= incomingTs) {
+        req.log('info', 'Sync conflict resolved: Online record is newer than incoming sync. Keeping online data.', { clientRequestId });
+        return res.send({
+          riskLevel: existing.riskLevel,
+          villageId: existing.villageId,
+          recordId: existing.id,
+          duplicate: true,
+          clientRequestId,
+          vector_score: existing.riskLevel.toLowerCase().includes('high') ? 8 : existing.riskLevel.toLowerCase().includes('medium') ? 4 : 0,
+          factors: existing.factors_json ? JSON.parse(existing.factors_json) : []
+        });
+      }
+      
+      // If incoming sync is newer, overwrite the record. Delete the old one so the subsequent flow inserts the newer one.
+      req.log('info', 'Sync conflict resolved: Incoming sync is newer. Overwriting existing record (Last-Write-Wins).', { clientRequestId });
+      await db.run('DELETE FROM pregnancy_data WHERE id = ?', [existing.id]);
     }
   }
 
@@ -288,17 +299,28 @@ router.post('/malnutrition', auth, checkRole(['ngo', 'admin']), async (req, res)
   const villageId = req.user.villageId || 'unassigned';
   if (clientRequestId) {
     const existing = await db.get(
-      'SELECT id, status, "villageId" FROM malnutrition_data WHERE client_request_id = ?',
+      'SELECT id, "updated_at", status, "villageId" FROM malnutrition_data WHERE client_request_id = ?',
       [clientRequestId]
     );
     if (existing) {
-      return res.send({
-        status: existing.status,
-        villageId: existing.villageId,
-        recordId: existing.id,
-        duplicate: true,
-        clientRequestId
-      });
+      const dbUpdatedAt = new Date(existing.updated_at || 0).getTime();
+      const incomingTs = Number(req.body.clientUpdatedAt || req.body.ts || 0);
+
+      // Conflict Resolution: If online database record is newer than incoming sync, keep the database record
+      if (dbUpdatedAt >= incomingTs) {
+        req.log('info', 'Sync conflict resolved (Malnutrition): Online record is newer. Keeping online data.', { clientRequestId });
+        return res.send({
+          status: existing.status,
+          villageId: existing.villageId,
+          recordId: existing.id,
+          duplicate: true,
+          clientRequestId
+        });
+      }
+      
+      // If incoming sync is newer, overwrite the record. Delete the old one so the subsequent flow inserts the newer one.
+      req.log('info', 'Sync conflict resolved (Malnutrition): Incoming sync is newer. Overwriting existing record.', { clientRequestId });
+      await db.run('DELETE FROM malnutrition_data WHERE id = ?', [existing.id]);
     }
   }
 

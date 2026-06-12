@@ -55,37 +55,6 @@ MEDICAL_KEYWORDS = {
     "arisi", "thanni", "pola", "moonru", "valandhu", "uzhaippu", "thookam", "izhapu"
 }
 
-def is_gibberish(text: str) -> bool:
-    text_lower = text.lower()
-    
-    # 1. Repeating characters: 4 or more times (e.g. "aaaa", "zzzz")
-    if re.search(r'(.)\1{3,}', text_lower):
-        return True
-        
-    # 2. Sequential keyboard layouts and garbage sequences
-    gibberish_patterns = [
-        r'asdfgh', r'qwerty', r'zxcvbn', r'123456', r'qwert', r'asdfg', r'zxcvb',
-        r'jklsem', r'mnbvc', r'lkjhg', r'poiuy'
-    ]
-    for pattern in gibberish_patterns:
-        if pattern in text_lower:
-            return True
-            
-    # 3. English/ASCII words > 3 chars with no vowels
-    words = re.findall(r'\b[a-zA-Z]+\b', text_lower)
-    for w in words:
-        if len(w) > 3:
-            if not any(char in 'aeiouy' for char in w):
-                return True
-                
-    # 4. Spammed repeated words (e.g. "bhai bhai bhai bhai")
-    all_words = re.findall(r'\b\w+\b', text_lower)
-    if len(all_words) > 5:
-        c = Counter(all_words)
-        if c.most_common(1)[0][1] > 4:
-            return True
-            
-    return False
 
 def has_health_keywords(text: str) -> bool:
     text_lower = text.lower()
@@ -480,12 +449,11 @@ async def predict_disease(data: SymptomInput):
     if not text:
         raise HTTPException(status_code=400, detail="Symptoms text cannot be empty.")
 
-    # ── Text Safeguard Guardrails (Gibberish & Clinical Vocabulary Filter) ────
+    # ── Text Safeguard Guardrails (Clinical Vocabulary Filter) ────
     is_invalid_len = len(text) < 4
-    is_gib = is_gibberish(text)
     is_off_topic = not has_health_keywords(text)
     
-    if is_invalid_len or is_gib or is_off_topic:
+    if is_invalid_len or is_off_topic:
         guardrail_message = (
             "Hello! I am SwasthAI Guardian. To help you properly, please describe actual physical health symptoms "
             "(such as fever, cough, pain, headache, or skin rash). / नमस्ते! मैं स्वास्थ-एआई गार्जियन हूँ। "
@@ -780,15 +748,7 @@ async def rag_sakhi_chat(data: ChatInput):
             "engine": "RAG-Guardrail-Length",
             "grounded": False
         }
-        
-    if is_gibberish(msg):
-        return {
-            "reply": "Hello! I am Sakhi. Please ask a valid health question about pregnancy care, menstrual hygiene, periods, or child health. / नमस्ते! मैं सखी हूँ। कृपया गर्भावस्था, पीरियड्स, या बाल स्वास्थ्य के बारे में एक सही सवाल पूछें।",
-            "sources": ["Sakhi Health Assistant — General Information"],
-            "urgency": "P4",
-            "engine": "RAG-Guardrail-Gibberish",
-            "grounded": False
-        }
+
         
     if is_prompt_injection(msg):
         return {

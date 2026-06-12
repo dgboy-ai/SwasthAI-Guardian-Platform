@@ -162,10 +162,37 @@ function predictDiseaseLocal(text) {
   let bestMatch = 'Undetermined Symptoms / अनिर्धारित लक्षण';
   let maxScore = 0;
 
+  // Negation keywords to look for
+  const negations = ['no', 'not', 'dont', "don't", 'without', 'none', 'neither', 'never', 'absent'];
+
   for (const d of rules) {
     let score = 0;
-    for (const kw of d.keywords) if (clean.includes(kw)) score += 1;
-    if (score > maxScore) { maxScore = score; bestMatch = d.name; }
+    // Sort keywords by length descending (longest/most specific first)
+    const sortedKeywords = [...d.keywords].sort((a, b) => b.length - a.length);
+
+    for (const kw of sortedKeywords) {
+      let idx = clean.indexOf(kw);
+      while (idx !== -1) {
+        // Look at the context immediately preceding the keyword (up to 15 characters)
+        const prefix = clean.substring(Math.max(0, idx - 15), idx).trim();
+        // Check if any negation word is present in the preceding prefix
+        const words = prefix.split(/[\s,._-]+/);
+        const hasNegation = words.some(w => negations.includes(w));
+
+        if (!hasNegation) {
+          // Higher weight for longer, more specific keywords
+          score += kw.length;
+          break; // Match found for this keyword in this disease
+        }
+        // Look for next occurrence in case the first was negated
+        idx = clean.indexOf(kw, idx + 1);
+      }
+    }
+
+    if (score > maxScore) {
+      maxScore = score;
+      bestMatch = d.name;
+    }
   }
   return bestMatch;
 }
@@ -224,26 +251,10 @@ router.post('/emergency-alert', auth, checkRole(['villager', 'ngo', 'admin']), a
     const timestamp  = new Date().toISOString();
     const requestObj = { requestId, userId, name: userName, location: villageId, priority: 'High', symptoms: message, status: 'pending', timestamp, type: alertType, traceId: req.traceId, districtId };
 
-    // Return success immediately — the DB record is already saved.
-    // DynamoDB & SSE broadcast are best-effort (fire-and-forget).
-    res.status(201).json({ success: true, requestId });
+    // Emit to event dispatcher — it handles DynamoDB writes with 3-attempt retry + DLQ fallback
+    eventEmitter.emit('emergency_triggered', requestObj);
 
-    (async () => {
-      try {
-        await dynamoHelper.put('emergency_streams', {
-          districtId,
-          streamId: `amb-${requestId}-${Date.now()}`,
-          priority: 'High',
-          ...requestObj
-        });
-        if (typeof req.app.locals.broadcastToAdmins === 'function') {
-          req.app.locals.broadcastToAdmins('ambulance', requestObj);
-        }
-        console.log(`[EMERGENCY-ALERT] #${requestId} telemetry pushed OK`);
-      } catch (telemetryErr) {
-        console.warn(`[EMERGENCY-ALERT] #${requestId} saved locally; telemetry failed (non-critical):`, telemetryErr.message);
-      }
-    })();
+    res.status(201).json({ success: true, requestId });
   } catch (err) {
     console.error('Emergency alert error:', err);
     res.status(500).json({ error: 'Failed to process emergency alert.' });

@@ -22,13 +22,14 @@ import requests
 
 from groq import Groq
 
-# ── Fix 3: Load calibrated threshold from rag_config.py ──
+# Calibrated threshold is 0.45 (from grid search that achieved F1=1.00)
+_THRESHOLD = 0.45
 try:
-    from rag_config import RAG_CALIBRATED_THRESHOLD as _THRESHOLD
-    print(f"[RAG] Using calibrated threshold: {_THRESHOLD}")
+    from rag_config import RAG_CALIBRATED_THRESHOLD
+    _THRESHOLD = RAG_CALIBRATED_THRESHOLD
+    print(f"[RAG] Using calibrated threshold from config: {_THRESHOLD}")
 except ImportError:
-    _THRESHOLD = 0.28
-    print("[RAG] rag_config.py not found — using default threshold 0.28.")
+    print(f"[RAG] Using hard-coded default threshold: {_THRESHOLD}")
 
 # ── Fix 1: Import 200+ chunk knowledge base ──
 from health_kb_data import HEALTH_KNOWLEDGE

@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { Mic, Activity, AlertCircle, Volume2, ShieldCheck, HeartPulse, Scan, Upload, Camera, X } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import api from '../services/api';
+import { predictSymptomsOffline } from '../utils/localSymptomNet';
 
 const AI_SERVICE_URL = import.meta.env.VITE_AI_URL || 'http://localhost:8000';
 
@@ -28,6 +29,9 @@ export default function SymptomChecker() {
     { id: 'headache',     label: t.diseaseChecker?.headache     || 'Strong Headache',                 severe: false },
     { id: 'vomiting',     label: t.diseaseChecker?.vomiting     || 'Vomiting / Nausea',               severe: false },
     { id: 'weakness',     label: t.diseaseChecker?.weakness     || 'Extreme Weakness / Fatigue',      severe: false },
+    { id: 'dizziness',    label: 'Dizziness चक्कर आना',                                         severe: false },
+    { id: 'vision_loss',  label: 'Vision Loss दृष्टि हानि',                                     severe: true  },
+    { id: 'paralysis',    label: 'Limb Weakness / Paralysis लकवा / कमजोरी',                      severe: true  },
     // 12 new symptoms — critical for rural India (Malaria, Dengue, TB, Jaundice, UTI, Diarrhea)
     { id: 'chills',       label: 'Chills / Body Shivering ठंड लगना',                              severe: false },
     { id: 'diarrhea',     label: 'Diarrhea / Loose Motions दस्त',                                 severe: false },
@@ -226,11 +230,16 @@ export default function SymptomChecker() {
       });
     } catch (err) {
       console.error('Symptom AI error:', err);
-      // Graceful offline fallback — rule-based only if API is down
+      // Graceful offline fallback using in-browser localSymptomNet prediction
+      const localPred = predictSymptomsOffline(symptomText);
       const isSevere = selectedSymptoms.some((id) => symptomList.find((s) => s.id === id)?.severe);
       setResult({
         type: isSevere ? 'severe' : 'mild',
-        prediction: isSevere ? 'Possible Emergency' : 'Mild Condition',
+        prediction: localPred.prediction,
+        confidence: localPred.confidence ? Math.round(localPred.confidence * 100) : null,
+        alternatives: localPred.alternatives,
+        model: localPred.model,
+        accuracy: localPred.accuracy,
         message: isSevere
           ? t.diseaseChecker?.severe_msg || 'CRITICAL: Severe symptoms detected. Go to hospital immediately.'
           : t.diseaseChecker?.mild_msg || 'Mild condition. Rest and monitor.',
