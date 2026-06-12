@@ -85,7 +85,8 @@ graph TB
    
 2. **Backend API Service (Express.js)**:
    - Handles route validation, auth checks, and asynchronous audit logs.
-   - Hosts the local **Event Dispatcher** which processes events like `symptom_submitted`, `emergency_triggered`, and `maternal_alert` out-of-band to keep route speeds fast.
+   - Hosts the centralized **`policy.js` IDOR & Role Policy Module** (`checkRole`, `enforceVillageScope`, `enforceReferralAccess`, `enforceAmbulanceAccess`) — all 403 responses return a generic `{ code: 'ACCESS_DENIED' }` body to prevent role/village scope leakage.
+   - Hosts the local **Event Dispatcher** which processes **5 event types** out-of-band to keep route speeds fast: `symptom_submitted`, `outbreak_detected`, `sync_restored`, `emergency_triggered`, and `maternal_alert`. Each handler includes a **3-attempt retry loop** for DynamoDB writes. Failed events are persisted to a local **Dead Letter Queue** (`failed_events_dlq.json`, capped at 100 items) and broadcast as a `dlq_alert` SSE event to admin clients. Admins can inspect the DLQ via `GET /api/admin/dlq`.
    - Runs a **Health Watchdog Monitor** every 30 seconds to check AI service status and verify Outbreak Agent heartbeat scans, dispatching warning feeds via SSE on failure.
 
 3. **AI Microservice (FastAPI + Python)**:
@@ -200,6 +201,8 @@ Live, high-throughput ambulance dispatch and SOS events.
 #### 5. Table: `security_audit_logs`
 Chronological tamper-evident database log of security actions.
 - **PK**: `actor` (HASH) + **SK**: `timestamp` (RANGE) — *Access Pattern: Query security audits by acting administrator.*
+- **GSI**: None — this table intentionally has no GSIs. All audit queries are actor-scoped (PK lookup), making cross-actor scans an explicit access-control boundary.
+- **TTL**: None — audit records are retained indefinitely for compliance.
 
 ---
 

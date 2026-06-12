@@ -52,7 +52,7 @@ When offline-queued items are replayed on the server, conflicts may arise if rec
 
 ### Rule B: Last-Write-Wins (LWW) (State-Based & Status Updates)
 - **Applicable to**: Emergency/Ambulance statuses (`pending` ➔ `assigned` ➔ `completed`) and system settings.
-- **Rule**: The server compares the client-supplied timestamp (`timestamp` or `ts`) or automatically updates the field based on the last write received (`CURRENT_TIMESTAMP`). For state transitions, the database updates the status field to keep the system synchronized with the latest action.
+- **Rule**: The server compares the client-supplied `clientUpdatedAt` timestamp included in the replayed sync payload. For state transitions (e.g., ambulance `pending` → `assigned` → `completed`), the database updates the status field to the latest write received, keeping the system synchronized without requiring a lock.
 
 ### Rule C: Accumulate/Aggregate (Telemetry & Counter Fields)
 - **Applicable to**: Outbreak counts, village activity logs, and ASHA workload queues.

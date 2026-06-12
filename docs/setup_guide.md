@@ -50,7 +50,7 @@ In local development, the backend uses **SQLite** automatically (no setup needed
 ```bash
 cd ai-service
 pip install -r requirements.txt
-python train_disease_model.py        # trains the Random Forest fallback (~2 min)
+python train_disease_model.py        # trains the Logistic Regression fallback (~1 min)
 python train_deep_model.py           # trains SymptomNet MLP (~500MB RAM required)
 python calibrate_rag.py              # calibrates RAG threshold → writes rag_config.py
 uvicorn main:app --reload --port 8000
@@ -108,6 +108,11 @@ DATABASE_URL=postgresql://user:password@your-aurora-cluster.ap-south-1.rds.amazo
 # ── Performance ───────────────────────────────────────────────────────────────
 # Use 1 on Render/Fargate free tier to stay within memory limits
 NODE_CLUSTER_WORKERS=1
+
+# ── AI Service ───────────────────────────────────────────────────────────────
+# Set to true to enable the 64.6%-accurate SymptomNet deep MLP (requires ~500MB RAM).
+# Defaults to false on Render free-tier (uses the 71.1%-accurate Logistic Regression instead).
+# ENABLE_DEEP_MODEL=true
 
 # ── Development Only ──────────────────────────────────────────────────────────
 # Enables OTP 1234 for demo/testing. NEVER enable in production.

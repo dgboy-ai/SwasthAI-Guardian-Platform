@@ -226,6 +226,7 @@ Use DynamoDB for time-sensitive events and operational telemetry:
 - `sync_queues`: offline queue replay telemetry by device and status.
 - `village_node_state`: village connectivity/sync state with TTL.
 - `emergency_streams`: high-priority SOS and emergency event stream.
+- `security_audit_logs`: tamper-evident audit trail of all sensitive actions keyed by actor and timestamp. No GSI — all queries are actor-scoped for compliance isolation.
 
 Why DynamoDB: high write throughput, low latency, flexible event payloads, serverless scaling, and operational stream patterns.
 
@@ -484,7 +485,7 @@ Expected:
 - [ ] `databases.aurora_postgresql.status` is `"connected"`
 - [ ] `databases.dynamodb.status` is `"connected"`
 - [ ] `production_ready` is `true`
-- [ ] `databases.dynamodb.tables` lists `outbreak_telemetry`, `sync_queues`, `village_node_state`, `emergency_streams`
+- [ ] `databases.dynamodb.tables` lists `outbreak_telemetry`, `sync_queues`, `village_node_state`, `emergency_streams`, and `security_audit_logs`
 - [ ] At least one ambulance/SOS action creates an Aurora record and a DynamoDB `emergency_streams` item
 - [ ] At least one outbreak/demo telemetry event creates a DynamoDB `outbreak_telemetry` item
 
