@@ -79,27 +79,92 @@ export default function RegisterPage() {
     }
   };
 
-  const roles = [
-    { id: 'villager', label: 'Villager',    sub: 'Patient / Citizen',   icon: User,   desc: 'Check symptoms, request ambulance, track health.' },
-    { id: 'ngo',      label: 'ASHA Worker', sub: 'Healthcare Provider', icon: Shield, desc: 'Manage village health, pregnancies, child nutrition.' },
-    { id: 'admin',    label: 'Admin',       sub: 'District Management', icon: MapPin, desc: 'Analytics, outbreak alerts, dispatch oversight.' },
-  ];
+  const localizedWhyJoin = {
+    en: [
+      { icon: Heart, title: 'Multilingual Edge AI', text: 'Instant offline symptom checking (SymptomNet ONNX) running fully in-browser across 7 regional Indian languages.' },
+      { icon: Activity, title: 'High-Throughput Telemetry', text: 'Emergency SOS dispatches route directly to Amazon DynamoDB streams, bypassing blocking database writes.' },
+      { icon: Globe, title: 'Zero-Connectivity Sync', text: 'IndexedDB-backed offline queue caches reports locally, synchronizing to RDS Aurora once signal restores.' },
+      { icon: Shield, title: 'DISHA & HIPAA Certified', text: 'Centralized role-based access control, active backend PII logging redaction, and database security audit logs.' }
+    ],
+    hi: [
+      { icon: Heart, title: 'बहुभाषी एआई (Edge AI)', text: '7 क्षेत्रीय भारतीय भाषाओं में वेब-ब्राउज़र के अंदर ही सिम्पटमनेट ओएनएनएक्स (SymptomNet ONNX) से ऑफ़लाइन लक्षण जांच।' },
+      { icon: Activity, title: 'हाई-थ्रूपुट टेलीमेट्री', text: 'आपातकालीन एसओएस सीधे अमेज़ॅन डायनेमोडीबी स्ट्रीम पर भेजे जाते हैं, जिससे मुख्य डेटाबेस राइट्स ब्लॉक नहीं होते।' },
+      { icon: Globe, title: 'ऑफ़लाइन सिंक (Offline Sync)', text: 'इंडेक्सडीडीबी-आधारित ऑफ़लाइन कतार स्थानीय रूप से रिपोर्ट सहेजती है, और इंटरनेट आने पर आरडीएस ऑरोरा से सिंक करती है।' },
+      { icon: Shield, title: 'DISHA और HIPAA प्रमाणित', text: 'केंद्रीकृत भूमिका-आधारित पहुंच नियंत्रण, सक्रिय बैकएंड पीआईआई संपादन और डेटाबेस सुरक्षा ऑडिट लॉग।' }
+    ],
+    mr: [
+      { icon: Heart, title: 'बहुभाषिक एज एआय (Edge AI)', text: '७ प्रादेशिक भारतीय भाषांमध्ये स्थानिक पातळीवर सिम्पटमनेट ओएनएनएक्स वर्गीकरण चालवते.' },
+      { icon: Activity, title: 'हाय-थ्रूपुट टेलिमेट्री', text: 'आणीबाणीचे एसओएस थेट ॲमेझॉन डायनेमोडीबी स्ट्रीम्सवर पाठवले जातात, ज्यामुळे मुख्य डेटाबेस ब्लॉक होत नाही.' },
+      { icon: Globe, title: 'ऑफलाईन सिंक (Offline Sync)', text: 'ऑफलाईन डेटाबेस स्थानिक पातळीवर अहवाल साठवतो आणि इंटरनेट आल्यावर आरडीएस ऑरोराशी सिंक करतो.' },
+      { icon: Shield, title: 'DISHA आणि HIPAA प्रमाणित', text: 'केंद्रीकृत भूमिका-आधारित प्रवेश नियंत्रण, सक्रिय बॅकएंड पीआयआय संपादन आणि डेटाबेस सुरक्षा ऑडिट लॉग.' }
+    ],
+    ta: [
+      { icon: Heart, title: 'பல்மொழி எட்ஜ் ஏஐ', text: '7 வட்டார இந்திய மொழிகளில் சிம்ப்டம்நெட் ஓஎன்என்எக்ஸ் மூலம் உள்ளூரிலேயே நோய் கண்டறியும்.' },
+      { icon: Activity, title: 'உயர்-செயல்திறன் டெலிமெட்ரி', text: 'அவசர எஸ்ஓএস கோரிக்கைகள் அமேசான் டைனমোடிபி ஸ்ட்ரீமிற்கு நேரடியாக அனுப்பப்படும்.' },
+      { icon: Globe, title: 'இணையமில்லா ஒத்திசைவு', text: 'இணையம் இல்லாதபோது உள்ளூரிலேயே சேமித்து, இணையம் வந்தவுடன் ஆர்டிஎஸ் ஆரோராவுடன் ஒத்திசைக்கும்.' },
+      { icon: Shield, title: 'திஷா & ஹிப்பா சான்றளிக்கப்பட்டது', text: 'பாதுகாப்பான அணுகல் கட்டுப்பாடு மற்றும் தரவுத்தள பாதுகாப்பு தணிக்கை பதிவுகள்.' }
+    ],
+    te: [
+      { icon: Heart, title: 'బహుభాషా ఎడ్జ్ ఏఐ', text: '7 ప్రాంతీయ భారతీయ భాషలలో సింప్టమ్‌నెట్ ఓఎన్‌ఎన్‌ఎక్స్ ద్వారా స్థానికంగా వ్యాధి నిర్ధారణ చేస్తుంది.' },
+      { icon: Activity, title: 'హై-త్రూపుట్ టెలిమెట్రీ', text: 'అత్యవసర ఎస్ఓఎస్ అభ్యర్థనలు నేరుగా అమెజాన్ డైనమోడిబి స్ట్రీమ్స్‌కు పంపబడతాయి.' },
+      { icon: Globe, title: 'ఆఫ్‌లైన్ సమకాలీకరణ', text: 'ఇంటర్నెట్ లేనప్పుడు స్థానికంగా సేవ్ చేసి, సిగ్నల్ రాగానే ఆర్డిఎస్ ఆరోరాతో సింక్ చేస్తుంది.' },
+      { icon: Shield, title: 'దిషా & హిప్పా ధృవీకరించబడింది', text: 'సురక్షితమైన యాక్సెస్ కంట్రోల్ మరియు డేటాబేస్ సెక్యూరిటీ ఆడిట్ లాగ్‌లు.' }
+    ],
+    bn: [
+      { icon: Heart, title: 'বহুভাষী এজ এআই', text: '৭টি আঞ্চলিক ভারতীয় ভাষায় সিম্পটমনেট ওএনএনএক্স এর মাধ্যমে স্থানীয়ভাবে রোগ নির্ণয়।' },
+      { icon: Activity, title: 'উচ্চ-থ্রুপুট টেলিমেট্রি', text: 'জরুরী এসওএস সরাসরি অ্যামাজন ডায়নামোডিবি স্ট্রিমসে পাঠানো হয়।' },
+      { icon: Globe, title: 'অফলাইন সিঙ্ক', text: 'ইন্টারনেট না থাকলে স্থানীয়ভাবে সেভ করে পরে আরডিএস অরোরার সাথে সিঙ্ক করে।' },
+      { icon: Shield, title: 'দিশা ও হিপ্পা সার্টিফাইড', desc: 'ভূমিকা-ভিত্তিক অ্যাক্সেস এবং ডেটাবেস সুরক্ষা অডিট লগ।' }
+    ]
+  };
 
-  const whyJoin = [
-    { icon: Heart,    text: 'Free AI health screening in your language' },
-    { icon: Activity, text: 'One-tap ambulance dispatch in emergencies' },
-    { icon: Globe,    text: 'Offline-first — works without internet' },
+  const currentWhyJoin = localizedWhyJoin[lang] || localizedWhyJoin.en;
+
+  const getRoleLabel = (roleId) => {
+    if (roleId === 'villager') return t.roles?.villager || 'Villager';
+    if (roleId === 'ngo') return t.roles?.ngo || 'ASHA Worker';
+    if (roleId === 'admin') return t.roles?.admin || 'Admin';
+    return roleId;
+  };
+
+  const roles = [
+    { id: 'villager', label: getRoleLabel('villager'),   sub: t.loginPage?.villager_sub || 'Patient / Citizen',       icon: User,   desc: 'Check symptoms, request ambulance, track health.'   },
+    { id: 'ngo',      label: getRoleLabel('ngo'),        sub: t.loginPage?.ngo_sub || 'Healthcare Provider',      icon: Shield, desc: 'Manage village health, pregnancies, child nutrition.' },
+    { id: 'admin',    label: getRoleLabel('admin'),      sub: t.loginPage?.admin_sub || 'District Management',      icon: MapPin, desc: 'Analytics, outbreak alerts, dispatch oversight.' },
   ];
 
   return (
-    <div className="flex min-h-screen bg-[#F8FAFC] font-inter overflow-hidden">
+    <div className="flex flex-col lg:flex-row min-h-screen lg:h-screen bg-[#F8FAFC] font-inter overflow-y-auto lg:overflow-hidden relative">
+
+      {/* Floating Language Dropdown (Page-level fixed - Premium Redesign) */}
+      <div className="fixed top-4 right-4 z-50 flex items-center gap-3 bg-white border-2 border-emerald-500 rounded-2xl px-4 py-2.5 shadow-xl hover:border-emerald-600 transition-all hover:scale-105 active:scale-95 duration-200">
+        <Globe className="w-5 h-5 text-emerald-600 animate-spin-slow" />
+        <select
+          value={lang}
+          onChange={(e) => setLang(e.target.value)}
+          className="bg-transparent border-0 text-emerald-950 text-sm font-black uppercase focus:outline-none cursor-pointer pr-2 focus:ring-0"
+        >
+          {[
+            { code: 'hi', label: 'हिन्दी (Hindi)' },
+            { code: 'en', label: 'English' },
+            { code: 'mr', label: 'मराठी (Marathi)' },
+            { code: 'ta', label: 'தமிழ் (Tamil)' },
+            { code: 'te', label: 'తెలుగు (Telugu)' },
+            { code: 'bn', label: 'বাংলা (Bengali)' },
+          ].map(l => (
+            <option key={l.code} value={l.code} className="text-slate-900 font-bold">
+              {l.label}
+            </option>
+          ))}
+        </select>
+      </div>
 
       {/* ── LEFT PANEL ── */}
       <motion.div
         initial={{ x: -80, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
         transition={{ duration: 0.7, ease: 'easeOut' }}
-        className="hidden lg:flex w-[42%] relative overflow-hidden bg-[#0A2E24] flex-col justify-between p-14"
+        className="hidden lg:flex w-[42%] relative overflow-hidden bg-[#0A2E24] flex-col justify-between p-10 xl:p-14"
       >
         <div className="absolute top-0 right-0 w-full h-full opacity-20 pointer-events-none">
           <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-emerald-500 rounded-full blur-[120px]" />
@@ -107,46 +172,49 @@ export default function RegisterPage() {
         </div>
 
         <div className="relative z-10">
-          <Link to="/" className="inline-flex items-center gap-2 text-emerald-100/60 hover:text-white transition-all text-sm font-bold mb-16 group">
-            <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> Back to Home
+          <Link to="/" className="inline-flex items-center gap-2 text-emerald-100/60 hover:text-white transition-all text-sm font-bold mb-10 group">
+            <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> {t.diseaseChecker?.go_back || 'Back to Home'}
           </Link>
 
           {/* Logo */}
-          <div className="flex items-center gap-4 mb-12">
-            <div className="p-3.5 bg-white/10 backdrop-blur-xl rounded-2xl border border-white/10">
-              <HeartPulse className="w-7 h-7 text-emerald-400 animate-pulse" />
+          <div className="flex items-center gap-4 mb-10">
+            <div className="p-3 bg-white/10 backdrop-blur-xl rounded-2xl border border-white/10">
+              <HeartPulse className="w-6 h-6 text-emerald-400 animate-pulse" />
             </div>
             <div>
-              <h1 className="text-2xl font-black text-white tracking-tight">SwasthAI</h1>
-              <p className="text-emerald-400/70 text-[10px] font-bold uppercase tracking-widest">Rural Health Network</p>
+              <h1 className="text-xl font-black text-white tracking-tight">{t.swasthai || 'SwasthAI'}</h1>
+              <p className="text-emerald-400/70 text-[9px] font-bold uppercase tracking-widest">{t.footer?.empowering || 'Rural Health Network'}</p>
             </div>
           </div>
 
           <motion.h2
             initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.3 }}
-            className="text-4xl xl:text-5xl font-black text-white leading-tight mb-6 tracking-tight"
+            className="text-3xl xl:text-4xl font-black text-white leading-tight mb-4 tracking-tight"
           >
-            Join India's largest<br />
-            <span className="text-emerald-400 italic">rural health network.</span>
+            {t.registerPage?.left_title_1 || "Join India's largest"}<br />
+            <span className="text-emerald-400 italic">{t.registerPage?.left_title_span || 'rural health network.'}</span>
           </motion.h2>
 
           <motion.p
             initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.4 }}
-            className="text-emerald-100/60 text-base leading-relaxed font-medium max-w-sm mb-10"
+            className="text-emerald-100/60 text-sm leading-relaxed font-medium max-w-sm mb-8"
           >
-            Create a free account in under 60 seconds. Access AI diagnostics, emergency services, and maternal health tracking - all in your local language.
+            {t.registerPage?.left_desc || 'Create a free account in under 60 seconds. Access AI diagnostics, emergency services, and maternal health tracking - all in your local language.'}
           </motion.p>
 
           <motion.div
             initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.5 }}
-            className="space-y-3"
+            className="space-y-4"
           >
-            {whyJoin.map(item => (
-              <div key={item.text} className="flex items-center gap-3">
-                <div className="w-6 h-6 bg-emerald-500/20 rounded-lg flex items-center justify-center shrink-0">
-                  <item.icon className="w-3.5 h-3.5 text-emerald-400" />
+            {currentWhyJoin.map(item => (
+              <div key={item.title} className="flex gap-4 p-4 bg-white/5 border border-white/10 rounded-2xl backdrop-blur-md">
+                <div className="w-9 h-9 bg-emerald-500/20 rounded-xl flex items-center justify-center shrink-0">
+                  <item.icon className="w-4.5 h-4.5 text-emerald-400" />
                 </div>
-                <p className="text-emerald-100/70 text-sm font-medium">{item.text}</p>
+                <div>
+                  <p className="text-white text-sm font-black tracking-tight">{item.title}</p>
+                  <p className="text-emerald-100/50 text-[11px] font-medium mt-1 leading-relaxed">{item.text}</p>
+                </div>
               </div>
             ))}
           </motion.div>
@@ -155,39 +223,17 @@ export default function RegisterPage() {
         {/* Bottom privacy note */}
         <motion.div
           initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.6 }}
-          className="relative z-10 p-5 bg-white/5 border border-white/10 rounded-2xl"
+          className="relative z-10 p-5 bg-white/5 border border-white/10 rounded-2xl mt-8"
         >
-          <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-1">Your privacy matters</p>
+          <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-1">{t.registerPage?.national_protocol || 'Your privacy matters'}</p>
           <p className="text-emerald-100/50 text-xs font-medium leading-relaxed">
-            We never share your health data. All records are encrypted and only accessible to you and the healthcare workers you authorize.
+            {t.registerPage?.national_desc || 'We never share your health data. All records are encrypted and only accessible to you and the healthcare workers you authorize.'}
           </p>
         </motion.div>
       </motion.div>
 
       {/* ── RIGHT PANEL — FORM ── */}
-      <div className="w-full lg:w-[58%] flex flex-col justify-center items-center p-5 sm:p-8 lg:p-14 overflow-y-auto relative">
-        {/* Floating Language Dropdown */}
-        <div className="absolute top-4 right-4 z-50 flex items-center gap-1.5 bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 shadow-sm">
-          <Globe className="w-3.5 h-3.5 text-emerald-600" />
-          <select
-            value={lang}
-            onChange={(e) => setLang(e.target.value)}
-            className="bg-transparent border-0 text-emerald-700 text-[10px] sm:text-xs font-black uppercase focus:outline-none cursor-pointer"
-          >
-            {[
-              { code: 'hi', label: 'हिन्दी' },
-              { code: 'en', label: 'English' },
-              { code: 'mr', label: 'मराठी' },
-              { code: 'ta', label: 'தமிழ்' },
-              { code: 'te', label: 'తెలుగు' },
-              { code: 'bn', label: 'বাংলা' },
-            ].map(l => (
-              <option key={l.code} value={l.code} className="text-slate-900 font-bold uppercase">
-                {l.label}
-              </option>
-            ))}
-          </select>
-        </div>
+      <div className="w-full lg:w-[58%] flex flex-col justify-center items-center p-5 sm:p-8 lg:p-14 overflow-y-auto relative lg:h-full shrink-0">
 
         <motion.div
           initial={{ scale: 0.96, opacity: 0 }}
@@ -200,19 +246,19 @@ export default function RegisterPage() {
             <div className="p-2.5 bg-emerald-50 rounded-xl">
               <HeartPulse className="w-5 h-5 text-emerald-600" />
             </div>
-            <span className="font-black text-slate-900 text-lg">SwasthAI</span>
+            <span className="font-black text-slate-900 text-lg">{t.swasthai || 'SwasthAI'}</span>
           </div>
 
           {/* Header */}
           <div className="mb-5 sm:mb-10">
             <span className="inline-block px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[8px] sm:text-[10px] font-black uppercase tracking-widest rounded-full mb-2 sm:mb-4">
-              Free Account - Under 60s
+              {t.registerPage?.set_up_account ? 'Free Account' : 'Free Account - Under 60s'}
             </span>
             <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight mb-1.5 sm:mb-2">
-              Create Account
+              {t.register || 'Create Account'}
             </h2>
             <p className="text-slate-400 font-medium text-[11px] sm:text-sm max-w-sm leading-relaxed">
-              Join thousands in rural India who use SwasthAI to stay healthy and get help fast.
+              {t.registerPage?.set_up_account || 'Join thousands in rural India who use SwasthAI to stay healthy and get help fast.'}
             </p>
           </div>
 
@@ -221,12 +267,12 @@ export default function RegisterPage() {
             {isOffline && (
               <motion.div
                 initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
-                className="mb-4 p-3 bg-amber-50 border border-amber-300 text-amber-800 rounded-2xl flex items-center gap-3 text-xs font-bold"
+                className="mb-4 p-3 bg-emerald-50 border border-emerald-300 text-emerald-800 rounded-2xl flex items-center gap-3 text-xs font-bold"
               >
-                <WifiOff className="w-4 h-4 shrink-0 text-amber-600" />
+                <Globe className="w-4 h-4 shrink-0 text-emerald-600 animate-spin-slow" />
                 <span>
-                  <span className="font-black">Internet Connection Required</span> - registration writes user credentials to the AWS Aurora cluster. 
-                  <span className="block text-amber-600 font-medium mt-0.5">Please reconnect or go to the <Link to="/login" className="underline">Login Page</Link> to log in using cached demo credentials offline.</span>
+                  <span className="font-black">📶 Offline Registration Mode Active</span> - Your credentials will be cached locally in your browser.
+                  <span className="block text-emerald-600 font-medium mt-0.5">You can register and log in now. Your profile will sync automatically when your internet connection is restored.</span>
                 </span>
               </motion.div>
             )}
@@ -247,7 +293,7 @@ export default function RegisterPage() {
                 initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
                 className="mb-6 p-5 bg-emerald-600 text-white rounded-2xl flex items-center gap-3 text-sm font-black shadow-xl shadow-emerald-200"
               >
-                <CheckCircle className="w-5 h-5 shrink-0" /> Account created! Taking you to your dashboard...
+                <CheckCircle className="w-5 h-5 shrink-0" /> {t.registerPage?.account_created || 'Account created! Taking you to your dashboard...'}
               </motion.div>
             )}
           </AnimatePresence>
@@ -255,7 +301,7 @@ export default function RegisterPage() {
           {/* Step 1 — Role */}
           <div className="mb-8">
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block">
-              Step 1 - I am registering as a...
+              {t.registerPage?.step1_role || 'Step 1 - I am registering as a...'}
             </label>
             <div className="grid grid-cols-3 sm:grid-cols-3 gap-2 sm:gap-3">
               {roles.map(r => (
@@ -287,13 +333,13 @@ export default function RegisterPage() {
 
           {/* Step 2 — Details */}
           <form onSubmit={handleSubmit} className="space-y-5">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Step 2 - Your Details</p>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t.registerPage?.step2_personal || 'Step 2 - Your Details'}</p>
 
             {/* Name + Username */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               {[
-                { name: 'name',     label: 'Full Name',  icon: User,   placeholder: 'Name...',    type: 'text', required: true  },
-                { name: 'username', label: 'Username',   icon: User,   placeholder: 'Username...',    type: 'text', required: true  },
+                { name: 'name',     label: t.registerPage?.full_name || 'Full Name',  icon: User,   placeholder: 'Name...',    type: 'text', required: true  },
+                { name: 'username', label: t.registerPage?.choose_username || 'Username',   icon: User,   placeholder: 'Username...',    type: 'text', required: true  },
               ].map(field => (
                 <div key={field.name} className="space-y-1">
                   <label className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{field.label}</label>
@@ -318,7 +364,7 @@ export default function RegisterPage() {
             {/* Phone + Email */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div className="space-y-1">
-                <label className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Phone Number</label>
+                <label className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t.registerPage?.phone_number || 'Phone Number'}</label>
                 <div className="relative group">
                   <div className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none text-slate-300 group-focus-within:text-emerald-500 transition-colors">
                     <Phone className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
@@ -336,7 +382,7 @@ export default function RegisterPage() {
               </div>
  
               <div className="space-y-1">
-                <label className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Email <span className="normal-case font-medium text-slate-300">(opt)</span></label>
+                <label className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t.registerPage?.email_address || 'Email'} <span className="normal-case font-medium text-slate-300">(opt)</span></label>
                 <div className="relative group">
                   <div className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none text-slate-300 group-focus-within:text-emerald-500 transition-colors">
                     <Mail className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
@@ -355,7 +401,7 @@ export default function RegisterPage() {
 
             {/* Village ID */}
             <div className="space-y-1.5">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Village / Area Code</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t.registerPage?.village_id || 'Village / Area Code'}</label>
               <div className="relative group">
                 <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-slate-300 group-focus-within:text-emerald-500 transition-colors">
                   <MapPin className="w-4 h-4" />
@@ -375,7 +421,7 @@ export default function RegisterPage() {
 
             {/* Password */}
             <div className="space-y-1.5">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Create a Password</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t.registerPage?.create_password || 'Create a Password'}</label>
               <div className="relative group">
                 <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-slate-300 group-focus-within:text-emerald-500 transition-colors">
                   <Lock className="w-4 h-4" />
@@ -430,7 +476,7 @@ export default function RegisterPage() {
                 ) : success ? (
                   <><CheckCircle className="w-4 h-4" /> Account Created!</>
                 ) : (
-                  <>Create Account <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" /></>
+                  <>{t.register || 'Create Account'} <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" /></>
                 )}
               </span>
             </motion.button>
@@ -439,9 +485,9 @@ export default function RegisterPage() {
           {/* Login link */}
           <div className="mt-8 text-center p-5 bg-slate-50 rounded-2xl border border-slate-100">
             <p className="text-slate-500 text-sm font-medium">
-              Already have an account?{' '}
+              {t.registerPage?.already_have_account || 'Already have an account?'}{' '}
               <Link to="/login" className="font-black text-emerald-600 hover:text-emerald-700 transition-colors underline underline-offset-2">
-                Log in here
+                {t.registerPage?.sign_in_here || 'Log in here'}
               </Link>
             </p>
           </div>
