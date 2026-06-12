@@ -92,4 +92,5 @@ Response: answer · sources[] · urgency level
 Voice output via SpeechSynthesisUtterance (🔊 button per message)
 ```
 
+> [!IMPORTANT]
 > **The bottom line for judges**: SwasthAI does not just call a third-party LLM API. We own the intelligence. By training custom models, validating them with rigorous 5-fold cross-validation, and grounding LLMs with a custom calibrated RAG, we deliver clinical safety. And if the network drops, the system degrades gracefully to offline heuristic rules—so the AI works even when the internet doesn't.

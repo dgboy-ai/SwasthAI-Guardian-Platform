@@ -56,23 +56,32 @@ graph LR
 
 ## 📦 Component Roles
 
-1. **Client Layer (Vercel / PWA / Android)**:
-   - Built with React & Vite, hosted on Vercel. 
-   - Uses an **Offline Event Replay Engine** powered by IndexedDB to log events (symptoms, pregnancies, emergencies) when offline and replay them automatically on reconnection.
-   - Leverages on-device image compression (shrinking high-res image inputs to `<200KB` on-the-fly) to support reliable uploads on slow 2G/EDGE networks.
-   - Executes browser-side ONNX SymptomNet classification and offline RAG fuzzy matching when connectivity is lost.
-   - Hashes offline-cached user login passwords using a secure SHA-256 implementation.
-   
-2. **Backend API Service (Express.js)**:
-   - Handles route validation, auth checks, and asynchronous audit logs.
-   - Hosts the centralized **`policy.js` IDOR & Role Policy Module** (`checkRole`, `enforceVillageScope`, `enforceReferralAccess`, `enforceAmbulanceAccess`) — all 403 responses return a generic `{ code: 'ACCESS_DENIED' }` body to prevent role/village scope leakage.
-   - Hosts the local **Event Dispatcher** which processes **5 event types** out-of-band to keep route speeds fast: `symptom_submitted`, `outbreak_detected`, `sync_restored`, `emergency_triggered`, and `maternal_alert`. Each handler includes a **3-attempt retry loop** for DynamoDB writes. Failed events are persisted to a local **Dead Letter Queue** (`failed_events_dlq.json`, capped at 100 items) and broadcast as a `dlq_alert` SSE event to admin clients. Admins can inspect the DLQ via `GET /api/admin/dlq`.
-   - Runs a **Health Watchdog Monitor** every 30 seconds to check AI service status and verify Outbreak Agent heartbeat scans, dispatching warning feeds via SSE on failure.
+The SwasthAI architecture is divided into three specialized tiers, built for low-latency execution and zero-connectivity resilience:
 
-3. **AI Microservice (FastAPI + Python)**:
-   - **SymptomNet**: A multi-layered MLP Neural Network that evaluates symptom inputs with a heuristic local rules model acting as a fallback if the network is busy/offline.
-   - **Sakhi Chatbot**: A Retrieval-Augmented Generation (RAG) assistant running Llama-3.3-70B over an expanded 243-chunk multilingual clinical database.
-   - **Outbreak Agent**: An autonomous background daemon that requests village symptom clusters from the backend API, classifies them using Groq Llama-3.3 reasoning, checks for duplicates, and POSTs new outbreaks to the backend for DynamoDB storage and SSE broadcast.
+| Tier | Tech Stack | Core Capability | Offline Resilience | Data Safety & Security |
+|---|---|---|---|---|
+| **Client Edge** | React, Vite, IndexedDB, ONNX | **Interactive Clinician PWA** | IndexedDB Event Replay Engine & Local ONNX Triage | SHA-256 local auth hash; On-device `<200KB` image compression |
+| **Backend Gateway** | Express.js, Node.js | **Unified REST API & SSE Bus** | Handles transaction sync replays dynamically | Centralized IDOR [policy.js](file:///c:/projects/SwasthAI-Guardian-Platform/backend/middleware/policy.js); 3-retry DLQ safeguard |
+| **AI Microservice** | FastAPI, Python, PyTorch | **Autonomous Agents & LLMs** | Rules-based local fallbacks for edge-classification | Tokenized Groq API keys; Closed-loop agent validation |
+
+---
+
+### 📱 Client Edge (Vercel / React PWA)
+- **Offline Sync**: Auto-replays queued events from IndexedDB upon reconnection.
+- **Edge Triage**: Runs browser-side ONNX SymptomNet and offline fuzzy RAG.
+- **2G Optimization**: Auto-compresses clinical photo uploads to `<200KB` on-the-fly.
+- **Client Security**: Validates offline sessions via local SHA-256 credential hashes.
+
+### ⚙️ Backend Gateway (Express.js)
+- **Scope Isolation**: Centralized [policy.js](file:///c:/projects/SwasthAI-Guardian-Platform/backend/middleware/policy.js) blocks unauthorized village/role access.
+- **Event Dispatcher**: Processes non-blocking event loops out-of-band with a **3-attempt retry loop**.
+- **DLQ Safeguard**: Logs failed event payloads to a capped 100-item DLQ; broadcasts live alerts via SSE.
+- **Watchdog Daemon**: Scans microservice health and Outbreak Agent state every 30s.
+
+### 🤖 AI Service Layer (FastAPI / Python)
+- **SymptomNet**: Multi-layered MLP classifier evaluating risks with local fallback rules.
+- **Sakhi Chatbot**: High-speed multilingual clinical RAG powered by Llama-3.3-70B.
+- **Outbreak Agent**: Background crawler analyzing postgres trends and publishing verified DynamoDB outbreak records.
 
 ---
 
@@ -156,33 +165,13 @@ erDiagram
 
 Every DynamoDB table is designed around specific access patterns to support zero-signal offline sync and rapid epidemic notifications:
 
-#### 1. Table: `outbreak_telemetry`
-Stores autonomous outbreak events classified by the Groq Llama-3 AI agent.
-- **PK**: `villageId` (HASH) + **SK**: `detectedAt` (RANGE)
-- **GSI: `disease-index`**: `disease` (HASH) + `detectedAt` (RANGE) — *Access Pattern: Query disease outbreaks by trend.*
-- **GSI: `district-time-index`**: `districtId` (HASH) + `detectedAt` (RANGE) — *Access Pattern: Query district outbreak timeline.*
-
-#### 2. Table: `sync_queues`
-Manages the offline-first queue from ASHA workers' handheld devices.
-- **PK**: `deviceId` (HASH) + **SK**: `queuedAt` (RANGE)
-- **GSI: `status-index`**: `status` (HASH) + `queuedAt` (RANGE) — *Access Pattern: Fetch failed sync logs across the fleet.*
-
-#### 3. Table: `village_node_state`
-Real-time connectivity heartbeat for remote village nodes.
-- **PK**: `villageId` (HASH)
-- **TTL**: `expiresAt` — *Access Pattern: Stale nodes automatically expire after 7 days of inactivity.*
-
-#### 4. Table: `emergency_streams`
-Live, high-throughput ambulance dispatch and SOS events.
-- **PK**: `districtId` (HASH) + **SK**: `streamId` (RANGE)
-- **GSI: `priority-index`**: `priority` (HASH) + `streamId` (RANGE) — *Access Pattern: Filter critical P1 emergency alerts.*
-- **GSI: `district-date-index`**: `districtDateBucket` (HASH) + `timestamp` (RANGE) — *Access Pattern: Page emergency events chronologically.*
-
-#### 5. Table: `security_audit_logs`
-Chronological tamper-evident database log of security actions.
-- **PK**: `actor` (HASH) + **SK**: `timestamp` (RANGE) — *Access Pattern: Query security audits by acting administrator.*
-- **GSI**: None — this table intentionally has no GSIs. All audit queries are actor-scoped (PK lookup), making cross-actor scans an explicit access-control boundary.
-- **TTL**: None — audit records are retained indefinitely for compliance.
+| Table Name | Partition Key (PK) | Sort Key (SK) | GSIs / TTL | Access Pattern & Design Purpose |
+|---|---|---|---|---|
+| **`outbreak_telemetry`** | `villageId` *(HASH)* | `detectedAt` *(RANGE)* | • **GSI:** `disease-index` (`disease` + `detectedAt`) <br>• **GSI:** `district-time-index` (`districtId` + `detectedAt`) | Query disease outbreaks by trend; Query district outbreak timeline. Stores AI-detected village clusters. |
+| **`sync_queues`** | `deviceId` *(HASH)* | `queuedAt` *(RANGE)* | • **GSI:** `status-index` (`status` + `queuedAt`) | Fetch failed sync logs across the fleet. Stores offline client logs during outages. |
+| **`village_node_state`** | `villageId` *(HASH)* | *None* | • **TTL:** `expiresAt` *(Auto-expires after 7 days)* | Monitor node heartbeats. Stale nodes automatically expire from the live dashboard. |
+| **`emergency_streams`** | `districtId` *(HASH)* | `streamId` *(RANGE)* | • **GSI:** `priority-index` (`priority` + `streamId`) <br>• **GSI:** `district-date-index` (`districtDateBucket` + `timestamp`) | Filter critical P1 emergency alerts; Page emergency events chronologically. |
+| **`security_audit_logs`** | `actor` *(HASH)* | `timestamp` *(RANGE)* | • **GSI:** *None (Access Isolation)* <br>• **TTL:** *None (Retained Indefinitely)* | Query security audits by acting admin. Isolated PK lookup blocks cross-actor scanning. |
 
 ---
 
@@ -200,7 +189,10 @@ Chronological tamper-evident database log of security actions.
 
 ### The Agentic Outbreak Loop (What No Other Submission Has)
 
-This is a fully autonomous AI agent running as a background service — not a dashboard a human checks:
+> [!TIP]
+> **Autonomous Agent Architecture**: Unlike traditional dashboards requiring manual scans, SwasthAI uses a completely closed-loop background agent coordination model.
+
+This is a fully autonomous AI agent running as a background service:
 
 ```
 Every 30 minutes →
@@ -231,4 +223,5 @@ The relational database models the full lifecycle of a rural patient's health jo
 
 ---
 
-> **Why this matters to AWS Judges**: Rural health infrastructure cannot afford either data corruption or high cloud costs. By routing critical medical records to ACID-compliant **Aurora PostgreSQL** and streaming high-frequency alerts to **DynamoDB (on-demand)**, we guarantee 100% data durability and single-digit millisecond latency while keeping operating costs close to zero.
+> [!IMPORTANT]
+> **Why this matters**: Rural health infrastructure cannot afford either data corruption or high cloud costs. By routing critical medical records to ACID-compliant **Aurora PostgreSQL** and streaming high-frequency alerts to **DynamoDB (on-demand)**, we guarantee 100% data durability and single-digit millisecond latency while keeping operating costs close to zero.
