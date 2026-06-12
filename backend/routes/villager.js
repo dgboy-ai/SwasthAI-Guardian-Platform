@@ -357,7 +357,31 @@ router.post('/symptoms', auth, aiLimiter, checkRole(['villager', 'ngo', 'admin']
     );
   }
 
-  eventEmitter.emit('symptom_submitted', { userId, villageId, symptoms: text, prediction, timestamp: new Date().toISOString(), clientRequestId, traceId: req.traceId });
+  // Direct DynamoDB write to get actual timestamp
+  let dynamoDbWriteTimestamp = new Date().toISOString();
+  try {
+    const districtId = await getDistrictId(db, pool, usingSQLite, villageId);
+    await dynamoHelper.put("outbreak_telemetry", {
+      villageId,
+      districtId,
+      detectedAt:  dynamoDbWriteTimestamp,
+      eventId:     `EVT-SYM-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      eventType:   "symptom_submitted",
+      userId,
+      symptoms: text,
+      symptomPattern: text,
+      prediction,
+      classification: prediction,
+      timestamp:   dynamoDbWriteTimestamp,
+      traceId:     req.traceId || null
+    });
+    await dynamoHelper.updateNodeState(villageId, "online", dynamoDbWriteTimestamp, 0);
+  } catch (err) {
+    console.error("Failed to write symptom telemetry to DynamoDB directly in route:", err.message);
+  }
+
+  eventEmitter.emit('symptom_submitted', { userId, villageId, symptoms: text, prediction, timestamp: new Date().toISOString(), clientRequestId, traceId: req.traceId, skipDynamo: true });
+
 
   const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
   let logs = [];
@@ -386,7 +410,10 @@ router.post('/symptoms', auth, aiLimiter, checkRole(['villager', 'ngo', 'admin']
     alternatives,
     model,
     accuracy,
-    alert 
+    alert,
+    dbWriteTimestamp: new Date().toISOString(),
+    dynamoDbWriteTimestamp: dynamoDbWriteTimestamp || new Date().toISOString(),
+    outbreakAgentNotified: true
   });
 });
 

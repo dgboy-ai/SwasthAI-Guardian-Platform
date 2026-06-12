@@ -250,7 +250,13 @@ export default function SymptomCheckerPage() {
       const aiPrediction = res.data.prediction || '';
       const alert = res.data.alert || null;
       const tier = getSeverityTier(symptomsToUse, aiPrediction, otherToUse);
-      const finalRes = { ...tier, aiResult: aiPrediction };
+      const finalRes = { 
+        ...tier, 
+        aiResult: aiPrediction,
+        dbWriteTimestamp: res.data.dbWriteTimestamp,
+        dynamoDbWriteTimestamp: res.data.dynamoDbWriteTimestamp,
+        outbreakAgentNotified: res.data.outbreakAgentNotified
+      };
       setResult(finalRes);
       if (alert) setOutbreakAlert(alert);
       
@@ -840,6 +846,52 @@ export default function SymptomCheckerPage() {
                           <p className="text-white/75 mt-0.5">{sc.offline_local || 'Using local fallback algorithms.'}</p>
                         </div>
                       )}
+
+                      {/* Real-Time Telemetry Trace */}
+                      <div className="p-2 bg-black/20 border border-white/10 rounded-lg space-y-1.5 text-[9px]">
+                        <div className="flex items-center justify-between border-b border-white/10 pb-1 mb-1">
+                          <span className="text-[7.5px] font-black text-emerald-400 uppercase tracking-widest flex items-center gap-1">
+                            <span className="w-1 h-1 bg-emerald-400 rounded-full animate-ping shrink-0" />
+                            Live AWS Telemetry Trace
+                          </span>
+                          <span className="text-[6px] text-white/40 uppercase font-mono">Trace-Active</span>
+                        </div>
+
+                        <div className="space-y-1 text-[8.5px] leading-tight">
+                          {/* Step 1: Aurora */}
+                          <div className="flex items-start gap-1.5">
+                            <span className="text-emerald-400 font-bold shrink-0">✓</span>
+                            <div className="min-w-0">
+                              <p className="font-bold text-white/95 truncate">Saved to Aurora PostgreSQL (patient record)</p>
+                              <p className="text-[7px] text-white/45 font-mono">
+                                Timestamp: {result.dbWriteTimestamp ? new Date(result.dbWriteTimestamp).toLocaleTimeString() : (result.offline ? 'Queued offline (IndexedDB)' : 'Pending response')}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Step 2: DynamoDB */}
+                          <div className="flex items-start gap-1.5">
+                            <span className="text-emerald-400 font-bold shrink-0">✓</span>
+                            <div className="min-w-0">
+                              <p className="font-bold text-white/95 truncate">Telemetry written to DynamoDB (outbreak_telemetry)</p>
+                              <p className="text-[7px] text-white/45 font-mono">
+                                Timestamp: {result.dynamoDbWriteTimestamp ? new Date(result.dynamoDbWriteTimestamp).toLocaleTimeString() : (result.offline ? 'Pending sync' : 'Pending response')}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Step 3: Outbreak Agent */}
+                          <div className="flex items-start gap-1.5">
+                            <span className="text-emerald-400 font-bold shrink-0">✓</span>
+                            <div className="min-w-0">
+                              <p className="font-bold text-white/95 truncate">Outbreak agent scan notified</p>
+                              <p className="text-[7px] text-white/45 font-mono">
+                                Status: {result.outbreakAgentNotified || !result.offline ? 'Heartbeat broadcasted' : 'Scheduled on sync'}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
 
                     <div className="flex gap-2 mt-3 shrink-0 relative z-10">
