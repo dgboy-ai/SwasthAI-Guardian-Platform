@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import api from '../services/api';
 import { useLanguage } from '../context/LanguageContext';
+import { searchOfflineKB } from '../utils/semanticCache';
 
 const OFFLINE_TIPS_BY_LANG = {
   en: [
@@ -256,15 +257,15 @@ export default function SakhiChatbot() {
     setLoading(true);
 
     if (!isOnline) {
-      setTimeout(() => {
-        const matchedTip = findOfflineTip(userMsg, lang);
+      // Run IndexedDB token-weighted fuzzy keyword search
+      searchOfflineKB(userMsg, lang).then(matchedTip => {
         if (matchedTip) {
           setMessages(prev => [...prev, {
             role:    'ai',
             text:    `[Offline Mode] ${matchedTip.a}`,
             sources: [matchedTip.src],
             urgency: matchedTip.urgency,
-            grounded: false,
+            grounded: true, // Marked true because it matched official seeded guidelines!
           }].slice(-100));
         } else {
           const fallbackText = OFFLINE_FALLBACK_CHAT_REPLIES[lang] || OFFLINE_FALLBACK_CHAT_REPLIES['hi'];
@@ -277,7 +278,10 @@ export default function SakhiChatbot() {
           }].slice(-100));
         }
         setLoading(false);
-      }, 600);
+      }).catch(err => {
+        console.error("Offline search failed:", err);
+        setLoading(false);
+      });
       return;
     }
 
@@ -291,14 +295,14 @@ export default function SakhiChatbot() {
         grounded: res.data.grounded,
       }].slice(-100));
     } catch (err) {
-      const matchedTip = findOfflineTip(userMsg, lang);
+      const matchedTip = await searchOfflineKB(userMsg, lang);
       if (matchedTip) {
         setMessages(prev => [...prev, {
           role:    'ai',
           text:    `[Connection Slow - Local Fallback] ${matchedTip.a}`,
           sources: [matchedTip.src],
           urgency: matchedTip.urgency,
-          grounded: false,
+          grounded: true,
         }].slice(-100));
       } else {
         setMessages(prev => [...prev, {

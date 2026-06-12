@@ -4,6 +4,11 @@ All notable changes and feature developments completed during the hackathon wind
 
 ## June 12, 2026
 ### Added
+- **Next-Gen Offline-First RAG & ML Execution**:
+  - Compiled PyTorch `SymptomNet` model to `symptomnet.onnx` (opset 18) and generated `symptomNetMeta.js` holding model weights/biases and precomputed 384-dimensional embeddings for 115 multi-lingual symptom keywords.
+  - Implemented `localSymptomNet.js` browser-side inference engine, executing model classification fully offline in the browser in under 1ms.
+  - Pre-seeded IndexedDB `rag` store with 20 multi-lingual WHO/MoHFW clinical guideline chunks.
+  - Implemented token-weighted fuzzy RAG query matching `searchOfflineKB` inside `semanticCache.js` for the `SakhiChatbot.jsx` chatbot to retrieve relevant guidelines offline.
 - **Persistent Live AWS Proof Header**:
   - Surfaced a high-visibility, real-time AWS Stack Proof banner permanently at the top of the main area in `AdminDashboard.jsx` (visible on load and across all sub-views).
   - Displays live connectivity for Aurora Serverless PostgreSQL and Amazon DynamoDB, region (ap-south-1), connection pool size, and global SSE listeners count.

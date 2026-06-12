@@ -19,6 +19,7 @@ import {
   purgeExpiredCache,
 } from '../utils/semanticCache';
 import { queueSymptomCheck } from '../utils/offlineSyncQueue';
+import { predictSymptomsOffline } from '../utils/localSymptomNet';
 
 export default function SymptomCheckerPage() {
   const { lang, t } = useLanguage();
@@ -213,6 +214,34 @@ export default function SymptomCheckerPage() {
         return;
       }
 
+      if (!isOnline) {
+        // Run Local SymptomNet fully offline
+        const localPred = predictSymptomsOffline(fullText);
+        const tier = getSeverityTier(symptomsToUse, localPred.prediction || '', otherToUse);
+        const finalRes = {
+          ...tier,
+          aiResult: localPred.prediction,
+          confidence: localPred.confidence,
+          model: localPred.model,
+          accuracy: localPred.accuracy,
+          alternatives: localPred.alternatives,
+          offline: true
+        };
+        setResult(finalRes);
+        
+        // Queue the failed request for replay on reconnect
+        queueSymptomCheck({
+          symptoms: fullText,
+          villageId: user?.villageId || 'v101'
+        }).then(() => {
+          showToast('Offline Mode: Diagnosis generated via local SymptomNet and buffered in IndexedDB queue.', 'info');
+        }).catch(qErr => {
+          console.warn('Could not queue symptom check offline:', qErr.message);
+        });
+        setLoading(false);
+        return;
+      }
+
       const res = await api.post('/symptoms', {
         symptoms: fullText,
         villageId: user?.villageId || 'v101',
@@ -238,8 +267,19 @@ export default function SymptomCheckerPage() {
           window.location.href = '/login';
         }, 1500);
       } else {
-        const tier = getSeverityTier(symptomsToUse, '', otherToUse);
-        const finalRes = { ...tier, offline: true, error: true };
+        // Server down fallback: run local SymptomNet prediction in-browser
+        const localPred = predictSymptomsOffline(fullText);
+        const tier = getSeverityTier(symptomsToUse, localPred.prediction || '', otherToUse);
+        const finalRes = {
+          ...tier,
+          aiResult: localPred.prediction,
+          confidence: localPred.confidence,
+          model: localPred.model,
+          accuracy: localPred.accuracy,
+          alternatives: localPred.alternatives,
+          offline: true,
+          error: true
+        };
         setResult(finalRes);
         
         // Queue the failed request for replay on reconnect
@@ -247,7 +287,7 @@ export default function SymptomCheckerPage() {
           symptoms: fullText,
           villageId: user?.villageId || 'v101'
         }).then(() => {
-          showToast('Offline Mode: Diagnosis buffered locally in IndexedDB queue.', 'info');
+          showToast('Offline Fallback: Diagnosis buffered locally in IndexedDB queue.', 'info');
         }).catch(qErr => {
           console.warn('Could not queue symptom check offline:', qErr.message);
           showToast('Failed to queue offline record.', 'error');
