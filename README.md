@@ -137,62 +137,44 @@ SwasthAI-Guardian-Platform/
 | **FOGSI** | Reproductive health clinical protocols for PCOS, AUB, dysmenorrhoea |
 | **NVBDCP / NTEP** | Vector-borne + TB disease management protocols in RAG knowledge base |
 
-
 ---
 
-<details>
-<summary><b>🛠️ Project Feature Evolution & Architecture Hardening Log</b></summary>
-<br/>
+## 🛠️ Feature Evolution & Technical Hardening
 
-The following is a detailed log of the key architectural milestones, feature developments, and system hardening updates implemented during the development lifecycle:
+The following details the key architectural milestones, feature developments, and system hardening updates implemented during the development cycle:
 
-### Core architectural additions (the big ones):
-- **ONNX In-Browser SymptomNet & Local RAG** — Compiled the neural network to ONNX format, running fully offline in-browser diagnostic classification. Pre-seeded IndexedDB RAG database with clinical guidelines and built a fuzzy token-weighted RAG engine to power completely offline Sakhi queries.
-- **Secure Offline Credentials Cache** — Replaced insecure base64 credential encoding with proper client-side SHA-256 hashing inside `AuthContext.jsx` for cached offline users.
-- **Active Health Watchdog Monitor** — Added a background watchdog loop in `server.js` verifying AI service health and Outbreak Agent scans, broadcasting alerts via SSE, and displaying warning banners in the Admin Dashboard on failures.
-- **AWS Aurora PostgreSQL** wired as the primary production database (replaced SQLite-only baseline)
-- **Amazon DynamoDB** schema redesigned with composite keys, GSIs, and TTL across 5 tables
-- **OutbreakAgent** refactored: now writes outbreak data to DynamoDB via backend API (no local SQLite)
-- **SSE live feed** (`/api/admin/live-feed`) — admin dashboard receives real-time ambulance and outbreak alerts
-- **Sakhi RAG expanded** — 35 → **243 knowledge chunks** with 2-sentence sliding-window overlap; threshold calibrated to **0.45** (F1=1.00)
-- **Conversation memory** — Sakhi remembers context across turns (dual-track: frontend `localStorage` + server session cache)
-- **Inclusive Skin Triage** — Replaced rigid RGB pixel rules with a tone-inclusive HSV skin detector that supports melanin-rich skin; output expanded to 5 ISIC-aligned dermatological classifications
-- **Mental Health PHQ-2 Screener** — Patient Health Questionnaire-2 triage that auto-creates urgent ASHA referrals
-- **Mission Indradhanush Immunization** — Vaccine scheduling and status tracking (`vaccination_records`) for India's child immunization program
-- **Passwordless QR-Code Login** — Aadhaar/village-card QR scanning for quick villager login in zero-connectivity zones
-- **Explainable AI (XAI) Pregnancy Risk Panel** — Dynamic breakdown of maternal contributor weights (blood pressure, blood sugar, etc.), trend velocity tracking, and WHO/MoHFW specific advice guidelines
-- **Pediatric Skin Triage (Child Mode)** — Auto-escalation of red-flag symptoms (breathing difficulty, high fever, lethargy) directly to emergency status, soft-phrased triage categories, and child-safe safety advice (cautioning against adult steroid/cosmetic creams)
-- **NGO Impact Analytics & B2B Monthly Reports** — Real-time grant-proof dashboard for NGOs/CSR partners: referral closure rates, vaccination completion rates, Risk Watchlist (high-risk pregnancies, overdue vaccinations, emergency cases), Top Performers leaderboard, and Recommended Actions engine. PDF export via browser print.
-- **Predictive Village Risk Intelligence (Early Warning System — Layer 2)** — Dual-layer public health intelligence: Layer 1 (Outbreak Radar) detects active clusters; Layer 2 (new) *forecasts elevated village risk before outbreaks begin* using a weighted 4-signal engine (symptom trend growth 40%, nearby outbreak proximity 25%, NVBDCP Indian seasonal calendar 20%, referral backlog 15%). District-level heatmap for admins, XAI contributor breakdown, health category risk flags, actionable prevention checklist, and an Intervention Impact Forecast simulator showing projected risk reduction from vaccination drives, referral closure, and combined interventions.
+### 🌟 Core Engineering Achievements
 
-### Full technical hardening log:
-- **Decoupled Event Dispatcher with Retry** — Decoupled relational PostgreSQL writes from NoSQL telemetry, dispatching async events (e.g. `emergency_triggered`) with an automatic 3-attempt database retry loop.
-- **PII Redaction Layer Fix** — Removed payload mutation checks from the frontend and consolidated all sensitive PII filters to the backend logging layer to preserve query context.
-- **Unified 403 Forbidden Errors** — Standardized backend auth policy failures to return generic `Access Denied` codes, blocking leakage of user roles or village scope parameters.
-- **Lazy-Loaded ONNX Assets** — Paged ONNX binaries dynamically only when a user accesses the symptom scanner offline, reducing initial bundle weight.
-- **Ambulance handler** now writes every SOS dispatch to DynamoDB `emergency_streams` table
-- **`/api/health/detailed`** — exposes full AWS connection state, DynamoDB schema status, and AI module readiness
-- **Admin Production Evidence panel** — shows Aurora/DynamoDB status, region, table names, pool counts, production readiness, and latest telemetry writes directly in the UI
-- **Judge/demo auth labeling** — demo credentials remain usable for evaluation, while production auth is documented as backend OTP/password verification with issued tokens; the production replacement path is encrypted device credential cache or WebAuthn/device-bound refresh tokens
-- **CORS** updated to auto-allow all `*.vercel.app` origins
-- **`vercel.json`** upgraded with security headers (X-Frame-Options, XSS protection, asset caching)
-- **`DEPLOYMENT.md`** created — district health officers can self-deploy in under 2 hours
-- **DynamoDB hardening** — district/time `Query` access for command-center outbreak proof, atomic `UpdateCommand`, GSI validation at startup, idempotent TTL handling
-- **Model cache** — `SENTENCE_TRANSFORMERS_HOME` pinned to `.model_cache/` so the 400MB transformer model is never re-downloaded on restart
-- **Resilient Event Dispatcher** — database null-guards, 3-attempt retries for telemetry writes, sanitized DynamoDB partition keys
-- **Secure & Idempotent Seeding** — demo seeds blocked in production (`NODE_ENV === 'production'`); `ON CONFLICT DO NOTHING` idempotency; foreign keys dynamically resolved
-- **RAM Optimization** — lazy `torch` / `sentence_transformers` imports save ~400MB RAM when deep model is disabled; backward-compatible `BatchNorm1d` for older PyTorch (Note: SymptomNet is disabled by default on Render's 512MB RAM tier to prevent OOM crashes, utilizing the 71.1% accurate Logistic Regression model instead)
-- **ASHA-to-PHC Referral Outcomes** — closed-loop tracking (`outcome`, `outcome_details`, `closed_at`) so every referral has a follow-up
-- **ASHA Performance Dashboard** — aggregated KPIs (referrals, pregnancies, vaccinations, emergency alerts) per worker for CMO district reporting
-- **Security Audit Logging** — `backend/middleware/audit.js` captures all reads/writes on sensitive endpoints
-- **District Config Settings** — `district_config` table allows district-level custom thresholds and emergency contact numbers
-- **SQLite Auto-Migrations** — dynamic `ALTER TABLE` checks on startup; zero data loss on developer reboots
-- **Offline Sync-Health Logger** — `POST /api/villager/sync-health` records offline sync delays to DynamoDB telemetry
+*   **📱 Edge Intelligence & Zero-Connectivity Tools**:
+    *   **ONNX In-Browser SymptomNet**: Runs local PyTorch neural classification offline under 1ms.
+    *   **Offline Guidelines RAG**: Local fuzzy RAG in `semanticCache.js` querying WHO/MoHFW guidelines.
+    *   **Secure Offline Credentials**: SHA-256 client-side credentials hashing for local session verification.
+    *   **Aadhaar QR-Code Login**: Swift passwordless login in zero-signal zones via device camera scan.
 
-</details>
+*   **🤖 Epidemic Forecasting & Real-Time Alerts**:
+    *   **Predictive Early Warning System**: Forecasts village risk using symptom trend velocity, nearby clusters, and NVBDCP seasonal signals.
+    *   **Intervention Simulator**: CMOs can simulate risk reductions (referral closures, vaccination drives) on heatmaps.
+    *   **Autonomous Agentic Outbreak Loop**: Checks trends every 30m, dedupes via DynamoDB, and dispatches SSE.
+
+*   **🏥 B2B Operational Dashboards**:
+    *   **ASHA Workload queues**: Unified dashboard showing high-risk cases, missed vaccines, and offline sync logs.
+    *   **Closed-Loop Referrals**: Outcomes, follow-ups, and closure metrics tracked to the individual patient level.
+    *   **NGO Impact Analytics**: Grant-proof dashboard reporting vaccination completions and KPI analytics.
+
+### 🔒 Core Technical Hardening Log
+
+*   **⚡ Decoupled Event Dispatcher**: Decouples write paths with an out-of-band queue and **3-attempt database retry loop** for DynamoDB.
+*   **🛡️ Production-Grade Security**:
+    *   **PII Redaction**: Redacts PII in the backend logging layer to preserve query context.
+    *   **Unified Auth Policy**: Standardized IDOR prevents user role or village scope leakage.
+    *   **Detailed Health Endpoint**: `/api/health/detailed` and Admin Panel expose live AWS/database connection checks.
+*   **⚙️ AWS Storage & Backend Optimizations**:
+    *   **DynamoDB Hardening**: Startup GSI validation, atomic updates (`UpdateCommand`), and idempotent TTL handling.
+    *   **Model Caching**: Pinned sentence transformer home saves ~400MB RAM when the deep model is idle.
+    *   **SQLite Migration Layer**: Dynamic `ALTER TABLE` checks on startup; zero data loss on developer reboots.
+    *   **Offline Sync-Health Logger**: `POST /api/villager/sync-health` records offline sync delays to DynamoDB telemetry.
 
 ---
-
 
 > *SwasthAI Guardian — Built for Bharat's villages, not just its cities.*
 > *"We didn't build AI for doctors. We built it for the 600,000 villages that don't have one."*
