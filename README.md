@@ -3,37 +3,39 @@
 
 ### 🌐 [Live Demo](https://swasthai-guardian-platform.onrender.com) | 📋 [Deployment Guide](DEPLOYMENT.md)
 
+
 ---
 
-## 💡 What, Why, and Who is SwasthAI Guardian?
+## 🌿 Executive Overview
 
-### 1. What is SwasthAI?
-SwasthAI is an **offline-first B2B health operations and epidemiologic intelligence platform**. It connects frontline rural healthcare workers (ASHA workers) directly with district command centers, ensuring medical records, maternal-child assessments, and emergency SOS dispatches flow seamlessly—even from zero-connectivity zones.
+SwasthAI Guardian is a production-grade, offline-first B2B operations and epidemiologic intelligence platform built for rural public health networks. It bridges the gap between remote, disconnected frontline health workers (ASHA) and district command centers. By transforming low-connectivity clinical logs into real-time, auditable telemetry streams, the platform replaces slow paper-based tracking, automates infectious outbreak forecasting, and ensures closed-loop emergency dispatches.
 
-### 2. Why is it needed?
-Over **600 million rural citizens in India** rely on frontline health workers who operate in remote areas. Without internet access, these workers rely on slow, manual paper tracking. This creates massive delays in detecting infectious outbreaks, results in high rates of maternal/child referral dropout, and leaves healthcare leaders operating in the dark.
+---
 
-### 3. What does it solve?
-* **Zero-Signal Operation**: Frontline workers capture clinical records and vitals offline. The platform uses a local IndexedDB transactional sync queue to replay and synchronize data to a dual-database cloud plane once a signal is detected.
-* **Agentic Outbreak Intelligence**: A background agent analyzes incoming health data using LLM reasoning to forecast and detect localized outbreak clusters before they spread, triggering real-time alerts.
-* **Closed-Loop Referrals**: Connects villagers, ASHA workers, and district doctors to track high-risk pregnancies, child nutrition, and emergency dispatches in real-time.
+## ⚡ Core Technical Pillars
 
-### 4. Who uses it?
-* **Villagers**: Access local-language voice triage, skin scans, and ambulance dispatches offline.
-* **ASHA Workers (Field Staff)**: Capture maternal vitals, track child immunizations, and manage dispatches offline.
-* **District Admins / Chief Medical Officers (CMOs)**: Monitor live epidemiologic heatmaps, receive outbreak warnings, and export monthly reports.
-* **NGOs & Health Sponsors**: View referral closure rates, vaccination completions, and performance analytics.
+* **Durable Offline-First Sync**: Backed by a browser-side transactional IndexedDB sync queue. Clinical logs and patient vitals are collected offline and replayed automatically once a connection is detected, using Last-Write-Wins (LWW) resolution and batch idempotency to prevent duplication.
+* **Decoupled Cloud Architecture**: Implements a deliberate database allocation strategy. Relational operations (users, medical records, referrals) are committed to **Amazon Aurora PostgreSQL** for ACID compliance, while time-series metrics and event logs (outbreak alerts, dispatches, sync trails) are routed through **Amazon DynamoDB** for high-throughput scaling.
+* **Hybrid Edge-to-Cloud AI**: Combines local, browser-side neural classification (SymptomNet compiled to ONNX) and offline fuzzy guidelines retrieval with a centralized FastAPI service running autonomous spatial outbreak clustering and clinical Sakhi RAG.
+
+---
+
+## 👥 Operational Stakeholders
+
+* **Frontline ASHA Workers**: Access mobile-first, low-latency vital assessments, child immunization trackers, and emergency SOS triggers fully offline.
+* **District Command Centers (CMO)**: Monitor Varanasi-aligned live epidemiologic risk heatmaps, receive autonomous outbreak warnings, and generate compliance reports.
+* **NGOs & Sponsors**: Evaluate performance analytics, vaccination completions, and closed-loop referral outcomes on real-time B2B dashboards.
 
 ---
 
 ## 🛠️ Infrastructure Overview
 
-| | |
-|---|---|
-| **AWS Databases Used** | Amazon Aurora PostgreSQL + Amazon DynamoDB |
-| **Frontend Deployment** | Vercel PWA (Progressive Web App) |
-| **AWS Region** | ap-south-1 (Mumbai — correct for India healthcare data residency) |
-| **Target Market** | India's 600M rural citizens + 1.4M ASHA health workers |
+| Component | Technology | Role & Deployment |
+| :--- | :--- | :--- |
+| **Relational Database** | Amazon Aurora PostgreSQL | Relational system of record (ACID), ap-south-1 |
+| **NoSQL Telemetry** | Amazon DynamoDB | Time-series event logging & telemetry, ap-south-1 |
+| **Frontend Platform** | Vercel | Vite-based Progressive Web App (PWA) |
+| **AI Microservices** | FastAPI (Python) + Render | SymptomNet MLP, Sakhi RAG, & Outbreak Agent |
 
 ---
 
