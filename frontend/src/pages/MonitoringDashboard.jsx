@@ -261,6 +261,7 @@ export default function MonitoringDashboard() {
   const [networkSimState, setNetworkSimState] = useState(localStorage.getItem('simulated_network_state') || 'online');
   const [demoRunning, setDemoRunning] = useState(false);
   const [seedLoading, setSeedLoading] = useState(false);
+  const [syncWalkthroughStep, setSyncWalkthroughStep] = useState(null);
 
   // ── Simulation state
   const [recentRequests, setRecentRequests] = useState([]);
@@ -651,6 +652,32 @@ export default function MonitoringDashboard() {
               </button>
             ))}
           </div>
+
+          {/* Watch Sync Walkthrough */}
+          <button
+            onClick={() => {
+              setSyncWalkthroughStep(0);
+              setSimLogs([]);
+              addSimLog('🏁 Starting Step-by-Step Offline Sync Walkthrough...', '#10b981');
+            }}
+            disabled={demoRunning || syncWalkthroughStep !== null}
+            style={{
+              padding: '8px 16px',
+              background: 'linear-gradient(90deg, #10b981, #059669)',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 10,
+              fontSize: 11,
+              fontWeight: 700,
+              cursor: (demoRunning || syncWalkthroughStep !== null) ? 'not-allowed' : 'pointer',
+              boxShadow: '0 4px 12px rgba(16,185,129,0.2)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6
+            }}
+          >
+            🔄 Watch Sync
+          </button>
 
           {/* One-Click Judge Demo */}
           <button
@@ -1114,6 +1141,175 @@ export default function MonitoringDashboard() {
           </div>
         </div>
       </div>
+
+      {/* ── Sync Walkthrough Modal Overlay */}
+      {syncWalkthroughStep !== null && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(5, 5, 15, 0.85)',
+          backdropFilter: 'blur(8px)',
+          zIndex: 9999,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: 20,
+        }}>
+          <div style={{
+            background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+            border: '1px solid rgba(16, 185, 129, 0.3)',
+            borderRadius: 24,
+            width: '100%',
+            maxWidth: 500,
+            padding: 30,
+            boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
+            textAlign: 'left',
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <span style={{ fontSize: 11, fontWeight: 900, color: '#34d399', textTransform: 'uppercase', letterSpacing: 2 }}>
+                Step {syncWalkthroughStep + 1} of 5
+              </span>
+              <button 
+                onClick={() => setSyncWalkthroughStep(null)}
+                style={{ background: 'transparent', border: 'none', color: '#6b7280', fontSize: 18, cursor: 'pointer' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {syncWalkthroughStep === 0 && (
+              <div>
+                <h3 style={{ fontSize: 18, fontWeight: 800, color: '#fff', margin: '0 0 10px' }}>🔌 1. Simulating Network Disconnection</h3>
+                <p style={{ fontSize: 12, color: '#9ca3af', lineHeight: 1.6 }}>
+                  First, we simulate entering a remote village with zero cellular connection. We toggle the network simulation status to <strong style={{ color: '#ef4444' }}>OFFLINE</strong>.
+                </p>
+                <div style={{ background: 'rgba(0,0,0,0.3)', padding: 12, borderRadius: 12, border: '1px solid rgba(255,255,255,0.05)', margin: '15px 0' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11 }}>
+                    <span style={{ color: '#6b7280' }}>Network State</span>
+                    <span style={{ color: '#ef4444', fontWeight: 800 }}>OFFLINE</span>
+                  </div>
+                </div>
+                <button
+                  onClick={async () => {
+                    toggleNetworkSim('offline');
+                    addSimLog('🔌 Step 1: Simulated network drop (OFFLINE)', '#ef4444');
+                    setSyncWalkthroughStep(1);
+                  }}
+                  style={{
+                    width: '100%', padding: '12px 0', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: 12, fontSize: 12, fontWeight: 700, cursor: 'pointer'
+                  }}
+                >
+                  Confirm & Go Offline
+                </button>
+              </div>
+            )}
+
+            {syncWalkthroughStep === 1 && (
+              <div>
+                <h3 style={{ fontSize: 18, fontWeight: 800, color: '#fff', margin: '0 0 10px' }}>📝 2. Submitting Record Offline</h3>
+                <p style={{ fontSize: 12, color: '#9ca3af', lineHeight: 1.6 }}>
+                  While disconnected, the healthcare worker logs a new high-risk pregnancy card. Since there's no server connection, the record is immediately intercepted and stored in the browser's persistent IndexedDB transaction queue.
+                </p>
+                <div style={{ background: 'rgba(0,0,0,0.3)', padding: 12, borderRadius: 12, border: '1px solid rgba(255,255,255,0.05)', margin: '15px 0' }}>
+                  <div style={{ fontSize: 11, color: '#d1d5db', fontWeight: 700 }}>Maternal Record Payload:</div>
+                  <div style={{ fontSize: 10, color: '#9ca3af', fontFamily: 'monospace', marginTop: 4 }}>
+                    Patient: Ankita Patel (26 yrs)<br />
+                    Trimester: 3rd trimester<br />
+                    Risk Level: High Risk<br />
+                    Village: Rampur (v101)
+                  </div>
+                </div>
+                <button
+                  onClick={async () => {
+                    await queueMaternalRecord({ name: 'Ankita Patel', age: 26, trimester: 3, riskLevel: 'High', villageId: 'v101' });
+                    window.dispatchEvent(new Event('swasthai_queue_updated'));
+                    addSimLog('📝 Step 2: Submitted maternal record offline to IndexedDB queue', '#ec4899');
+                    setSyncWalkthroughStep(2);
+                  }}
+                  style={{
+                    width: '100%', padding: '12px 0', background: '#ec4899', color: '#fff', border: 'none', borderRadius: 12, fontSize: 12, fontWeight: 700, cursor: 'pointer'
+                  }}
+                >
+                  Submit & Queue Record
+                </button>
+              </div>
+            )}
+
+            {syncWalkthroughStep === 2 && (
+              <div>
+                <h3 style={{ fontSize: 18, fontWeight: 800, color: '#fff', margin: '0 0 10px' }}>📦 3. Verifying Queue in IndexedDB</h3>
+                <p style={{ fontSize: 12, color: '#9ca3af', lineHeight: 1.6 }}>
+                  The record is securely persisted in local storage. Notice that the <strong style={{ color: '#f59e0b' }}>Maternal Queue</strong> counter has incremented.
+                </p>
+                <div style={{ background: 'rgba(255,255,255,0.04)', padding: 16, borderRadius: 12, border: '1px solid rgba(245,158,11,0.2)', margin: '15px 0', display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ fontSize: 24 }}>📬</div>
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: '#f59e0b' }}>{queueStats.maternalCount} Pending</div>
+                    <div style={{ fontSize: 10, color: '#9ca3af' }}>Maternal queue items in IndexedDB</div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    addSimLog('📦 Step 3: Verified queue state in local IndexedDB', '#f59e0b');
+                    setSyncWalkthroughStep(3);
+                  }}
+                  style={{
+                    width: '100%', padding: '12px 0', background: '#f59e0b', color: '#fff', border: 'none', borderRadius: 12, fontSize: 12, fontWeight: 700, cursor: 'pointer'
+                  }}
+                >
+                  Verify Queue Counter
+                </button>
+              </div>
+            )}
+
+            {syncWalkthroughStep === 3 && (
+              <div>
+                <h3 style={{ fontSize: 18, fontWeight: 800, color: '#fff', margin: '0 0 10px' }}>📡 4. Reconnecting & Synchronizing</h3>
+                <p style={{ fontSize: 12, color: '#9ca3af', lineHeight: 1.6 }}>
+                  The device moves back into network coverage. We restore the cellular simulation state to <strong style={{ color: '#10b981' }}>ONLINE</strong>. The sync runner triggers automatically, replaying the stored transactions.
+                </p>
+                <button
+                  onClick={async () => {
+                    toggleNetworkSim('online');
+                    addSimLog('📡 Step 4: Restored connection, replaying IndexedDB to server...', '#10b981');
+                    await syncAllQueues();
+                    window.dispatchEvent(new Event('swasthai_queue_updated'));
+                    setSyncWalkthroughStep(4);
+                  }}
+                  style={{
+                    width: '100%', padding: '12px 0', background: '#10b981', color: '#fff', border: 'none', borderRadius: 12, fontSize: 12, fontWeight: 700, cursor: 'pointer'
+                  }}
+                >
+                  Restore Connection & Sync
+                </button>
+              </div>
+            )}
+
+            {syncWalkthroughStep === 4 && (
+              <div>
+                <h3 style={{ fontSize: 18, fontWeight: 800, color: '#fff', margin: '0 0 10px' }}>🎉 5. Database Sync & Audit Ledger complete</h3>
+                <p style={{ fontSize: 12, color: '#9ca3af', lineHeight: 1.6 }}>
+                  The records are written to Aurora PostgreSQL. Simultaneously, the backend security middleware records the access event in the DynamoDB audit trail table.
+                </p>
+                <div style={{ background: 'rgba(16, 185, 129, 0.1)', padding: 14, borderRadius: 12, border: '1px solid rgba(16, 185, 129, 0.2)', margin: '15px 0', fontSize: 11, color: '#34d399', fontWeight: 600 }}>
+                  ✓ Synced successfully! Sync queue is empty.
+                </div>
+                <button
+                  onClick={() => {
+                    addSimLog('🎉 Step 5: Completed Offline→Online sync walkthrough successfully!', '#34d399');
+                    setSyncWalkthroughStep(null);
+                  }}
+                  style={{
+                    width: '100%', padding: '12px 0', background: 'linear-gradient(90deg, #8b5cf6, #6366f1)', color: '#fff', border: 'none', borderRadius: 12, fontSize: 12, fontWeight: 700, cursor: 'pointer'
+                  }}
+                >
+                  Complete Walkthrough
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

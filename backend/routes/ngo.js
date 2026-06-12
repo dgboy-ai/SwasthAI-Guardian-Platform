@@ -19,7 +19,7 @@ const cleanClientRequestId = (value) => {
   return typeof cleaned === 'string' && cleaned.length > 0 ? cleaned.slice(0, 120) : null;
 };
 
-router.get('/maternal', auth, checkRole(['ngo', 'admin']), async (req, res) => {
+router.get('/maternal', auth, checkRole(['ngo', 'admin']), logAudit('access_records', 'pregnancy_data'), async (req, res) => {
   const db = req.app.locals.db;
   try {
     const limit = parseInt(req.query.limit) || 50;
@@ -37,7 +37,7 @@ router.get('/maternal', auth, checkRole(['ngo', 'admin']), async (req, res) => {
   }
 });
 
-router.get('/malnutrition', auth, checkRole(['ngo', 'admin']), async (req, res) => {
+router.get('/malnutrition', auth, checkRole(['ngo', 'admin']), logAudit('access_records', 'malnutrition_data'), async (req, res) => {
   const db = req.app.locals.db;
   try {
     const limit = parseInt(req.query.limit) || 50;
@@ -729,7 +729,7 @@ router.get('/workload', auth, checkRole(['ngo', 'admin']), async (req, res) => {
   }
 });
 
-router.get('/residents', auth, checkRole(['ngo', 'admin']), async (req, res) => {
+router.get('/residents', auth, checkRole(['ngo', 'admin']), logAudit('access_records', 'residents'), async (req, res) => {
   const db = req.app.locals.db;
   try {
     const villageId = req.user.role === 'admin' ? req.query.villageId : req.user.villageId;

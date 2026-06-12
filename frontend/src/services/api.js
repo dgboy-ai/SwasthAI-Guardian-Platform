@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { redactPII } from '../utils/piiRedactor';
 
 // Default /api — Vite dev proxy and unified Render deploy both forward to the backend.
 // Override with VITE_API_URL only for split deploy (e.g. Vercel frontend + Render API).
@@ -15,6 +16,11 @@ const api = axios.create({
 });
 
 api.interceptors.request.use(async (config) => {
+  // Intercept and redact PII from messages before sending them to the LLM backend
+  if (config.url && config.url.includes('/health-assistant') && config.data && typeof config.data.message === 'string') {
+    config.data.message = redactPII(config.data.message);
+  }
+
   if (!config.headers['x-trace-id']) {
     config.headers['x-trace-id'] = `tr-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
   }

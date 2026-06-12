@@ -154,6 +154,28 @@ def _trigger_asha_alert(village_id: str, disease: str, action: str,
     except Exception as e:
         print(f"[AGENT] Failed to send alert to backend: {e}")
 
+def _report_agent_scan(village_id: str, count: int, symptoms: str, result: dict):
+    try:
+        headers = {"X-Agent-Secret": AGENT_SECRET, "Content-Type": "application/json"}
+        payload = {
+            "villageId": village_id,
+            "casesScanned": count,
+            "symptoms": symptoms,
+            "outbreakDetected": result.get("outbreak", False),
+            "disease": result.get("disease", "unknown"),
+            "confidence": result.get("confidence", 0.0),
+            "action": result.get("action", ""),
+            "timestamp": datetime.utcnow().isoformat() + "Z"
+        }
+        requests.post(
+            f"{BACKEND_URL}/api/admin/agent-scan",
+            json=payload,
+            headers=headers,
+            timeout=8
+        )
+    except Exception as e:
+        print(f"[AGENT] Failed to report agent scan heartbeat: {e}")
+
 def get_recent_outbreaks(limit=10):
     """
     Proxy to backend — which reads from DynamoDB outbreak_telemetry.
@@ -196,6 +218,9 @@ def run_outbreak_agent():
                 continue  # Ignore tiny clusters (< 3 cases not epidemiologically significant)
 
             result = _classify_cluster(cluster, groq_api_key)
+
+            # Report telemetry scan to backend
+            _report_agent_scan(cluster["villageId"], count, cluster.get("symptoms", ""), result)
 
             if result.get("outbreak") and result.get("confidence", 0) >= 0.7:
                 village_id = cluster["villageId"]

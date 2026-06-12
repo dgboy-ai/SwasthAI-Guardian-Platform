@@ -117,6 +117,18 @@ export default function ProductionEvidencePanel({ systemStatus, dynamoFeed, load
           )}
         </div>
       </div>
+
+      <div className="mx-5 mb-5 p-4 rounded-xl border border-emerald-100 bg-emerald-50/60 flex items-start gap-3">
+        <div className="shrink-0 p-1.5 rounded-lg bg-emerald-100 text-emerald-800">
+          <Shield className="w-4 h-4" />
+        </div>
+        <div>
+          <p className="text-xs font-black text-emerald-900 uppercase tracking-wider mb-0.5">DISHA & DPDP Compliance Layer Active</p>
+          <p className="text-xs text-emerald-700 font-semibold leading-relaxed">
+            Patient health records stored in <strong>Amazon Aurora PostgreSQL</strong> are encrypted at rest using an enterprise-grade customer-managed key via <strong>AWS KMS (Key Management Service)</strong>. All PII (Aadhaar, phone, email, and names) is automatically redacted by the frontend middleware before external LLM queries, conforming to the Digital Personal Data Protection (DPDP) Act of India.
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

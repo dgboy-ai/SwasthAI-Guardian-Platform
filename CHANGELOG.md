@@ -2,6 +2,21 @@
 
 All notable changes and feature developments completed during the hackathon window are documented in this file chronologically.
 
+## June 12, 2026
+### Added
+- **Persistent Live AWS Proof Header**:
+  - Surfaced a high-visibility, real-time AWS Stack Proof banner permanently at the top of the main area in `AdminDashboard.jsx` (visible on load and across all sub-views).
+  - Displays live connectivity for Aurora Serverless PostgreSQL and Amazon DynamoDB, region (ap-south-1), connection pool size, and global SSE listeners count.
+- **Real-Time Outbreak Heatmap**:
+  - Replaced static markers in `DistrictOutbreakMap.jsx` with dynamic Varanasi-aligned risk circle heat maps.
+  - Dynamically configured colors, opacity, and radius based on the risk score calculated from `/admin/heatmap-data`.
+- **Interactive "Watch Sync" Walkthrough**:
+  - Built a step-by-step interactive sync guide modal in `MonitoringDashboard.jsx` triggered via a "Watch Sync" button.
+  - Guides judges through simulating a network outage, queuing maternal records in IndexedDB offline, verifying queue states, reconnecting, and auto-syncing.
+- **Outbreak Agent Timeline UI**:
+  - Created a vertical scan log timeline in `AIIntelligenceView.jsx` to trace Groq Llama-3.3 decisions.
+  - Updated `outbreak_agent.py` to transmit scan telemetry heartbeats to the new `POST /api/admin/agent-scan` endpoint.
+
 ## June 11, 2026
 ### Added
 - **Child Nutrition Dashboard Refinement**:

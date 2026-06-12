@@ -6,6 +6,7 @@ import rateLimit from 'express-rate-limit';
 import { z } from 'zod';
 import { auth } from '../middleware/auth.js';
 import { getAadhaarSalt, isDemoOtpAllowed } from '../config.js';
+import { logAudit } from '../middleware/audit.js';
 
 
 const router = express.Router();
@@ -293,7 +294,7 @@ router.post('/logout', auth, async (req, res) => {
   }
 });
 
-router.put('/profile', auth, async (req, res) => {
+router.put('/profile', auth, logAudit('update_profile', 'users'), async (req, res) => {
   const db = req.app.locals.db;
   const parseResult = ProfileUpdateSchema.safeParse(req.body);
   if (!parseResult.success) {

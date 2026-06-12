@@ -28,11 +28,11 @@ const getVillageCoords = (villageId, index) => {
 };
 
 const DEFAULT_NODES = [
-  { id: 'v101', name: 'Rampur / रामपुर', population: 4200, pregnant: 68, children: 290, cases: 2, asha: '+91 94150 12345', status: 'normal', latestAlert: null },
-  { id: 'v102', name: 'Shivpur / शिवपुर', population: 5800, pregnant: 92, children: 410, cases: 12, asha: '+91 94500 54321', status: 'outbreak', latestAlert: '⚠️ Dengue Spike: 8 cases in 48h' },
-  { id: 'v103', name: 'Kharela / खरेला', population: 3100, pregnant: 45, children: 195, cases: 1, asha: '+91 94310 98765', status: 'normal', latestAlert: null },
-  { id: 'v104', name: 'Babatpur / बाबतपुर', population: 4900, pregnant: 73, children: 330, cases: 0, asha: '+91 98890 11223', status: 'emergency', latestAlert: '🚨 Active SOS: Pregnancy referral dispatch' },
-  { id: 'v105', name: 'Chiraigaon / चिरईगाँव', population: 6200, pregnant: 110, children: 480, cases: 4, asha: '+91 99190 44556', status: 'normal', latestAlert: null },
+  { id: 'v101', name: 'Rampur / रामपुर', population: 4200, pregnant: 68, children: 290, cases: 2, asha: '+91 94150 12345', status: 'normal', latestAlert: null, outbreakScore: 15 },
+  { id: 'v102', name: 'Shivpur / शिवपुर', population: 5800, pregnant: 92, children: 410, cases: 12, asha: '+91 94500 54321', status: 'outbreak', latestAlert: '⚠️ Dengue Spike: 8 cases in 48h', outbreakScore: 88 },
+  { id: 'v103', name: 'Kharela / खरेला', population: 3100, pregnant: 45, children: 195, cases: 1, asha: '+91 94310 98765', status: 'normal', latestAlert: null, outbreakScore: 5 },
+  { id: 'v104', name: 'Babatpur / बाबतपुर', population: 4900, pregnant: 73, children: 330, cases: 0, asha: '+91 98890 11223', status: 'emergency', latestAlert: '🚨 Active SOS: Pregnancy referral dispatch', outbreakScore: 45 },
+  { id: 'v105', name: 'Chiraigaon / चिरईगाँव', population: 6200, pregnant: 110, children: 480, cases: 4, asha: '+91 99190 44556', status: 'normal', latestAlert: null, outbreakScore: 12 },
 ];
 
 export default function DistrictOutbreakMap({ onNodeSelect, activeVillageId = null }) {
@@ -116,12 +116,22 @@ export default function DistrictOutbreakMap({ onNodeSelect, activeVillageId = nu
   useEffect(() => {
     const loadVillages = async () => {
       try {
+        let heatmapList = [];
+        try {
+          const heatmapRes = await adminService.getHeatmapData();
+          heatmapList = heatmapRes?.heatmap || [];
+        } catch (he) {
+          console.warn("Failed to load heatmap data, using fallback defaults", he);
+        }
+
         const data = await adminService.getVillages();
         const villages = Array.isArray(data) ? data : [];
         if (!villages.length) return;
 
         setNodes(villages.map((v, i) => {
           const alert = v.outbreakAlert || v.outbreakalert;
+          const heatItem = heatmapList.find(h => h.villageId === v.villageId);
+          const score = heatItem ? heatItem.outbreakScore : (alert ? 85 : 15);
           return {
             id: v.villageId,
             name: v.name || v.villageId,
@@ -130,8 +140,9 @@ export default function DistrictOutbreakMap({ onNodeSelect, activeVillageId = nu
             children: v.children_under_5 ?? 0,
             cases: v.malnutrition_cases ?? 0,
             asha: v.asha_phone || v.asha_contact || '—',
-            status: alert ? 'outbreak' : 'normal',
+            status: alert ? 'outbreak' : (score > 40 ? 'emergency' : 'normal'),
             latestAlert: alert,
+            outbreakScore: score
           };
         }));
       } catch (_) {
@@ -150,6 +161,22 @@ export default function DistrictOutbreakMap({ onNodeSelect, activeVillageId = nu
     nodes.forEach((n, index) => {
       const coords = getVillageCoords(n.id, index);
       const isSelected = selectedNode?.id === n.id;
+      const score = n.outbreakScore || 0;
+
+      // Draw Glowing Heat Map Aura/Circle
+      let heatColor = '#10b981'; // green
+      if (score >= 80) heatColor = '#ef4444'; // red
+      else if (score >= 50) heatColor = '#f97316'; // orange/amber
+      else if (score >= 20) heatColor = '#eab308'; // yellow
+
+      L.circle(coords, {
+        color: heatColor,
+        fillColor: heatColor,
+        fillOpacity: 0.15 + (score / 100) * 0.4,
+        radius: 600 + (score / 100) * 1400,
+        weight: 1.5,
+        dashArray: score > 50 ? '4, 4' : null
+      }).addTo(markersLayerRef.current);
 
       let markerHtml = '';
       if (n.status === 'outbreak') {
@@ -374,6 +401,25 @@ export default function DistrictOutbreakMap({ onNodeSelect, activeVillageId = nu
                     <span className="text-[8px] font-black uppercase tracking-widest">Active Cases / सक्रिय मामले</span>
                   </div>
                   <p className="text-sm font-black text-slate-800">{selectedNode.cases}</p>
+                </div>
+                <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm col-span-2">
+                  <div className="flex items-center justify-between text-slate-500 mb-1">
+                    <div className="flex items-center gap-1.5 text-rose-500">
+                      <ShieldAlert className="w-3.5 h-3.5" />
+                      <span className="text-[8px] font-black uppercase tracking-widest">Heatmap Risk Score</span>
+                    </div>
+                    <span className="text-[10px] font-black text-slate-800">{(selectedNode.outbreakScore || 0)}%</span>
+                  </div>
+                  <div className="w-full bg-slate-100 rounded-full h-2 mt-1 overflow-hidden">
+                    <div 
+                      className={`h-full rounded-full ${
+                        (selectedNode.outbreakScore || 0) >= 80 ? 'bg-rose-500' :
+                        (selectedNode.outbreakScore || 0) >= 50 ? 'bg-amber-500' :
+                        (selectedNode.outbreakScore || 0) >= 20 ? 'bg-yellow-500' : 'bg-emerald-500'
+                      }`}
+                      style={{ width: `${selectedNode.outbreakScore || 0}%` }}
+                    />
+                  </div>
                 </div>
               </div>
 

@@ -78,6 +78,126 @@ export function broadcastToAdmins(eventType, data) {
   console.log(`[SSE] Broadcast '${eventType}' to ${adminSseClients.size} admin client(s)`);
 }
 
+let agentScans = [
+  {
+    villageId: 'v102',
+    villageName: 'Shivpur',
+    casesScanned: 12,
+    symptoms: 'High fever, joint pain, skin rash',
+    outbreakDetected: true,
+    disease: 'Dengue Fever',
+    confidence: 0.88,
+    action: 'Distribute mosquito nets, conduct fogging, check standing water.',
+    timestamp: new Date(Date.now() - 15 * 60 * 1000).toISOString()
+  },
+  {
+    villageId: 'v101',
+    villageName: 'Rampur',
+    casesScanned: 2,
+    symptoms: 'Mild cough and cold',
+    outbreakDetected: false,
+    disease: 'Seasonal Influenza',
+    confidence: 0.15,
+    action: 'Monitor symptoms locally. Standard outpatient care.',
+    timestamp: new Date(Date.now() - 45 * 60 * 1000).toISOString()
+  },
+  {
+    villageId: 'v104',
+    villageName: 'Babatpur',
+    casesScanned: 1,
+    symptoms: 'Nausea, fever',
+    outbreakDetected: false,
+    disease: 'Mild Gastrointestinal Noise',
+    confidence: 0.12,
+    action: 'Hydration counseling, track family members.',
+    timestamp: new Date(Date.now() - 75 * 60 * 1000).toISOString()
+  },
+  {
+    villageId: 'v105',
+    villageName: 'Chiraigaon',
+    casesScanned: 4,
+    symptoms: 'Watery stools, vomiting',
+    outbreakDetected: true,
+    disease: 'Mild Cholera Alert',
+    confidence: 0.72,
+    action: 'Provide chlorine tablets, deploy ORS packets immediately.',
+    timestamp: new Date(Date.now() - 105 * 60 * 1000).toISOString()
+  },
+  {
+    villageId: 'v103',
+    villageName: 'Kharela',
+    casesScanned: 1,
+    symptoms: 'Headache, fatigue',
+    outbreakDetected: false,
+    disease: 'Fatigue / Heat stroke',
+    confidence: 0.05,
+    action: 'Advise hydration and rest during peak afternoon hours.',
+    timestamp: new Date(Date.now() - 135 * 60 * 1000).toISOString()
+  }
+];
+
+router.get('/agent-scans', auth, checkRole(['admin', 'ngo']), (req, res) => {
+  res.json(agentScans);
+});
+
+router.post('/agent-scan', async (req, res) => {
+  const agentSecret = req.headers['x-agent-secret'];
+  const isAgent = process.env.AGENT_SECRET && agentSecret === process.env.AGENT_SECRET;
+
+  let isAuthedAdmin = false;
+  const authHeader = req.headers.authorization;
+  if (authHeader) {
+    try {
+      const decoded = jwt.verify(authHeader.replace('Bearer ', ''), process.env.JWT_SECRET);
+      if (decoded && decoded.role === 'admin') {
+        isAuthedAdmin = true;
+      }
+    } catch (_) {}
+  }
+
+  if (!isAgent && !isAuthedAdmin) {
+    return sendError(res, 403, 'FORBIDDEN', 'Forbidden');
+  }
+
+  const { villageId, casesScanned, symptoms, outbreakDetected, disease, confidence, action, timestamp } = req.body;
+
+  if (!villageId) {
+    return sendError(res, 400, 'INVALID_INPUT', 'villageId is required');
+  }
+
+  const db = req.app.locals.db;
+  let villageName = villageId;
+  try {
+    const vRow = await db.get('SELECT name FROM village_health WHERE "villageId" = ?', [villageId]);
+    if (vRow && vRow.name) {
+      villageName = vRow.name.split(' / ')[0];
+    }
+  } catch (_) {}
+
+  const newScan = {
+    villageId,
+    villageName,
+    casesScanned: Number(casesScanned || 0),
+    symptoms: symptoms || '',
+    outbreakDetected: !!outbreakDetected,
+    disease: disease || 'unknown',
+    confidence: Number(confidence || 0),
+    action: action || 'Monitor closely.',
+    timestamp: timestamp || new Date().toISOString()
+  };
+
+  agentScans.unshift(newScan);
+  if (agentScans.length > 50) {
+    agentScans.pop();
+  }
+
+  if (typeof req.app.locals.broadcastToAdmins === 'function') {
+    req.app.locals.broadcastToAdmins('agent-scan', newScan);
+  }
+
+  res.status(201).json({ success: true, message: 'Scan logged' });
+});
+
 router.get('/rag-traces', auth, checkRole(['admin', 'ngo']), (req, res) => {
   res.send(req.app.locals.ragTraces || []);
 });
@@ -109,7 +229,7 @@ router.get('/users', auth, checkRole(['admin']), async (req, res) => {
   }
 });
 
-router.put('/users/:id/role', auth, checkRole(['admin']), async (req, res) => {
+router.put('/users/:id/role', auth, checkRole(['admin']), logAudit('update_role', 'users'), async (req, res) => {
   const db = req.app.locals.db;
   const { role } = req.body;
   const allowed = ['villager', 'ngo', 'admin'];
@@ -275,7 +395,7 @@ const sanitizeCsvCell = (val) => {
   return str.replace(/"/g, '""');
 };
 
-router.get('/report', auth, checkRole(['admin']), async (req, res) => {
+router.get('/report', auth, checkRole(['admin']), logAudit('export_report', 'ambulance_and_pad_requests'), async (req, res) => {
   const db = req.app.locals.db;
   try {
     const ambulances = await db.all('SELECT * FROM ambulance_requests ORDER BY id DESC');
@@ -622,18 +742,30 @@ router.get('/heatmap-data', auth, checkRole(['admin', 'ngo']), async (req, res) 
 
     // Compose heatmap payload with a simple composite risk score 0-100
     // Score = clamp(symptomCnt*5 + malnutrition*3 + highRiskPreg*4 + outbreakAlert*20, 0, 100)
-    const payload = villages.map(v => {
+    const payload = villages.map((v, index) => {
       const symptoms   = symptomMap[v.villageId] || 0;
       const malnut     = parseInt(v.malnutrition_cases || 0);
-      const highRisk   = highRiskMap[v.villageId] || 0;
+      const highRiskVal = highRiskMap[v.villageId] || 0;
       const hasAlert   = v.outbreakAlert ? 1 : 0;
-      const rawScore   = symptoms * 5 + malnut * 3 + highRisk * 4 + hasAlert * 20;
+      const rawScore   = symptoms * 5 + malnut * 3 + highRiskVal * 4 + hasAlert * 20;
       const outbreakScore = Math.min(Math.round(rawScore), 100);
 
-      // Placeholder lat/lng seeded deterministically from villageId string (real coords come from your seed/CSV)
-      const hash = Array.from(v.villageId || 'unknown').reduce((a, c) => a + c.charCodeAt(0), 0);
-      const lat  = parseFloat((18.5 + (hash % 500) / 100).toFixed(4));
-      const lng  = parseFloat((73.8 + (hash % 300) / 100).toFixed(4));
+      // Deterministic lat/lng centered around Varanasi matching getVillageCoords in frontend
+      const VILLAGE_COORDS = {
+        v101: [25.3300, 82.9500],
+        v102: [25.3500, 83.0200],
+        v103: [25.2900, 82.9800],
+        v104: [25.3100, 82.9200],
+        v105: [25.3400, 83.0800],
+      };
+      let lat, lng;
+      if (VILLAGE_COORDS[v.villageId]) {
+        [lat, lng] = VILLAGE_COORDS[v.villageId];
+      } else {
+        const hash = Array.from(v.villageId || 'unknown').reduce((a, c) => a + c.charCodeAt(0), 0);
+        lat = 25.28 + (hash % 100) / 1000 + (index % 3) * 0.02;
+        lng = 82.90 + (hash % 150) / 1000 + Math.floor(index / 3) * 0.02;
+      }
 
       return { villageId: v.villageId, name: v.name, lat, lng, outbreakScore, hasAlert: !!v.outbreakAlert };
     });
@@ -745,7 +877,7 @@ router.post('/village-bulk-upload',
 
 // ── DISTRICT REPORT — CMO monthly aggregation ─────────────────────────────────
 // GET /api/admin/district-report?month=YYYY-MM
-router.get('/district-report', auth, checkRole(['admin']), async (req, res) => {
+router.get('/district-report', auth, checkRole(['admin']), logAudit('export_report', 'district_monthly_report'), async (req, res) => {
   const db         = req.app.locals.db;
   const usingSQLite = req.app.locals.usingSQLite;
   const format      = (req.query.format || 'json').toLowerCase();

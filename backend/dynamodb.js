@@ -138,6 +138,21 @@ const TABLE_DEFINITIONS = [
     ],
     BillingMode: 'PAY_PER_REQUEST',
     TtlAttribute: null,
+  },
+  {
+    name: 'security_audit_logs',
+    // Access pattern A: "All audit logs for actor X sorted by timestamp" → actor + timestamp
+    KeySchema: [
+      { AttributeName: 'actor',     KeyType: 'HASH'  },
+      { AttributeName: 'timestamp', KeyType: 'RANGE' }
+    ],
+    AttributeDefinitions: [
+      { AttributeName: 'actor',     AttributeType: 'S' },
+      { AttributeName: 'timestamp', AttributeType: 'S' }
+    ],
+    GlobalSecondaryIndexes: [],
+    BillingMode: 'PAY_PER_REQUEST',
+    TtlAttribute: null,
   }
 ];
 
@@ -266,7 +281,8 @@ const mockStore = {
   outbreak_telemetry: [],
   sync_queues:        [],
   village_node_state: {},
-  emergency_streams:  []
+  emergency_streams:  [],
+  security_audit_logs: []
 };
 
 const dynamoHelper = {

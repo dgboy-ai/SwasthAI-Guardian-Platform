@@ -226,6 +226,24 @@ const adminService = {
     } catch (error) {
       throw error.response?.data?.error || 'Failed to fetch village risk detail';
     }
+  },
+
+  getHeatmapData: async () => {
+    try {
+      const res = await api.get('/admin/heatmap-data');
+      return res.data;
+    } catch (error) {
+      throw error.response?.data?.error || 'Failed to fetch heatmap data';
+    }
+  },
+
+  getAgentScans: async () => {
+    try {
+      const res = await api.get('/admin/agent-scans');
+      return res.data;
+    } catch (error) {
+      throw error.response?.data?.error || 'Failed to fetch agent scans';
+    }
   }
 };
 
