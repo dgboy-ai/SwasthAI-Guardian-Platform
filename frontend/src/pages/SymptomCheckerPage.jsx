@@ -234,7 +234,7 @@ export default function SymptomCheckerPage() {
           symptoms: fullText,
           villageId: user?.villageId || 'v101'
         }).then(() => {
-          showToast('Offline Mode: Diagnosis generated via local SymptomNet and buffered in IndexedDB queue.', 'info');
+          showToast('Queued offline ✓ (IndexedDB)', 'info');
         }).catch(qErr => {
           console.warn('Could not queue symptom check offline:', qErr.message);
         });
@@ -254,7 +254,7 @@ export default function SymptomCheckerPage() {
       setResult(finalRes);
       if (alert) setOutbreakAlert(alert);
       
-      showToast('Diagnosis saved to Aurora PostgreSQL · Telemetry synced to DynamoDB ✓');
+      showToast('Saved to AWS ✓');
 
       // ── Cache the fresh result ─────────────────────────────────────────────
       setCachedSymptomResult(fullText, { prediction: aiPrediction }, lang).catch(() => { });
@@ -287,7 +287,7 @@ export default function SymptomCheckerPage() {
           symptoms: fullText,
           villageId: user?.villageId || 'v101'
         }).then(() => {
-          showToast('Offline Fallback: Diagnosis buffered locally in IndexedDB queue.', 'info');
+          showToast('Queued offline ✓ (IndexedDB)', 'info');
         }).catch(qErr => {
           console.warn('Could not queue symptom check offline:', qErr.message);
           showToast('Failed to queue offline record.', 'error');

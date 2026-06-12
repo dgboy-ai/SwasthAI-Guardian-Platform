@@ -174,12 +174,18 @@ function triggerQueueUpdateEvent() {
 // ── Queue Synchronization & Replay Engine ─────────────────────────────────────
 
 import api from '../services/api';
+import { showToast } from './toast';
 
 let isSyncing = false;
 
 export async function syncAllQueues() {
   if (isSyncing) return;
   if (!navigator.onLine) return;
+
+  const statsBefore = await getQueueStats();
+  if (statsBefore.totalPending === 0) return;
+
+  showToast('Syncing to Aurora + DynamoDB...', 'info');
 
   isSyncing = true;
   console.log('🔄 [OfflineSyncQueue] Commencing background replay...');
@@ -298,6 +304,9 @@ export async function syncAllQueues() {
   } finally {
     isSyncing = false;
     triggerQueueUpdateEvent();
+    if (syncCount > 0) {
+      showToast('Saved to AWS ✓', 'success');
+    }
   }
 }
 

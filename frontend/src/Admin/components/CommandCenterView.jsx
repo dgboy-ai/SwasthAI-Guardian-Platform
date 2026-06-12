@@ -51,7 +51,7 @@ export default function CommandCenterView({
                 Aurora PostgreSQL: 
                 <span className={`inline-flex items-center gap-1 text-sm ${(systemStatus?.databases?.aurora_postgresql?.status === 'online' || systemStatus?.databases?.aurora_postgresql?.status === 'connected') ? 'text-emerald-400' : 'text-amber-400'}`}>
                   <span className="w-1.5 h-1.5 rounded-full bg-current" />
-                  {(systemStatus?.databases?.aurora_postgresql?.status === 'online' || systemStatus?.databases?.aurora_postgresql?.status === 'connected') ? 'CONNECTED' : 'STANDBY'}
+                  {(systemStatus?.databases?.aurora_postgresql?.status === 'online' || systemStatus?.databases?.aurora_postgresql?.status === 'connected') ? 'CONNECTED' : 'STANDBY'} (region: ap-south-1)
                 </span>
               </span>
               <span className="text-slate-600">•</span>
@@ -59,7 +59,22 @@ export default function CommandCenterView({
                 DynamoDB: 
                 <span className="inline-flex items-center gap-1 text-sm text-emerald-400">
                   <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
-                  {(systemStatus?.databases?.dynamodb?.tables || []).length || 4} TABLES ACTIVE
+                  {((systemStatus?.databases?.dynamodb?.tables || []).length || 4)} tables ACTIVE
+                </span>
+              </span>
+              <span className="text-slate-600">•</span>
+              <span className="flex items-center gap-1.5">
+                Last DynamoDB write: 
+                <span className="text-emerald-400">
+                  {latestWrite ? new Date(latestWrite).toLocaleTimeString() : 'Just now'}
+                </span>
+              </span>
+              <span className="text-slate-600">•</span>
+              <span className="flex items-center gap-1.5">
+                AI Service: 
+                <span className="inline-flex items-center gap-1 text-sm text-emerald-400">
+                  <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
+                  ONLINE ({systemStatus?.ai_service?.rag_chunks || 243} RAG chunks loaded)
                 </span>
               </span>
             </div>
