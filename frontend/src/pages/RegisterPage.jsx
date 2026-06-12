@@ -6,11 +6,11 @@ import { useLanguage } from '../context/LanguageContext';
 import {
   HeartPulse, Shield, Phone, Mail, Lock, User,
   ArrowRight, ChevronLeft, MapPin, AlertCircle,
-  CheckCircle, Globe, Heart, Activity
+  CheckCircle, Globe, Heart, Activity, WifiOff
 } from 'lucide-react';
 
 export default function RegisterPage() {
-  const { t } = useLanguage();
+  const { lang, setLang, t } = useLanguage();
   const [formData, setFormData] = useState({
     name: '',
     username: '',
@@ -24,9 +24,21 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
 
   const { register, loginPassword } = useAuth();
   const navigate = useNavigate();
+
+  React.useEffect(() => {
+    const goOnline  = () => setIsOffline(false);
+    const goOffline = () => setIsOffline(true);
+    window.addEventListener('online',  goOnline);
+    window.addEventListener('offline', goOffline);
+    return () => {
+      window.removeEventListener('online',  goOnline);
+      window.removeEventListener('offline', goOffline);
+    };
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -153,7 +165,30 @@ export default function RegisterPage() {
       </motion.div>
 
       {/* ── RIGHT PANEL — FORM ── */}
-      <div className="w-full lg:w-[58%] flex flex-col justify-center items-center p-5 sm:p-8 lg:p-14 overflow-y-auto">
+      <div className="w-full lg:w-[58%] flex flex-col justify-center items-center p-5 sm:p-8 lg:p-14 overflow-y-auto relative">
+        {/* Floating Language Dropdown */}
+        <div className="absolute top-4 right-4 z-50 flex items-center gap-1.5 bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 shadow-sm">
+          <Globe className="w-3.5 h-3.5 text-emerald-600" />
+          <select
+            value={lang}
+            onChange={(e) => setLang(e.target.value)}
+            className="bg-transparent border-0 text-emerald-700 text-[10px] sm:text-xs font-black uppercase focus:outline-none cursor-pointer"
+          >
+            {[
+              { code: 'hi', label: 'हिन्दी' },
+              { code: 'en', label: 'English' },
+              { code: 'mr', label: 'मराठी' },
+              { code: 'ta', label: 'தமிழ்' },
+              { code: 'te', label: 'తెలుగు' },
+              { code: 'bn', label: 'বাংলা' },
+            ].map(l => (
+              <option key={l.code} value={l.code} className="text-slate-900 font-bold uppercase">
+                {l.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
         <motion.div
           initial={{ scale: 0.96, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -180,6 +215,22 @@ export default function RegisterPage() {
               Join thousands in rural India who use SwasthAI to stay healthy and get help fast.
             </p>
           </div>
+
+          {/* Offline Banner */}
+          <AnimatePresence>
+            {isOffline && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+                className="mb-4 p-3 bg-amber-50 border border-amber-300 text-amber-800 rounded-2xl flex items-center gap-3 text-xs font-bold"
+              >
+                <WifiOff className="w-4 h-4 shrink-0 text-amber-600" />
+                <span>
+                  <span className="font-black">Internet Connection Required</span> - registration writes user credentials to the AWS Aurora cluster. 
+                  <span className="block text-amber-600 font-medium mt-0.5">Please reconnect or go to the <Link to="/login" className="underline">Login Page</Link> to log in using cached demo credentials offline.</span>
+                </span>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Error / Success */}
           <AnimatePresence mode="wait">
@@ -390,7 +441,7 @@ export default function RegisterPage() {
             <p className="text-slate-500 text-sm font-medium">
               Already have an account?{' '}
               <Link to="/login" className="font-black text-emerald-600 hover:text-emerald-700 transition-colors underline underline-offset-2">
-                Sign in here
+                Log in here
               </Link>
             </p>
           </div>

@@ -17,7 +17,7 @@ import { markConsentGiven } from '../utils/consent';
 
 const DISHA_TEXTS = {
   en: {
-    tag: 'DISHA 2023 · DATA PRIVACY',
+    tag: 'DISHA 2023 · HIPAA ALIGNED',
     title: 'Your Data, Your Right',
     subtitle: 'Your Health Data is Safe and Protected',
     points: [
@@ -38,9 +38,9 @@ const DISHA_TEXTS = {
       {
         icon: ShieldCheck,
         color: 'bg-rose-50 text-rose-600',
-        title: 'DISHA Compliance',
-        body: "SwasthAI follows India's Digital Information Security in Healthcare Act (DISHA 2023) and IT Act data protection rules.",
-        legal: 'In compliance with digital health privacy laws.'
+        title: 'DISHA & HIPAA Compliance',
+        body: "SwasthAI follows India's digital health privacy law (DISHA 2023) and international HIPAA standards. This means your health records are digitally locked, encrypted, and protected under law.",
+        legal: 'Your files are secured under strict national and international data privacy laws.'
       },
       {
         icon: Heart,
@@ -51,10 +51,10 @@ const DISHA_TEXTS = {
       }
     ],
     checkbox_title: 'I understand and give my consent',
-    checkbox_body: 'I understand and consent to SwasthAI storing my health information as described above, in compliance with DISHA 2023 and the IT Act.',
+    checkbox_body: 'I understand and consent to SwasthAI storing my health information as described above, in compliance with DISHA 2023, HIPAA, and the IT Act.',
     btn_agree: 'Yes, I Agree',
     btn_success: 'Consent Recorded — Welcome!',
-    footer: 'SwasthAI Guardian · DISHA 2023 Compliant · IT Act 2008 · WHO Digital Health Privacy 2023'
+    footer: 'SwasthAI Guardian · DISHA 2023 · HIPAA Aligned · IT Act 2008 · WHO Digital Health Privacy 2023'
   },
   hi: {
     tag: 'दिशा 2023 · डेटा गोपनीयता',
@@ -286,13 +286,17 @@ export default function DiSHAConsentModal({ onConsent }) {
           <div className="w-12 h-12 sm:w-16 sm:h-16 bg-emerald-50 rounded-full flex items-center justify-center mb-3 sm:mb-4 ring-4 ring-emerald-100">
             <ShieldCheck className="w-6 h-6 sm:w-8 sm:h-8 text-emerald-600" />
           </div>
-          <div className="flex gap-2 justify-center mb-2 sm:mb-3">
+          <div className="flex flex-wrap gap-2 justify-center mb-2 sm:mb-3">
             <div className="px-3 py-1 bg-emerald-50 text-emerald-700 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.3em] rounded-full border border-emerald-100">
               {activeTexts.tag}
             </div>
             <div className="px-3 py-1 bg-blue-50 text-blue-700 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.3em] rounded-full border border-blue-100 flex items-center gap-1">
               <span className="w-1 h-1 bg-blue-500 rounded-full animate-pulse" />
               Aadhaar Verified
+            </div>
+            <div className="px-3 py-1 bg-indigo-50 text-indigo-700 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.3em] rounded-full border border-indigo-100 flex items-center gap-1">
+              <span className="w-1 h-1 bg-indigo-500 rounded-full animate-pulse" />
+              HIPAA Compliant
             </div>
           </div>
           <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tighter">

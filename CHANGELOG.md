@@ -8,6 +8,12 @@ All notable changes and feature developments completed during the hackathon wind
   - Redesigned the public `/demo` route into a high-fidelity self-guided tour experience.
   - Replaced the static card grid layout with interactive, glassy role tabs: **Villager**, **ASHA Worker**, and **Admin**.
   - Added high-contrast, glowing "Try This →" CTA buttons that bypass manual authentication checks, dynamically logging the user in using pre-seeded sandbox credentials and automatically routing them to their respective role dashboards.
+- **Floating Language Select on Auth Pages**:
+  - Integrated floating, glassmorphic language selector dropdowns at the top right of the forms in `LoginPage.jsx` and `RegisterPage.jsx`.
+  - Empowers judges to test multilingual translation flows (Hindi, English, Marathi, Tamil, Telugu, and Bengali) directly from the authentication gates.
+  - Aligned all "Sign In" text references to "Log In" to match the file naming convention (`LoginPage.jsx`) for semantic consistency.
+  - Added a visual badge on the login page's credentials helper card to explicitly prompt judges to test offline login behavior by disconnecting their internet connection.
+  - Implemented an intelligent offline warning banner on `RegisterPage.jsx` notifying users that registration requires a database write connection, prompting them to redirect to the Login page and use cached demo credentials if offline.
 - **Real-Time Symptom → DynamoDB Telemetry Trace**:
   - Upgraded the backend `/symptoms` route handler in `routes/villager.js` to synchronously write symptom telemetry to the `outbreak_telemetry` table in DynamoDB.
   - Returns PostgreSQL database insert timestamp (`dbWriteTimestamp`), DynamoDB write timestamp (`dynamoDbWriteTimestamp`), and outbreak agent notification trigger status back in the HTTP response.

@@ -6,7 +6,7 @@ import { useLanguage } from '../context/LanguageContext';
 import {
   HeartPulse, Shield, Phone, Mail, Lock, User,
   ArrowRight, ChevronLeft, MapPin, AlertCircle,
-  ShieldCheck, Wifi, Zap, Users, WifiOff
+  ShieldCheck, Wifi, Zap, Users, WifiOff, Globe
 } from 'lucide-react';
 
 // ── Offline-First Login Helpers ──────────────────────────────────────────────
@@ -79,7 +79,7 @@ function cacheUserAfterLogin(identifier, password, role, name) {
 }
 
 export default function LoginPage() {
-  const { t } = useLanguage();
+  const { lang, setLang, t } = useLanguage();
   const [loginMethod, setLoginMethod] = useState('otp');
   const [formData, setFormData] = useState({ identifier: '', password: '', otp: '', role: 'villager' });
   const [isLoading, setIsLoading] = useState(false);
@@ -247,7 +247,30 @@ export default function LoginPage() {
       </motion.div>
 
       {/* ── RIGHT PANEL — FORM ── */}
-      <div className="w-full lg:w-[58%] flex flex-col justify-center items-center p-5 sm:p-8 lg:p-14 overflow-y-auto">
+      <div className="w-full lg:w-[58%] flex flex-col justify-center items-center p-5 sm:p-8 lg:p-14 overflow-y-auto relative">
+        {/* Floating Language Dropdown */}
+        <div className="absolute top-4 right-4 z-50 flex items-center gap-1.5 bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 shadow-sm">
+          <Globe className="w-3.5 h-3.5 text-emerald-600" />
+          <select
+            value={lang}
+            onChange={(e) => setLang(e.target.value)}
+            className="bg-transparent border-0 text-emerald-700 text-[10px] sm:text-xs font-black uppercase focus:outline-none cursor-pointer"
+          >
+            {[
+              { code: 'hi', label: 'हिन्दी' },
+              { code: 'en', label: 'English' },
+              { code: 'mr', label: 'मराठी' },
+              { code: 'ta', label: 'தமிழ்' },
+              { code: 'te', label: 'తెలుగు' },
+              { code: 'bn', label: 'বাংলা' },
+            ].map(l => (
+              <option key={l.code} value={l.code} className="text-slate-900 font-bold uppercase">
+                {l.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
         <motion.div
           initial={{ scale: 0.96, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -265,13 +288,13 @@ export default function LoginPage() {
           {/* Header */}
           <div className="mb-5 sm:mb-10">
             <span className="inline-block px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[8px] sm:text-[10px] font-black uppercase tracking-widest rounded-full mb-2 sm:mb-4">
-              {t.secure_signin || 'Secure Sign In'}
+              {t.secure_login || 'Secure Log In'}
             </span>
             <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight mb-1.5 sm:mb-2">
               {t.welcome_back || 'Welcome back'}
             </h2>
             <p className="text-slate-400 font-medium text-[11px] sm:text-sm max-w-sm leading-relaxed">
-              {t.signin_desc || 'Sign in to access your health dashboard, records, and emergency services.'}
+              {t.login_desc || 'Log in to access your health dashboard, records, and emergency services.'}
             </p>
           </div>
 
@@ -306,7 +329,7 @@ export default function LoginPage() {
           {/* Role Selection */}
           <div className="mb-8">
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block">
-              {t.signing_in_as || 'I am signing in as'}
+              {t.logging_in_as || 'I am logging in as'}
             </label>
             <div className="grid grid-cols-3 sm:grid-cols-3 gap-2 sm:gap-3">
               {roles.map(r => (
@@ -407,20 +430,25 @@ export default function LoginPage() {
               <div className="absolute inset-0 bg-emerald-600 translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
               <span className="relative z-10 flex items-center gap-2">
                 {isLoading ? (
-                  <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> {isOffline ? 'Checking offline...' : 'Signing in...'}</>
+                  <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> {isOffline ? 'Checking offline...' : 'Logging in...'}</>
                 ) : usedOfflineFallback ? (
                   <><Wifi className="w-4 h-4" /> Offline Session Active ✓</>
                 ) : (
-                  <>Sign In {isOffline ? <WifiOff className="w-4 h-4" /> : <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />}</>
+                  <>Log In {isOffline ? <WifiOff className="w-4 h-4" /> : <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />}</>
                 )}
               </span>
             </motion.button>
 
             {/* Judge/demo credentials for hackathon judges */}
             <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl space-y-2.5">
-              <p className="text-[10px] font-black uppercase tracking-widest text-emerald-700 flex items-center gap-2">
-                <Zap className="w-3.5 h-3.5" /> Judge/Demo Mode - Click to Fill
-              </p>
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <p className="text-[10px] font-black uppercase tracking-widest text-emerald-700 flex items-center gap-2">
+                  <Zap className="w-3.5 h-3.5" /> Judge/Demo Mode - Click to Fill
+                </p>
+                <span className="px-2 py-0.5 bg-amber-100 border border-amber-200 text-amber-800 text-[8px] font-black uppercase tracking-wider rounded-md">
+                  📶 Works Offline! (Try turning off your Wi-Fi)
+                </span>
+              </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {[
                   { roleLabel: 'Villager',   roleId: 'villager', id: '9876543210',      pass: 'Demo@1234' },

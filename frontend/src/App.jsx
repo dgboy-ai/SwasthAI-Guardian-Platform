@@ -33,6 +33,7 @@ const MonitoringDashboard    = lazy(() => import('./pages/MonitoringDashboard'))
 import Footer from './components/Footer';
 import OfflineToast from './components/OfflineToast';
 import ErrorBoundary from './components/ErrorBoundary';
+import DesktopOnlyWrapper from './components/DesktopOnlyWrapper';
 
 // Skeleton loader shown while lazy chunks download
 function PageLoader() {
@@ -56,7 +57,8 @@ function PageLoader() {
 
 // Protected Route wrapper to ensure only authorized users access roles
 const ProtectedRoute = ({ children, allowedRole }) => {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+  if (loading) return <PageLoader />;
   if (!user) return <Navigate to="/login" replace />;
   if (allowedRole) {
     const roles = Array.isArray(allowedRole) ? allowedRole : [allowedRole];
@@ -65,17 +67,45 @@ const ProtectedRoute = ({ children, allowedRole }) => {
   return children;
 };
 
-// Shows DISHA consent modal once per device after first login
+// Shows DISHA consent modal once per device after first login (restricted to villagers, tracked per user)
 function ConsentGate({ children }) {
   const { user } = useAuth();
-  const [consented, setConsented] = useState(useConsentGiven());
-  const needsConsent = user && !consented;
+  
+  const getConsentKey = (u) => {
+    if (!u) return null;
+    return `swasthai_disha_consent_${u.id || u.username || u.phone || 'guest'}`;
+  };
+
+  const [consented, setConsented] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      if (user.role === 'villager') {
+        setConsented(localStorage.getItem(getConsentKey(user)) === 'true');
+      } else {
+        // Non-villagers do not need DISHA consent modal
+        setConsented(true);
+      }
+    } else {
+      setConsented(false);
+    }
+  }, [user]);
+
+  const handleConsent = () => {
+    if (user) {
+      localStorage.setItem(getConsentKey(user), 'true');
+      setConsented(true);
+    }
+  };
+
+  const needsConsent = user && user.role === 'villager' && !consented;
+
   return (
     <>
       {children}
       <AnimatePresence>
         {needsConsent && (
-          <DiSHAConsentModal onConsent={() => setConsented(true)} />
+          <DiSHAConsentModal onConsent={handleConsent} />
         )}
       </AnimatePresence>
     </>
@@ -188,17 +218,23 @@ export default function App() {
               } />
               <Route path="/admin" element={
                 <ProtectedRoute allowedRole="admin">
-                   <ErrorBoundary><AdminDashboard /></ErrorBoundary>
+                  <DesktopOnlyWrapper dashboardName="Admin Command Center">
+                    <ErrorBoundary><AdminDashboard /></ErrorBoundary>
+                  </DesktopOnlyWrapper>
                 </ProtectedRoute>
               } />
               <Route path="/monitor" element={
                 <ProtectedRoute allowedRole="admin">
-                   <LayoutWrapper><ErrorBoundary><MonitoringDashboard /></ErrorBoundary></LayoutWrapper>
+                  <DesktopOnlyWrapper dashboardName="District Simulation & Observability Monitor">
+                    <LayoutWrapper><ErrorBoundary><MonitoringDashboard /></ErrorBoundary></LayoutWrapper>
+                  </DesktopOnlyWrapper>
                 </ProtectedRoute>
               } />
               <Route path="/monitoring" element={
                 <ProtectedRoute allowedRole="admin">
-                   <LayoutWrapper><ErrorBoundary><MonitoringDashboard /></ErrorBoundary></LayoutWrapper>
+                  <DesktopOnlyWrapper dashboardName="District Simulation & Observability Monitor">
+                    <LayoutWrapper><ErrorBoundary><MonitoringDashboard /></ErrorBoundary></LayoutWrapper>
+                  </DesktopOnlyWrapper>
                 </ProtectedRoute>
               } />
               <Route path="*" element={<Navigate to="/" replace />} />
