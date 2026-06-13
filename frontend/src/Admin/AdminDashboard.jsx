@@ -29,7 +29,7 @@ import { stackStatusMeta, timeAgo } from './components/utils';
 const NAV_ITEMS = [
   { id: 'command', label: 'Command Center', icon: LayoutDashboard },
   { id: 'outbreak', label: 'Outbreak Radar', icon: Radio },
-  { id: 'risk-intel', label: 'Risk Intelligence', icon: TrendingUp, badge: 'NEW' },
+  { id: 'risk-intel', label: 'Risk Intelligence', icon: TrendingUp },
   { id: 'maternal', label: 'Maternal Health', icon: Heart },
   { id: 'nutrition', label: 'Child Nutrition', icon: Baby },
   { id: 'ambulance', label: 'Ambulance Feed', icon: Truck },
