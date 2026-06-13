@@ -209,6 +209,7 @@ def run_outbreak_agent():
         print(f"[AGENT] Running outbreak scan at {datetime.utcnow().isoformat()}Z")
         clusters = _fetch_symptom_clusters()
 
+        scans_reported = 0
         for cluster in clusters:
             try:
                 count = int(cluster.get("count", 0))
@@ -221,6 +222,7 @@ def run_outbreak_agent():
 
             # Report telemetry scan to backend
             _report_agent_scan(cluster["villageId"], count, cluster.get("symptoms", ""), result)
+            scans_reported += 1
 
             if result.get("outbreak") and result.get("confidence", 0) >= 0.7:
                 village_id = cluster["villageId"]
@@ -241,6 +243,10 @@ def run_outbreak_agent():
             else:
                 print(f"[AGENT] [OK] Village {cluster['villageId']}: No outbreak "
                       f"({cluster['count']} cases, confidence={result.get('confidence', 0):.0%})")
+
+        if scans_reported == 0:
+            # Send an idle heartbeat scan to let backend know agent is alive and scanning
+            _report_agent_scan("system-check", 0, "No active symptom clusters detected.", {"outbreak": False, "confidence": 0.0, "disease": "None", "action": "Continue monitoring."})
 
         time.sleep(CHECK_INTERVAL_SECONDS)
 

@@ -176,9 +176,8 @@ export default function CommandCenterView({
                         <p className="text-xs font-black text-slate-800 truncate">Patient: {loc.patientName}</p>
                         <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-widest mt-0.5">ID: AMB-{loc.requestId}</p>
                       </div>
-                      <span className={`px-2 py-0.5 rounded text-[9px] font-black border uppercase tracking-wider shrink-0 ${
-                        loc.priority === 'Critical' ? 'bg-rose-50 text-rose-700 border-rose-250 animate-pulse' : 'bg-orange-50 text-orange-700 border-orange-255'
-                      }`}>
+                      <span className={`px-2 py-0.5 rounded text-[9px] font-black border uppercase tracking-wider shrink-0 ${loc.priority === 'Critical' ? 'bg-rose-50 text-rose-700 border-rose-250 animate-pulse' : 'bg-orange-50 text-orange-700 border-orange-255'
+                        }`}>
                         {loc.priority}
                       </span>
                     </div>
@@ -200,7 +199,7 @@ export default function CommandCenterView({
                         <span className="text-emerald-700 font-black">ETA: {loc.eta} min{loc.eta !== 1 ? 's' : ''}</span>
                       </div>
                       <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
-                        <div 
+                        <div
                           className="bg-emerald-500 h-full rounded-full transition-all duration-1000"
                           style={{ width: `${Math.max(5, Math.min(100, ((14 - loc.eta) / 14) * 100))}%` }}
                         />
@@ -236,7 +235,7 @@ export default function CommandCenterView({
                     <div key={i} className={`bg-slate-950/40 border-l-4 ${r.color} rounded-r-2xl px-3.5 py-2.5 flex items-center justify-between gap-3 hover:bg-slate-950/60 transition-colors`}>
                       <p className="text-xs text-slate-300 font-semibold flex-1 leading-normal">{r.text}</p>
                       <div className="flex items-center gap-1.5 shrink-0">
-                        <button 
+                        <button
                           onClick={() => setActiveView('outbreak')}
                           className={`px-2.5 py-1 rounded-lg text-[10px] font-black text-white ${r.btnCls} transition-colors whitespace-nowrap shadow-sm`}
                         >

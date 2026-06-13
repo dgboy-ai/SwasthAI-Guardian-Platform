@@ -133,3 +133,59 @@
     display: none !important;
   }
 }
+
+/* Fix Leaflet map tile lines/seams and default container background */
+.leaflet-container {
+  background: #f8fafc !important;
+}
+.leaflet-tile {
+  outline: 1px solid transparent !important;
+  border: 1px solid transparent !important;
+}
+.leaflet-tile-container img {
+  max-width: none !important;
+  max-height: none !important;
+}
+
+/* Micro-animations and glow utilities */
+.glow-card-rose {
+  box-shadow: 0 4px 20px rgba(244, 63, 94, 0.05), 0 0 0 1px rgba(244, 63, 94, 0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.glow-card-rose:hover {
+  box-shadow: 0 10px 30px rgba(244, 63, 94, 0.12), 0 0 0 1.5px rgba(244, 63, 94, 0.25);
+  transform: translateY(-2px);
+}
+.glow-card-amber {
+  box-shadow: 0 4px 20px rgba(245, 158, 11, 0.05), 0 0 0 1px rgba(245, 158, 11, 0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.glow-card-amber:hover {
+  box-shadow: 0 10px 30px rgba(245, 158, 11, 0.12), 0 0 0 1.5px rgba(245, 158, 11, 0.25);
+  transform: translateY(-2px);
+}
+.glow-card-emerald {
+  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.05), 0 0 0 1px rgba(16, 185, 129, 0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.glow-card-emerald:hover {
+  box-shadow: 0 10px 30px rgba(16, 185, 129, 0.12), 0 0 0 1.5px rgba(16, 185, 129, 0.25);
+  transform: translateY(-2px);
+}
+.glow-card-indigo {
+  box-shadow: 0 4px 20px rgba(99, 102, 241, 0.05), 0 0 0 1px rgba(99, 102, 241, 0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.glow-card-indigo:hover {
+  box-shadow: 0 10px 30px rgba(99, 102, 241, 0.12), 0 0 0 1.5px rgba(99, 102, 241, 0.25);
+  transform: translateY(-2px);
+}
+.glow-card-slate {
+  box-shadow: 0 4px 20px rgba(71, 85, 105, 0.04), 0 0 0 1px rgba(71, 85, 105, 0.08);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.glow-card-slate:hover {
+  box-shadow: 0 10px 30px rgba(71, 85, 105, 0.1), 0 0 0 1.5px rgba(71, 85, 105, 0.2);
+  transform: translateY(-2px);
+}
+

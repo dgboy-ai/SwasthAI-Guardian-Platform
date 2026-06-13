@@ -40,6 +40,8 @@ export default function DistrictOutbreakMap({ onNodeSelect, activeVillageId = nu
   const [selectedNode, setSelectedNode] = useState(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [nodes, setNodes] = useState(DEFAULT_NODES);
+  const [isPolling, setIsPolling] = useState(false);
+  const [pollSuccess, setPollSuccess] = useState(false);
   
   const mapContainerRef = useRef(null);
   const mapInstanceRef = useRef(null);
@@ -61,16 +63,22 @@ export default function DistrictOutbreakMap({ onNodeSelect, activeVillageId = nu
     if (!mapContainerRef.current) return;
     if (mapInstanceRef.current) return;
 
-    // Centered around Varanasi
+    // Centered around Varanasi with performance options
     const map = L.map(mapContainerRef.current, {
       center: [25.32, 82.98],
       zoom: 11,
       minZoom: 10,
       maxZoom: 14,
       zoomControl: false,
+      renderer: L.canvas(), // HUGE speed boost for vector circles/boundaries rendering
+      fadeAnimation: true,
+      zoomAnimation: true,
+      markerZoomAnimation: true,
+      updateWhenIdle: true, // Only load tiles when panning stops for snappy responsiveness
+      updateWhenZooming: false
     });
 
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
       attribution: '&copy; OpenStreetMap &copy; CARTO'
     }).addTo(map);
 
@@ -183,20 +191,20 @@ export default function DistrictOutbreakMap({ onNodeSelect, activeVillageId = nu
         markerHtml = `
           <div class="relative flex items-center justify-center">
             <span class="absolute inline-flex h-10 w-10 animate-ping rounded-full bg-rose-500 opacity-60"></span>
-            <span class="relative inline-flex rounded-full h-4 w-4 bg-rose-500 border border-slate-900 shadow"></span>
+            <span class="relative inline-flex rounded-full h-4 w-4 bg-rose-500 border border-white shadow-md"></span>
           </div>
         `;
       } else if (n.status === 'emergency') {
         markerHtml = `
           <div class="relative flex items-center justify-center">
             <span class="absolute inline-flex h-8 w-8 animate-pulse rounded-full bg-amber-500 opacity-60"></span>
-            <span class="relative inline-flex rounded-full h-4 w-4 bg-amber-500 border border-slate-900 shadow"></span>
+            <span class="relative inline-flex rounded-full h-4 w-4 bg-amber-500 border border-white shadow-md"></span>
           </div>
         `;
       } else {
         markerHtml = `
           <div class="relative flex items-center justify-center">
-            <span class="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500 border border-slate-900 shadow"></span>
+            <span class="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500 border border-white shadow-md"></span>
           </div>
         `;
       }
@@ -225,7 +233,7 @@ export default function DistrictOutbreakMap({ onNodeSelect, activeVillageId = nu
       marker.bindTooltip(n.name.split(' / ')[0], {
         permanent: false,
         direction: 'top',
-        className: 'leaflet-tooltip-custom bg-slate-950 text-slate-200 border border-slate-800 font-black text-[10px] rounded px-2.5 py-1.5 shadow-xl'
+        className: 'leaflet-tooltip-custom bg-white text-slate-800 border border-slate-200 font-black text-[10px] rounded px-2.5 py-1.5 shadow-md'
       });
 
       markersLayerRef.current.addLayer(marker);
@@ -278,9 +286,19 @@ export default function DistrictOutbreakMap({ onNodeSelect, activeVillageId = nu
     if (onNodeSelect) onNodeSelect(node.id);
   };
 
+  const handleRecenterMap = () => {
+    if (mapInstanceRef.current) {
+      mapInstanceRef.current.setView([25.32, 82.98], 11, { animate: true });
+    }
+  };
+
   const handleRePollTelemetry = async () => {
-    if (!selectedNode) return;
+    if (!selectedNode || isPolling) return;
+    setIsPolling(true);
+    setPollSuccess(false);
     try {
+      // Satisfying artificial delay to show real-time network transaction to the user
+      await new Promise(resolve => setTimeout(resolve, 800));
       const statusData = await adminService.getVillageStatus(selectedNode.id);
       setNodes(prev => prev.map(n => {
         if (n.id === selectedNode.id) {
@@ -309,8 +327,12 @@ export default function DistrictOutbreakMap({ onNodeSelect, activeVillageId = nu
           latestAlert: alert,
         };
       });
+      setPollSuccess(true);
+      setTimeout(() => setPollSuccess(false), 2000);
     } catch (err) {
       console.error("Failed to re-poll telemetry:", err);
+    } finally {
+      setIsPolling(false);
     }
   };
 
@@ -318,26 +340,36 @@ export default function DistrictOutbreakMap({ onNodeSelect, activeVillageId = nu
     <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm p-6 sm:p-8 relative overflow-hidden flex flex-col lg:flex-row gap-6">
       
       {/* MAP CONTAINER */}
-      <div className="flex-1 flex flex-col justify-between relative min-h-[320px] bg-slate-950 rounded-[2rem] overflow-hidden border border-slate-900 shadow-inner">
+      <div className="flex-1 flex flex-col justify-between relative min-h-[460px] lg:min-h-[520px] bg-slate-950 rounded-[2rem] overflow-hidden border border-slate-900 shadow-[0_0_30px_rgba(16,185,129,0.08)]">
+
         {/* Leaflet DOM attachment */}
-        <div ref={mapContainerRef} className="absolute inset-0 z-10 w-full h-full" style={{ minHeight: '320px' }} />
+        <div ref={mapContainerRef} className="absolute inset-0 z-10 w-full h-full" style={{ minHeight: '100%', height: '100%' }} />
         
         {/* NETWORK & OFFLINE INDICATOR */}
-        <div className="absolute top-4 left-4 z-20 flex items-center gap-2 px-3 py-1.5 bg-black/60 backdrop-blur-md rounded-full border border-white/10">
+        <div className="absolute top-4 left-4 z-20 flex items-center gap-2 px-3 py-1.5 bg-slate-900/90 backdrop-blur-md rounded-full border border-emerald-500/20 shadow-lg">
           {isOnline ? (
             <Wifi className="w-3.5 h-3.5 text-emerald-400" />
           ) : (
             <WifiOff className="w-3.5 h-3.5 text-rose-400" />
           )}
-          <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest leading-none">
+          <span className="text-[9px] font-black text-emerald-300 uppercase tracking-widest leading-none">
             {isOnline ? 'Network Hub Active' : 'Offline Protocol Synced'}
           </span>
         </div>
 
+        {/* RE-CENTER MAP ACTION */}
+        <button
+          onClick={handleRecenterMap}
+          title="Recenter Map"
+          className="absolute top-4 right-4 z-20 p-2.5 bg-slate-900/90 hover:bg-emerald-600 text-emerald-300 hover:text-white backdrop-blur-md rounded-xl border border-emerald-500/20 hover:border-emerald-500 shadow-lg active:scale-95 transition-all flex items-center justify-center"
+        >
+          <MapPin className="w-4 h-4" />
+        </button>
+
         {/* MAP TITLE Watermark */}
-        <div className="absolute bottom-4 left-4 z-20 flex flex-col leading-none pointer-events-none">
-          <span className="text-xl font-black text-slate-400 opacity-60 tracking-tighter uppercase">Varanasi Division</span>
-          <span className="text-[8px] font-black text-slate-500 opacity-60 uppercase tracking-widest mt-1">SwasthAI Node Network Map</span>
+        <div className="absolute bottom-4 left-4 z-20 flex flex-col leading-none pointer-events-none bg-slate-950/80 backdrop-blur-sm px-3.5 py-2.5 rounded-2xl border border-slate-900 shadow-md">
+          <span className="text-xl font-black text-slate-100 opacity-90 tracking-tighter uppercase">Varanasi Division</span>
+          <span className="text-[8px] font-black text-emerald-400 opacity-90 uppercase tracking-widest mt-1">SwasthAI Node Network Map</span>
         </div>
       </div>
 
@@ -374,7 +406,9 @@ export default function DistrictOutbreakMap({ onNodeSelect, activeVillageId = nu
                 }`}>
                   <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
                   <p className="text-[10px] font-black leading-tight uppercase tracking-wider">
-                    {selectedNode.latestAlert || 'Active telemetry event cluster detected.'}
+                    {!selectedNode.latestAlert || selectedNode.latestAlert.toLowerCase().includes('undefined')
+                      ? 'Active telemetry event cluster detected.'
+                      : selectedNode.latestAlert}
                   </p>
                 </div>
               )}
@@ -449,15 +483,20 @@ export default function DistrictOutbreakMap({ onNodeSelect, activeVillageId = nu
         {/* RE-POOL ALL DATA ACTION */}
         <button
           onClick={handleRePollTelemetry}
-          disabled={!selectedNode}
+          disabled={!selectedNode || isPolling}
           className={`mt-4 w-full py-4 rounded-xl font-black uppercase text-[10px] tracking-[0.2em] transition-all flex items-center justify-center gap-2 border ${
-            selectedNode 
+            pollSuccess
+              ? 'bg-emerald-600 text-white border-emerald-600 cursor-default'
+              : isPolling
+              ? 'bg-slate-800 text-slate-400 border-slate-800 cursor-wait'
+              : selectedNode 
               ? 'bg-slate-900 hover:bg-emerald-600 text-white border-slate-900 hover:border-emerald-600 cursor-pointer' 
               : 'bg-slate-100 text-slate-400 border-slate-100 cursor-not-allowed'
           }`}
           style={{ minHeight: '48px' }}
         >
-          <RefreshCw className="w-3.5 h-3.5" /> Re-poll Telemetry
+          <RefreshCw className={`w-3.5 h-3.5 ${isPolling ? 'animate-spin' : ''}`} />
+          {pollSuccess ? 'Telemetry Synced ✓' : isPolling ? 'Polling Telemetry...' : 'Re-poll Telemetry'}
         </button>
       </div>
 

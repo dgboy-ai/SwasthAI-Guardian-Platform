@@ -164,7 +164,7 @@ export default function RegisterPage() {
         initial={{ x: -80, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
         transition={{ duration: 0.7, ease: 'easeOut' }}
-        className="hidden lg:flex w-[42%] relative overflow-hidden bg-[#0A2E24] flex-col justify-between p-10 xl:p-14"
+        className="hidden lg:flex w-[42%] relative overflow-y-auto bg-[#0A2E24] flex-col justify-between p-10 xl:p-14"
       >
         <div className="absolute top-0 right-0 w-full h-full opacity-20 pointer-events-none">
           <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-emerald-500 rounded-full blur-[120px]" />

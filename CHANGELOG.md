@@ -2,6 +2,21 @@
 
 All notable changes and feature developments completed during the project development window are documented in this file chronologically.
 
+## June 13, 2026
+### Fixed & Optimized
+- **Outbreak Radar View Design & Color Optimization**:
+  - Switched Leaflet map layout to Voyager light mode tiles with stylized, white-bordered circle markers and light-themed tooltips.
+  - Standardized component outer padding to `pl-8 pr-6 py-6` and removed child inline offsets, resolving telemetry alignment shifts.
+  - Repositioned the absolute "Live Surveillance Area Map" title badge to `top-3.5` to prevent text clipping from overflow parent rules.
+  - Polished action controls by styling all interactive buttons as solid-colored, pill-shaped (`rounded-full`) targets.
+  - Replaced scale transforms in alert pulse animations with opacity toggles to eliminate container resizing jitter.
+  - Replaced the label "Outbreak Response Cockpit" with "Outbreak Response Console" for refined dashboard terminology.
+- **Outbreak Agent Watchdog Heartbeat**:
+  - Fixed an offline reporting bug in `outbreak_agent.py` by introducing an idle telemetry report (`system-check` scan payload) when zero active symptom clusters are processed.
+  - Ensures the background scanning daemon consistently refreshes its watchdog timestamp at the backend, preventing false offline warnings in the admin alert panel.
+- **Admin Dashboard Integrity**:
+  - Reverted and preserved the dark-slate design of the main dashboard and the production evidence panel components to keep them untouched.
+
 ## June 12, 2026
 ### Fixed & Optimized
 - **REST API Robustness, 404 Handlers & Global Error Catcher**:

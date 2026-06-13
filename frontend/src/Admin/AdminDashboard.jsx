@@ -525,14 +525,12 @@ export default function AdminDashboard() {
                       <span className="absolute inset-0 rounded-xl" style={{ boxShadow: '0 0 16px rgba(16,185,129,0.25)', pointerEvents: 'none' }} />
                     )}
                     <item.icon
-                      className={`w-[18px] h-[18px] shrink-0 transition-all duration-200 ${
-                        active ? 'text-white drop-shadow-sm' : 'text-emerald-400/60 group-hover/navitem:text-emerald-300'
-                      }`}
+                      className={`w-[18px] h-[18px] shrink-0 transition-all duration-200 ${active ? 'text-white drop-shadow-sm' : 'text-emerald-400/60 group-hover/navitem:text-emerald-300'
+                        }`}
                     />
                     {!sidebarCollapsed && (
-                      <span className={`text-[12px] truncate animate-in fade-in duration-200 flex-1 flex items-center gap-2 ${
-                        active ? 'font-bold text-white' : 'font-medium'
-                      }`}>
+                      <span className={`text-[12px] truncate animate-in fade-in duration-200 flex-1 flex items-center gap-2 ${active ? 'font-bold text-white' : 'font-medium'
+                        }`}>
                         {item.label}
                         {item.badge && (
                           <span className="px-1.5 py-0.5 bg-violet-500 text-white text-[7px] font-black rounded uppercase tracking-wider">
@@ -567,16 +565,14 @@ export default function AdminDashboard() {
             <button
               onClick={() => setJudgeDemoMode(v => !v)}
               title={sidebarCollapsed ? (judgeDemoMode ? 'Judge Tour: ON' : 'Judge Tour: OFF') : ''}
-              className={`relative w-10 h-5 rounded-full transition-all duration-300 shrink-0 border ${
-                judgeDemoMode
+              className={`relative w-10 h-5 rounded-full transition-all duration-300 shrink-0 border ${judgeDemoMode
                   ? 'bg-emerald-500 border-emerald-400/60 shadow-[0_0_8px_rgba(16,185,129,0.5)]'
                   : 'bg-slate-700 border-slate-600'
-              }`}
+                }`}
             >
               <span
-                className={`absolute top-0.5 bottom-0.5 aspect-square bg-white rounded-full shadow-sm transition-all duration-300 ${
-                  judgeDemoMode ? 'right-0.5 left-auto' : 'left-0.5 right-auto'
-                }`}
+                className={`absolute top-0.5 bottom-0.5 aspect-square bg-white rounded-full shadow-sm transition-all duration-300 ${judgeDemoMode ? 'right-0.5 left-auto' : 'left-0.5 right-auto'
+                  }`}
               />
             </button>
           </div>
@@ -742,18 +738,18 @@ export default function AdminDashboard() {
           {/* Status strip */}
           <div className="px-5 lg:px-6 pb-2.5 flex items-center gap-2 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
             {[
-              { label: 'System Health',     val: productionReadyStatus,   dot: productionStripMeta.dot,  bg: 'bg-emerald-50',  text: 'text-emerald-700',  border: 'border-emerald-100' },
-              { label: 'Aurora PostgreSQL', val: auroraStripMeta.label,   dot: auroraStripMeta.dot,      bg: 'bg-emerald-50',  text: 'text-emerald-700',  border: 'border-emerald-100' },
-              { label: 'DynamoDB',          val: dynamoStripMeta.label,   dot: dynamoStripMeta.dot,      bg: 'bg-amber-50',    text: 'text-amber-700',   border: 'border-amber-100' },
-              { label: 'AI Service',        val: aiStripMeta.label,       dot: aiStripMeta.dot,          bg: 'bg-violet-50',   text: 'text-violet-700',  border: 'border-violet-100' },
-              { label: 'Offline Villages',  val: `${S.villages ?? 4}`,    dot: 'bg-rose-500',            bg: 'bg-rose-50',     text: 'text-rose-700',    border: 'border-rose-100' },
-              { label: 'Pending Syncs',     val: '12',                    dot: 'bg-amber-500',           bg: 'bg-amber-50',    text: 'text-amber-700',   border: 'border-amber-100' },
-              { label: 'Last Sync',         val: lastSync,                dot: 'bg-slate-400',           bg: 'bg-slate-50',    text: 'text-slate-600',   border: 'border-slate-200' },
+              { label: 'System Health', val: productionReadyStatus, dot: productionStripMeta.dot, bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-100' },
+              { label: 'Aurora PostgreSQL', val: auroraStripMeta.label, dot: auroraStripMeta.dot, bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-100' },
+              { label: 'DynamoDB', val: dynamoStripMeta.label, dot: dynamoStripMeta.dot, bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-100' },
+              { label: 'AI Service', val: aiStripMeta.label, dot: aiStripMeta.dot, bg: 'bg-violet-50', text: 'text-violet-700', border: 'border-violet-100' },
+              { label: 'Offline Villages', val: `${S.villages ?? 4}`, dot: 'bg-rose-500', bg: 'bg-rose-50', text: 'text-rose-700', border: 'border-rose-100' },
+              { label: 'Pending Syncs', val: '12', dot: 'bg-amber-500', bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-100' },
+              { label: 'Last Sync', val: lastSync, dot: 'bg-slate-400', bg: 'bg-slate-50', text: 'text-slate-600', border: 'border-slate-200' },
             ].map(s => (
               <div key={s.label}
                 className={`flex items-center gap-1.5 shrink-0 px-2.5 py-1 rounded-lg border ${s.bg} ${s.border} whitespace-nowrap`}>
                 <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${s.dot}`} />
-                <span className="text-[10px] font-bold text-slate-400">{s.label}:</span>
+                <span className="text-[10px] font-bold text-slate-700">{s.label}:</span>
                 <span className={`text-[10px] font-black ${s.text}`}>{s.val}</span>
               </div>
             ))}
@@ -772,59 +768,6 @@ export default function AdminDashboard() {
             <span className="text-[10px] font-mono opacity-80">Check server logs or service health dashboard</span>
           </div>
         ))}
-
-        {/* 🟢 PERSISTENT LIVE AWS PROOF BANNER */}
-        <div className="bg-gradient-to-r from-slate-900 to-indigo-950 text-white border-b border-indigo-500/20 px-6 py-3.5 shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-4 relative overflow-hidden shrink-0">
-          <div className="absolute right-0 top-0 w-80 h-80 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
-          
-          <div className="flex items-center gap-3 relative z-10">
-            <div className="relative flex h-3 w-3 shrink-0">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-            </div>
-            <div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-500/20">Live AWS Stack Proof</span>
-                <span className="px-2 py-0.5 bg-indigo-500/20 text-indigo-300 rounded text-[10px] font-black uppercase tracking-wider">Region: ap-south-1 (Mumbai)</span>
-                {judgeDemoMode && (
-                  <span className="px-2 py-0.5 bg-amber-500/20 text-amber-300 rounded text-[10px] font-black uppercase tracking-wider border border-amber-500/30">Seeded Demo Data Enabled</span>
-                )}
-              </div>
-              <div className="flex flex-wrap items-center gap-x-3.5 gap-y-1 mt-1.5 text-xs font-bold text-slate-300">
-                <span className="flex items-center gap-1.5">
-                  Aurora Serverless: 
-                  <span className={`inline-flex items-center gap-1 text-[11px] font-black ${(auroraStatus === 'connected' || auroraStatus === 'online') ? 'text-emerald-400' : 'text-amber-400'}`}>
-                    <span className="w-1.5 h-1.5 rounded-full bg-current" />
-                    {(auroraStatus === 'connected' || auroraStatus === 'online') ? 'CONNECTED' : 'STANDBY'}
-                  </span>
-                </span>
-                <span className="text-slate-700 hidden sm:inline">•</span>
-                <span className="flex items-center gap-1.5">
-                  DynamoDB Telemetry: 
-                  <span className={`inline-flex items-center gap-1 text-[11px] font-black ${(dynamoStatus === 'connected' || dynamoStatus === 'online') ? 'text-emerald-400' : 'text-rose-400'}`}>
-                    <span className="w-1.5 h-1.5 rounded-full bg-current" />
-                    {(dynamoStatus === 'connected' || dynamoStatus === 'online') ? 'ACTIVE' : 'OFFLINE'}
-                  </span>
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400 font-semibold md:justify-end shrink-0 relative z-10">
-            <div className="flex items-center gap-1 bg-white/5 border border-white/10 rounded-lg px-2.5 py-1.5">
-              <span className="text-slate-500">Last Telemetry: </span>
-              <span className="text-slate-200 font-black">{lastSync}</span>
-            </div>
-            <div className="flex items-center gap-1 bg-white/5 border border-white/10 rounded-lg px-2.5 py-1.5">
-              <span className="text-slate-500">Postgres Pool: </span>
-              <span className="text-slate-200 font-black">{systemStatus?.databases?.aurora_postgresql?.pool?.total || 5} active</span>
-            </div>
-            <div className="flex items-center gap-1 bg-white/5 border border-white/10 rounded-lg px-2.5 py-1.5">
-              <span className="text-slate-500">SSE Listeners: </span>
-              <span className="text-slate-200 font-black">{systemStatus?.realtime?.sse_clients_connected ?? 1} active</span>
-            </div>
-          </div>
-        </div>
 
         {/* Scrollable body */}
         <main className="flex-1 overflow-y-auto">

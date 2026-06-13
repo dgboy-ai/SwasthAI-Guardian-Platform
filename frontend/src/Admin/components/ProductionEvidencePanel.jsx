@@ -311,7 +311,7 @@ export default function ProductionEvidencePanel({ systemStatus, dynamoFeed, load
                 <p className="text-[10px] font-mono text-amber-500/70">{tableDescriptions[hoveredTable].idx}</p>
               </div>
             ) : (
-              <div className="flex items-center gap-2 text-slate-600 text-[11px] italic">
+              <div className="flex items-center gap-2 text-slate-650 text-[11px] italic">
                 <Sparkles className="w-3 h-3" />
                 Hover a table badge to inspect schema, keys, and GSI details
               </div>
@@ -324,10 +324,10 @@ export default function ProductionEvidencePanel({ systemStatus, dynamoFeed, load
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 pb-2 border-b border-white/5">Telemetry Database Metrics</p>
           <div className="grid grid-cols-2 gap-3">
             {[
-              { label: 'Last Write Time',    val: latestWrite ? timeAgo(latestWrite) : 'No event loaded',                       color: latestWrite ? 'text-emerald-400' : 'text-slate-500' },
+              { label: 'Last Write Time',    val: latestWrite ? timeAgo(latestWrite) : 'No event loaded',                       color: latestWrite ? 'text-emerald-400' : 'text-slate-550' },
               { label: 'PostgreSQL Pool',    val: aurora.pool ? `${aurora.pool.total} active / ${aurora.pool.idle} idle` : '5 active / 0 idle', color: 'text-slate-200' },
               { label: 'Registered Accounts', val: aurora.registered_users ?? '4',                                              color: 'text-sky-400' },
-              { label: 'SSE Channels',       val: `${systemStatus?.realtime?.sse_clients_connected ?? 0} active`,               color: systemStatus?.realtime?.sse_clients_connected > 0 ? 'text-emerald-400' : 'text-slate-500' },
+              { label: 'SSE Channels',       val: `${systemStatus?.realtime?.sse_clients_connected ?? 0} active`,               color: systemStatus?.realtime?.sse_clients_connected > 0 ? 'text-emerald-400' : 'text-slate-550' },
             ].map(m => (
               <div key={m.label} className="p-3 rounded-xl bg-slate-950/50 border border-slate-800 hover:border-slate-700 transition-colors">
                 <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wide mb-1">{m.label}</p>
@@ -362,7 +362,7 @@ export default function ProductionEvidencePanel({ systemStatus, dynamoFeed, load
           {/* Trace rows */}
           <div className="p-3 font-mono space-y-1 max-h-[200px] overflow-y-auto" style={{ scrollbarWidth: 'thin', scrollbarColor: '#334155 transparent' }}>
             {liveTraces.length === 0 ? (
-              <div className="text-slate-600 text-xs italic px-2 py-3">Connecting to backend trace stream...</div>
+              <div className="text-slate-650 text-xs italic px-2 py-3">Connecting to backend trace stream...</div>
             ) : liveTraces.slice(0, 6).map((trace, idx) => {
               const isGet    = trace.method === 'GET';
               const isOk     = trace.status >= 200 && trace.status < 300;
@@ -375,21 +375,21 @@ export default function ProductionEvidencePanel({ systemStatus, dynamoFeed, load
                   className={`flex items-center justify-between gap-2 px-2 py-1 rounded-lg text-xs hover:bg-white/4 transition-colors ${idx === 0 ? 'trace-in' : ''}`}
                 >
                   <div className="flex items-center gap-2 min-w-0">
-                    <span className="text-slate-600 tabular-nums shrink-0">[{timeStr}]</span>
+                    <span className="text-slate-500 tabular-nums shrink-0">[{timeStr}]</span>
                     <span className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase shrink-0 ${
                       isGet ? 'bg-blue-900/60 text-blue-300 border border-blue-800/40' : 'bg-violet-900/60 text-violet-300 border border-violet-800/40'
                     }`}>{trace.method}</span>
-                    <span className="text-slate-300 font-medium truncate">{trace.path}</span>
-                    <span className="text-slate-700 text-[9px] shrink-0">#{trace.traceId}</span>
+                    <span className="text-slate-200 font-medium truncate">{trace.path}</span>
+                    <span className="text-slate-600 text-[9px] shrink-0">#{trace.traceId}</span>
                   </div>
                   <div className="flex items-center gap-3 shrink-0">
                     <span className={`font-black text-[11px] ${statusColor}`}>{statusText}</span>
-                    <span className="text-slate-500 text-[10px] tabular-nums">{trace.duration}ms</span>
+                    <span className="text-slate-400 text-[10px] tabular-nums">{trace.duration}ms</span>
                   </div>
                 </div>
               );
             })}
-            <div className="flex items-center text-slate-600 text-[10px] px-2 pt-1">
+            <div className="flex items-center text-slate-500 text-[10px] px-2 pt-1">
               <span className="text-emerald-400 font-black mr-1.5">$</span>
               <span>swasthai --watch live:traces --interval=3000</span>
               <span className="w-1.5 h-3.5 bg-slate-400 ml-1 inline-block align-middle animate-cursor" />
@@ -410,8 +410,8 @@ export default function ProductionEvidencePanel({ systemStatus, dynamoFeed, load
               HIPAA Verified
             </span>
           </div>
-          <p className="text-xs text-slate-400 font-medium leading-relaxed">
-            Records in <strong className="text-slate-200">Aurora PostgreSQL</strong> are encrypted at rest with <strong className="text-slate-200">AWS KMS</strong> customer-managed keys.
+          <p className="text-xs text-slate-450 font-semibold leading-relaxed">
+            Records in <strong className="text-slate-800 font-bold">Aurora PostgreSQL</strong> are encrypted at rest with <strong className="text-slate-800 font-bold">AWS KMS</strong> customer-managed keys.
             All PII is automatically redacted in the browser before external LLM queries — conforming to India's DPDP Act.
           </p>
         </div>
