@@ -90,7 +90,7 @@ ASHA Worker (offline zone)
 
 This architecture means **clinical data is never lost** — it accumulates locally and flows to production AWS infrastructure the moment signal returns.
 
-The Admin dashboard includes a Production Evidence panel that calls `/api/health/detailed` and shows Aurora status, DynamoDB status, region, table names, pool counts, production readiness, recent request traces, and latest telemetry writes. Local SQLite/mock modes are labeled explicitly for judge/demo evaluation.
+The Admin dashboard includes a Live System Verification panel that calls `/api/health/detailed` and shows Aurora status, DynamoDB status, region, table names, pool counts, production readiness, recent request traces, and latest telemetry writes. Local SQLite/mock modes are labeled explicitly for judge/demo evaluation.
 
 ---
 

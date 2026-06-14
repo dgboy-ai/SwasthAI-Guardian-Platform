@@ -179,6 +179,7 @@ export default function AdminDashboard() {
         setLastSync('Just now');
       } catch (e) {
         console.warn('Admin analytics offline — using demo data:', e.message);
+        setJudgeDemoMode(true);
       }
     };
     const loadAmb = async () => {

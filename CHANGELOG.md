@@ -2,6 +2,39 @@
 
 All notable changes and feature developments completed during the project development window are documented in this file chronologically.
 
+## June 14, 2026
+### Fixed & Optimized
+- **Critical useEffect Import Crash (App.jsx)**:
+  - Added missing `useEffect` import to line 1 of `frontend/src/App.jsx` — the entire app crashed on mount for every user because `useEffect()` was `undefined`.
+- **AdminDashboard NaN Bug**:
+  - Fixed `Math.max(0, undefined)` producing `NaN` values in `getLiveReport()` when `defaultRep` nested paths were missing — now defaults to `0` via `?.` optional chaining on every access.
+- **6 Unhandled Promise Rejections (Backend Routes)**:
+  - Wrapped `auth.js` routes (`/request-otp`, `/login-otp`, `/login-password`) in try-catch blocks.
+  - Wrapped `ngo.js` maternal and malnutrition DB inserts (`INSERT INTO pregnancy_data`, `INSERT INTO malnutrition_data`) in try-catch blocks — these were previously outside any error handler.
+  - Wrapped `villager.js` symptom duplicate-check query in try-catch with empty catch that falls through to fresh evaluation.
+- **SymptomChecker Infinite Spinner Hang**:
+  - Moved `res.send()` in `villager.js` `/symptoms` route to fire **before** DynamoDB telemetry writes (now fire-and-forget `.then().catch()`). On the Render demo with no AWS credentials, the SDK's credential chain resolution was blocking the response indefinitely.
+  - Added 25-second safety timeout (`loadingSafeTimer`) in `SymptomCheckerPage.jsx` that force-clears the loading state — insurance against any hang in cache/offline/error paths.
+  - Added missing `req.onblocked` handler in `semanticCache.js` IndexedDB `getDB()` — if another tab blocks the DB, resolves to `null` (memory fallback) instead of hanging forever.
+- **Vercel API Proxy (vercel.json)**:
+  - Added `/api/(.*)` rewrite rule targeting `https://swasthai-guardian-platform.onrender.com/api/$1` so Vercel-deployed frontend can reach the backend without CORS preflight on every request.
+- **AdminDashboard Logout Button**:
+  - Added "Secure Logout" button at the bottom of the admin sidebar with collapsed-mode icon support; calls `useAuth().logout()` + navigates to `/login`.
+- **ERD Mermaid Diagram Syntax Fixes**:
+  - Replaced unsupported `UNIQUE` keyword with `UK` (parse error).
+  - Removed quoted field comments with pipe characters (`"villager | ngo | admin"`, `"Low | High | Critical"`) causing "Expecting ATTRIBUTE_WORD, got COMMENT".
+  - Fixed `users ||--o| village_health` → `users }o--|| village_health` (wrong cardinality — many users share one village).
+- **Flow Graph Mermaid Fix**:
+  - Changed bare `subgraph CDN & Hosting Layer` to `subgraph CDN and Hosting Layer [CDN & Hosting Layer]` with display brackets to prevent `&` rendering issues.
+- **DEPLOYMENT.md VITE_API_URL Fix**:
+  - Fixed missing `/api` suffix in Vercel deployment step — value was `https://swasthai-backend.onrender.com` but all backend routes require `/api/*` prefix.
+- **README.md Missing Doc Links**:
+  - Added links to `docs/offline_sync_strategy.md` and `docs/architecture-diagram.svg` in the technical documentation index.
+
+### Added
+- **Architecture Diagram (SVG)**:
+  - Created `docs/architecture-diagram.svg` covering all 4 layers (Client, Backend, AI Service, Data) with every H0-required arrow: Vercel→Express (REST+SSE), Express→Aurora PostgreSQL, Express→DynamoDB (5 tables with PK/SK/GSI), Express→FastAPI AI, Outbreak Agent↔Express, plus AWS Region `ap-south-1` label and legend.
+
 ## June 13, 2026
 ### Fixed & Optimized
 - **Outbreak Radar View Design & Color Optimization**:
@@ -16,6 +49,28 @@ All notable changes and feature developments completed during the project develo
   - Ensures the background scanning daemon consistently refreshes its watchdog timestamp at the backend, preventing false offline warnings in the admin alert panel.
 - **Admin Dashboard Integrity**:
   - Reverted and preserved the dark-slate design of the main dashboard and the production evidence panel components to keep them untouched.
+- **PII Redaction Layer Fix**:
+  - Removed `redactPII` import and interceptor call from `frontend/src/services/api.js` — backend `piiRedactor.js` handles it at the logging layer, preserving full query context for API calls.
+- **403 Information Leak Prevention**:
+  - Replaced 5 leaky 403 error messages in `backend/middleware/policy.js` with generic `"Access Denied."` — stripped `villageId`, role, and resource-existence details from error responses.
+- **ONNX SymptomNet Lazy Loading**:
+  - Removed static `import` of `symptomNetMeta.js` (~3–5MB, 109K lines) from `localSymptomNet.js`. Now uses dynamic `import()` on first `predictSymptomsOffline()` call, reducing initial bundle weight.
+  - Added `await` in both callers (`SymptomCheckerPage.jsx`, `SymptomChecker.jsx`).
+- **Rate Limiter on OTP Endpoint**:
+  - Added `authLimiter` (15 requests per 15 minutes) to `POST /request-otp` in `auth.js` — same limiter already in place on `/login-otp`, `/login-password`, and `/qr-login`.
+- **Global Error Handler & API 404 Catch-All**:
+  - Added `app.use((err, req, res, next))` error-handling middleware and `app.all('/api/*')` 404 catch-all in `server.js` — prevents Node process crashes on unhandled errors and returns clean JSON for unknown API routes.
+- **Zod Validation on /skin-log**:
+  - Added `SkinLogSchema` validation in `villager.js` — validates `condition`, `severity`, `rednessPercent`, `irregularPercent` before DB write.
+- **AdminDashboard Fallback Honesty**:
+  - Changed `.catch()` handler from faking `production_ready: true` + fake DynamoDB tables → honest `production_ready: false` + `status: 'unavailable'` when API call fails.
+- **DemoPage Tour Wording**:
+  - Changed "launch the self-guided tour" (dead link) → "click 'Try This →' to jump straight into the live dashboard".
+
+### Added
+- **Documentation Cleanup**:
+  - Added `security_audit_logs` (5th DynamoDB table) to `infra/dynamodb-tables.md` and `DEPLOYMENT.md` step 1.2.
+  - Added B2B monetization sentence (per-district subscription ₹50K–₹2L/year) to `README.md`.
 
 ## June 12, 2026
 ### Fixed & Optimized

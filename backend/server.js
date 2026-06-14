@@ -666,3 +666,5 @@ if (isProduction && cluster.isPrimary && maxWorkers > 1) {
   app.locals.wsClients = wsClients;
   app.locals.activeTeles = activeTeles;
 }
+// Trigger restart to load database configurations
+

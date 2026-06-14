@@ -115,7 +115,7 @@ Most health applications simply call a third-party AI API and display the result
 ## Prize Strategy
 
 *   **Top 3 B2B SaaS:** The buyer is a district health office or NGO network. The repeatable workflow is district onboarding, ASHA assignment, configurable outbreak thresholds, live command center, CMO report export, and performance review.
-*   **Best Technical Implementation:** Aurora stores durable medical and operational records; DynamoDB stores high-write telemetry streams. The Admin Production Evidence panel verifies status, schema, regions, and latest writes.
+*   **Best Technical Implementation:** Aurora stores durable medical and operational records; DynamoDB stores high-write telemetry streams. The Admin Live System Verification panel verifies status, schema, regions, and latest writes.
 *   **Most Impactful:** The field chain is villager triage -> ASHA workload queue -> referral/SOS follow-through -> district intelligence -> monthly health report.
 *   **Most Original:** SwasthAI is not a hospital app scaled down. It is a field-health operations layer built from the village upward, where disconnected village work becomes auditable district telemetry.
 *   **Best Design:** The UI is built around operational roles: compact admin cockpit, mobile ASHA queue, clear degraded/mock status labels, and low-connectivity field workflows.

@@ -52,13 +52,47 @@ export default function IntroFlow() {
   };
 
   return (
-    <div className="flex bg-[#F8FAFC] min-h-screen items-center justify-center font-inter p-6 sm:p-12 overflow-hidden selection:bg-emerald-100 selection:text-emerald-900">
+    <div className="flex bg-[#FAFBFD] min-h-screen items-center justify-center font-inter p-6 sm:p-12 overflow-hidden selection:bg-emerald-100 selection:text-emerald-900 relative">
 
-      {/* Dynamic Background */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-[-20%] right-[-10%] w-[800px] h-[800px] bg-emerald-50 rounded-full blur-[120px] opacity-60" />
-        <div className="absolute bottom-[-10%] left-[-10%] w-[600px] h-[600px] bg-blue-50 rounded-full blur-[100px] opacity-40" />
-        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/grid-me.png')] opacity-[0.03]" />
+      {/* Dynamic Glowing Mesh Background */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
+        <motion.div
+          animate={{
+            x: [0, 40, -20, 0],
+            y: [0, -60, 40, 0],
+            scale: [1, 1.15, 0.9, 1],
+          }}
+          transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute top-[-10%] right-[-10%] w-[600px] h-[600px] bg-gradient-to-br from-emerald-400/20 to-teal-300/15 rounded-full blur-[100px] opacity-75"
+        />
+        <motion.div
+          animate={{
+            x: [0, -30, 40, 0],
+            y: [0, 40, -50, 0],
+            scale: [1, 0.9, 1.15, 1],
+          }}
+          transition={{ duration: 22, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute bottom-[-10%] left-[-10%] w-[700px] h-[700px] bg-gradient-to-tr from-blue-400/20 to-indigo-500/15 rounded-full blur-[120px] opacity-70"
+        />
+        <motion.div
+          animate={{
+            x: [0, 30, -30, 0],
+            y: [0, 30, -30, 0],
+            scale: [1, 1.1, 0.95, 1],
+          }}
+          transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute top-[30%] left-[10%] w-[500px] h-[500px] bg-gradient-to-br from-violet-400/15 to-purple-500/15 rounded-full blur-[110px] opacity-60"
+        />
+        <motion.div
+          animate={{
+            x: [0, -45, 25, 0],
+            y: [0, -30, 45, 0],
+            scale: [1, 0.95, 1.1, 1],
+          }}
+          transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute bottom-[20%] right-[5%] w-[550px] h-[550px] bg-gradient-to-tl from-cyan-400/20 to-emerald-300/15 rounded-full blur-[90px] opacity-65"
+        />
+        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/grid-me.png')] opacity-[0.04]" />
       </div>
 
       <AnimatePresence mode="wait">
@@ -81,55 +115,117 @@ export default function IntroFlow() {
                 <div className="relative mb-8 sm:mb-12">
                   {/* Soft Inner Glow */}
                   <motion.div
-                    animate={{ scale: [1, 1.15, 1], opacity: [0.2, 0.4, 0.2] }}
+                    animate={{ scale: [1, 1.15, 1], opacity: [0.3, 0.6, 0.3] }}
                     transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                    className="absolute inset-0 bg-emerald-400/30 rounded-full blur-xl pointer-events-none"
+                    className="absolute inset-0 bg-emerald-400/40 rounded-full blur-2xl pointer-events-none"
                   />
-
+ 
                   {/* Outer Pulse */}
                   <motion.div
-                    animate={{ scale: [1, 1.6], opacity: [0.6, 0] }}
+                    animate={{ scale: [1, 1.8], opacity: [0.5, 0] }}
                     transition={{ duration: 2, repeat: Infinity, ease: "easeOut" }}
-                    className="absolute inset-0 border-2 border-emerald-400/50 rounded-full pointer-events-none"
+                    className="absolute inset-0 border-2 border-emerald-400/60 rounded-full pointer-events-none"
                   />
-
+ 
                   {/* Central Logo Container */}
                   <motion.div
-                    animate={{ y: [0, -3, 0] }}
-                    transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                    className="w-14 h-14 sm:w-16 sm:h-16 bg-[#0A2E24] rounded-[1rem] sm:rounded-[1.2rem] flex items-center justify-center shadow-2xl relative z-10 border-2 border-emerald-500/20"
+                    animate={{ 
+                      scale: [1, 1.02, 1.01, 1.04, 1.01, 1],
+                      boxShadow: [
+                        "0 15px 30px -5px rgba(16, 185, 129, 0.2)",
+                        "0 20px 40px -5px rgba(16, 185, 129, 0.3)",
+                        "0 15px 32px -5px rgba(16, 185, 129, 0.25)",
+                        "0 22px 45px -5px rgba(16, 185, 129, 0.35)",
+                        "0 15px 32px -5px rgba(16, 185, 129, 0.25)",
+                        "0 15px 30px -5px rgba(16, 185, 129, 0.2)"
+                      ]
+                    }}
+                    transition={{ 
+                      duration: 2.8, 
+                      repeat: Infinity, 
+                      ease: "easeInOut",
+                      times: [0, 0.15, 0.28, 0.45, 0.65, 1]
+                    }}
+                    className="w-20 h-20 sm:w-24 sm:h-24 bg-white/95 backdrop-blur-xl rounded-[1.8rem] flex items-center justify-center relative z-10 border border-emerald-300 shadow-xl overflow-hidden group"
                   >
-                    <HeartPulse className="w-7 h-7 sm:w-8 sm:h-8 text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+                    {/* Animated shine line */}
+                    <motion.div
+                      animate={{ x: [-100, 200] }}
+                      transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut", repeatDelay: 1 }}
+                      className="absolute top-0 left-0 w-8 h-full bg-emerald-500/5 skew-x-[25deg] blur-sm"
+                    />
+                    <HeartPulse 
+                      className="w-10 h-10 sm:w-12 sm:h-12 text-emerald-500" 
+                      style={{ 
+                        filter: "drop-shadow(0 4px 10px rgba(16, 185, 129, 0.4))" 
+                      }}
+                    />
                   </motion.div>
-
-                  {/* Orbiting Tech Ring */}
-                  <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{ repeat: Infinity, duration: 8, ease: "linear" }}
-                    className="absolute -inset-8 border border-emerald-400/20 rounded-full border-dashed pointer-events-none flex items-center justify-center"
-                  >
-                    <div className="absolute top-0 w-1.5 h-1.5 bg-emerald-400 rounded-full shadow-[0_0_10px_rgba(52,211,153,0.8)]" />
-                  </motion.div>
+ 
+                  {/* Concentric Radiating Healing Waves (Aura) */}
+                  {[0, 1, 2].map((i) => (
+                    <motion.div
+                      key={i}
+                      initial={{ scale: 0.8, opacity: 0.5 }}
+                      animate={{ scale: [0.8, 2.5], opacity: [0.4, 0] }}
+                      transition={{
+                        duration: 3,
+                        repeat: Infinity,
+                        delay: i * 1,
+                        ease: "easeOut",
+                       }}
+                      className="absolute inset-0 border-2 border-emerald-400/25 rounded-full pointer-events-none"
+                    />
+                  ))}
+ 
+                  {/* Floating Healing Spores / Droplets */}
+                  {[
+                    { delay: 0, x: [10, -20, 20, 10], y: [-50, -80, -60, -50], color: "bg-emerald-400" },
+                    { delay: 0.5, x: [-40, -10, -30, -40], y: [40, 70, 50, 40], color: "bg-teal-400" },
+                    { delay: 1, x: [50, 80, 60, 50], y: [20, -10, 10, 20], color: "bg-emerald-300" },
+                    { delay: 1.5, x: [-60, -40, -70, -60], y: [-30, -10, -20, -30], color: "bg-cyan-300" }
+                  ].map((particle, idx) => (
+                    <motion.div
+                      key={idx}
+                      animate={{
+                        x: particle.x,
+                        y: particle.y,
+                        opacity: [0, 0.8, 0.4, 0.8, 0],
+                        scale: [0.8, 1.2, 1, 1.2, 0.8]
+                      }}
+                      transition={{
+                        duration: 8,
+                        repeat: Infinity,
+                        delay: particle.delay,
+                        ease: "easeInOut"
+                      }}
+                      className={`absolute w-2.5 h-2.5 rounded-full ${particle.color} blur-[1px] shadow-[0_0_8px_rgba(52,211,153,0.8)] pointer-events-none`}
+                    />
+                  ))}
                 </div>
-
-                <motion.div variants={itemVariants} className="space-y-2 sm:space-y-3">
-                  <h1 className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tighter">
-                    {t.intro?.welcome_title || 'SwasthAI'}
+ 
+                <motion.div variants={itemVariants} className="space-y-4 sm:space-y-6 flex flex-col items-center">
+                  <h1 className="text-3xl sm:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-slate-900 via-emerald-800 to-indigo-950 tracking-tighter leading-none pb-1">
+                    {t.intro?.welcome_title || 'Welcome to SwasthAI'}
                   </h1>
-                  <div className="flex items-center justify-center gap-1.5 sm:gap-2 text-emerald-600 font-bold bg-emerald-50 px-2.5 sm:px-4 py-1 sm:py-1.5 rounded-full border border-emerald-100 shadow-sm mx-auto">
-                    <Activity className="w-3 h-3 sm:w-3.5 sm:h-3.5 animate-pulse" />
-                    <span className="text-[8px] sm:text-[11px] uppercase tracking-widest">{t.intro?.welcome_sub || 'Offline AI Healthcare'}</span>
+                  
+                  <div className="flex items-center justify-center gap-2 text-emerald-700 font-extrabold bg-emerald-50/90 backdrop-blur-md px-5 py-2.5 rounded-full border border-emerald-250/50 shadow-md mx-auto max-w-max relative overflow-hidden group">
+                    <span className="absolute inset-0 bg-gradient-to-r from-emerald-500/5 to-teal-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                    <Activity className="w-4 h-4 text-emerald-600 animate-pulse shrink-0" />
+                    <span className="text-xs uppercase tracking-widest font-black bg-gradient-to-r from-emerald-700 to-teal-700 bg-clip-text text-transparent">
+                      {t.intro?.welcome_sub || 'Smart Healthcare For Every Village'}
+                    </span>
                   </div>
-
-                  <div className="flex items-center justify-center gap-3 sm:gap-6 pt-4 sm:pt-8">
-                    <div className="flex flex-col items-center gap-0.5">
-                      <div className="w-1 h-1 bg-emerald-500 rounded-full" />
-                      <span className="text-[6px] sm:text-[8px] font-black text-slate-400 uppercase tracking-[0.2em]">Offline-First</span>
+ 
+                  <div className="flex items-center justify-center gap-4 sm:gap-8 pt-2">
+                    <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full border border-slate-200/60 shadow-sm">
+                      <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-ping shrink-0" />
+                      <span className="text-[10px] sm:text-xs font-black text-slate-700 uppercase tracking-widest">Offline-First</span>
                     </div>
-                    <div className="w-4 sm:w-8 h-[1px] bg-slate-200" />
-                    <div className="flex flex-col items-center gap-0.5">
-                      <div className="w-1 h-1 bg-blue-500 rounded-full" />
-                      <span className="text-[6px] sm:text-[8px] font-black text-slate-400 uppercase tracking-[0.2em]">Secure AI</span>
+                    <div className="w-6 sm:w-10 h-[1.5px] bg-slate-250" />
+                    <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full border border-slate-200/60 shadow-sm">
+                      <span className="w-2.5 h-2.5 bg-blue-500 rounded-full animate-pulse shrink-0" />
+                      <span className="text-[10px] sm:text-xs font-black text-slate-700 uppercase tracking-widest">Secure AI</span>
                     </div>
                   </div>
                 </motion.div>
@@ -148,46 +244,64 @@ export default function IntroFlow() {
       exit="exit"
       className="flex flex-col items-center w-full max-w-4xl z-10"
     >
-      <div className="mb-6 sm:mb-12 text-center space-y-2 sm:space-y-3">
-        <motion.div variants={itemVariants} className="w-14 h-14 sm:w-20 sm:h-20 bg-[#0A2E24] rounded-2xl sm:rounded-3xl flex items-center justify-center mb-3 sm:mb-6 mx-auto shadow-2xl">
-          <Globe className="w-7 h-7 sm:w-10 sm:h-10 text-emerald-400 animate-pulse" />
+      <div className="mb-6 sm:mb-12 text-center space-y-3 sm:space-y-4">
+        <motion.div 
+          variants={itemVariants} 
+          className="w-20 h-20 sm:w-24 sm:h-24 bg-white/90 backdrop-blur-xl rounded-[1.8rem] flex items-center justify-center mb-6 mx-auto border border-emerald-200 shadow-xl overflow-hidden group relative"
+        >
+          {/* Shine line */}
+          <motion.div
+            animate={{ x: [-100, 200] }}
+            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", repeatDelay: 1 }}
+            className="absolute top-0 left-0 w-8 h-full bg-emerald-500/5 skew-x-[25deg] blur-sm"
+          />
+          <Globe 
+            className="w-10 h-10 sm:w-12 sm:h-12 text-emerald-500"
+            style={{ 
+              filter: "drop-shadow(0 2px 8px rgba(16, 185, 129, 0.4))" 
+            }}
+          />
         </motion.div>
-        <motion.h2 variants={itemVariants} className="text-2xl sm:text-5xl font-black text-slate-900 tracking-tighter leading-tight">
+        
+        <motion.h2 variants={itemVariants} className="text-3xl sm:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-slate-900 via-indigo-950 to-emerald-950 tracking-tighter leading-none pb-1">
           {t.intro?.select_title || 'Choose Your Language'}
         </motion.h2>
-        <motion.p variants={itemVariants} className="text-slate-500 font-bold text-[10px] sm:text-sm uppercase tracking-widest">
-          {t.intro?.select_sub || 'Select the language you prefer.'}
-        </motion.p>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-2 gap-2 sm:gap-4 w-full max-w-2xl mb-8 sm:mb-12 px-2 sm:px-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 w-full max-w-2xl mb-8 sm:mb-12 px-2 sm:px-4">
         {languages.map((l) => (
           <motion.div
             key={l.code}
             variants={itemVariants}
-            whileHover={{ scale: 1.02 }}
+            whileHover={{ scale: 1.02, y: -2 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => setLang(l.code)}
-            className={`relative cursor-pointer p-3 sm:p-5 rounded-xl sm:rounded-2xl border-2 transition-all duration-300 flex items-center text-left gap-3 sm:gap-4 ${lang === l.code ? 'bg-white border-emerald-500 shadow-[0_16px_32px_-8px_rgba(16,185,129,0.2)]' : 'bg-slate-50 border-slate-100 hover:border-emerald-200'}`}
+            className={`relative cursor-pointer p-4 sm:p-5 rounded-2xl border-2 transition-all duration-300 flex items-center text-left gap-4 ${
+              lang === l.code 
+                ? 'bg-white border-emerald-500 shadow-[0_12px_24px_-8px_rgba(16,185,129,0.25)] ring-2 ring-emerald-500/10' 
+                : 'bg-white/85 backdrop-blur-md border-slate-100 hover:border-emerald-300 hover:shadow-sm'
+            }`}
           >
-            <div className={`w-8 h-8 sm:w-12 sm:h-12 shrink-0 rounded-lg sm:rounded-xl flex items-center justify-center transition-all ${lang === l.code ? 'bg-emerald-600 text-white rotate-6' : 'bg-white text-slate-300'}`}>
-              <span className="w-4 h-4 sm:w-6 sm:h-6">{l.icon}</span>
+            <div className={`w-10 h-10 sm:w-12 sm:h-12 shrink-0 rounded-xl flex items-center justify-center transition-all ${
+              lang === l.code ? 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white rotate-6 shadow-md shadow-emerald-500/20' : 'bg-slate-50 text-slate-400 border border-slate-100'
+            }`}>
+              <span className="w-5 h-5 sm:w-6 sm:h-6">{l.icon}</span>
             </div>
             <div className="flex-1 overflow-hidden">
-              <h3 className={`text-sm sm:text-xl font-black tracking-tighter truncate ${lang === l.code ? 'text-slate-900' : 'text-slate-400'}`}>
+              <h3 className={`text-base sm:text-xl font-black tracking-tighter truncate ${lang === l.code ? 'text-slate-900' : 'text-slate-550'}`}>
                 {l.label}
               </h3>
-              <p className={`text-[8px] sm:text-[10px] font-bold uppercase tracking-widest truncate ${lang === l.code ? 'text-emerald-600' : 'text-slate-400'}`}>
+              <p className={`text-[9px] sm:text-[10px] font-black uppercase tracking-widest truncate ${lang === l.code ? 'text-emerald-600' : 'text-slate-400'}`}>
                 {l.sub}
               </p>
             </div>
             {lang === l.code && (
               <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                className="absolute top-1 right-1 sm:static w-4 h-4 sm:w-6 sm:h-6 shrink-0 bg-emerald-500 text-white rounded-full flex items-center justify-center shadow-md border border-white"
+                initial={{ scale: 0, rotate: -45 }}
+                animate={{ scale: 1, rotate: 0 }}
+                className="w-5 h-5 sm:w-6 sm:h-6 shrink-0 bg-emerald-500 text-white rounded-full flex items-center justify-center shadow-md border border-white"
               >
-                <Check className="w-2 h-2 sm:w-3 sm:h-3 stroke-[3]" />
+                <Check className="w-2.5 h-2.5 sm:w-3 sm:h-3 stroke-[3]" />
               </motion.div>
             )}
           </motion.div>
@@ -196,13 +310,13 @@ export default function IntroFlow() {
 
       <motion.button
         variants={itemVariants}
-        whileHover={{ scale: 1.05, boxShadow: "0_20px_40px_-10px_rgba(16,185,129,0.3)" }}
-        whileTap={{ scale: 0.98 }}
+        whileHover={{ scale: 1.04, y: -2 }}
+        whileTap={{ scale: 0.97 }}
         onClick={handleNext}
-        className="w-full sm:w-auto px-12 py-5 bg-slate-900 hover:bg-emerald-600 text-white rounded-2xl font-black text-sm uppercase tracking-widest transition-all flex items-center justify-center gap-3 shadow-2xl mx-4 sm:mx-0"
+        className="group w-full sm:w-auto px-14 py-5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-2xl font-black text-xs sm:text-sm uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-3 shadow-lg shadow-emerald-600/20 hover:shadow-xl hover:shadow-emerald-500/35 mx-4 sm:mx-0 cursor-pointer"
       >
         {t.intro?.establish_sync || 'Continue'}
-        <ArrowRight className="w-5 h-5 fill-current text-white" />
+        <ArrowRight className="w-5 h-5 text-white group-hover:translate-x-1.5 transition-transform duration-300" />
       </motion.button>
     </motion.div>
   )}
@@ -216,99 +330,106 @@ export default function IntroFlow() {
       initial="hidden"
       animate="visible"
       exit="exit"
-      className="flex flex-col items-center w-full max-w-6xl z-10"
+      className="flex flex-col items-center w-full max-w-5xl z-10"
     >
-      <div className="mb-6 sm:mb-12 flex flex-col items-center text-center space-y-2 sm:space-y-3">
-        <motion.span variants={itemVariants} className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[9px] sm:text-[10px] font-black tracking-widest uppercase rounded-full">
+      <div className="mb-4 sm:mb-6 flex flex-col items-center text-center space-y-1">
+        <motion.span variants={itemVariants} className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[8px] sm:text-[9px] font-black tracking-widest uppercase rounded-full">
           {t.intro?.assets_title || 'Key Services'}
         </motion.span>
-        <motion.h2 variants={itemVariants} className="text-2xl sm:text-6xl font-black text-slate-900 tracking-tighter max-w-4xl leading-tight">
+        <motion.h2 variants={itemVariants} className="text-xl sm:text-3xl font-black text-slate-900 tracking-tighter max-w-3xl leading-tight">
           {t.intro?.strategic_title || 'Complete Health Support'}
         </motion.h2>
-        <motion.p variants={itemVariants} className="text-slate-500 font-bold text-[10px] sm:text-base max-w-xl px-4">
+        <motion.p variants={itemVariants} className="text-slate-500 font-bold text-[9px] sm:text-xs max-w-md px-4">
           {t.intro?.strategic_desc || 'Doctor advice and emergency help for every village.'}
         </motion.p>
       </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 w-full mb-8 sm:mb-16 overflow-y-auto max-h-[40vh] sm:max-h-none px-2 custom-scrollbar">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 w-full mb-6 sm:mb-8 px-2">
         {[
           {
-            title: 'Guided Care Mode',
-            desc: 'A voice-guided, tactile mode designed for low-signal rural accessibility.',
-            icon: <Activity />,
+            title: 'Guided Healthcare Mode',
+            desc: 'Voice-guided, tactile interface designed specifically for low-literacy users in remote regions.',
+            icon: <Activity className="w-4 h-4 sm:w-5 h-5" />,
             tag: 'Accessibility',
             color: 'bg-emerald-50 text-emerald-700 border-emerald-200 group-hover:bg-emerald-600 group-hover:text-white'
           },
           {
-            title: 'SymptomNet Neural AI',
-            desc: '96%+ accurate disease screening in 6 languages with clinical heuristic fallback.',
-            icon: <BrainCircuit />,
+            title: 'AI Symptom Checker',
+            desc: 'Bilingual screening tool available in 6 regional languages with clinical fallbacks.',
+            icon: <BrainCircuit className="w-4 h-4 sm:w-5 h-5" />,
             tag: 'Diagnostics',
             color: 'bg-indigo-50 text-indigo-700 border-indigo-200 group-hover:bg-indigo-600 group-hover:text-white'
           },
           {
-            title: "Sakhi Women's Health",
-            desc: 'WHO-grounded private reproductive care assistant with full voice synthesis.',
-            icon: <HeartPulse />,
-            tag: 'Reproductive Care',
+            title: 'Skin AI Diagnostician',
+            desc: 'Scan and detect skin conditions instantly by uploading photos for automated analysis.',
+            icon: <Camera className="w-4 h-4 sm:w-5 h-5" />,
+            tag: 'Dermatology AI',
             color: 'bg-rose-50 text-rose-700 border-rose-200 group-hover:bg-rose-600 group-hover:text-white'
           },
           {
-            title: 'Offline ASHA Sync',
-            desc: 'Register vitals offline; autodetect connection to replay and sync to AWS.',
-            icon: <Database />,
-            tag: 'Resilience',
+            title: 'Maternal & Child Nutrition',
+            desc: 'Track pregnancy vitals, gestational risk factors, and infant nutrition metrics.',
+            icon: <Users className="w-4 h-4 sm:w-5 h-5" />,
+            tag: 'NGO & ASHA Support',
             color: 'bg-blue-50 text-blue-700 border-blue-200 group-hover:bg-blue-600 group-hover:text-white'
           },
           {
-            title: 'Welfare Schemes Hub',
-            desc: 'Bilingual welfare search matched instantly with secure Aadhaar checksums.',
-            icon: <ShieldCheck />,
-            tag: 'Government Welfare',
+            title: 'Government Schemes Locator',
+            desc: 'Search state and central welfare schemes to verify eligibility requirements instantly.',
+            icon: <ShieldCheck className="w-4 h-4 sm:w-5 h-5" />,
+            tag: 'Social Welfare',
             color: 'bg-amber-50 text-amber-700 border-amber-200 group-hover:bg-amber-600 group-hover:text-white'
           },
           {
-            title: 'Observability & Outbreaks',
-            desc: 'Autonomous background outbreak detection with live AWS database telemetry feed.',
-            icon: <Layout />,
-            tag: 'District Admin',
+            title: 'District Outbreak Simulation',
+            desc: 'Predict, track, and simulate epidemiological outbreaks using live telemetric inputs.',
+            icon: <Layout className="w-4 h-4 sm:w-5 h-5" />,
+            tag: 'Observability',
             color: 'bg-teal-50 text-teal-700 border-teal-200 group-hover:bg-teal-600 group-hover:text-white'
           },
         ].map((srv, idx) => (
           <motion.div
             key={idx}
             variants={itemVariants}
-            whileHover={{ y: -4, boxShadow: "0 20px 40px -10px rgba(0,0,0,0.05)" }}
-            className="group bg-white p-4 sm:p-6 rounded-[1.5rem] sm:rounded-[2rem] border border-slate-100 transition-all flex flex-col gap-3 sm:gap-4 relative overflow-hidden shadow-sm"
+            whileHover={{ y: -2, boxShadow: "0 10px 20px -5px rgba(16,185,129,0.04)" }}
+            className="group bg-white/95 backdrop-blur-md p-4 sm:p-5 rounded-[1.5rem] border border-slate-100 hover:border-emerald-250 transition-all duration-350 flex flex-col gap-3 relative overflow-hidden shadow-sm"
           >
-            <div className="absolute top-0 right-0 p-3 opacity-[0.02] pointer-events-none group-hover:scale-125 transition-transform duration-1000">
+            <div className="absolute top-0 right-0 p-2 opacity-[0.02] pointer-events-none group-hover:scale-125 transition-transform duration-1000">
               {srv.icon}
             </div>
-            <div className={`w-10 h-10 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl border flex items-center justify-center transition-all duration-500 ${srv.color} group-hover:rotate-12`}>
-              <div className="w-4 h-4 sm:w-6 sm:h-6">{srv.icon}</div>
+            <div className={`w-10 h-10 rounded-xl border flex items-center justify-center transition-all duration-500 ${srv.color} group-hover:rotate-6`}>
+              {srv.icon}
             </div>
             <div>
-              <div className="flex items-center gap-2 mb-1 sm:mb-2">
-                <span className={`px-1.5 py-0.5 border text-[6px] sm:text-[8px] font-black uppercase tracking-[0.2em] rounded-md transition-all ${srv.color}`}>
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <span className={`px-1.5 py-0.5 border text-[6px] sm:text-[8px] font-black uppercase tracking-[0.1em] rounded-md transition-all ${srv.color}`}>
                   {srv.tag}
                 </span>
               </div>
-              <h4 className="text-sm sm:text-xl font-black text-slate-900 mb-0.5 sm:mb-2 tracking-tighter uppercase leading-tight">{srv.title}</h4>
-              <p className="text-slate-500 font-bold text-[10px] sm:text-sm leading-relaxed">{srv.desc}</p>
+              <h4 className="text-sm sm:text-base font-black text-slate-800 group-hover:text-emerald-700 transition-colors duration-300 mb-0.5 tracking-tight uppercase leading-snug">{srv.title}</h4>
+              <p className="text-slate-500 font-bold text-[10px] sm:text-xs leading-relaxed">{srv.desc}</p>
             </div>
           </motion.div>
         ))}
       </div>
 
+      {/* Bottom Subtle Details */}
+      <motion.p
+        variants={itemVariants}
+        className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6 sm:mb-8 text-center px-4"
+      >
+        And many more features including Multi-User Profiles, Offline Synchronization, and Emergency Dispatch routing.
+      </motion.p>
+
       <motion.button
         variants={itemVariants}
-        whileHover={{ scale: 1.05, boxShadow: "0 20px 40px -10px rgba(16,185,129,0.3)" }}
-        whileTap={{ scale: 0.98 }}
+        whileHover={{ scale: 1.04, y: -2 }}
+        whileTap={{ scale: 0.97 }}
         onClick={handleNext}
-        className="group w-full sm:w-auto px-12 py-4 sm:py-5 bg-slate-900 hover:bg-emerald-600 text-white rounded-2xl font-black text-xs sm:text-sm uppercase tracking-widest transition-all flex items-center justify-center gap-4 mx-4 sm:mx-0 shadow-xl mb-12 sm:mb-0"
+        className="group w-full sm:w-auto px-14 py-5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-2xl font-black text-xs sm:text-sm uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-4 mx-4 sm:mx-0 shadow-lg shadow-emerald-600/20 hover:shadow-xl hover:shadow-emerald-500/35 mb-12 sm:mb-0 cursor-pointer"
       >
         {t.intro?.protocol_awareness || 'Get Started'}
-        <ArrowRight className="w-5 h-5 group-hover:translate-x-2 transition-transform" />
+        <ArrowRight className="w-5 h-5 text-white group-hover:translate-x-1.5 transition-transform duration-300" />
       </motion.button>
     </motion.div>
   )}

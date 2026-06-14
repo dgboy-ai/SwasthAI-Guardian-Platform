@@ -147,7 +147,7 @@ export default function ProductionEvidencePanel({ systemStatus, dynamoFeed, load
           </div>
           <div>
             <div className="flex items-center gap-2.5">
-              <span className="font-black text-white text-base uppercase tracking-wider">Production Evidence</span>
+              <span className="font-black text-white text-base uppercase tracking-wider">System Status</span>
               <span className="flex h-2.5 w-2.5 relative">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>

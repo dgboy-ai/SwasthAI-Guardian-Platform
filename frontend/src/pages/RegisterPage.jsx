@@ -164,104 +164,98 @@ export default function RegisterPage() {
         initial={{ x: -80, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
         transition={{ duration: 0.7, ease: 'easeOut' }}
-        className="hidden lg:flex w-[42%] relative overflow-y-auto bg-[#0A2E24] flex-col justify-between p-10 xl:p-14"
+        className="hidden lg:flex w-[40%] relative overflow-y-auto bg-[#0A2E24] flex-col justify-start p-8 xl:p-10 space-y-5"
       >
+        {/* Background glow */}
         <div className="absolute top-0 right-0 w-full h-full opacity-20 pointer-events-none">
-          <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-emerald-500 rounded-full blur-[120px]" />
-          <div className="absolute bottom-[10%] left-[-10%] w-72 h-72 bg-teal-400 rounded-full blur-[80px]" />
+          <div className="absolute top-[-10%] right-[-10%] w-[400px] h-[400px] bg-emerald-500 rounded-full blur-[100px]" />
+          <div className="absolute bottom-[10%] left-[-10%] w-64 h-64 bg-teal-400 rounded-full blur-[70px]" />
         </div>
 
-        <div className="relative z-10">
-          <Link to="/" className="inline-flex items-center gap-2 text-emerald-100/60 hover:text-white transition-all text-sm font-bold mb-10 group">
-            <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> {t.diseaseChecker?.go_back || 'Back to Home'}
+        <div className="relative z-10 space-y-4">
+          <Link to="/" className="inline-flex items-center gap-1.5 text-emerald-100/60 hover:text-white transition-all text-xs font-bold mb-2 group">
+            <ChevronLeft className="w-3.5 h-3.5 group-hover:-translate-x-1 transition-transform" /> {t.diseaseChecker?.go_back || 'Back to Home'}
           </Link>
 
           {/* Logo */}
-          <div className="flex items-center gap-4 mb-10">
-            <div className="p-3 bg-white/10 backdrop-blur-xl rounded-2xl border border-white/10">
-              <HeartPulse className="w-6 h-6 text-emerald-400 animate-pulse" />
+          <motion.div
+            initial={{ y: 15, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2 }}
+            className="flex items-center gap-2.5 mb-3"
+          >
+            <div className="p-2 bg-white/10 backdrop-blur-xl rounded-lg border border-white/10">
+              <HeartPulse className="w-4 h-4 text-emerald-400 animate-pulse" />
             </div>
             <div>
-              <h1 className="text-xl font-black text-white tracking-tight">{t.swasthai || 'SwasthAI'}</h1>
-              <p className="text-emerald-400/70 text-[9px] font-bold uppercase tracking-widest">{t.footer?.empowering || 'Rural Health Network'}</p>
+              <h1 className="text-base font-black text-white tracking-tight">{t.swasthai || 'SwasthAI'}</h1>
+              <p className="text-emerald-400/70 text-[7px] font-bold uppercase tracking-widest">{t.footer?.empowering || 'Rural Health Network'}</p>
             </div>
-          </div>
+          </motion.div>
 
           <motion.h2
-            initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.3 }}
-            className="text-3xl xl:text-4xl font-black text-white leading-tight mb-4 tracking-tight"
+            initial={{ y: 15, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.3 }}
+            className="text-xl xl:text-2xl font-black text-white leading-tight mb-2 tracking-tight"
           >
-            {t.registerPage?.left_title_1 || "Join India's largest"}<br />
-            <span className="text-emerald-400 italic">{t.registerPage?.left_title_span || 'rural health network.'}</span>
+            {lang === 'hi' ? 'हमारे भरोसेमंद स्वास्थ्य नेटवर्क से जुड़ें।' : 'Join our trusted healthcare network.'}
           </motion.h2>
 
           <motion.p
-            initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.4 }}
-            className="text-emerald-100/60 text-sm leading-relaxed font-medium max-w-sm mb-8"
+            initial={{ y: 15, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.4 }}
+            className="text-emerald-100/60 text-[11px] leading-relaxed font-medium max-w-sm mb-4"
           >
-            {t.registerPage?.left_desc || 'Create a free account in under 60 seconds. Access AI diagnostics, emergency services, and maternal health tracking - all in your local language.'}
+            {lang === 'hi'
+              ? 'सुरक्षित रूप से अपॉइंटमेंट बुक करने, विशेषज्ञों से चैट करने और वास्तविक समय में अपने परिवार के महत्वपूर्ण रिकॉर्ड ट्रैक करने के लिए एक खाता बनाएं।'
+              : 'Create an account to securely book appointments, chat with specialists, and track your family\'s vital records in real-time.'}
           </motion.p>
-
-          <motion.div
-            initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.5 }}
-            className="space-y-4"
-          >
-            {currentWhyJoin.map(item => (
-              <div key={item.title} className="flex gap-4 p-4 bg-white/5 border border-white/10 rounded-2xl backdrop-blur-md">
-                <div className="w-9 h-9 bg-emerald-500/20 rounded-xl flex items-center justify-center shrink-0">
-                  <item.icon className="w-4.5 h-4.5 text-emerald-400" />
-                </div>
-                <div>
-                  <p className="text-white text-sm font-black tracking-tight">{item.title}</p>
-                  <p className="text-emerald-100/50 text-[11px] font-medium mt-1 leading-relaxed">{item.text}</p>
-                </div>
-              </div>
-            ))}
-          </motion.div>
         </div>
 
-        {/* Bottom privacy note */}
+        {/* Why Join Points */}
         <motion.div
-          initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.6 }}
-          className="relative z-10 p-5 bg-white/5 border border-white/10 rounded-2xl mt-8"
+          initial={{ y: 25, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.5 }}
+          className="relative z-10 space-y-2.5"
         >
-          <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-1">{t.registerPage?.national_protocol || 'Your privacy matters'}</p>
-          <p className="text-emerald-100/50 text-xs font-medium leading-relaxed">
-            {t.registerPage?.national_desc || 'We never share your health data. All records are encrypted and only accessible to you and the healthcare workers you authorize.'}
-          </p>
+          {currentWhyJoin.map(tp => (
+            <div key={tp.title} className="flex items-start gap-2.5 p-3 bg-white/5 border border-white/10 rounded-xl backdrop-blur-md">
+              <div className="p-1 bg-emerald-500/20 rounded-md shrink-0">
+                <tp.icon className="w-3.5 h-3.5 text-emerald-400" />
+              </div>
+              <div>
+                <p className="text-white font-black text-xs tracking-tight">{tp.title}</p>
+                <p className="text-emerald-100/50 text-[9px] font-medium leading-relaxed mt-0.5">{tp.text || tp.desc}</p>
+              </div>
+            </div>
+          ))}
         </motion.div>
       </motion.div>
 
       {/* ── RIGHT PANEL — FORM ── */}
-      <div className="w-full lg:w-[58%] flex flex-col justify-center items-center p-5 sm:p-8 lg:p-14 overflow-y-auto relative lg:h-full shrink-0">
-
+      <div className="w-full lg:w-[60%] flex flex-col justify-start items-center p-4 sm:p-8 lg:p-10 overflow-y-auto relative lg:h-full shrink-0">
         <motion.div
           initial={{ scale: 0.96, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ duration: 0.5 }}
-          className="w-full max-w-lg py-8"
+          className="w-full max-w-md py-2"
         >
           {/* Mobile logo */}
-          <div className="flex items-center gap-3 mb-8 lg:hidden">
-            <div className="p-2.5 bg-emerald-50 rounded-xl">
-              <HeartPulse className="w-5 h-5 text-emerald-600" />
+          <div className="flex items-center gap-2.5 mb-4 lg:hidden">
+            <div className="p-1.5 bg-emerald-50 rounded-lg">
+              <HeartPulse className="w-4 h-4 text-emerald-600" />
             </div>
-            <span className="font-black text-slate-900 text-lg">{t.swasthai || 'SwasthAI'}</span>
+            <span className="font-black text-slate-900 text-sm">{t.swasthai || 'SwasthAI'}</span>
           </div>
-
+ 
           {/* Header */}
-          <div className="mb-5 sm:mb-10">
-            <span className="inline-block px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[8px] sm:text-[10px] font-black uppercase tracking-widest rounded-full mb-2 sm:mb-4">
+          <div className="mb-4 sm:mb-6">
+            <span className="inline-block px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[8px] sm:text-[9px] font-black uppercase tracking-widest rounded-full mb-2">
               {t.registerPage?.set_up_account ? 'Free Account' : 'Free Account - Under 60s'}
             </span>
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight mb-1.5 sm:mb-2">
+            <h2 className="text-xl sm:text-2xl lg:text-3xl font-black text-slate-900 tracking-tight mb-1">
               {t.register || 'Create Account'}
             </h2>
-            <p className="text-slate-400 font-medium text-[11px] sm:text-sm max-w-sm leading-relaxed">
+            <p className="text-slate-400 font-medium text-[10px] sm:text-xs max-w-xs leading-relaxed">
               {t.registerPage?.set_up_account || 'Join thousands in rural India who use SwasthAI to stay healthy and get help fast.'}
             </p>
           </div>
-
+ 
           {/* Offline Banner */}
           <AnimatePresence>
             {isOffline && (
@@ -277,13 +271,13 @@ export default function RegisterPage() {
               </motion.div>
             )}
           </AnimatePresence>
-
+ 
           {/* Error / Success */}
           <AnimatePresence mode="wait">
             {error && (
               <motion.div
                 initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
-                className="mb-6 p-4 bg-rose-50 border border-rose-200 text-rose-700 rounded-2xl flex items-center gap-3 text-sm font-bold"
+                className="mb-4 p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl flex items-center gap-2 text-xs font-bold"
               >
                 <AlertCircle className="w-4 h-4 shrink-0" /> {error}
               </motion.div>
@@ -291,61 +285,61 @@ export default function RegisterPage() {
             {success && (
               <motion.div
                 initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-                className="mb-6 p-5 bg-emerald-600 text-white rounded-2xl flex items-center gap-3 text-sm font-black shadow-xl shadow-emerald-200"
+                className="mb-4 p-4 bg-emerald-600 text-white rounded-xl flex items-center gap-2.5 text-xs font-black shadow-lg shadow-emerald-100"
               >
-                <CheckCircle className="w-5 h-5 shrink-0" /> {t.registerPage?.account_created || 'Account created! Taking you to your dashboard...'}
+                <CheckCircle className="w-4 h-4 shrink-0" /> {t.registerPage?.account_created || 'Account created! Taking you to your dashboard...'}
               </motion.div>
             )}
           </AnimatePresence>
-
+ 
           {/* Step 1 — Role */}
-          <div className="mb-8">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block">
+          <div className="mb-6">
+            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 block">
               {t.registerPage?.step1_role || 'Step 1 - I am registering as a...'}
             </label>
-            <div className="grid grid-cols-3 sm:grid-cols-3 gap-2 sm:gap-3">
+            <div className="grid grid-cols-3 gap-2">
               {roles.map(r => (
                 <button
                   key={r.id}
                   type="button"
                   onClick={() => handleInputChange({ target: { name: 'role', value: r.id } })}
-                  className={`p-2.5 sm:p-4 rounded-xl border-2 text-left transition-all ${
+                  className={`p-2 sm:p-3 rounded-xl border-2 text-left transition-all ${
                     formData.role === r.id
-                      ? 'bg-white border-emerald-500 shadow-lg shadow-emerald-100'
+                      ? 'bg-white border-emerald-500 shadow-md shadow-emerald-50/50'
                       : 'bg-slate-50 border-slate-100 hover:border-emerald-200'
                   }`}
                 >
-                  <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center mb-1.5 sm:mb-3 transition-all ${formData.role === r.id ? 'bg-emerald-600 text-white' : 'bg-white text-slate-400 border border-slate-100'}`}>
+                  <div className={`w-6 h-6 sm:w-7 sm:h-7 rounded-lg flex items-center justify-center mb-1.5 transition-all ${formData.role === r.id ? 'bg-emerald-600 text-white' : 'bg-white text-slate-400 border border-slate-100'}`}>
                     <r.icon className="w-3.5 h-3.5" />
                   </div>
                   <p className={`font-black text-[9px] sm:text-xs leading-tight ${formData.role === r.id ? 'text-slate-900' : 'text-slate-500'}`}>{r.label}</p>
-                  <p className={`text-[7px] sm:text-[9px] font-bold mt-0.5 ${formData.role === r.id ? 'text-emerald-600' : 'text-slate-300'}`}>{r.sub}</p>
+                  <p className={`text-[7px] sm:text-[8px] font-bold mt-0.5 ${formData.role === r.id ? 'text-emerald-600' : 'text-slate-350'}`}>{r.sub}</p>
                 </button>
               ))}
             </div>
             {/* Role description */}
-            <div className="mt-3 p-3 bg-emerald-50 border border-emerald-100 rounded-xl">
-              <p className="text-xs text-emerald-800 font-medium">
+            <div className="mt-2.5 p-2.5 bg-emerald-50 border border-emerald-100 rounded-xl">
+              <p className="text-[11px] text-emerald-800 font-medium leading-relaxed">
                 {roles.find(r => r.id === formData.role)?.desc}
               </p>
             </div>
           </div>
-
+ 
           {/* Step 2 — Details */}
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t.registerPage?.step2_personal || 'Step 2 - Your Details'}</p>
-
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{t.registerPage?.step2_personal || 'Step 2 - Your Details'}</p>
+ 
             {/* Name + Username */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {[
                 { name: 'name',     label: t.registerPage?.full_name || 'Full Name',  icon: User,   placeholder: 'Name...',    type: 'text', required: true  },
                 { name: 'username', label: t.registerPage?.choose_username || 'Username',   icon: User,   placeholder: 'Username...',    type: 'text', required: true  },
               ].map(field => (
                 <div key={field.name} className="space-y-1">
-                  <label className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{field.label}</label>
+                  <label className="text-[8px] sm:text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">{field.label}</label>
                   <div className="relative group">
-                    <div className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none text-slate-300 group-focus-within:text-emerald-500 transition-colors">
-                      <field.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-slate-300 group-focus-within:text-emerald-500 transition-colors">
+                      <field.icon className="w-3.5 h-3.5" />
                     </div>
                     <input
                       type={field.type}
@@ -354,20 +348,20 @@ export default function RegisterPage() {
                       onChange={handleInputChange}
                       placeholder={field.placeholder}
                       required={field.required}
-                      className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 text-sm font-bold text-slate-900 outline-none transition-all placeholder:text-slate-300"
+                      className="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 text-xs font-bold text-slate-900 outline-none transition-all placeholder:text-slate-300"
                     />
                   </div>
                 </div>
               ))}
             </div>
-
+ 
             {/* Phone + Email */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1">
-                <label className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t.registerPage?.phone_number || 'Phone Number'}</label>
+                <label className="text-[8px] sm:text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">{t.registerPage?.phone_number || 'Phone Number'}</label>
                 <div className="relative group">
-                  <div className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none text-slate-300 group-focus-within:text-emerald-500 transition-colors">
-                    <Phone className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-slate-300 group-focus-within:text-emerald-500 transition-colors">
+                    <Phone className="w-3.5 h-3.5" />
                   </div>
                   <input
                     type="tel"
@@ -376,16 +370,16 @@ export default function RegisterPage() {
                     onChange={handleInputChange}
                     placeholder="Mobile..."
                     maxLength={10}
-                    className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 text-sm font-bold text-slate-900 outline-none transition-all placeholder:text-slate-300"
+                    className="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 text-xs font-bold text-slate-900 outline-none transition-all placeholder:text-slate-300"
                   />
                 </div>
               </div>
- 
+  
               <div className="space-y-1">
-                <label className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t.registerPage?.email_address || 'Email'} <span className="normal-case font-medium text-slate-300">(opt)</span></label>
+                <label className="text-[8px] sm:text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">{t.registerPage?.email_address || 'Email'} <span className="normal-case font-medium text-slate-300">(opt)</span></label>
                 <div className="relative group">
-                  <div className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none text-slate-300 group-focus-within:text-emerald-500 transition-colors">
-                    <Mail className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-slate-300 group-focus-within:text-emerald-500 transition-colors">
+                    <Mail className="w-3.5 h-3.5" />
                   </div>
                   <input
                     type="email"
@@ -393,38 +387,38 @@ export default function RegisterPage() {
                     value={formData.email}
                     onChange={handleInputChange}
                     placeholder="your@email.com"
-                    className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 text-sm font-bold text-slate-900 outline-none transition-all placeholder:text-slate-300"
+                    className="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 text-xs font-bold text-slate-900 outline-none transition-all placeholder:text-slate-300"
                   />
                 </div>
               </div>
             </div>
-
+ 
             {/* Village ID */}
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t.registerPage?.village_id || 'Village / Area Code'}</label>
+            <div className="space-y-1">
+              <label className="text-[8px] sm:text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">{t.registerPage?.village_id || 'Village / Area Code'}</label>
               <div className="relative group">
-                <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-slate-300 group-focus-within:text-emerald-500 transition-colors">
-                  <MapPin className="w-4 h-4" />
+                <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-slate-300 group-focus-within:text-emerald-500 transition-colors">
+                  <MapPin className="w-3.5 h-3.5" />
                 </div>
                 <input
                   type="text"
                   name="villageId"
                   value={formData.villageId}
                   onChange={handleInputChange}
-                  placeholder="e.g. v101, rampur-sec4"
+                  placeholder="e.g. v101"
                   required
-                  className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 text-sm font-bold text-slate-900 outline-none transition-all placeholder:text-slate-300"
+                  className="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 text-xs font-bold text-slate-900 outline-none transition-all placeholder:text-slate-300"
                 />
               </div>
-              <p className="text-[10px] text-slate-400 font-medium ml-1">This links you to your village's health data. Use the default "v101" for the demo.</p>
+              <p className="text-[9px] text-slate-400 font-medium ml-1">Links to village health database. Use default "v101" for demo.</p>
             </div>
-
+ 
             {/* Password */}
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t.registerPage?.create_password || 'Create a Password'}</label>
+            <div className="space-y-1">
+              <label className="text-[8px] sm:text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">{t.registerPage?.create_password || 'Create a Password'}</label>
               <div className="relative group">
-                <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-slate-300 group-focus-within:text-emerald-500 transition-colors">
-                  <Lock className="w-4 h-4" />
+                <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-slate-300 group-focus-within:text-emerald-500 transition-colors">
+                  <Lock className="w-3.5 h-3.5" />
                 </div>
                 <input
                   type="password"
@@ -433,20 +427,20 @@ export default function RegisterPage() {
                   onChange={handleInputChange}
                   placeholder="Min. 8 characters recommended"
                   required
-                  className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 text-sm font-bold text-slate-900 outline-none transition-all placeholder:text-slate-300"
+                  className="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 text-xs font-bold text-slate-900 outline-none transition-all placeholder:text-slate-300"
                 />
               </div>
             </div>
-
+ 
             {/* Passcode (conditionally shown for NGO and Admin) */}
             {(formData.role === 'ngo' || formData.role === 'admin') && (
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+              <div className="space-y-1">
+                <label className="text-[8px] sm:text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">
                   {formData.role === 'ngo' ? 'ASHA Worker Passcode' : 'Admin Passcode'}
                 </label>
                 <div className="relative group">
-                  <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-slate-300 group-focus-within:text-emerald-500 transition-colors">
-                    <Shield className="w-4 h-4" />
+                  <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-slate-300 group-focus-within:text-emerald-500 transition-colors">
+                    <Shield className="w-3.5 h-3.5" />
                   </div>
                   <input
                     type="password"
@@ -455,36 +449,36 @@ export default function RegisterPage() {
                     onChange={handleInputChange}
                     placeholder={formData.role === 'ngo' ? 'e.g. ASHA2026' : 'e.g. ADMIN2026'}
                     required
-                    className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 text-sm font-bold text-slate-900 outline-none transition-all placeholder:text-slate-300"
+                    className="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 text-xs font-bold text-slate-900 outline-none transition-all placeholder:text-slate-300"
                   />
                 </div>
               </div>
             )}
-
+ 
             {/* Submit */}
             <motion.button
               type="submit"
               disabled={isLoading || success}
-              whileHover={{ y: -2, boxShadow: '0 16px 32px -8px rgba(16,185,129,0.3)' }}
+              whileHover={{ y: -1, boxShadow: '0 10px 20px -5px rgba(16,185,129,0.2)' }}
               whileTap={{ scale: 0.98 }}
-              className="w-full py-4 bg-slate-900 text-white rounded-xl font-black text-sm uppercase tracking-widest transition-all flex items-center justify-center gap-3 disabled:opacity-50 group overflow-hidden relative"
+              className="w-full py-3 bg-slate-900 text-white rounded-xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-3 disabled:opacity-50 group overflow-hidden relative cursor-pointer"
             >
               <div className="absolute inset-0 bg-emerald-600 translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
               <span className="relative z-10 flex items-center gap-2">
                 {isLoading ? (
-                  <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Creating your account...</>
+                  <><div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Creating your account...</>
                 ) : success ? (
-                  <><CheckCircle className="w-4 h-4" /> Account Created!</>
+                  <><CheckCircle className="w-3.5 h-3.5" /> Account Created!</>
                 ) : (
-                  <>{t.register || 'Create Account'} <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" /></>
+                  <>{t.register || 'Create Account'} <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" /></>
                 )}
               </span>
             </motion.button>
           </form>
-
+ 
           {/* Login link */}
-          <div className="mt-8 text-center p-5 bg-slate-50 rounded-2xl border border-slate-100">
-            <p className="text-slate-500 text-sm font-medium">
+          <div className="mt-6 text-center p-4 bg-slate-50 rounded-xl border border-slate-100">
+            <p className="text-slate-500 text-xs font-medium">
               {t.registerPage?.already_have_account || 'Already have an account?'}{' '}
               <Link to="/login" className="font-black text-emerald-600 hover:text-emerald-700 transition-colors underline underline-offset-2">
                 {t.registerPage?.sign_in_here || 'Log in here'}

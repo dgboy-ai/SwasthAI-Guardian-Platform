@@ -628,7 +628,7 @@ export default function LandingPage() {
                      <p><span className="text-slate-500"># Grounded RAG Knowledge Base:</span> <span className="text-emerald-400">243 Chunks Ready</span></p>
                      <p><span className="text-slate-500"># Outbreak Scans:</span> <span className="text-emerald-400">Autonomous (Every 30m)</span></p>
                      <p className="pt-4 border-t border-slate-800 text-[10px] text-slate-500">
-                        * Verify status dynamically inside the app by logging in as an Admin and visiting "System Status" or the "Production Evidence" dashboard.
+                        * Verify status dynamically inside the app by logging in as an Admin and visiting "System Status" or the "Live System Verification" dashboard.
                      </p>
                   </div>
                </div>

@@ -94,6 +94,23 @@ const AuthContext = createContext(null);
 const DEMO_SECRET = 'Demo@1234';
 const demoCredentialHash = (identifier, role, secret = DEMO_SECRET) => sha256(`${identifier}:${role}:${secret}`);
 
+function cleanUserObject(userObj) {
+  if (!userObj) return userObj;
+  const next = { ...userObj };
+  if (next.name) {
+    next.name = next.name
+      .replace(/\(Demo\s+Villager\)/gi, '')
+      .replace(/\(Demo\s+ASHA\s+Worker\)/gi, '')
+      .replace(/\(Demo\s+ASHA\)/gi, '')
+      .replace(/\(Demo\s+Admin\)/gi, '')
+      .trim();
+    if (next.name === 'Demo Villager') next.name = 'Ramesh Singh';
+    if (next.name === 'Demo ASHA') next.name = 'Anjali Sharma';
+    if (next.name === 'Demo Admin') next.name = 'District Administrator';
+  }
+  return next;
+}
+
 function normalizeOfflineUsers(users) {
   return (Array.isArray(users) ? users : []).map(user => {
     const identifier = user.email || user.phone || user.username || user.id;
@@ -102,12 +119,15 @@ function normalizeOfflineUsers(users) {
       next.credentialHash = demoCredentialHash(identifier, next.role, next.password);
     }
     delete next.password;
-    return next;
+    return cleanUserObject(next);
   });
 }
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
+  const [user, _setUser] = useState(null);
+  const setUser = (val) => {
+    _setUser(typeof val === 'function' ? (prev) => cleanUserObject(val(prev)) : cleanUserObject(val));
+  };
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -117,7 +137,7 @@ export const AuthProvider = ({ children }) => {
       const defaultDemoUsers = [
         {
           id: 'demo-villager',
-          name: 'Ramesh Singh (Demo Villager)',
+          name: 'Ramesh Singh',
           username: '9876543210',
           email: '',
           phone: '9876543210',
@@ -128,7 +148,7 @@ export const AuthProvider = ({ children }) => {
         },
         {
           id: 'demo-ngo',
-          name: 'Anjali Sharma (Demo ASHA Worker)',
+          name: 'Anjali Sharma',
           username: '9876543211',
           email: '',
           phone: '9876543211',
@@ -159,6 +179,7 @@ export const AuthProvider = ({ children }) => {
           (demoUser.phone && u.phone === demoUser.phone)
         );
         if (existingIndex >= 0) {
+          // Merge while ensuring we use the updated names
           updated[existingIndex] = { ...updated[existingIndex], ...demoUser };
         } else {
           updated.push(demoUser);

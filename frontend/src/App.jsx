@@ -224,14 +224,21 @@ export default function App() {
                 </ProtectedRoute>
               } />
               <Route path="/monitor" element={
-                <ProtectedRoute allowedRole="admin">
+                <ProtectedRoute allowedRole={["admin", "ngo", "villager"]}>
                   <DesktopOnlyWrapper dashboardName="District Simulation & Observability Monitor">
                     <LayoutWrapper><ErrorBoundary><MonitoringDashboard /></ErrorBoundary></LayoutWrapper>
                   </DesktopOnlyWrapper>
                 </ProtectedRoute>
               } />
               <Route path="/monitoring" element={
-                <ProtectedRoute allowedRole="admin">
+                <ProtectedRoute allowedRole={["admin", "ngo", "villager"]}>
+                  <DesktopOnlyWrapper dashboardName="District Simulation & Observability Monitor">
+                    <LayoutWrapper><ErrorBoundary><MonitoringDashboard /></ErrorBoundary></LayoutWrapper>
+                  </DesktopOnlyWrapper>
+                </ProtectedRoute>
+              } />
+              <Route path="/monitoring-dashboard" element={
+                <ProtectedRoute allowedRole={["admin", "ngo", "villager"]}>
                   <DesktopOnlyWrapper dashboardName="District Simulation & Observability Monitor">
                     <LayoutWrapper><ErrorBoundary><MonitoringDashboard /></ErrorBoundary></LayoutWrapper>
                   </DesktopOnlyWrapper>

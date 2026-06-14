@@ -391,7 +391,15 @@ export default function Navbar() {
       {/* 📱 Bottom Navigation Bar — Critical for one-handed rural mobile use */}
       {user && (
         <div className="xl:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl border-t border-slate-100 px-2 py-2 pb-safe-area flex items-center justify-around z-[150] shadow-[0_-8px_20px_-10px_rgba(0,0,0,0.1)]">
-          {(user.role === 'villager' ? villagerLinks(t) : ngoLinks(t)).map(link => (
+          {(user.role === 'villager' 
+            ? [
+                { name: t.nav?.home || 'Home',            path: '/villager',       icon: Home     },
+                { name: t.nav?.check_symptoms?.split(' ')[0] || 'Symptoms', path: '/symptoms',   icon: Activity },
+                { name: t.nav?.skin_care?.split(' ')[0] || 'Skin Scan',   path: '/skin-disease',   icon: Scan     },
+                { name: t.nav?.ambulance || 'Ambulance',  path: '/ambulance',      icon: Truck    },
+              ]
+            : ngoLinks(t)
+          ).map(link => (
             <Link
               key={link.path}
               to={link.path}
