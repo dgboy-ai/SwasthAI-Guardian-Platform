@@ -10,16 +10,16 @@ export default function Footer() {
   const { t } = useLanguage();
 
   return (
-    <footer className="relative bg-[#020617] text-white overflow-hidden pt-16 pb-8 px-6 border-t border-white/5">
+    <footer className="relative bg-[#020617] text-white overflow-hidden pt-6 md:pt-16 pb-24 md:pb-8 px-4 md:px-6 border-t border-white/5">
       {/* Background decoration */}
       <div className="absolute top-0 left-[-10%] w-[300px] h-[300px] bg-emerald-900/10 rounded-full blur-[100px] pointer-events-none" />
       <div className="absolute bottom-0 right-[-10%] w-[300px] h-[300px] bg-emerald-900/10 rounded-full blur-[100px] pointer-events-none" />
 
       <div className="max-w-7xl mx-auto relative z-10">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-10 lg:gap-12 border-b border-white/5 pb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-10 lg:gap-12 border-b border-white/5 pb-6 md:pb-12">
 
           {/* BRAND COLUMN */}
-          <div className="space-y-6">
+          <div className="space-y-4 md:space-y-6">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-emerald-600 flex items-center justify-center rounded-xl shadow-xl">
                 <HeartPulse className="w-5 h-5 text-white" />
@@ -33,10 +33,10 @@ export default function Footer() {
                 </span>
               </div>
             </div>
-            <p className="text-sm font-medium text-slate-400 leading-relaxed max-w-sm">
+            <p className="text-xs sm:text-sm font-medium text-slate-400 leading-relaxed max-w-sm hidden sm:block">
               Bridging the healthcare gap in rural India. SwasthAI provides instant AI diagnostics, emergency ambulance dispatch, and maternal health tracking - offline-first.
             </p>
-            <div className="flex flex-wrap gap-2">
+            <div className="hidden sm:flex flex-wrap gap-2">
               <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-lg border border-white/10">
                 <Award className="w-3 h-3 text-emerald-500" />
                 <span className="text-[9px] font-black uppercase tracking-tighter text-slate-300">Healthcare for All</span>
@@ -49,7 +49,7 @@ export default function Footer() {
           </div>
 
           {/* VILLAGER QUICK LINKS */}
-          <div className="space-y-6">
+          <div className="space-y-6 hidden md:block">
             <h4 className="text-xs font-black uppercase tracking-widest text-emerald-500">
               Villager Services
             </h4>
@@ -73,7 +73,7 @@ export default function Footer() {
           </div>
 
           {/* CONTACT INFO */}
-          <div className="space-y-6">
+          <div className="space-y-6 hidden md:block">
             <h4 className="text-xs font-black uppercase tracking-widest text-emerald-500">Connect</h4>
             <ul className="space-y-5">
               <li className="flex items-start gap-4 text-slate-400 group">
@@ -98,11 +98,11 @@ export default function Footer() {
           </div>
 
           {/* EMERGENCY HELPLINES */}
-          <div className="space-y-6">
-            <h3 className="text-lg font-black tracking-tighter uppercase leading-none text-rose-500">
+          <div className="space-y-4 md:space-y-6">
+            <h3 className="text-base md:text-lg font-black tracking-tighter uppercase leading-none text-rose-500">
               Emergency Helplines
             </h3>
-            <div className="p-5 bg-rose-500/5 border border-rose-500/20 rounded-2xl space-y-4 shadow-inner">
+            <div className="p-4 md:p-5 bg-rose-500/5 border border-rose-500/20 rounded-2xl space-y-4 shadow-inner">
               <div className="flex items-center gap-4">
                 <div className="p-3 bg-rose-600 rounded-xl shadow-md border border-rose-500 animate-pulse">
                   <PhoneCall className="w-5 h-5 text-white" />
@@ -125,7 +125,7 @@ export default function Footer() {
         </div>
 
         {/* Bottom bar */}
-        <div className="pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div className="pt-6 flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-3 text-emerald-500 font-black text-[9px] uppercase tracking-widest">
             <ShieldCheck className="w-4 h-4" /> Secured by SwasthAI Protocols
           </div>

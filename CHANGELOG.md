@@ -4,6 +4,10 @@ All notable changes and feature developments completed during the project develo
 
 ## June 14, 2026
 ### Fixed & Optimized
+- **Villager Dashboard & Guided Care Mode Cleanup**:
+  - Removed "Guided Care Mode" dashboard containers and tracking modules from both desktop and mobile layouts in `VillagerDashboard.jsx` to streamline the user experience.
+  - Permanently deleted 5 obsolete/unused workflow frontend files (`SakhiWorkflow.jsx`, `PregnancyWorkflow.jsx`, `FeverWorkflow.jsx`, `EmergencyWorkflow.jsx`, `ChildWorkflow.jsx`) and empty subdirectories to clean up the workspace.
+  - Re-validated the Vite production environment compiler (`npm run build`), ensuring zero broken dependency imports or runtime errors.
 - **Critical useEffect Import Crash (App.jsx)**:
   - Added missing `useEffect` import to line 1 of `frontend/src/App.jsx` — the entire app crashed on mount for every user because `useEffect()` was `undefined`.
 - **AdminDashboard NaN Bug**:
@@ -32,6 +36,11 @@ All notable changes and feature developments completed during the project develo
   - Added links to `docs/offline_sync_strategy.md` and `docs/architecture-diagram.svg` in the technical documentation index.
 
 ### Added
+- **Villager Dashboard Premium Redesign & Dynamic Localization**:
+  - Replaced the overly-technical streaks, statistics, and SVGs of the HealthRing with a dynamic, checkable daily habit `WellnessCard` checklist tailored for rural villagers.
+  - Connected habit completion rates to an animated status emoji indicator (`😊`, `😐`, `😕`, `🙏`) that reacts dynamically to progress.
+  - Standardized greetings and content to support dynamic English/Hindi translation states (switching between `"Namaste"` vs `"Welcome"` and adapting all cards/descriptions).
+  - Integrated dynamic dual "SwasthAI" branding text widgets at the top header of the mobile phone viewport layout.
 - **Architecture Diagram (SVG)**:
   - Created `docs/architecture-diagram.svg` covering all 4 layers (Client, Backend, AI Service, Data) with every H0-required arrow: Vercel→Express (REST+SSE), Express→Aurora PostgreSQL, Express→DynamoDB (5 tables with PK/SK/GSI), Express→FastAPI AI, Outbreak Agent↔Express, plus AWS Region `ap-south-1` label and legend.
 
