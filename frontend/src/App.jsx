@@ -26,7 +26,6 @@ const MaternalHealthPage     = lazy(() => import('./pages/MaternalHealthPage'));
 const ChildNutritionPage     = lazy(() => import('./pages/ChildNutritionPage'));
 const GovernmentSchemesPage  = lazy(() => import('./pages/GovernmentSchemesPage'));
 const SchemeDetailPage        = lazy(() => import('./pages/SchemeDetailPage'));
-const GuidedHealthcareMode   = lazy(() => import('./pages/GuidedHealthcareMode'));
 const MonitoringDashboard    = lazy(() => import('./pages/MonitoringDashboard'));
 
 // Components
@@ -191,12 +190,6 @@ export default function App() {
               <Route path="/schemes/:id" element={
                 <ProtectedRoute allowedRole="villager">
                    <LayoutWrapper><ErrorBoundary><SchemeDetailPage /></ErrorBoundary></LayoutWrapper>
-                </ProtectedRoute>
-              } />
-
-              <Route path="/guided-mode" element={
-                <ProtectedRoute allowedRole="villager">
-                   <LayoutWrapper><ErrorBoundary><GuidedHealthcareMode /></ErrorBoundary></LayoutWrapper>
                 </ProtectedRoute>
               } />
 

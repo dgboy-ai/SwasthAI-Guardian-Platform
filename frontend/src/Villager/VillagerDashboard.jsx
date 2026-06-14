@@ -330,7 +330,7 @@ export default function VillagerDashboard() {
           </motion.div>
 
           {/* Hero cards */}
-          <motion.div variants={cV} className="grid grid-cols-2 gap-7">
+          <motion.div variants={cV} className="grid grid-cols-1 gap-7 max-w-4xl mx-auto">
 
             {/* Emergency */}
             <motion.div variants={iV} whileHover={{ y: -6, scale: 1.01 }} className="relative group">
@@ -378,51 +378,6 @@ export default function VillagerDashboard() {
               </div>
             </motion.div>
 
-            {/* Guided Care */}
-            <motion.div variants={iV} whileHover={{ y: -6, scale: 1.01 }} className="relative group">
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-[3rem] opacity-0 group-hover:opacity-30 blur-md transition-opacity duration-500" />
-              <div className="relative bg-gradient-to-br from-[#022c1a] via-[#046A38] to-[#065f30] text-white rounded-[2.8rem] p-10 flex flex-col justify-between overflow-hidden border border-emerald-900 shadow-[0_20px_50px_-10px_rgba(4,106,56,0.30)]">
-                <div className="absolute inset-0 opacity-[0.07]"
-                  style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.3) 1px, transparent 1px)', backgroundSize: '22px 22px' }} />
-                <motion.div animate={{ scale: [1, 1.3, 1], opacity: [0.12, 0.22, 0.12] }} transition={{ repeat: Infinity, duration: 5 }}
-                  className="absolute -top-20 -right-20 w-72 h-72 bg-emerald-300 rounded-full blur-3xl pointer-events-none" />
-
-                <div className="space-y-5 relative z-10">
-                  <div className="flex items-start justify-between">
-                    <span className="flex items-center gap-2 px-4 py-1.5 bg-white/15 border border-white/20 text-white text-[11px] font-black uppercase tracking-widest rounded-full">
-                      <Sparkles className="w-3.5 h-3.5 text-yellow-300" /> Recommended
-                    </span>
-                    {/* Waveform */}
-                    <div className="flex items-end gap-1.5 h-8 opacity-75">
-                      {[1, 1.4, 0.7, 1.2, 1.5, 0.9, 1.3].map((d, i) => (
-                        <motion.div key={i}
-                          animate={{ height: [6, 6 + 20 * d, 6] }}
-                          transition={{ repeat: Infinity, duration: d, delay: i * 0.14, ease: 'easeInOut' }}
-                          className="w-1 bg-white rounded-full" />
-                      ))}
-                    </div>
-                  </div>
-                  <div>
-                    <h3 className="text-4xl font-black tracking-tight">Awaaz Se Batayen</h3>
-                    <p className="text-emerald-100 font-medium leading-relaxed mt-2 max-w-sm text-base">
-                      Apni bimari Hindi ya kisi bhi bhasha mein batayen — bina typing ke, bina internet ke bhi.
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {['Hindi', 'Tamil', 'Telugu', 'Marathi', '+3 aur'].map(l => (
-                      <span key={l} className="px-3 py-1 bg-white/12 border border-white/20 text-white/90 text-[10px] font-bold rounded-full">{l}</span>
-                    ))}
-                  </div>
-                </div>
-
-                <Link to="/guided-mode"
-                  className="mt-8 w-full py-5 bg-white hover:bg-emerald-50 text-[#046A38] rounded-2xl font-black text-sm uppercase tracking-[0.18em] flex items-center justify-center gap-3 shadow-[0_12px_28px_rgba(0,0,0,0.18)] active:scale-[0.98] transition-all relative z-10 overflow-hidden group/btn">
-                  <motion.div className="absolute inset-0 bg-emerald-50" initial={{ x: '-100%' }} whileHover={{ x: '100%' }} transition={{ duration: 0.45 }} />
-                  <Mic className="w-5 h-5 fill-[#046A38] relative" />
-                  <span className="relative">Bolna Shuru Karein</span>
-                </Link>
-              </div>
-            </motion.div>
           </motion.div>
 
           {/* Middle: Wellness + Stats & Tools */}
@@ -592,31 +547,6 @@ export default function VillagerDashboard() {
                 <Link to="/ambulance"
                   className="w-full py-4 bg-gradient-to-r from-rose-600 to-red-500 text-white rounded-xl font-black text-[11px] uppercase tracking-[0.18em] flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] transition-transform relative z-10">
                   <Phone className="w-4 h-4 fill-white" /> Abhi Madad Maangein
-                </Link>
-              </div>
-            </motion.div>
-
-            {/* Guided Care */}
-            <motion.div variants={iV} whileTap={{ scale: 0.98 }} className="relative z-10">
-              <div className="bg-gradient-to-br from-[#022c1a] to-[#046A38] text-white rounded-[2rem] p-5 overflow-hidden border border-emerald-900 shadow-lg relative">
-                <div className="absolute inset-0 opacity-[0.07]"
-                  style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,.3) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.3) 1px, transparent 1px)', backgroundSize: '18px 18px' }} />
-                <div className="flex items-center gap-3 mb-4 relative z-10">
-                  <div className="p-3 bg-white/20 text-white rounded-2xl border border-white/25"><Mic className="w-6 h-6" /></div>
-                  <div>
-                    <h4 className="text-base font-black">Awaaz Se Batayen</h4>
-                    <p className="text-[11px] text-emerald-200 font-bold uppercase tracking-wider">Hindi mein bolein</p>
-                  </div>
-                  <div className="ml-auto flex items-end gap-1 h-6">
-                    {[1, 1.5, 0.8, 1.2, 1].map((d, i) => (
-                      <motion.div key={i} animate={{ height: [4, 4 + 12 * d, 4] }} transition={{ repeat: Infinity, duration: d, delay: i * 0.15 }}
-                        className="w-0.5 bg-white/60 rounded-full" />
-                    ))}
-                  </div>
-                </div>
-                <Link to="/guided-mode"
-                  className="w-full py-4 bg-white text-[#046A38] rounded-xl font-black text-[11px] uppercase tracking-[0.18em] flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] transition-transform relative z-10">
-                  <Mic className="w-4 h-4" /> Bolna Shuru Karein
                 </Link>
               </div>
             </motion.div>

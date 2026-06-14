@@ -84,7 +84,7 @@ router.post('/village', auth, checkRole(['ngo', 'admin']), enforceVillageScope, 
   }
 });
 
-router.post('/maternal', auth, checkRole(['ngo', 'admin']), logAudit('create', 'pregnancy_data'), async (req, res) => {
+router.post('/maternal', auth, checkRole(['ngo', 'admin', 'villager']), logAudit('create', 'pregnancy_data'), async (req, res) => {
   const db = req.app.locals.db;
   const AI_SERVICE_URL = req.app.locals.AI_SERVICE_URL;
   const { name, age, trimester, dueDate, vitals } = req.body;
@@ -282,7 +282,7 @@ router.post('/maternal', auth, checkRole(['ngo', 'admin']), logAudit('create', '
   }
 });
 
-router.post('/malnutrition', auth, checkRole(['ngo', 'admin']), async (req, res) => {
+router.post('/malnutrition', auth, checkRole(['ngo', 'admin', 'villager']), async (req, res) => {
   const db = req.app.locals.db;
   const AI_SERVICE_URL = req.app.locals.AI_SERVICE_URL;
   const { name, age, weight, height } = req.body;
