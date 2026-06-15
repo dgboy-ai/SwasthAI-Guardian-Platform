@@ -72,6 +72,8 @@ export default function AdminDashboard() {
   const [auditLogs, setAuditLogs] = useState([]);
   const [simulatingOutbreak, setSimulatingOutbreak] = useState(false);
   const [liveAmbulanceLocations, setLiveAmbulanceLocations] = useState({});
+  const [lastAgentScan, setLastAgentScan] = useState(null);
+  const [dlqAlerts, setDlqAlerts] = useState([]);
   const lastSyncRef = useRef(Date.now());
 
   useEffect(() => {
@@ -190,8 +192,14 @@ export default function AdminDashboard() {
       try { const r = await api.get('/admin/outbreaks'); setOutbreaks(r.data.outbreaks || []); }
       catch { }
     };
-    load(); loadAmb(); loadOut();
-    const iv = setInterval(() => { load(); loadAmb(); loadOut(); }, 30000);
+    const loadAgentScan = async () => {
+      try {
+        const data = await adminService.getAgentScans();
+        if (data && data.length > 0) setLastAgentScan(data[0]);
+      } catch { }
+    };
+    load(); loadAmb(); loadOut(); loadAgentScan();
+    const iv = setInterval(() => { load(); loadAmb(); loadOut(); loadAgentScan(); }, 30000);
     return () => clearInterval(iv);
   }, []);
 
@@ -274,6 +282,21 @@ export default function AdminDashboard() {
             }
             return next;
           });
+        } catch (_) { }
+      });
+
+      sse.addEventListener('agent-scan', (e) => {
+        try {
+          const scan = JSON.parse(e.data);
+          setLastAgentScan(scan);
+        } catch (_) { }
+      });
+
+      sse.addEventListener('dlq_alert', (e) => {
+        try {
+          const alert = JSON.parse(e.data);
+          setDlqAlerts(prev => [alert, ...prev].slice(0, 10));
+          showToast(`⚠️ ${alert.eventType} failed — ${alert.error}`, 'error');
         } catch (_) { }
       });
 
@@ -743,6 +766,7 @@ export default function AdminDashboard() {
               { label: 'Aurora PostgreSQL', val: auroraStripMeta.label, dot: auroraStripMeta.dot, bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-100' },
               { label: 'DynamoDB', val: dynamoStripMeta.label, dot: dynamoStripMeta.dot, bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-100' },
               { label: 'AI Service', val: aiStripMeta.label, dot: aiStripMeta.dot, bg: 'bg-violet-50', text: 'text-violet-700', border: 'border-violet-100' },
+              { label: 'Agent Scan', val: lastAgentScan ? timeAgo(lastAgentScan.timestamp) : 'Awaiting...', dot: lastAgentScan ? 'bg-emerald-500' : 'bg-amber-400', bg: lastAgentScan ? 'bg-emerald-50' : 'bg-amber-50', text: lastAgentScan ? 'text-emerald-700' : 'text-amber-700', border: lastAgentScan ? 'border-emerald-100' : 'border-amber-100' },
               { label: 'Offline Villages', val: `${S.villages ?? 4}`, dot: 'bg-rose-500', bg: 'bg-rose-50', text: 'text-rose-700', border: 'border-rose-100' },
               { label: 'Pending Syncs', val: '12', dot: 'bg-amber-500', bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-100' },
               { label: 'Last Sync', val: lastSync, dot: 'bg-slate-400', bg: 'bg-slate-50', text: 'text-slate-600', border: 'border-slate-200' },
@@ -802,6 +826,7 @@ export default function AdminDashboard() {
               alertSent={alertSent}
               alertError={alertError}
               downloadReport={downloadReport}
+              lastAgentScan={lastAgentScan}
             />
           )}
 

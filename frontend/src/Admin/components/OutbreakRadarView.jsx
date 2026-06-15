@@ -16,7 +16,8 @@ export default function OutbreakRadarView({
   issueDistrictAlert,
   alertSent,
   alertError,
-  downloadReport
+  downloadReport,
+  lastAgentScan
 }) {
   const [dispatchedAlerts, setDispatchedAlerts] = useState({});
 
@@ -85,6 +86,12 @@ export default function OutbreakRadarView({
         </div>
 
         <div className="flex items-center gap-3">
+          {lastAgentScan && (
+            <div className="flex items-center gap-1.5 px-3 py-2 bg-emerald-50 border border-emerald-200 rounded-xl text-[10px] font-bold text-emerald-700">
+              <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+              Agent scan: {timeAgo(lastAgentScan.timestamp)}
+            </div>
+          )}
           <button
             onClick={() => showToast('Surveillance AI node diagnostics normal. Cache synced.', 'info')}
             className="p-2.5 bg-white hover:bg-slate-50 border border-slate-250 rounded-xl text-slate-650 hover:text-slate-900 transition-all text-xs font-black flex items-center gap-2 shadow-md hover:shadow-lg active:scale-95 duration-200"

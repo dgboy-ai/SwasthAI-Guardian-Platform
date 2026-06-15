@@ -194,6 +194,23 @@ eventEmitter.on("outbreak_detected", async (eventData) => {
        WHERE "villageId" = ?`,
       [`⚠️ Outbreak Alert: ${disease}. Action: ${action}`, now, villageId]
     );
+
+    if (typeof broadcastCallback === 'function') {
+      broadcastCallback('outbreak', {
+        villageId,
+        districtId,
+        detectedAt: now,
+        disease: disease || 'Unknown',
+        classification: disease || 'Unknown',
+        action,
+        caseCount: count,
+        symptomPattern: `${count} cases detected`,
+        confidence: 0.85,
+        riskScore: 85,
+        severity: 'high',
+        source: 'EventDispatcher'
+      });
+    }
   } catch (err) {
     console.error(`[EVENT ERROR] outbreak_detected handling failed:`, err.message);
     await writeToDLQ("outbreak_detected", eventData, err.message);
