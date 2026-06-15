@@ -16,6 +16,7 @@ import DemoPage from './pages/DemoPage';
 // Pages — heavy, lazy-loaded for Vercel edge performance & 2G optimization
 const VillagerDashboard  = lazy(() => import('./Villager/VillagerDashboard'));
 const NGODashboard       = lazy(() => import('./NGO/NGODashboard'));
+const ASHADashboard      = lazy(() => import('./NGO/ASHADashboard'));
 const AdminDashboard     = lazy(() => import('./Admin/AdminDashboard'));
 const SymptomCheckerPage     = lazy(() => import('./pages/SymptomCheckerPage'));
 const SkinDiseaseCheckerPage = lazy(() => import('./pages/SkinDiseaseCheckerPage'));
@@ -194,6 +195,12 @@ export default function App() {
               } />
 
               {/* NGO/ADMIN DOMAINS */}
+              {/* ASHA Field Worker Dashboard – pixel-accurate mobile UI */}
+              <Route path="/asha" element={
+                <ProtectedRoute allowedRole={["ngo", "admin"]}>
+                   <ErrorBoundary><ASHADashboard /></ErrorBoundary>
+                </ProtectedRoute>
+              } />
               <Route path="/ngo" element={
                 <ProtectedRoute allowedRole="ngo">
                    <ErrorBoundary><NGODashboard /></ErrorBoundary>
