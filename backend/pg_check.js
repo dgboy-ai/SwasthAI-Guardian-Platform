@@ -5,13 +5,14 @@ dotenv.config();
 
 console.log('Database URL:', process.env.DATABASE_URL);
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false },
-  connectionTimeoutMillis: 5000,
-});
-
 async function check() {
+  const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: {
+      rejectUnauthorized: false,
+    },
+  });
+
   console.log('Attempting to connect to PostgreSQL...');
   const t0 = Date.now();
   try {

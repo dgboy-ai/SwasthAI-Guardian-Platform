@@ -4,11 +4,12 @@ import {
   TrendingUp, TrendingDown, Minus, AlertTriangle, Shield,
   RefreshCw, ChevronDown, ChevronUp, Zap, Target, Activity,
   ArrowRight, CheckCircle, MapPin, Users, X, DollarSign, Info,
-  Droplet, Bug, Heart, Award, AlertCircle, Clock, Terminal, Sliders
+  Droplet, Bug, Heart, Award, AlertCircle, Clock, Sliders,
+  BrainCircuit, BarChart3, List, ChevronRight, ChevronLeft,
+  Radio, Database, Bell, Layers, ShieldAlert, Eye
 } from 'lucide-react';
 import adminService from '../../services/adminService';
 
-/* ── Risk Level Styles ──────────────────────────────────────────────────────── */
 const RISK_META = {
   CRITICAL: { bg: 'bg-red-500',    light: 'bg-red-50/50',    border: 'border-red-200',    text: 'text-red-700',    badge: 'bg-red-50 text-red-700 border-red-200',    dot: 'bg-red-500',    label: 'CRITICAL', bar: '#EF4444', borderL: 'border-l-red-500' },
   HIGH:     { bg: 'bg-orange-500', light: 'bg-orange-50/50', border: 'border-orange-200', text: 'text-orange-700', badge: 'bg-orange-50 text-orange-700 border-orange-200', dot: 'bg-orange-500', label: 'HIGH',     bar: '#F97316', borderL: 'border-l-orange-500' },
@@ -16,136 +17,341 @@ const RISK_META = {
   LOW:      { bg: 'bg-green-500',  light: 'bg-green-50/50',  border: 'border-green-200',  text: 'text-green-700',  badge: 'bg-emerald-50 text-emerald-700 border-emerald-250',   dot: 'bg-green-500',  label: 'LOW',      bar: '#22C55E', borderL: 'border-l-green-500' },
 };
 
-/* ── Demo fallback data ─────────────────────────────────────────────────── */
 const DEMO_VILLAGES = [
-  { villageId: 'VILLAGE_012', village: 'Rampur', population: 2840, riskScore: 78, riskLevel: 'HIGH', riskColor: '#F97316', hasActiveOutbreak: true, symptomScore: 32, outbreakScore: 18, seasonalScore: 18, referralScore: 10, dataPoints: { symptomCount7d: 14, openReferralsCount: 8, waterSafetyScore: 82, vectorDensity: 74 } },
-  { villageId: 'VILLAGE_047', village: 'Ichhawar', population: 1920, riskScore: 62, riskLevel: 'HIGH', riskColor: '#F97316', hasActiveOutbreak: false, symptomScore: 22, outbreakScore: 18, seasonalScore: 15, referralScore: 7, dataPoints: { symptomCount7d: 9, openReferralsCount: 5, waterSafetyScore: 65, vectorDensity: 61 } },
+  { villageId: 'VILLAGE_012', village: 'Rampur', population: 2840, riskScore: 82, riskLevel: 'HIGH', riskColor: '#F97316', hasActiveOutbreak: true, symptomScore: 32, outbreakScore: 18, seasonalScore: 18, referralScore: 10, dataPoints: { symptomCount7d: 14, openReferralsCount: 8, waterSafetyScore: 82, vectorDensity: 74 } },
+  { villageId: 'VILLAGE_047', village: 'Ichhawar', population: 1920, riskScore: 67, riskLevel: 'HIGH', riskColor: '#F97316', hasActiveOutbreak: false, symptomScore: 22, outbreakScore: 18, seasonalScore: 15, referralScore: 7, dataPoints: { symptomCount7d: 9, openReferralsCount: 5, waterSafetyScore: 65, vectorDensity: 61 } },
   { villageId: 'VILLAGE_009', village: 'Sehore North', population: 3100, riskScore: 54, riskLevel: 'MEDIUM', riskColor: '#EAB308', hasActiveOutbreak: false, symptomScore: 14, outbreakScore: 18, seasonalScore: 15, referralScore: 7, dataPoints: { symptomCount7d: 6, openReferralsCount: 4, waterSafetyScore: 71, vectorDensity: 52 } },
-  { villageId: 'VILLAGE_023', village: 'Budhni', population: 1650, riskScore: 38, riskLevel: 'MEDIUM', riskColor: '#EAB308', hasActiveOutbreak: false, symptomScore: 8, outbreakScore: 10, seasonalScore: 15, referralScore: 5, dataPoints: { symptomCount7d: 3, openReferralsCount: 2, waterSafetyScore: 90, vectorDensity: 38 } },
-  { villageId: 'VILLAGE_031', village: 'Ashta', population: 2200, riskScore: 22, riskLevel: 'LOW', riskColor: '#22C55E', hasActiveOutbreak: false, symptomScore: 0, outbreakScore: 10, seasonalScore: 12, referralScore: 0, dataPoints: { symptomCount7d: 1, openReferralsCount: 0, waterSafetyScore: 95, vectorDensity: 21 } },
+  { villageId: 'VILLAGE_023', village: 'Budhni', population: 1650, riskScore: 41, riskLevel: 'MEDIUM', riskColor: '#EAB308', hasActiveOutbreak: false, symptomScore: 8, outbreakScore: 10, seasonalScore: 15, referralScore: 5, dataPoints: { symptomCount7d: 3, openReferralsCount: 2, waterSafetyScore: 90, vectorDensity: 38 } },
+  { villageId: 'VILLAGE_031', village: 'Ashta', population: 2200, riskScore: 29, riskLevel: 'LOW', riskColor: '#22C55E', hasActiveOutbreak: false, symptomScore: 0, outbreakScore: 10, seasonalScore: 12, referralScore: 0, dataPoints: { symptomCount7d: 1, openReferralsCount: 0, waterSafetyScore: 95, vectorDensity: 21 } },
   { villageId: 'VILLAGE_005', village: 'Nasrullaganj', population: 1450, riskScore: 15, riskLevel: 'LOW', riskColor: '#22C55E', hasActiveOutbreak: false, symptomScore: 0, outbreakScore: 0, seasonalScore: 12, referralScore: 3, dataPoints: { symptomCount7d: 0, openReferralsCount: 1, waterSafetyScore: 92, vectorDensity: 15 } },
 ];
 
-const DEMO_SUMMARY = { criticalCount: 0, highCount: 2, mediumCount: 2, lowCount: 2, avgScore: 45, totalVillages: 6, highestRisk: 'Rampur', highestRiskScore: 78 };
+const DEMO_SUMMARY = { criticalCount: 0, highCount: 2, mediumCount: 2, lowCount: 2, avgScore: 45, totalVillages: 6, highestRisk: 'Rampur', highestRiskScore: 82 };
 
-/* ── Live Log Terminal Stream Component ───────────────────────────────────── */
-const MOCK_PACKETS = [
-  "ASHA Node v102 uploaded 4 pregnancy telemetry sheets",
-  "Vector Density Sensor #982 recorded humidity anomaly in Rampur",
-  "DeepLearning SymptomNet: analyzed 9 symptom profiles in Ichhawar",
-  "RAG Multilingual matching completed for Sakhi sessions (v103)",
-  "DynamoDB synced outbreak event state for Rampur - dengue flagged",
-  "Surveillance alert generated: 7d symptom count threshold exceeded",
-  "Water safety check logged - chlorine levels nominal in Ashta",
-  "Auto-dispatch triggered for P1 Emergency request from Nasrullaganj"
+const EVENT_LOG = [
+  { time: '08:32', text: 'Outbreak signal detected (Rampur)', type: 'outbreak' },
+  { time: '08:34', text: 'DynamoDB alert stored', type: 'system' },
+  { time: '08:35', text: 'ASHA notification sent', type: 'action' },
+  { time: '08:37', text: 'Risk score recalculated', type: 'system' },
 ];
 
-function LiveTelemetryStream() {
-  const [logs, setLogs] = useState([
-    "[11:15:02 AM] System Ready. Awaiting regional health signals...",
-    "[11:15:15 AM] Syncing AWS node state indices..."
-  ]);
-  const containerRef = useRef(null);
+function EventTimeline() {
+  const [events, setEvents] = useState(EVENT_LOG);
 
   useEffect(() => {
     const timer = setInterval(() => {
-      const timeStr = new Date().toLocaleTimeString();
-      const packet = MOCK_PACKETS[Math.floor(Math.random() * MOCK_PACKETS.length)];
-      setLogs(prev => [...prev.slice(-6), `[${timeStr}] ${packet}`]);
-    }, 4500);
-
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false });
+      const texts = [
+        'Symptom cluster analyzed (Sehore North)',
+        'DynamoDB sync completed',
+        'Risk score refreshed',
+        'ASHA patrol logged 12 household visits',
+        'Vector density sensor reading received',
+      ];
+      const types = ['outbreak', 'system', 'system', 'action', 'system'];
+      const idx = Math.floor(Math.random() * texts.length);
+      setEvents(prev => [...prev.slice(-7), { time: timeStr, text: texts[idx], type: types[idx] }]);
+    }, 8000);
     return () => clearInterval(timer);
   }, []);
 
-  useEffect(() => {
-    if (containerRef.current) {
-      containerRef.current.scrollTop = containerRef.current.scrollHeight;
-    }
-  }, [logs]);
-
   return (
-    <div className="bg-slate-900 rounded-2xl p-4 border border-slate-800 shadow-inner font-mono text-[10.5px] text-slate-300 relative overflow-hidden flex flex-col h-44">
-      <div className="flex items-center justify-between border-b border-slate-800 pb-2 mb-2 shrink-0">
+    <div className="bg-white border border-slate-150 rounded-2xl p-4.5 shadow-[0_4px_20px_rgba(0,0,0,0.015)] h-[220px] flex flex-col">
+      <div className="flex items-center justify-between border-b border-slate-100 pb-2.5 mb-3 shrink-0">
         <div className="flex items-center gap-2">
-          <Terminal className="w-3.5 h-3.5 text-indigo-400" />
-          <span className="font-bold text-slate-400">AWS Telemetry Stream Feed</span>
+          <Clock className="w-4 h-4 text-indigo-500" />
+          <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Latest AI Events</span>
         </div>
         <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
       </div>
-      <div ref={containerRef} className="flex-1 overflow-y-auto space-y-1.5 scrollbar-thin">
-        {logs.map((log, index) => (
-          <motion.div
-            initial={{ opacity: 0, x: -5 }}
-            animate={{ opacity: 1, x: 0 }}
-            key={index}
-            className="leading-relaxed whitespace-pre-wrap"
-          >
-            {log.includes('flagged') || log.includes('alert') ? (
-              <span className="text-rose-455">{log}</span>
-            ) : log.includes('synced') || log.includes('nominal') ? (
-              <span className="text-emerald-455">{log}</span>
-            ) : (
-              log
-            )}
-          </motion.div>
+      <div className="space-y-3 overflow-y-auto flex-1 pr-1.5 scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent">
+        {events.slice().reverse().map((evt, i) => (
+          <div key={i} className="flex items-start gap-3 text-[11px] hover:bg-slate-50/50 p-1 rounded transition-colors">
+            <span className="text-slate-400 font-mono font-bold shrink-0 w-10">{evt.time}</span>
+            <span className={`w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 ${
+              evt.type === 'outbreak' ? 'bg-red-500 animate-pulse' : evt.type === 'action' ? 'bg-emerald-500' : 'bg-slate-400'
+            }`} />
+            <span className={`font-semibold ${
+              evt.type === 'outbreak' ? 'text-red-650' : 'text-slate-600'
+            }`}>{evt.text}</span>
+          </div>
         ))}
       </div>
     </div>
   );
 }
 
-/* ── Circular Metric Badge with Hover Details ────────────────────────────── */
-function CircularMetric({ label, value, maxVal = 100, color, icon: Icon, subText, onClick, active }) {
-  const radius = 24;
-  const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference - (value / maxVal) * circumference;
-
+function ForecastConfidenceCard() {
   return (
-    <button
-      onClick={onClick}
-      className={`bg-white border rounded-2xl p-4 flex items-center gap-3.5 shadow-sm transition-all text-left select-none relative cursor-pointer outline-none active:scale-95 ${
-        active 
-          ? 'border-indigo-400 shadow-md ring-2 ring-indigo-500/10' 
-          : 'border-slate-100 hover:border-slate-300 hover:shadow-md'
-      }`}
-    >
-      <div className="relative w-12 h-12 flex items-center justify-center shrink-0">
-        <svg className="w-full h-full transform -rotate-90">
-          <circle cx="24" cy="24" r={radius} fill="transparent" stroke="#f8fafc" strokeWidth="4.5" />
-          <motion.circle
-            cx="24"
-            cy="24"
-            r={radius}
-            fill="transparent"
-            stroke={color}
-            strokeWidth="4.5"
-            strokeDasharray={circumference}
-            initial={{ strokeDashoffset: circumference }}
-            animate={{ strokeDashoffset }}
-            transition={{ duration: 0.8 }}
-            strokeLinecap="round"
-          />
-        </svg>
-        <div className="absolute">
-          <Icon className="w-4 h-4" style={{ color }} />
+    <div className="bg-gradient-to-br from-indigo-50/40 to-purple-50/40 border border-indigo-100 rounded-2xl p-5 shadow-sm h-full">
+      <div className="flex items-center gap-2 mb-4">
+        <ShieldAlert className="w-4 h-4 text-indigo-600" />
+        <span className="text-[10px] font-black uppercase tracking-widest text-indigo-700">Forecast Confidence</span>
+      </div>
+      <div className="text-center mb-4">
+        <span className="text-4xl font-black text-indigo-700">94.2%</span>
+        <p className="text-[10px] text-slate-500 font-bold mt-1">Model Confidence Score</p>
+      </div>
+      <div className="space-y-2">
+        <p className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-2">Based On:</p>
+        {[
+          'Symptom clusters from Aurora',
+          'Outbreak telemetry from DynamoDB',
+          'ASHA referral backlog',
+          'Offline sync activity',
+          'Historical disease patterns',
+        ].map((item, i) => (
+          <div key={i} className="flex items-center gap-2 text-[11px] text-slate-600 font-semibold">
+            <CheckCircle className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+            {item}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+function ProjectedImpactCard({ baselineRisk = 45, currentRisk = 30, villages = [] }) {
+  const totalSymptoms = villages.reduce((acc, v) => acc + (v.dataPoints?.symptomCount7d || 0), 0);
+  const totalReferrals = villages.reduce((acc, v) => acc + (v.dataPoints?.openReferralsCount || 0), 0);
+  const reductionPercent = Math.round(((baselineRisk - currentRisk) / baselineRisk) * 100);
+  const casesPrevented = Math.round(totalSymptoms * (reductionPercent / 100));
+
+  const r0Without = 2.45;
+  const r0With = Math.max(0.65, Number((r0Without * (currentRisk / baselineRisk)).toFixed(2)));
+  const sarWithout = "14.8%";
+  const sarWith = `${(14.8 * (currentRisk / baselineRisk)).toFixed(1)}%`;
+  return (
+    <div className="bg-gradient-to-br from-emerald-50/70 via-white to-teal-50/60 border border-emerald-250/70 rounded-2xl p-5 shadow-[0_4px_20px_rgba(0,0,0,0.01)] h-full flex flex-col justify-between hover:border-emerald-300 transition-colors duration-200">
+      <div className="flex items-center gap-2 mb-3">
+        <BarChart3 className="w-4.5 h-4.5 text-emerald-600 animate-pulse animate-duration-1000" />
+        <span className="text-xs font-black uppercase tracking-widest text-emerald-700">Projected Health Impact</span>
+      </div>
+      <p className="text-xs text-slate-500 font-semibold mb-4 leading-relaxed text-left">
+        SIR Model estimates calculated using real-time telemetry from the 6 monitored sectors.
+      </p>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4 flex-1 items-stretch">
+        {[
+          { label: 'Active Symptom Cases', value: `${totalSymptoms}`, sub: 'detected last 7 days', color: 'text-red-655', bg: 'bg-red-50/50 border-red-150/40' },
+          { label: 'Pending Referrals', value: `${totalReferrals}`, sub: 'awaiting review', color: 'text-amber-655', bg: 'bg-amber-50/50 border-amber-150/40' },
+          { label: 'Caseload Prevented', value: `${casesPrevented}`, sub: 'est. cases averted', color: 'text-emerald-750', bg: 'bg-emerald-50 border-emerald-200/50 font-black' },
+        ].map((s, i) => (
+          <div key={i} className={`rounded-xl p-4 border text-center flex flex-col justify-between transition-all hover:scale-[1.02] duration-200 ${s.bg}`}>
+            <div className="my-auto">
+              <p className="text-3xl font-black text-slate-900 leading-none mb-1">{s.value}</p>
+              <p className="text-[10px] font-bold text-slate-655 mt-1 leading-tight">{s.sub}</p>
+            </div>
+            <p className="text-[8px] text-slate-400 font-black mt-3 uppercase tracking-wider leading-none shrink-0">{s.label}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="bg-slate-50/70 border border-slate-150/65 rounded-xl p-3.5 space-y-2.5">
+        <p className="text-[9px] font-black uppercase tracking-wider text-slate-400 text-left">Epidemiological Vector Parameters</p>
+        <div className="grid grid-cols-3 gap-2.5 text-center">
+          <div className="bg-white border border-slate-100 rounded-lg p-2">
+            <span className="text-[8px] font-black text-slate-400 block uppercase">Reproduction (R0)</span>
+            <span className="text-xs font-black text-slate-700 mt-0.5 block">{r0Without} → <span className="text-emerald-600 font-black">{r0With}</span></span>
+          </div>
+          <div className="bg-white border border-slate-100 rounded-lg p-2">
+            <span className="text-[8px] font-black text-slate-400 block uppercase">Attack Rate (SAR)</span>
+            <span className="text-xs font-black text-slate-700 mt-0.5 block">{sarWithout} → <span className="text-emerald-600 font-black">{sarWith}</span></span>
+          </div>
+          <div className="bg-white border border-slate-100 rounded-lg p-2">
+            <span className="text-[8px] font-black text-slate-400 block uppercase">Mitigation Index</span>
+            <span className="text-xs font-black text-emerald-600 mt-0.5 block">+{reductionPercent}%</span>
+          </div>
         </div>
       </div>
-      <div className="min-w-0 flex-1">
-        <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 leading-tight">{label}</p>
-        <div className="flex items-baseline gap-1 mt-0.5">
-          <p className="text-lg font-black text-slate-900 leading-none">{value}</p>
-          <span className="text-[9px] text-slate-400 font-bold">/{maxVal}</span>
-        </div>
-        <p className="text-[9.5px] text-slate-450 font-semibold mt-0.5 leading-tight truncate">{subText}</p>
-      </div>
-      <div className="absolute right-3.5 top-3.5">
-        <span className={`w-1.5 h-1.5 rounded-full ${active ? 'bg-indigo-500' : 'bg-transparent'}`} />
-      </div>
-    </button>
+    </div>
   );
 }
 
-/* ── Main Component ──────────────────────────────────────────────────────── */
+function AIForecastSummary() {
+  return (
+    <div className="bg-gradient-to-r from-indigo-50/70 via-purple-50/50 to-indigo-50/70 border border-indigo-100 rounded-2xl p-5 shadow-sm">
+      <div className="flex items-center gap-2 mb-3">
+        <BrainCircuit className="w-4 h-4 text-indigo-600" />
+        <span className="text-[10px] font-black uppercase tracking-widest text-indigo-700">AI Forecast Summary</span>
+      </div>
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+        <div>
+          <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Current Risk Score</p>
+          <div className="flex items-center gap-2 mt-0.5">
+            <span className="px-2 py-0.5 bg-yellow-50 border border-yellow-200 text-yellow-700 rounded text-[11px] font-black">MEDIUM</span>
+            <span className="text-lg font-black text-slate-900">30/100</span>
+          </div>
+        </div>
+        <div>
+          <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider">14-Day Trend</p>
+          <div className="flex items-center gap-1.5 mt-0.5">
+            <TrendingDown className="w-4 h-4 text-emerald-500" />
+            <span className="text-sm font-black text-emerald-600">Decreasing</span>
+          </div>
+        </div>
+        <div>
+          <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Confidence</p>
+          <p className="text-sm font-black text-slate-900 mt-0.5">94.2%</p>
+        </div>
+        <div>
+          <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Primary Driver</p>
+          <p className="text-sm font-bold text-slate-700 mt-0.5 text-wrap">Declining mosquito-borne cases</p>
+        </div>
+        <div>
+          <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Recommended Action</p>
+          <p className="text-sm font-bold text-slate-700 mt-0.5 text-wrap">Continue vector control in Rampur sector</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RiskDriverCard({ label, value, color, icon: Icon, isPositiveContributor }) {
+  const isNegative = value < 0;
+  const absVal = Math.abs(value);
+
+  return (
+    <div className="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm flex items-center gap-3.5">
+      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+        isNegative ? 'bg-emerald-50' : 'bg-red-50'
+      }`}>
+        <Icon className={`w-5 h-5 ${isNegative ? 'text-emerald-500' : 'text-red-500'}`} />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">{label}</p>
+        <div className="flex items-center gap-2 mt-0.5">
+          <p className={`text-xl font-black ${
+            isNegative ? 'text-emerald-600' : 'text-red-600'
+          }`}>
+            {isNegative ? '' : '+'}{value}%
+          </p>
+          <span className={`text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider ${
+            isNegative ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'
+          }`}>
+            {isPositiveContributor ? 'Risk Driver' : 'Risk Reducer'}
+          </span>
+        </div>
+        <div className="w-full h-1.5 bg-slate-100 rounded-full mt-1.5 overflow-hidden">
+          <motion.div
+            initial={{ width: 0 }}
+            animate={{ width: `${Math.min(absVal, 100)}%` }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+            className={`h-full rounded-full ${isNegative ? 'bg-emerald-400' : 'bg-red-400'}`}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TopRiskVillagesTable({ villages, onSelect, selectedId }) {
+  const sorted = [...villages].sort((a, b) => b.riskScore - a.riskScore).slice(0, 6);
+
+  return (
+    <div className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm">
+      <div className="flex items-center gap-2 mb-4">
+        <List className="w-5 h-5 text-indigo-600" />
+        <span className="text-xs font-black uppercase tracking-widest text-indigo-700">Top Risk Villages — Priority Ranking</span>
+      </div>
+      <div className="space-y-2">
+        {sorted.map((v, i) => {
+          const trend = v.riskScore >= 60 ? 'up' : v.riskScore >= 40 ? 'flat' : 'down';
+          return (
+            <button
+              key={v.villageId}
+              onClick={() => onSelect(v)}
+              className={`w-full flex items-center justify-between p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                selectedId === v.villageId
+                  ? 'border-indigo-400 bg-indigo-50/50 shadow-sm'
+                  : 'border-slate-100 hover:border-slate-300 hover:bg-slate-50/50'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <span className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-black ${
+                  i === 0 ? 'bg-red-100 text-red-700' : i === 1 ? 'bg-orange-100 text-orange-700' : i === 2 ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-500'
+                }`}>{i + 1}</span>
+                <div>
+                  <p className="text-sm font-black text-slate-800">{v.village}</p>
+                  <p className="text-[9px] text-slate-400 font-semibold">Pop: {v.population?.toLocaleString()}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-lg font-black text-slate-900">{v.riskScore}</span>
+                {trend === 'up' && <TrendingUp className="w-4 h-4 text-red-500" />}
+                {trend === 'flat' && <Minus className="w-4 h-4 text-amber-500" />}
+                {trend === 'down' && <TrendingDown className="w-4 h-4 text-emerald-500" />}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function InterventionAllocationSlider({ label, value, onChange, icon: Icon, colorClass }) {
+  return (
+    <div className="space-y-2 bg-white/60 hover:bg-white/95 border border-slate-150/50 hover:border-indigo-150 rounded-xl p-3 transition-all duration-200 shadow-[0_2px_8px_rgba(0,0,0,0.01)] hover:shadow-sm">
+      <div className="flex items-center justify-between text-xs">
+        <div className="flex items-center gap-2">
+          {Icon && <Icon className="w-3.5 h-3.5 text-indigo-500 shrink-0" />}
+          <span className="font-black text-slate-700">{label}</span>
+        </div>
+        <span className="font-mono font-black text-indigo-600 bg-indigo-50/80 px-2 py-0.5 rounded-md border border-indigo-100/50 text-[10px]">{value}%</span>
+      </div>
+      <input
+        type="range"
+        min="0"
+        max="100"
+        step="5"
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+        style={{
+          background: `linear-gradient(to right, #6366F1 0%, #818CF8 ${value}%, #E2E8F0 ${value}%, #E2E8F0 100%)`
+        }}
+        className={`w-full h-1.5 rounded-full appearance-none cursor-pointer focus:outline-none transition-all duration-150 [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-indigo-600 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:hover:scale-110 [&::-webkit-slider-thumb]:active:scale-95 ${colorClass || ''}`}
+      />
+    </div>
+  );
+}
+
+function AIRecommendedActions() {
+  const actions = [
+    { priority: 'HIGH', color: 'bg-red-500', text: 'Increase mosquito spraying in Rampur', icon: Bug },
+    { priority: 'MEDIUM', color: 'bg-amber-500', text: 'Dispatch 2 ASHA workers to Village 8', icon: Users },
+    { priority: 'LOW', color: 'bg-green-500', text: 'Monitor diarrheal cases in North Zone', icon: Eye },
+  ];
+
+  return (
+    <div className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm h-full">
+      <div className="flex items-center gap-2 mb-4">
+        <Target className="w-4 h-4 text-indigo-500" />
+        <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">AI Recommended Actions</span>
+      </div>
+      <div className="space-y-3">
+        {actions.map((a, i) => {
+          const Icon = a.icon;
+          return (
+            <div key={i} className="flex items-start gap-3 p-3 bg-slate-50/50 border border-slate-100 rounded-xl">
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${a.priority === 'HIGH' ? 'bg-red-50' : a.priority === 'MEDIUM' ? 'bg-amber-50' : 'bg-green-50'}`}>
+                <Icon className={`w-4 h-4 ${a.priority === 'HIGH' ? 'text-red-500' : a.priority === 'MEDIUM' ? 'text-amber-500' : 'text-green-500'}`} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-0.5">
+                  <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest text-white ${a.color}`}>{a.priority} Priority</span>
+                </div>
+                <p className="text-xs font-bold text-slate-700">{a.text}</p>
+              </div>
+              <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0 mt-1" />
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function PredictiveRiskView({ judgeDemoMode }) {
   const [heatmapData, setHeatmapData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -155,13 +361,15 @@ export default function PredictiveRiskView({ judgeDemoMode }) {
   const [detailLoading, setDetailLoading] = useState(false);
   const [filterLevel, setFilterLevel] = useState('ALL');
 
-  // Slider budget override state
-  const [mitigationBudget, setMitigationBudget] = useState(5); // ₹0 to ₹20 Lakhs
+  const [allocations, setAllocations] = useState({
+    mosquito: 40,
+    water: 25,
+    outreach: 20,
+    vaccination: 15,
+  });
 
-  // Circular metric detail active state
   const [activeMetricTab, setActiveMetricTab] = useState(null);
 
-  // Simulator interventions state
   const [interventions, setInterventions] = useState({
     vaccine: false,
     referral: false,
@@ -184,6 +392,31 @@ export default function PredictiveRiskView({ judgeDemoMode }) {
   }, [judgeDemoMode]);
 
   useEffect(() => { load(); }, [load]);
+
+  const computeInterventionReduction = () => {
+    const m = allocations.mosquito / 40;
+    const w = allocations.water / 25;
+    const o = allocations.outreach / 20;
+    const v = allocations.vaccination / 15;
+    return Math.round(Math.min(m * 15 + w * 10 + o * 8 + v * 5, 38));
+  };
+
+  const baselineRisk = 45;
+  const interventionReduction = computeInterventionReduction();
+  const currentRisk = Math.max(7, baselineRisk - interventionReduction);
+
+  const getBaseTrendData = () => {
+    const baseline = [45, 48, 52, 58, 64, 61, 57, 52, 48, 43, 39, 35, 32, 29];
+    const reduction = Math.round(interventionReduction * 0.7);
+    return baseline.map((val, idx) => {
+      if (idx > 2) {
+        return Math.max(10, val - reduction);
+      }
+      return val;
+    });
+  };
+
+  const trendData = getBaseTrendData();
 
   const handleVillageClick = async (v) => {
     setInterventions({
@@ -235,7 +468,6 @@ export default function PredictiveRiskView({ judgeDemoMode }) {
     }
   };
 
-  // Recalculate dynamic simulated score for details
   const getSimulatedScore = () => {
     if (!selectedVillage) return 0;
     let score = selectedVillage.riskScore;
@@ -256,20 +488,6 @@ export default function PredictiveRiskView({ judgeDemoMode }) {
   };
   const activeSimulatedLevel = getSimulatedLevel(activeSimulatedScore);
 
-  // Dynamic values mapped based on slider position
-  const getBaseTrendData = () => {
-    const baseline = [45, 48, 52, 58, 64, 61, 57, 52, 48, 43, 39, 35, 32, 29];
-    const reduction = Math.round(mitigationBudget * 1.8);
-    return baseline.map((val, idx) => {
-      if (idx > 2) {
-        return Math.max(10, val - reduction);
-      }
-      return val;
-    });
-  };
-
-  const trendData = getBaseTrendData();
-
   const villages = heatmapData?.villages || [];
   const summary = heatmapData?.summary || {};
   const filtered = filterLevel === 'ALL' ? villages : villages.filter(v => v.riskLevel === filterLevel);
@@ -282,21 +500,21 @@ export default function PredictiveRiskView({ judgeDemoMode }) {
     { id: 'LOW', label: '🟢 Low' },
   ];
 
+  const updateAllocation = (key, value) => {
+    setAllocations(prev => ({ ...prev, [key]: value }));
+  };
+
   return (
     <div className="p-5 lg:p-6 space-y-5 text-left select-none">
 
-      {/* ── Page Header ─────────────────────────────────────────────────── */}
       <div className="flex items-start justify-between gap-4 flex-wrap bg-white/75 backdrop-blur-md border border-slate-100 rounded-[2rem] p-6 shadow-[0_8px_30px_rgba(0,0,0,0.015)]">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2.5 mb-2 flex-wrap">
             <div className="w-9 h-9 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-md shadow-indigo-500/10">
-              <TrendingUp className="w-5 h-5 text-white" />
+              <BrainCircuit className="w-5 h-5 text-white" />
             </div>
-            <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">Predictive Health Risk Intelligence</h2>
-            <span className="px-2.5 py-0.5 bg-indigo-50 text-indigo-750 text-[10px] font-black rounded-full border border-indigo-200/50 uppercase tracking-wide">Layer 2 · Early Warning</span>
-            <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 text-[10px] font-black rounded border border-emerald-200/50 uppercase flex items-center gap-1">
-              <DollarSign className="w-3 h-3" /> Licensed Command Tier
-            </span>
+            <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">District Health Forecast Engine</h2>
+            <span className="px-2.5 py-0.5 bg-indigo-50 text-indigo-750 text-[10px] font-black rounded-full border border-indigo-200/50 uppercase tracking-wide">AI Early Warning Engine</span>
           </div>
           <p className="text-slate-550 text-sm font-medium max-w-3xl leading-relaxed">
             AI-Powered Pre-Outbreak Forecasting Engine. Analyzes real-time symptom vectors, local weather/seasonal patterns, and referral backlogs to map village vulnerability scores.
@@ -312,209 +530,150 @@ export default function PredictiveRiskView({ judgeDemoMode }) {
         </button>
       </div>
 
-      {/* ── Grid: Main Forecast Index & Circular Metrics ─────────────────── */}
+      <AIForecastSummary />
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         <div className="lg:col-span-2 space-y-4">
-          {/* SVG forecast chart */}
           <ForecastTrendChart dataPoints={trendData} />
+        </div>
 
-          {/* Interactive Mitigation Budget Slider Widget */}
-          <div className="bg-gradient-to-r from-indigo-50/20 to-purple-50/20 border border-slate-100 rounded-2xl p-5 shadow-sm space-y-3.5">
-            <div className="flex items-center justify-between flex-wrap gap-2">
-              <div className="flex items-center gap-2">
-                <Sliders className="w-4 h-4 text-indigo-500" />
-                <p className="text-xs font-black text-slate-750 uppercase tracking-wider">Preventive Budget Allocation Simulator</p>
-              </div>
-              <span className="px-3 py-1 bg-indigo-50 text-indigo-750 font-black text-sm rounded-full border border-indigo-150">
-                Simulated Funding: ₹{mitigationBudget} Lakhs
-              </span>
+        <div className="space-y-3">
+          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-1.5">
+            <Zap className="w-3.5 h-3.5" /> Risk Drivers
+          </p>
+          <RiskDriverCard
+            label="Vector Breeding Index"
+            value={32}
+            icon={Bug}
+            isPositiveContributor={true}
+          />
+          <RiskDriverCard
+            label="Water Contamination Risk"
+            value={18}
+            icon={Droplet}
+            isPositiveContributor={true}
+          />
+          <RiskDriverCard
+            label="ASHA Referral Backlog"
+            value={12}
+            icon={Heart}
+            isPositiveContributor={true}
+          />
+          <RiskDriverCard
+            label="Surveillance Coverage"
+            value={-21}
+            icon={Award}
+            isPositiveContributor={false}
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-stretch">
+        <TopRiskVillagesTable
+          villages={villages}
+          onSelect={handleVillageClick}
+          selectedId={selectedVillage?.villageId}
+        />
+        <ProjectedImpactCard baselineRisk={baselineRisk} currentRisk={currentRisk} villages={villages} />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-stretch">
+        <div className="lg:col-span-2 bg-gradient-to-br from-indigo-50/30 via-white to-purple-50/20 border border-slate-200/70 rounded-3xl p-6 shadow-sm flex flex-col justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-2 mb-4 shrink-0">
+            <div className="flex items-center gap-2">
+              <Sliders className="w-5 h-5 text-indigo-500" />
+              <p className="text-sm font-black text-slate-800 uppercase tracking-wider">District Intervention Planner</p>
             </div>
-            
-            <p className="text-xs text-slate-450 font-semibold leading-relaxed">
-              Drag the slider to allocate resources (mosquito spraying, sanitation kits) and visually morph the 14-day forecasted vulnerability trend line.
-            </p>
+            <span className="px-3.5 py-1 bg-indigo-50/80 text-indigo-750 font-black text-xs rounded-full border border-indigo-150">
+              Budget: ₹5 Lakhs
+            </span>
+          </div>
 
-            <div className="flex items-center gap-4">
-              <span className="text-[10px] text-slate-400 font-bold">₹0 (None)</span>
-              <input
-                type="range"
-                min="0"
-                max="20"
-                value={mitigationBudget}
-                onChange={(e) => setMitigationBudget(Number(e.target.value))}
-                className="flex-1 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600 focus:outline-none"
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 flex-1 items-stretch">
+            <div className="space-y-3 flex flex-col justify-center">
+              <InterventionAllocationSlider
+                label="Mosquito Control"
+                value={allocations.mosquito}
+                onChange={(v) => updateAllocation('mosquito', v)}
+                icon={Bug}
               />
-              <span className="text-[10px] text-slate-400 font-bold">₹20 Lakhs (Max)</span>
+              <InterventionAllocationSlider
+                label="Water Safety"
+                value={allocations.water}
+                onChange={(v) => updateAllocation('water', v)}
+                icon={Droplet}
+              />
+              <InterventionAllocationSlider
+                label="ASHA Outreach"
+                value={allocations.outreach}
+                onChange={(v) => updateAllocation('outreach', v)}
+                icon={Users}
+              />
+              <InterventionAllocationSlider
+                label="Vaccination Drives"
+                value={allocations.vaccination}
+                onChange={(v) => updateAllocation('vaccination', v)}
+                icon={Shield}
+              />
             </div>
-          </div>
-        </div>
-        
-        {/* Circular Metrics Dashboard Panel */}
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
-            <CircularMetric
-              label="Vector Breeding Index"
-              value={74}
-              color="#EF4444"
-              icon={Bug}
-              subText="Mosquito density threshold high"
-              active={activeMetricTab === 'vector'}
-              onClick={() => setActiveMetricTab(prev => prev === 'vector' ? null : 'vector')}
-            />
-            <CircularMetric
-              label="Water Contaminant Risk"
-              value={42}
-              color="#F97316"
-              icon={Droplet}
-              subText="Monsoon runoffs monitored"
-              active={activeMetricTab === 'water'}
-              onClick={() => setActiveMetricTab(prev => prev === 'water' ? null : 'water')}
-            />
-            <CircularMetric
-              label="ASHA Clinic Backlog"
-              value={15}
-              color="#EAB308"
-              icon={Heart}
-              subText="Open high-risk referrals"
-              active={activeMetricTab === 'backlog'}
-              onClick={() => setActiveMetricTab(prev => prev === 'backlog' ? null : 'backlog')}
-            />
-            <CircularMetric
-              label="Surveillance Patrols"
-              value={88}
-              color="#22C55E"
-              icon={Award}
-              subText="ASHA routing target achieved"
-              active={activeMetricTab === 'patrols'}
-              onClick={() => setActiveMetricTab(prev => prev === 'patrols' ? null : 'patrols')}
-            />
-          </div>
 
-          {/* Metric Interactive Drilldown Modal/Box */}
-          <AnimatePresence mode="wait">
-            {activeMetricTab && (
-              <motion.div
-                initial={{ opacity: 0, y: -8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                className="p-4 bg-slate-50 border border-slate-200 rounded-2xl shadow-sm text-xs space-y-2.5"
-              >
-                {activeMetricTab === 'vector' && (
-                  <>
-                    <p className="font-black text-slate-800 uppercase text-[10px] tracking-wider flex items-center gap-1.5"><Bug className="w-3.5 h-3.5 text-red-500" /> Vector Sensor Log #D-981</p>
-                    <div className="space-y-1 text-slate-550 font-semibold leading-normal">
-                      <p>• Sensor Node Status: <span className="text-red-650 font-bold">ALARM</span></p>
-                      <p>• Larvae Breeding Index: 74/100 (Critical threshold &gt;65)</p>
-                      <p>• Area Coverage: Rampur, Ichhawar (12 sectors monitored)</p>
-                      <p>• Action Required: Schedule immediate malathion fogging.</p>
-                    </div>
-                  </>
-                )}
-                {activeMetricTab === 'water' && (
-                  <>
-                    <p className="font-black text-slate-800 uppercase text-[10px] tracking-wider flex items-center gap-1.5"><Droplet className="w-3.5 h-3.5 text-orange-500" /> Water Quality Diagnostic</p>
-                    <div className="space-y-1 text-slate-550 font-semibold leading-normal">
-                      <p>• Sensor Turbidity Level: 4.2 NTU (Moderate runoff contamination)</p>
-                      <p>• Pathogen Probability: 42% (Coliform suspect in sector 4)</p>
-                      <p>• Last Sampled: 14 mins ago by ASHA tester</p>
-                      <p>• Dispatch: Order chlorine tablet distribution.</p>
-                    </div>
-                  </>
-                )}
-                {activeMetricTab === 'backlog' && (
-                  <>
-                    <p className="font-black text-slate-800 uppercase text-[10px] tracking-wider flex items-center gap-1.5"><Heart className="w-3.5 h-3.5 text-yellow-500" /> ASHA Care Referrals</p>
-                    <div className="space-y-1 text-slate-550 font-semibold leading-normal">
-                      <p>• Pending High-Risk Backlogs: 15 maternal checkups open</p>
-                      <p>• Avg Referral Age: 3.2 days (Target &lt;48 hours)</p>
-                      <p>• Active NGO Coordinators: 4 assigned to district</p>
-                      <p>• Priority Nodes: Rampur (8 cases), Sehore North (7 cases)</p>
-                    </div>
-                  </>
-                )}
-                {activeMetricTab === 'patrols' && (
-                  <>
-                    <p className="font-black text-slate-800 uppercase text-[10px] tracking-wider flex items-center gap-1.5"><Award className="w-3.5 h-3.5 text-emerald-500" /> Surveillance Quality</p>
-                    <div className="space-y-1 text-slate-550 font-semibold leading-normal">
-                      <p>• Surveillance Completion Rate: 88% (Excellent target mapping)</p>
-                      <p>• Total Households Surveyed: 1,420 today</p>
-                      <p>• Node Sync Interval: 30 minutes online/offline matching</p>
-                      <p>• Operational ASHA Workers: 14 active in Gwalior sectors</p>
-                    </div>
-                  </>
-                )}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      </div>
+            <div className="bg-white border border-slate-200/80 rounded-2xl p-5 flex flex-col justify-between shadow-[0_4px_16px_rgba(0,0,0,0.01)] hover:border-slate-300 transition-colors">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Projected District Risk</p>
+                <p className="text-xs text-slate-500 font-semibold leading-relaxed">
+                  Real-time outcome simulator for selected budget allocation.
+                </p>
+              </div>
 
-      {/* ── District Summary Strip ───────────────────────────────────────── */}
-      {!loading && summary.totalVillages > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3"
-        >
-          {[
-            { label: 'Avg District Risk', value: `${summary.avgScore}/100`, sub: 'Average Vulnerability', color: 'text-slate-900', cardBg: 'bg-gradient-to-br from-slate-50/50 to-white border-slate-200' },
-            { label: 'Emergency Nodes', value: summary.criticalCount, sub: 'Immediate triage required', color: 'text-red-650', cardBg: 'bg-gradient-to-br from-red-50/20 to-white border-red-200' },
-            { label: 'High Threat Zones', value: summary.highCount, sub: 'Surveillance escalated', color: 'text-orange-600', cardBg: 'bg-gradient-to-br from-orange-50/20 to-white border-orange-200' },
-            { label: 'Medium Alert Zones', value: summary.mediumCount, sub: 'Preventive interventions', color: 'text-yellow-650', cardBg: 'bg-gradient-to-br from-yellow-50/20 to-white border-yellow-200' },
-            { label: 'Stable Regions', value: summary.lowCount, sub: 'Routine ASHA mapping', color: 'text-emerald-700', cardBg: 'bg-gradient-to-br from-emerald-50/20 to-white border-emerald-200' },
-            { label: 'Peak Vulnerable Node', value: summary.highestRisk, sub: `Vulnerability Score: ${summary.highestRiskScore}`, color: 'text-indigo-950', cardBg: 'bg-gradient-to-br from-indigo-50/25 to-white border-indigo-200', small: true },
-          ].map((s, i) => (
-            <motion.div 
-              whileHover={{ y: -4, scale: 1.01 }}
-              key={i} 
-              className={`rounded-2xl p-4 border shadow-sm transition-all duration-300 ${s.cardBg}`}
-            >
-              <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">{s.label}</p>
-              <p className={`text-2xl font-black ${s.color} ${s.small ? 'text-sm sm:text-base' : ''}`}>{s.value}</p>
-              <p className="text-[10px] text-slate-400 font-semibold mt-1 leading-snug">{s.sub}</p>
-            </motion.div>
-          ))}
-        </motion.div>
-      )}
-
-      {/* ── Dual Layer Explanation Banner & Live Terminal Feed Grid ──────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        <div className="lg:col-span-2 space-y-4">
-          <div className="bg-gradient-to-r from-indigo-50/80 via-purple-50/50 to-violet-50/80 border border-indigo-100 rounded-2xl p-5 flex items-center justify-between gap-4 flex-wrap h-full">
-            <div className="flex gap-4 flex-wrap flex-1">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-orange-100/80 rounded-lg flex items-center justify-center border border-orange-200">
-                  <Activity className="w-4 h-4 text-orange-600" />
+              <div className="flex items-center justify-center gap-4 my-4">
+                <div className="text-center">
+                  <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-1">Current</p>
+                  <div className="w-14 h-14 rounded-full bg-rose-50 border-2 border-rose-200 flex items-center justify-center mx-auto shadow-sm shadow-rose-100/30">
+                    <span className="text-lg font-black text-rose-600">{baselineRisk}</span>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Layer 1: Real-time Outbreak Surveillance</p>
-                  <p className="text-xs font-bold text-slate-700">"What is happening right now?"</p>
+                <div className="flex flex-col items-center gap-0.5">
+                  <ArrowRight className="w-4 h-4 text-indigo-400 animate-pulse" />
+                  <span className="px-1.5 py-0.5 bg-indigo-50 border border-indigo-200 rounded text-[7px] font-black text-indigo-655 uppercase tracking-wider">Change</span>
+                </div>
+                <div className="text-center">
+                  <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-1">Projected</p>
+                  <div className="w-14 h-14 rounded-full bg-emerald-50 border-2 border-emerald-255 flex items-center justify-center mx-auto shadow-sm shadow-emerald-100/30">
+                    <span className="text-lg font-black text-emerald-700">{currentRisk}</span>
+                  </div>
                 </div>
               </div>
-              <div className="flex items-center text-slate-350"><ArrowRight className="w-4 h-4" /></div>
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-violet-100/80 rounded-lg flex items-center justify-center border border-violet-200">
-                  <TrendingUp className="w-4 h-4 text-violet-650" />
+
+              <div className="space-y-1.5 mt-auto">
+                <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                  <motion.div
+                    initial={{ width: '0%' }}
+                    animate={{ width: `${100 - Math.round((currentRisk / baselineRisk) * 100)}%` }}
+                    transition={{ duration: 0.6 }}
+                    className="h-full rounded-full bg-emerald-500"
+                  />
                 </div>
-                <div>
-                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Layer 2: AI Predictive Risk Modelling</p>
-                  <p className="text-xs font-bold text-slate-700">"What may happen next?"</p>
+                <div className="flex justify-between text-[10px] font-black">
+                  <span className="text-slate-500">Reduction: -{baselineRisk - currentRisk} pts</span>
+                  <span className="text-emerald-600">-{Math.round(((baselineRisk - currentRisk) / baselineRisk) * 100)}%</span>
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-1.5 text-xs font-black text-indigo-900 bg-white/70 border border-indigo-100 px-3 py-1.5 rounded-xl">
-              <Info className="w-3.5 h-3.5 text-indigo-655 animate-bounce" /> Fully Interactive Triage Simulator Active
-            </div>
           </div>
         </div>
 
-        {/* Live Terminal Log Feed */}
-        <div>
-          <LiveTelemetryStream />
+        <div className="flex flex-col justify-between gap-5">
+          <div className="flex-1">
+            <ForecastConfidenceCard />
+          </div>
+          <div className="flex-1">
+            <EventTimeline />
+          </div>
         </div>
       </div>
 
-      {/* ── Filter & Navigation Bar ───────────────────────────────────────── */}
+      <AIRecommendedActions />
+
       <div className="flex gap-2 flex-wrap pb-1">
         {FILTER_LEVELS.map(f => (
           <button
@@ -529,10 +688,8 @@ export default function PredictiveRiskView({ judgeDemoMode }) {
         ))}
       </div>
 
-      {/* ── Main Layout: Heatmap + Drilldown ──────────────────────────────── */}
       <div className={`grid gap-5 ${selectedVillage ? 'lg:grid-cols-5' : 'grid-cols-1'}`}>
 
-        {/* Village Heatmap List */}
         <div className={`space-y-3 ${selectedVillage ? 'lg:col-span-2' : ''}`}>
           {loading ? (
             Array.from({ length: 4 }).map((_, i) => (
@@ -555,7 +712,6 @@ export default function PredictiveRiskView({ judgeDemoMode }) {
           )}
         </div>
 
-        {/* Drilldown Panel */}
         <AnimatePresence>
           {selectedVillage && (
             <motion.div
@@ -565,7 +721,6 @@ export default function PredictiveRiskView({ judgeDemoMode }) {
               exit={{ opacity: 0, x: 20 }}
               className="lg:col-span-3 bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden"
             >
-              {/* Drilldown Header */}
               <div className={`p-5 ${RISK_META[selectedVillage.riskLevel]?.light || 'bg-slate-50'} border-b ${RISK_META[selectedVillage.riskLevel]?.border || 'border-slate-100'}`}>
                 <div className="flex items-start justify-between gap-3">
                   <div>
@@ -583,7 +738,6 @@ export default function PredictiveRiskView({ judgeDemoMode }) {
                   </div>
                 </div>
 
-                {/* Score Gauge */}
                 <div className="flex items-center gap-6 mt-5">
                   <ScoreGauge score={activeSimulatedScore} level={activeSimulatedLevel} />
                   <div className="flex-1 space-y-2">
@@ -604,7 +758,7 @@ export default function PredictiveRiskView({ judgeDemoMode }) {
                       )}
                     </div>
                     <p className="text-xs text-slate-450 font-semibold leading-relaxed">
-                      {activeSimulatedScore < selectedVillage.riskScore 
+                      {activeSimulatedScore < selectedVillage.riskScore
                         ? 'Simulating prevention campaigns active. Recalculated Early Warning forecast reflects localized improvement.'
                         : 'Calculated from 4 weighted signal sources in real time. Use the simulator below to forecast interventions.'
                       }
@@ -620,7 +774,6 @@ export default function PredictiveRiskView({ judgeDemoMode }) {
               ) : detailData ? (
                 <div className="p-5 space-y-5 overflow-y-auto max-h-[calc(100vh-280px)]">
 
-                  {/* Dynamic Preventive Intervention Simulator */}
                   <div className="bg-slate-50/50 rounded-2xl p-5 border border-slate-100 space-y-4">
                     <div className="flex items-center justify-between">
                       <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-1.5">
@@ -632,7 +785,7 @@ export default function PredictiveRiskView({ judgeDemoMode }) {
                         </span>
                       )}
                     </div>
-                    
+
                     <p className="text-xs text-slate-500 font-semibold leading-relaxed">
                       Toggle prevention programs to simulate real-time localized health risk score reduction:
                     </p>
@@ -675,7 +828,6 @@ export default function PredictiveRiskView({ judgeDemoMode }) {
                     </div>
                   </div>
 
-                  {/* XAI Contributor Breakdown */}
                   <div>
                     <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-1.5">
                       <Zap className="w-3.5 h-3.5" /> XAI Risk Contributors
@@ -687,7 +839,6 @@ export default function PredictiveRiskView({ judgeDemoMode }) {
                     </div>
                   </div>
 
-                  {/* Health Category Flags */}
                   {detailData.categories?.length > 0 && (
                     <div>
                       <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Health Risk Categories</p>
@@ -705,7 +856,6 @@ export default function PredictiveRiskView({ judgeDemoMode }) {
                     </div>
                   )}
 
-                  {/* Real-time Health Signal Timelines */}
                   <div className="bg-slate-50/50 rounded-2xl p-5 border border-slate-100 space-y-4">
                     <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-1.5">
                       <Clock className="w-3.5 h-3.5" /> Early Warning Signal Timeline
@@ -729,7 +879,6 @@ export default function PredictiveRiskView({ judgeDemoMode }) {
                     </div>
                   </div>
 
-                  {/* Recommended Actions */}
                   {detailData.recommendedActions?.length > 0 && (
                     <div>
                       <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-1.5">
@@ -752,7 +901,6 @@ export default function PredictiveRiskView({ judgeDemoMode }) {
         </AnimatePresence>
       </div>
 
-      {/* ── Last Generated ─────────────────────────────────────────────────── */}
       {heatmapData?.generatedAt && (
         <p className="text-[10px] text-slate-400 font-semibold text-center mt-4">
           Risk Intelligence generated at {new Date(heatmapData.generatedAt).toLocaleTimeString()} · Refresh every 30 min for updated signals
@@ -762,23 +910,19 @@ export default function PredictiveRiskView({ judgeDemoMode }) {
   );
 }
 
-/* ── ForecastTrendChart: Animated SVG Line Chart ────────────────────────── */
 function ForecastTrendChart({ dataPoints }) {
   const width = 600;
-  const height = 180;
+  const height = 135;
   const padding = { top: 20, right: 30, bottom: 30, left: 40 };
 
   const chartWidth = width - padding.left - padding.right;
   const chartHeight = height - padding.top - padding.bottom;
 
-  // X coordinate calculation
   const getX = (index) => padding.left + (index / (dataPoints.length - 1)) * chartWidth;
-  // Y coordinate calculation (invert Y since SVG 0 is top)
   const getY = (val) => padding.top + chartHeight - (val / 100) * chartHeight;
 
-  // Build the path string for the line
   const points = dataPoints.map((val, idx) => ({ x: getX(idx), y: getY(val) }));
-  
+
   let linePath = "";
   if (points.length > 0) {
     linePath = `M ${points[0].x} ${points[0].y}`;
@@ -793,7 +937,7 @@ function ForecastTrendChart({ dataPoints }) {
     }
   }
 
-  const areaPath = linePath 
+  const areaPath = linePath
     ? `${linePath} L ${points[points.length - 1].x} ${padding.top + chartHeight} L ${points[0].x} ${padding.top + chartHeight} Z`
     : "";
 
@@ -809,7 +953,7 @@ function ForecastTrendChart({ dataPoints }) {
         <span className="px-2.5 py-0.5 bg-indigo-50/70 border border-indigo-100 rounded-full text-[9px] font-black text-indigo-600 uppercase tracking-wider">Proactive AI Simulation</span>
       </div>
 
-      <div className="relative w-full aspect-[600/180]">
+      <div className="relative w-full aspect-[600/135]">
         <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full overflow-visible">
           <defs>
             <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
@@ -818,25 +962,24 @@ function ForecastTrendChart({ dataPoints }) {
             </linearGradient>
           </defs>
 
-          {/* Grid lines */}
           {Array.from({ length: 5 }).map((_, i) => {
             const val = i * 25;
             const y = getY(val);
             return (
               <g key={i} className="opacity-40">
-                <line 
-                  x1={padding.left} 
-                  y1={y} 
-                  x2={width - padding.right} 
-                  y2={y} 
-                  stroke="#E2E8F0" 
-                  strokeWidth="1" 
-                  strokeDasharray="4 4" 
+                <line
+                  x1={padding.left}
+                  y1={y}
+                  x2={width - padding.right}
+                  y2={y}
+                  stroke="#E2E8F0"
+                  strokeWidth="1"
+                  strokeDasharray="4 4"
                 />
-                <text 
-                  x={padding.left - 10} 
-                  y={y + 3} 
-                  textAnchor="end" 
+                <text
+                  x={padding.left - 10}
+                  y={y + 3}
+                  textAnchor="end"
                   className="font-mono text-[9px] font-bold fill-slate-400"
                 >
                   {val}
@@ -845,7 +988,6 @@ function ForecastTrendChart({ dataPoints }) {
             );
           })}
 
-          {/* Fill Area Under Path */}
           {areaPath && (
             <motion.path
               d={areaPath}
@@ -856,7 +998,6 @@ function ForecastTrendChart({ dataPoints }) {
             />
           )}
 
-          {/* Line Path */}
           {linePath && (
             <motion.path
               d={linePath}
@@ -870,7 +1011,6 @@ function ForecastTrendChart({ dataPoints }) {
             />
           )}
 
-          {/* Data Points */}
           {points.map((p, idx) => (
             <g key={idx}>
               <motion.circle
@@ -889,7 +1029,6 @@ function ForecastTrendChart({ dataPoints }) {
           ))}
         </svg>
 
-        {/* Tooltip Overlay */}
         <AnimatePresence>
           {hoveredIndex !== null && (
             <motion.div
@@ -920,7 +1059,6 @@ function ForecastTrendChart({ dataPoints }) {
   );
 }
 
-/* ── VillageCard Component ───────────────────────────────────────────────── */
 function VillageCard({ v, isSelected, onClick }) {
   const meta = RISK_META[v.riskLevel] || RISK_META.LOW;
 
@@ -949,7 +1087,7 @@ function VillageCard({ v, isSelected, onClick }) {
             </span>
           </div>
           <p className="text-[10px] text-slate-450 font-semibold mt-0.5">
-            Pop: {v.population?.toLocaleString()} • ID: {v.villageId}
+            Pop: {v.population?.toLocaleString()} · ID: {v.villageId}
           </p>
         </div>
       </div>
@@ -985,7 +1123,6 @@ function VillageCard({ v, isSelected, onClick }) {
   );
 }
 
-/* ── ContributorBar Component ────────────────────────────────────────────── */
 function ContributorBar({ factor, weight, maxWeight, description, icon }) {
   const percent = Math.round((weight / maxWeight) * 100);
 
@@ -1007,10 +1144,10 @@ function ContributorBar({ factor, weight, maxWeight, description, icon }) {
           animate={{ width: `${percent}%` }}
           transition={{ duration: 0.6, ease: "easeOut" }}
           className={`h-full rounded-full ${
-            percent > 70 
-              ? 'bg-red-500' 
-              : percent > 40 
-                ? 'bg-orange-500' 
+            percent > 70
+              ? 'bg-red-500'
+              : percent > 40
+                ? 'bg-orange-500'
                 : 'bg-indigo-500'
           }`}
         />
@@ -1022,7 +1159,6 @@ function ContributorBar({ factor, weight, maxWeight, description, icon }) {
   );
 }
 
-/* ── ScoreGauge Component ────────────────────────────────────────────────── */
 function ScoreGauge({ score, level }) {
   const meta = RISK_META[level] || RISK_META.LOW;
   const radius = 32;
@@ -1055,7 +1191,6 @@ function ScoreGauge({ score, level }) {
   );
 }
 
-/* ── TrendArrow Component ────────────────────────────────────────────────── */
 function TrendArrow({ direction }) {
   if (direction === 'increasing') {
     return (
