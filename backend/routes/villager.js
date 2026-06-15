@@ -325,7 +325,7 @@ router.post('/symptoms', auth, aiLimiter, checkRole(['villager', 'ngo', 'admin']
   try {
     const aiRes = await axios.post(`${AI_SERVICE_URL}/predict/disease`, { symptoms: text }, {
       headers: { 'x-trace-id': req.traceId },
-      timeout: 5000
+      timeout: 1000
     });
     const validated = validateAiOutput(DiseasePredictionSchema, aiRes.data, 'Disease Predict AI Output');
     prediction = validated.prediction;
