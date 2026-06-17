@@ -664,19 +664,108 @@ export default function ASHADashboard() {
             </div>
           </button>
         </div>
-        {/* Village Health Score Card */}
-        <div className="bg-white border border-slate-100 rounded-3xl p-4 sm:p-5 shadow-xs mt-4">
-          <h3 className="text-sm font-black text-slate-900 mb-2">Village V101 – Health Score</h3>
-          <div className="flex flex-col xs:flex-row items-center xs:items-center gap-3 xs:gap-0 mb-2">
-            <div className="w-20 h-20 sm:w-24 sm:h-24 bg-[#ECFDF5] rounded-full flex items-center justify-center shrink-0">
-              <span className="text-xl sm:text-2xl font-black text-[#059669]">82/100</span>
+        {/* Executive Healthcare Intelligence Card */}
+        <div className="bg-white border border-slate-100 rounded-3xl shadow-xs mt-4 overflow-hidden">
+          {/* Header */}
+          <div className="flex items-center justify-between px-4 sm:px-5 pt-4 sm:pt-5 pb-3">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg bg-[#ECFDF5] flex items-center justify-center">
+                <Activity className="w-4 h-4 text-[#059669]" />
+              </div>
+              <h3 className="text-sm font-black text-slate-900">Village V101 – Health Score</h3>
             </div>
-            <div className="xs:ml-4 text-xs space-y-1 text-center xs:text-left">
-              <div>Vaccination: 91%</div>
-              <div>Maternal Health: 78%</div>
-              <div>Nutrition: 74%</div>
-              <div>Disease Risk: Medium</div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-black px-2 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+                Risk: Medium
+              </span>
             </div>
+          </div>
+
+          {/* 4 KPI Mini Cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 px-4 sm:px-5 pb-3">
+            {[
+              { label: 'Population Served', value: '1,428', icon: Users, color: '#059669' },
+              { label: 'High Risk Cases', value: '12', icon: AlertTriangle, color: '#EF4444' },
+              { label: 'Vaccination Coverage', value: '91%', icon: Shield, color: '#8B5CF6' },
+              { label: 'Active Alerts', value: '3', icon: Bell, color: '#F97316' },
+            ].map((kpi) => {
+              const Icon = kpi.icon;
+              return (
+                <div key={kpi.label} className="bg-slate-50 rounded-xl p-2.5 sm:p-3 flex items-center gap-2.5">
+                  <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: kpi.color + '15' }}>
+                    <Icon className="w-4 h-4 sm:w-4.5 sm:h-4.5" style={{ color: kpi.color }} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-base sm:text-lg font-black text-slate-900 leading-none">{kpi.value}</p>
+                    <p className="text-[9px] sm:text-[10px] font-bold text-slate-500 leading-tight mt-0.5 truncate">{kpi.label}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Score Ring + Trend + Progress Bars Row */}
+          <div className="flex flex-col xs:flex-row gap-3 px-4 sm:px-5 pb-4 sm:pb-5">
+            {/* Score Ring */}
+            <div className="flex items-center gap-3 shrink-0">
+              <div className="relative w-16 h-16 sm:w-[72px] sm:h-[72px]">
+                <svg className="w-16 h-16 sm:w-[72px] sm:h-[72px] -rotate-90" viewBox="0 0 72 72">
+                  <circle cx="36" cy="36" r="30" fill="none" stroke="#E2E8F0" strokeWidth="6" />
+                  <circle
+                    cx="36" cy="36" r="30" fill="none" stroke="#059669" strokeWidth="6"
+                    strokeDasharray={`${2 * Math.PI * 30}`}
+                    strokeDashoffset={`${2 * Math.PI * 30 * (1 - 82 / 100)}`}
+                    strokeLinecap="round"
+                  />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-base sm:text-lg font-black text-[#059669]">82</span>
+                </div>
+              </div>
+              <div className="text-left">
+                <div className="flex items-center gap-1">
+                  <span className="text-[11px] sm:text-xs font-black text-slate-900">Overall Health</span>
+                  <span className="flex items-center gap-0.5 text-[10px] font-black text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full">
+                    <TrendingUp className="w-3 h-3" /> +4
+                  </span>
+                </div>
+                <p className="text-[10px] text-slate-500 font-semibold">This month</p>
+              </div>
+            </div>
+
+            {/* Compact Progress Bars */}
+            <div className="flex-1 grid grid-cols-2 gap-x-4 gap-y-2 min-w-0">
+              {[
+                { label: 'Vaccination', value: 91, color: '#059669' },
+                { label: 'Maternal Health', value: 78, color: '#D97706' },
+                { label: 'Child Nutrition', value: 74, color: '#7C3AED' },
+                { label: 'Disease Risk', value: 32, color: '#DC2626', inverse: true },
+              ].map((bar) => (
+                <div key={bar.label} className="min-w-0">
+                  <div className="flex items-center justify-between mb-0.5">
+                    <span className="text-[9px] sm:text-[10px] font-bold text-slate-600 truncate">{bar.label}</span>
+                    <span className="text-[9px] sm:text-[10px] font-black" style={{ color: bar.inverse ? (bar.value > 50 ? '#DC2626' : '#059669') : bar.color }}>
+                      {bar.inverse ? `${100 - bar.value}%` : `${bar.value}%`}
+                    </span>
+                  </div>
+                  <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all duration-700"
+                      style={{ width: `${bar.inverse ? 100 - bar.value : bar.value}%`, backgroundColor: bar.color }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Footer: Last Updated */}
+          <div className="border-t border-slate-50 px-4 sm:px-5 py-2 flex items-center justify-between">
+            <div className="flex items-center gap-1.5 text-[10px] text-slate-400 font-semibold">
+              <Clock className="w-3 h-3" />
+              Last updated: Today, 10:30 AM
+            </div>
+            <span className="text-[9px] font-bold text-slate-300">V101 · Rampur Sector 4</span>
           </div>
         </div>
 
