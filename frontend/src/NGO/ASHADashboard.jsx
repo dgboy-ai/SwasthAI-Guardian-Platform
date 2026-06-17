@@ -611,8 +611,117 @@ export default function ASHADashboard() {
             </div>
           </button>
         </div>
-        {/* Health Command Center */}
-        <HealthScoreBreakdown score={82} />
+        {/* Two-Column Stack on larger layouts */}
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 items-start">
+          {/* Today's Tasks */}
+          <div className="xl:col-span-8 bg-white border border-emerald-100/60 rounded-2xl p-5 shadow-sm text-left ring-1 ring-emerald-100/50">
+            <div className="flex items-center justify-between pb-3.5 border-b border-slate-50 mb-3.5">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-lg bg-[#059669] text-white flex items-center justify-center">
+                  <CheckCircle className="w-4.5 h-4.5" />
+                </div>
+                <h3 className="text-xs font-black uppercase text-slate-900 tracking-wider">Today's Tasks</h3>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-full">
+                  {tasks.filter(t => !t.done).length} Tasks
+                </span>
+                <button className="text-xs font-black text-[#059669] hover:underline">View All</button>
+              </div>
+            </div>
+
+            <div className="divide-y divide-slate-50">
+              {tasks.length === 0 ? (
+                <div className="py-8 text-center">
+                  <CheckCircle className="w-10 h-10 text-emerald-200 mx-auto mb-2" />
+                  <p className="text-sm font-bold text-slate-400">All tasks completed</p>
+                  <p className="text-[10px] text-slate-300 mt-1">No pending tasks for today</p>
+                </div>
+              ) : tasks.filter(t => !t.done).length === 0 ? (
+                <div className="py-8 text-center">
+                  <CheckCircle className="w-10 h-10 text-emerald-200 mx-auto mb-2" />
+                  <p className="text-sm font-bold text-slate-400">All tasks completed</p>
+                  <p className="text-[10px] text-slate-300 mt-1">Great work! All tasks marked done.</p>
+                </div>
+              ) : (tasks.map(task => (
+                <div 
+                  key={task.id} 
+                  onClick={() => setActiveTaskModal(task)}
+                  className={`py-4 flex flex-col xs:flex-row items-start xs:items-center justify-between gap-3 cursor-pointer px-2.5 rounded-2xl transition-colors ${task.done ? 'opacity-50' : 'hover:bg-emerald-50/40 border-l-[3px] border-l-emerald-400/60'}`}
+                >
+                  <div className="flex items-center gap-3.5 w-full xs:w-auto">
+                    <div className="w-11 h-11 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-xl shrink-0">
+                      {task.icon === 'pregnancy' ? '🤰' : task.icon === 'child' ? '👶' : '💉'}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-sm font-bold text-slate-800 truncate max-w-[160px] xs:max-w-none">{task.patientName}</p>
+                        {task.priority && (
+                          <span className={`text-[10px] font-black px-2.5 py-1 rounded shrink-0 ${
+                            task.priorityColor === 'red' ? 'bg-red-100 text-red-700' : 'bg-orange-100 text-orange-700'
+                          }`}>
+                            {task.priority}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-400 font-semibold mt-0.5 truncate">{task.type} {task.detail ? `• ${task.detail}` : ''}</p>
+                      <p className="text-[10px] text-slate-400 flex items-center gap-0.5 mt-0.5 font-bold">
+                        <MapPin className="w-3.5 h-3.5 text-slate-300 shrink-0" /> <span className="truncate">{task.distance}</span>
+                      </p>
+                    </div>
+                  </div>
+
+                  <div onClick={(e) => e.stopPropagation()} className="self-end xs:self-auto w-full xs:w-auto">
+                    {task.done ? (
+                      <div className="w-9 h-9 rounded-full bg-emerald-50 flex items-center justify-center text-[#059669] ml-auto">
+                        <Check className="w-5.5 h-5.5 stroke-[3px]" />
+                      </div>
+                    ) : task.icon === 'vaccination' ? (
+                      <button
+                        onClick={() => handleMarkTaskCompleted(task.id)}
+                        className="w-full xs:w-auto px-5 py-3 xs:py-2.5 border-2 border-[#059669] text-[#059669] hover:bg-[#ECFDF5] text-xs font-black rounded-xl transition-colors active:scale-95 whitespace-nowrap"
+                      >
+                        Mark Done
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => setActiveTaskModal(task)}
+                        className="w-full xs:w-auto px-5 py-3 xs:py-2.5 bg-[#059669] hover:bg-[#047857] text-white text-xs font-black rounded-xl transition-colors active:scale-95 shadow-md shadow-emerald-500/20 whitespace-nowrap"
+                      >
+                        Visit Now
+                      </button>
+                    )}
+                    </div>
+                  </div>
+              )))}
+            </div>
+          </div>
+
+          {/* Quick Actions Panel */}
+          <div className="xl:col-span-4 bg-white border border-slate-100 rounded-2xl p-4 sm:p-5 shadow-sm text-left space-y-4">
+            <h3 className="text-xs font-black uppercase text-[#059669] tracking-wider">Quick Add Record</h3>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-1 gap-2.5">
+              {[
+                { id: 'pregnancy', label: 'Pregnancy Record', icon: '🤰', color: 'bg-rose-50 border-rose-100 text-rose-600' },
+                { id: 'nutrition', label: 'Child Nutrition', icon: '👶', color: 'bg-purple-50 border-purple-100 text-purple-600' },
+                { id: 'symptoms', label: 'Symptoms Check', icon: '🩺', color: 'bg-emerald-50 border-emerald-100 text-emerald-600' },
+                { id: 'emergency', label: 'Emergency Record', icon: '🚑', color: 'bg-red-50 border-red-100 text-red-600' },
+              ].map(act => (
+                <button
+                  key={act.id}
+                  onClick={() => setShowQuickForm(act.id)}
+                  className="bg-white border border-slate-100 rounded-xl p-3.5 sm:p-4.5 shadow-sm flex flex-row items-center gap-3 sm:gap-4 text-left hover:shadow-md active:scale-[0.98] transition-all w-full min-h-[52px] cursor-pointer"
+                >
+                  <div className={`w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center text-lg sm:text-xl shrink-0 ${act.color}`}>
+                    {act.icon}
+                  </div>
+                  <span className="text-xs font-black text-slate-700 leading-snug">{act.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
 
         {/* Active Outbreak Alert Banner */}
         <div className="bg-[#FEF2F2] border border-[#FEE2E2] rounded-3xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 shadow-xs relative overflow-hidden text-left">
@@ -641,6 +750,7 @@ export default function ASHADashboard() {
             View Details <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           </button>
         </div>
+
         {/* AI Priority Center */}
         <div className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-slate-50">
@@ -706,6 +816,126 @@ export default function ASHADashboard() {
                   </div>
                 );
               })}
+            </div>
+          </div>
+        </div>
+
+        {/* Health Command Center */}
+        <HealthScoreBreakdown score={82} />
+
+        {/* Live Field Impact Dashboard */}
+        <LiveFieldImpact />
+
+        {/* Monthly Impact Summary + Health Trends */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Monthly Impact Card */}
+          <div className="bg-white border border-slate-100 rounded-xl p-4 sm:p-5 shadow-sm">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-xs font-black uppercase text-slate-800 tracking-wider flex items-center gap-1.5">
+                <BarChart3 className="w-4 h-4 text-[#059669]" /> Monthly Impact
+              </h3>
+              <span className="text-[9px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">June 2026</span>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { label: 'Pregnancies', value: '24', sub: '12 high-risk', color: '#F97316' },
+                { label: 'Children', value: '156', sub: '8 SAM cases', color: '#8B5CF6' },
+                { label: 'Vaccinations', value: '312', sub: '91% coverage', color: '#059669' },
+              ].map((item) => (
+                <div key={item.label} className="text-center p-2.5 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors">
+                  <p className="text-xl sm:text-2xl font-black text-slate-900">{item.value}</p>
+                  <p className="text-[9px] sm:text-[10px] font-bold text-slate-500">{item.label}</p>
+                  <p className="text-[8px] font-semibold mt-0.5" style={{ color: item.color }}>{item.sub}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Health Trends Card */}
+          <div className="bg-white border border-slate-100 rounded-xl p-4 sm:p-5 shadow-sm">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-xs font-black uppercase text-slate-800 tracking-wider flex items-center gap-1.5">
+                <TrendingUp className="w-4 h-4 text-[#059669]" /> Health Trends
+              </h3>
+              <span className="text-[9px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">This Week</span>
+            </div>
+            <div className="space-y-2.5">
+              {[
+                { label: 'Maternal Health', value: 78, color: '#059669', trend: 'up', change: '+2%' },
+                { label: 'Child Nutrition', value: 74, color: '#8B5CF6', trend: 'down', change: '-1%' },
+                { label: 'Disease Surveillance', value: 88, color: '#2563EB', trend: 'up', change: '+5%' },
+                { label: 'Emergency Response', value: 92, color: '#F97316', trend: 'up', change: '+3%' },
+              ].map((trend) => (
+                <div key={trend.label} className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <span className="text-[10px] sm:text-xs font-bold text-slate-600 truncate">{trend.label}</span>
+                    <span className={`flex items-center gap-0.5 text-[9px] font-black ${trend.trend === 'up' ? 'text-emerald-600' : 'text-red-500'}`}>
+                      {trend.trend === 'up' ? <TrendingUp className="w-2.5 h-2.5" /> : <TrendingDown className="w-2.5 h-2.5" />}
+                      {trend.change}
+                    </span>
+                  </div>
+                  <span className="text-xs font-black text-slate-700 ml-2">{trend.value}%</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Resource Allocation + Community Risk Heatmap */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Resource Allocation Card */}
+          <div className="bg-white border border-slate-100 rounded-xl p-4 sm:p-5 shadow-sm">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-xs font-black uppercase text-slate-800 tracking-wider flex items-center gap-1.5">
+                <Zap className="w-4 h-4 text-[#059669]" /> Resource Allocation
+              </h3>
+            </div>
+            <div className="space-y-3">
+              {[
+                { label: 'ASHA Workers Deployed', current: 18, total: 24, color: '#059669' },
+                { label: 'Ambulances Active', current: 4, total: 6, color: '#EF4444' },
+                { label: 'Vaccination Stock', current: 85, total: 100, color: '#8B5CF6' },
+                { label: 'Nutrition Kits Distributed', current: 142, total: 200, color: '#F97316' },
+              ].map((res) => (
+                <div key={res.label}>
+                  <div className="flex justify-between text-[10px] font-semibold mb-1">
+                    <span className="text-slate-600">{res.label}</span>
+                    <span className="text-slate-800 font-black">{res.current}/{res.total}</span>
+                  </div>
+                  <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                    <div className="h-full rounded-full transition-all" style={{ width: `${(res.current / res.total) * 100}%`, backgroundColor: res.color }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Community Risk Heatmap — compact */}
+          <div className="bg-white border border-slate-100 rounded-xl p-4 sm:p-5 shadow-sm">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-xs font-black uppercase text-slate-800 tracking-wider flex items-center gap-1.5">
+                <Shield className="w-4 h-4 text-[#059669]" /> Community Risk Heatmap
+              </h3>
+            </div>
+            <div className="space-y-2">
+              {[
+                { village: 'V101 - Rampur', risk: 'Medium', score: 62, color: '#F97316', bg: '#FFF7ED' },
+                { village: 'V102 - Nagwa', risk: 'Low', score: 28, color: '#059669', bg: '#ECFDF5' },
+                { village: 'V103 - Sarai', risk: 'High', score: 81, color: '#EF4444', bg: '#FEF2F2' },
+                { village: 'V104 - Dariyapur', risk: 'Low', score: 15, color: '#059669', bg: '#ECFDF5' },
+                { village: 'V105 - Kashirampur', risk: 'Medium', score: 45, color: '#F97316', bg: '#FFF7ED' },
+              ].map((v) => (
+                <div key={v.village} className={`flex items-center justify-between p-2.5 rounded-xl text-xs transition-all hover:brightness-95`} style={{ backgroundColor: v.bg }}>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className={`w-2 h-2 rounded-full shrink-0`} style={{ backgroundColor: v.color }} />
+                    <span className="font-bold text-slate-700 truncate">{v.village}</span>
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <span className="text-[10px] font-black" style={{ color: v.color }}>{v.risk}</span>
+                    <span className="text-[10px] font-bold text-slate-400">{v.score}/100</span>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -793,121 +1023,6 @@ export default function ASHADashboard() {
           </div>
         </div>
 
-        {/* Live Field Impact Dashboard */}
-        <LiveFieldImpact />
-
-        {/* Two-Column Stack on larger layouts */}
-        <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 items-start">
-          {/* Today's Tasks */}
-          <div className="xl:col-span-8 bg-white border border-slate-100 rounded-2xl p-5 shadow-sm text-left">
-            <div className="flex items-center justify-between pb-3.5 border-b border-slate-50 mb-3.5">
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-lg bg-[#059669] text-white flex items-center justify-center">
-                  <CheckCircle className="w-4.5 h-4.5" />
-                </div>
-                <h3 className="text-xs font-black uppercase text-slate-900 tracking-wider">Today's Tasks</h3>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-full">
-                  {tasks.filter(t => !t.done).length} Tasks
-                </span>
-                <button className="text-xs font-black text-[#059669] hover:underline">View All</button>
-              </div>
-            </div>
-
-            <div className="divide-y divide-slate-50">
-              {tasks.length === 0 ? (
-                <div className="py-8 text-center">
-                  <CheckCircle className="w-10 h-10 text-emerald-200 mx-auto mb-2" />
-                  <p className="text-sm font-bold text-slate-400">All tasks completed</p>
-                  <p className="text-[10px] text-slate-300 mt-1">No pending tasks for today</p>
-                </div>
-              ) : tasks.filter(t => !t.done).length === 0 ? (
-                <div className="py-8 text-center">
-                  <CheckCircle className="w-10 h-10 text-emerald-200 mx-auto mb-2" />
-                  <p className="text-sm font-bold text-slate-400">All tasks completed</p>
-                  <p className="text-[10px] text-slate-300 mt-1">Great work! All tasks marked done.</p>
-                </div>
-              ) : (tasks.map(task => (
-                <div 
-                  key={task.id} 
-                  onClick={() => setActiveTaskModal(task)}
-                  className={`py-4 flex flex-col xs:flex-row items-start xs:items-center justify-between gap-3 cursor-pointer hover:bg-slate-50/50 px-2.5 rounded-2xl transition-colors ${task.done ? 'opacity-50' : ''}`}
-                >
-                  <div className="flex items-center gap-3.5 w-full xs:w-auto">
-                    <div className="w-11 h-11 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-xl shrink-0">
-                      {task.icon === 'pregnancy' ? '🤰' : task.icon === 'child' ? '👶' : '💉'}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <p className="text-sm font-bold text-slate-800 truncate max-w-[160px] xs:max-w-none">{task.patientName}</p>
-                        {task.priority && (
-                          <span className={`text-[9px] font-black px-2 py-0.5 rounded shrink-0 ${
-                            task.priorityColor === 'red' ? 'bg-red-100 text-red-700' : 'bg-orange-100 text-orange-700'
-                          }`}>
-                            {task.priority}
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-xs text-slate-400 font-semibold mt-0.5 truncate">{task.type} {task.detail ? `• ${task.detail}` : ''}</p>
-                      <p className="text-[10px] text-slate-400 flex items-center gap-0.5 mt-0.5 font-bold">
-                        <MapPin className="w-3.5 h-3.5 text-slate-300 shrink-0" /> <span className="truncate">{task.distance}</span>
-                      </p>
-                    </div>
-                  </div>
-
-                  <div onClick={(e) => e.stopPropagation()} className="self-end xs:self-auto w-full xs:w-auto">
-                    {task.done ? (
-                      <div className="w-9 h-9 rounded-full bg-emerald-50 flex items-center justify-center text-[#059669] ml-auto">
-                        <Check className="w-5.5 h-5.5 stroke-[3px]" />
-                      </div>
-                    ) : task.icon === 'vaccination' ? (
-                      <button
-                        onClick={() => handleMarkTaskCompleted(task.id)}
-                        className="w-full xs:w-auto px-4 py-2.5 xs:py-2 border border-[#059669] text-[#059669] hover:bg-[#ECFDF5] text-xs font-black rounded-xl transition-colors active:scale-95 whitespace-nowrap"
-                      >
-                        Mark Done
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => setActiveTaskModal(task)}
-                        className="w-full xs:w-auto px-4 py-2.5 xs:py-2 bg-[#059669] hover:bg-[#047857] text-white text-xs font-black rounded-xl transition-colors active:scale-95 shadow shadow-emerald-500/10 whitespace-nowrap"
-                      >
-                        Visit Now
-                      </button>
-                    )}
-                    </div>
-                  </div>
-              )))}
-            </div>
-          </div>
-
-          {/* Quick Actions Panel */}
-          <div className="xl:col-span-4 bg-white border border-slate-100 rounded-2xl p-4 sm:p-5 shadow-sm text-left space-y-4">
-            <h3 className="text-xs font-black uppercase text-[#059669] tracking-wider">Quick Add Record</h3>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-1 gap-2.5">
-              {[
-                { id: 'pregnancy', label: 'Pregnancy Record', icon: '🤰', color: 'bg-rose-50 border-rose-100 text-rose-600' },
-                { id: 'nutrition', label: 'Child Nutrition', icon: '👶', color: 'bg-purple-50 border-purple-100 text-purple-600' },
-                { id: 'symptoms', label: 'Symptoms Check', icon: '🩺', color: 'bg-emerald-50 border-emerald-100 text-emerald-600' },
-                { id: 'emergency', label: 'Emergency Record', icon: '🚑', color: 'bg-red-50 border-red-100 text-red-600' },
-              ].map(act => (
-                <button
-                  key={act.id}
-                  onClick={() => setShowQuickForm(act.id)}
-                  className="bg-white border border-slate-100 rounded-xl p-3.5 sm:p-4.5 shadow-sm flex flex-row items-center gap-3 sm:gap-4 text-left hover:shadow-md active:scale-[0.98] transition-all w-full min-h-[52px] cursor-pointer"
-                >
-                  <div className={`w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center text-lg sm:text-xl shrink-0 ${act.color}`}>
-                    {act.icon}
-                  </div>
-                  <span className="text-xs font-black text-slate-700 leading-snug">{act.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
         {/* Sync Status Bottom Strip */}
         <div className={`rounded-xl p-3 sm:p-4 border shadow-sm transition-colors ${
           isOffline ? 'bg-red-50 border-red-100 text-red-700' : 'bg-[#ECFDF5] border-[#D1FAE5] text-slate-700'
@@ -949,8 +1064,8 @@ export default function ASHADashboard() {
           ].map((stat) => {
             const Icon = stat.icon;
             return (
-              <div key={stat.label} className="bg-white border border-slate-100 rounded-xl p-3.5 sm:p-4 shadow-sm flex items-center gap-3 hover:shadow-md transition-all">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: stat.color + '15' }}>
+              <div key={stat.label} className="bg-white border border-slate-100 rounded-xl p-3.5 sm:p-4 shadow-sm flex items-center gap-3 hover:shadow-md transition-all group">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors group-hover:brightness-95" style={{ backgroundColor: stat.color + '15' }}>
                   <Icon className="w-5 h-5" style={{ color: stat.color }} />
                 </div>
                 <div className="min-w-0">
@@ -961,120 +1076,6 @@ export default function ASHADashboard() {
               </div>
             );
           })}
-        </div>
-
-        {/* Monthly Impact Summary + Health Trends */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* Monthly Impact Card */}
-          <div className="bg-white border border-slate-100 rounded-xl p-4 sm:p-5 shadow-sm">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-xs font-black uppercase text-slate-800 tracking-wider flex items-center gap-1.5">
-                <BarChart3 className="w-4 h-4 text-[#059669]" /> Monthly Impact
-              </h3>
-              <span className="text-[9px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">June 2026</span>
-            </div>
-            <div className="grid grid-cols-3 gap-3">
-              {[
-                { label: 'Pregnancies', value: '24', sub: '12 high-risk', color: '#F97316' },
-                { label: 'Children', value: '156', sub: '8 SAM cases', color: '#8B5CF6' },
-                { label: 'Vaccinations', value: '312', sub: '91% coverage', color: '#059669' },
-              ].map((item) => (
-                <div key={item.label} className="text-center p-2.5 bg-slate-50 rounded-xl">
-                  <p className="text-xl sm:text-2xl font-black text-slate-900">{item.value}</p>
-                  <p className="text-[9px] sm:text-[10px] font-bold text-slate-500">{item.label}</p>
-                  <p className="text-[8px] font-semibold mt-0.5" style={{ color: item.color }}>{item.sub}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Health Trends Card */}
-          <div className="bg-white border border-slate-100 rounded-xl p-4 sm:p-5 shadow-sm">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-xs font-black uppercase text-slate-800 tracking-wider flex items-center gap-1.5">
-                <TrendingUp className="w-4 h-4 text-[#059669]" /> Health Trends
-              </h3>
-              <span className="text-[9px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">This Week</span>
-            </div>
-            <div className="space-y-2.5">
-              {[
-                { label: 'Maternal Health', value: 78, color: '#059669', trend: 'up', change: '+2%' },
-                { label: 'Child Nutrition', value: 74, color: '#8B5CF6', trend: 'down', change: '-1%' },
-                { label: 'Disease Surveillance', value: 88, color: '#2563EB', trend: 'up', change: '+5%' },
-                { label: 'Emergency Response', value: 92, color: '#F97316', trend: 'up', change: '+3%' },
-              ].map((trend) => (
-                <div key={trend.label} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 min-w-0 flex-1">
-                    <span className="text-[10px] sm:text-xs font-bold text-slate-600 truncate">{trend.label}</span>
-                    <span className={`flex items-center gap-0.5 text-[9px] font-black ${trend.trend === 'up' ? 'text-emerald-600' : 'text-red-500'}`}>
-                      {trend.trend === 'up' ? <TrendingUp className="w-2.5 h-2.5" /> : <TrendingDown className="w-2.5 h-2.5" />}
-                      {trend.change}
-                    </span>
-                  </div>
-                  <span className="text-xs font-black text-slate-700 ml-2">{trend.value}%</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Resource Allocation + Community Risk Heatmap */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* Resource Allocation Card */}
-          <div className="bg-white border border-slate-100 rounded-xl p-4 sm:p-5 shadow-sm">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-xs font-black uppercase text-slate-800 tracking-wider flex items-center gap-1.5">
-                <Zap className="w-4 h-4 text-[#059669]" /> Resource Allocation
-              </h3>
-            </div>
-            <div className="space-y-3">
-              {[
-                { label: 'ASHA Workers Deployed', current: 18, total: 24, color: '#059669' },
-                { label: 'Ambulances Active', current: 4, total: 6, color: '#EF4444' },
-                { label: 'Vaccination Stock', current: 85, total: 100, color: '#8B5CF6' },
-                { label: 'Nutrition Kits Distributed', current: 142, total: 200, color: '#F97316' },
-              ].map((res) => (
-                <div key={res.label}>
-                  <div className="flex justify-between text-[10px] font-semibold mb-1">
-                    <span className="text-slate-600">{res.label}</span>
-                    <span className="text-slate-800 font-black">{res.current}/{res.total}</span>
-                  </div>
-                  <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                    <div className="h-full rounded-full transition-all" style={{ width: `${(res.current / res.total) * 100}%`, backgroundColor: res.color }} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Community Risk Heatmap — compact */}
-          <div className="bg-white border border-slate-100 rounded-xl p-4 sm:p-5 shadow-sm">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-xs font-black uppercase text-slate-800 tracking-wider flex items-center gap-1.5">
-                <Shield className="w-4 h-4 text-[#059669]" /> Community Risk Heatmap
-              </h3>
-            </div>
-            <div className="space-y-2">
-              {[
-                { village: 'V101 - Rampur', risk: 'Medium', score: 62, color: '#F97316', bg: '#FFF7ED' },
-                { village: 'V102 - Nagwa', risk: 'Low', score: 28, color: '#059669', bg: '#ECFDF5' },
-                { village: 'V103 - Sarai', risk: 'High', score: 81, color: '#EF4444', bg: '#FEF2F2' },
-                { village: 'V104 - Dariyapur', risk: 'Low', score: 15, color: '#059669', bg: '#ECFDF5' },
-                { village: 'V105 - Kashirampur', risk: 'Medium', score: 45, color: '#F97316', bg: '#FFF7ED' },
-              ].map((v) => (
-                <div key={v.village} className={`flex items-center justify-between p-2.5 rounded-xl text-xs`} style={{ backgroundColor: v.bg }}>
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className={`w-2 h-2 rounded-full shrink-0`} style={{ backgroundColor: v.color }} />
-                    <span className="font-bold text-slate-700 truncate">{v.village}</span>
-                  </div>
-                  <div className="flex items-center gap-3 shrink-0">
-                    <span className="text-[10px] font-black" style={{ color: v.color }}>{v.risk}</span>
-                    <span className="text-[10px] font-bold text-slate-400">{v.score}/100</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
 
         {/* Program Performance Metrics */}
@@ -1092,7 +1093,7 @@ export default function ASHADashboard() {
               { label: 'Vaccination Drive', value: '91%', color: '#2563EB', desc: 'Target: 95%' },
               { label: 'Emergency Response', value: '94%', color: '#F97316', desc: 'Target: 90%' },
             ].map((prog) => (
-              <div key={prog.label} className="text-center p-3 bg-slate-50 rounded-xl">
+              <div key={prog.label} className="text-center p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors">
                 <p className="text-lg sm:text-xl font-black" style={{ color: prog.color }}>{prog.value}</p>
                 <p className="text-[10px] font-bold text-slate-600">{prog.label}</p>
                 <p className="text-[8px] text-slate-400 font-semibold mt-0.5">{prog.desc}</p>

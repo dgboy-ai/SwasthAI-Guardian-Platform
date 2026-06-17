@@ -396,7 +396,7 @@ export default function MaternalHealthPage() {
   const stats = { total: records.length, high: records.filter(r => r.riskLevel === 'High Risk').length, medium: records.filter(r => r.riskLevel === 'Medium Risk').length, low: records.filter(r => r.riskLevel === 'Low Risk').length };
 
   return (
-    <div className="bg-[#F8FAFC] min-h-screen font-inter">
+    <div className="bg-white min-h-screen font-inter">
       <Navbar role="ngo" />
       <main className="max-w-[1600px] mx-auto p-4 sm:p-8 lg:p-10 pt-28 overflow-y-auto">
 
