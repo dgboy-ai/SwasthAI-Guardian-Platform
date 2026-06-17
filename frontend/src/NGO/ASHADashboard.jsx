@@ -561,6 +561,21 @@ export default function ASHADashboard() {
             </div>
           </button>
         </div>
+        {/* Village Health Score Card */}
+        <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-xs mt-4">
+          <h3 className="text-sm font-black text-slate-900 mb-2">Village V101 – Health Score</h3>
+          <div className="flex items-center mb-2">
+            <div className="w-24 h-24 bg-[#ECFDF5] rounded-full flex items-center justify-center">
+              <span className="text-2xl font-black text-[#059669]">82/100</span>
+            </div>
+            <div className="ml-4 text-xs space-y-1">
+              <div>Vaccination: 91%</div>
+              <div>Maternal Health: 78%</div>
+              <div>Nutrition: 74%</div>
+              <div>Disease Risk: Medium</div>
+            </div>
+          </div>
+        </div>
 
         {/* Active Outbreak Alert Banner */}
         <div className="bg-[#FEF2F2] border border-[#FEE2E2] rounded-3xl p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 shadow-xs relative overflow-hidden text-left">
@@ -589,6 +604,19 @@ export default function ASHADashboard() {
           >
             View Details <ChevronRight className="w-4 h-4" />
           </button>
+        </div>
+        {/* AI Daily Priority Card */}
+        <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-xs mt-4 flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-black text-slate-900">AI DAILY PRIORITY</h3>
+            <button onClick={() => navigate('/asha/priority')} className="text-xs font-black text-[#059669] hover:underline">Open All</button>
+          </div>
+          <ul className="space-y-2 text-xs">
+            <li className="flex items-center justify-between"><span>🔴 Visit Sunita Devi (High-Risk Pregnancy)</span><button className="px-3 py-1 border border-[#059669] text-[#059669] rounded-full text-xs" onClick={() => navigate('/asha/case/sunita')}>Open Case</button></li>
+            <li className="flex items-center justify-between"><span>🟠 Verify Fever Cluster in Village V101</span><button className="px-3 py-1 border border-[#059669] text-[#059669] rounded-full text-xs" onClick={() => navigate('/asha/case/fever')}>Open Case</button></li>
+            <li className="flex items-center justify-between"><span>🟡 Follow-up Malnutrition Case</span><button className="px-3 py-1 border border-[#059669] text-[#059669] rounded-full text-xs" onClick={() => navigate('/asha/case/malnutrition')}>Open Case</button></li>
+            <li className="flex items-center justify-between"><span>🟢 Vaccination Due: 3 Children</span><button className="px-3 py-1 border border-[#059669] text-[#059669] rounded-full text-xs" onClick={() => navigate('/asha/vaccination')}>Open Case</button></li>
+          </ul>
         </div>
 
         {/* Health Summary Cards (Grid of 4) */}
