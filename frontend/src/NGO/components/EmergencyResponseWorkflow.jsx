@@ -1,8 +1,20 @@
 import React, { useState } from 'react';
-import { Ambulance, MapPin, Clock, CheckCircle, Navigation, Loader2 } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Ambulance, MapPin, Clock, CheckCircle, Navigation, Loader2, Phone, Hospital } from 'lucide-react';
+
+const WORKFLOW_STEPS = [
+  { key: 'received', label: 'SOS Received', icon: '🚨', time: '0s' },
+  { key: 'identified', label: 'Patient Identified', icon: '👤', time: '15s' },
+  { key: 'assigned', label: 'Ambulance Assigned', icon: '🚑', time: '45s' },
+  { key: 'eta', label: 'ETA Generated', icon: '⏱️', time: '7min' },
+  { key: 'alerted', label: 'Hospital Alerted', icon: '🏥', time: '15min' },
+  { key: 'closed', label: 'Case Closed', icon: '✅', time: '25min' },
+];
 
 export default function EmergencyResponseWorkflow({ emergency, onDispatch, dispatching, progress }) {
   const [showTimeline, setShowTimeline] = useState(false);
+
+  const currentStepIndex = progress === 0 ? 1 : Math.min(5, Math.floor((progress / 100) * 6));
 
   const ambulanceData = {
     id: 'AMB-042',
@@ -13,15 +25,6 @@ export default function EmergencyResponseWorkflow({ emergency, onDispatch, dispa
     eta: '7 min',
     hospital: 'PHC Rampur (3.1 km)',
   };
-
-  const timeline = [
-    { time: '0s', event: 'Emergency Alert Received', done: true },
-    { time: '15s', event: 'AI Triage Assessment Complete', done: true },
-    { time: '45s', event: 'Ambulance Dispatched', done: progress > 20 },
-    { time: '7min', event: 'ETC: Arrival at Patient Location', done: progress > 60 },
-    { time: '15min', event: 'Patient Loaded & En Route to PHC', done: progress > 80 },
-    { time: '25min', event: 'Hospital Arrival & Handover', done: progress === 100 },
-  ];
 
   return (
     <div className="space-y-4">
@@ -43,6 +46,31 @@ export default function EmergencyResponseWorkflow({ emergency, onDispatch, dispa
         </div>
       </div>
 
+      <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4">
+        <p className="text-[10px] font-black uppercase text-slate-500 tracking-wider mb-3">Response Workflow</p>
+        <div className="flex items-center justify-between">
+          {WORKFLOW_STEPS.map((step, i) => {
+            const isCompleted = dispatching && i <= currentStepIndex;
+            const isActive = dispatching && i === currentStepIndex;
+            return (
+              <div key={step.key} className="flex flex-col items-center gap-1.5 relative">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm transition-all ${
+                  isCompleted ? 'bg-emerald-500 text-white shadow-sm' : isActive ? 'bg-amber-500 text-white animate-pulse' : 'bg-slate-200 text-slate-400'
+                }`}>
+                  {isCompleted ? '✓' : step.icon}
+                </div>
+                <span className={`text-[7px] font-black uppercase text-center leading-tight max-w-12 ${
+                  isCompleted ? 'text-emerald-600' : isActive ? 'text-amber-600' : 'text-slate-400'
+                }`}>
+                  {step.label}
+                </span>
+                <span className="text-[6px] text-slate-400 font-bold">{step.time}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       {dispatching && (
         <div className="bg-slate-900 text-white p-4 rounded-2xl space-y-3">
           <div className="flex justify-between text-[10px] font-black uppercase">
@@ -54,6 +82,9 @@ export default function EmergencyResponseWorkflow({ emergency, onDispatch, dispa
           </div>
           <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
             <div className="h-full bg-emerald-500 transition-all duration-300 rounded-full" style={{ width: `${progress}%` }} />
+          </div>
+          <div className="text-[10px] text-slate-400 font-medium">
+            Step {Math.min(currentStepIndex + 1, 6)}/6: {WORKFLOW_STEPS[Math.min(currentStepIndex, 5)].label}
           </div>
         </div>
       )}
@@ -74,8 +105,8 @@ export default function EmergencyResponseWorkflow({ emergency, onDispatch, dispa
             <p className="font-bold text-slate-800 text-[11px]">{ambulanceData.driver}</p>
           </div>
           <div className="bg-white/60 rounded-xl p-2.5">
-            <p className="text-[9px] text-slate-400 font-bold uppercase">Distance</p>
-            <p className="font-bold text-slate-800 text-[11px]">{ambulanceData.distance}</p>
+            <p className="text-[9px] text-slate-400 font-bold uppercase">Contact</p>
+            <p className="font-bold text-slate-800 text-[11px]">{ambulanceData.phone}</p>
           </div>
           <div className="bg-white/60 rounded-xl p-2.5">
             <p className="text-[9px] text-slate-400 font-bold uppercase">ETA</p>
@@ -106,11 +137,21 @@ export default function EmergencyResponseWorkflow({ emergency, onDispatch, dispa
       </div>
 
       {showTimeline && (
-        <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 space-y-2.5">
+        <motion.div
+          initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
+          className="bg-slate-50 border border-slate-100 rounded-2xl p-4 space-y-2.5 overflow-hidden"
+        >
           <p className="text-[10px] font-black uppercase text-slate-500 tracking-wider">Resolution Timeline</p>
           <div className="relative pl-6 space-y-3">
             <div className="absolute left-2.5 top-1 bottom-0 w-0.5 bg-slate-200" />
-            {timeline.map((item, i) => (
+            {[
+              { time: '0s', event: 'Emergency Alert Received', done: true },
+              { time: '15s', event: 'AI Triage Assessment Complete', done: true },
+              { time: '45s', event: 'Ambulance Dispatched', done: progress > 20 },
+              { time: '7min', event: 'ETC: Arrival at Patient Location', done: progress > 60 },
+              { time: '15min', event: 'Patient Loaded & En Route to PHC', done: progress > 80 },
+              { time: '25min', event: 'Hospital Arrival & Handover', done: progress === 100 },
+            ].map((item, i) => (
               <div key={i} className="relative flex items-center gap-3">
                 <div className={`absolute -left-4.5 w-3 h-3 rounded-full border-2 ${
                   item.done ? 'bg-emerald-500 border-emerald-500' : 'bg-white border-slate-300'
@@ -126,7 +167,7 @@ export default function EmergencyResponseWorkflow({ emergency, onDispatch, dispa
               </div>
             ))}
           </div>
-        </div>
+        </motion.div>
       )}
     </div>
   );

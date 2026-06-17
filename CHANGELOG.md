@@ -2,6 +2,35 @@
 
 All notable changes and feature developments completed during the project development window are documented in this file chronologically.
 
+## June 17, 2026 (Round 2 — Hackathon Judge-Upgrade)
+### Added
+- **Live Impact Counter**: New `LiveImpactCounter` component with 6 animated stats (Pregnancies: 24, Children: 156, Symptoms: 418, Emergencies: 37, Villagers: 1428, Lives Saved: 860+) using framer-motion count-up animation on mount. Dark-themed gradient card matching Judge Demo Mode style.
+- **Judge Panel (Why SwasthAI Wins)**: New `JudgePanel` collapsible accordion component listing 6 key differentiators (Offline-First, AI Triage, Resilient Sync, Real-Time Dashboard, Emergency Response, Judge-Ready Demo Mode) with icons, descriptions, and a footer summary. Expands/collapses with framer-motion animation.
+- **Judge Demo Mode — Clickable Scenarios**: Rewrote `JudgeDemoMode` from sequential run-all to 5 individual clickable scenario cards (High Risk Pregnancy, Malnutrition Crisis, Disease Outbreak, Emergency SOS, Offline Sync) plus a "Run All" button. Each scenario independently updates dashboard state and shows completion status. Added "Show All/Collapse" toggle for responsive layout.
+- **Malnutrition Demo Scenario**: New `malnutrition` scenario in `handleDemoSimulation` that adds 2 new SAM/MAM child records and fires a nutrition alert notification.
+- **Offline-First Healthcare — Seeded Demo Data**: Enhanced `OfflineFirstHealth` with a `demoData` prop. When active, displays realistic seeded values (Maternal: 47, Child Nutrition: 112, Symptom Reports: 89, Ambulance: 14, Pending Queue: 3) with progress bars per category, a sync health progress bar (97% — Excellent), and a "Demo Data" badge.
+- **Voice Assistant — Demo Commands**: Enhanced `VoiceAssistantFAB` with 5 hardcoded Hindi/English demo commands when Web Speech API is unavailable. Commands simulate pregnancy, symptom, and nutrition registrations with AI response text. Added collapsible "Try Demo Commands" section and "AI Response" confirmation box. Auto-detects speech support and surfaces demo mode hint.
+- **Smart Task Manager — Priority & AI Recommendations**: Enhanced `SmartTaskManager` with due time, distance, suggested route, AI recommendation text, and clinical note display. 4 action buttons renamed to "Start Visit", "Reschedule", "Mark Complete", "Escalate" with priority color coding (HIGH RISK, FOLLOW-UP, URGENT, NORMAL).
+- **Emergency Response — Visual Workflow Steps**: Enhanced `EmergencyResponseWorkflow` with a 6-step visual workflow progress bar (SOS Received → Patient Identified → Ambulance Assigned → ETA Generated → Hospital Alerted → Case Closed) that updates live during dispatch simulation. Driver contact number added.
+- **Outbreak Response — Containment Progress**: Enhanced `OutbreakResponseCenter` with total cases count, risk summary, containment progress bar with +Update button, and tabbed UI for Villages / Actions / Checklist views. Heat-level indicators (red/orange/amber dots) on village rows.
+- **Live Field Impact — Animated Counters**: Enhanced `LiveFieldImpact` to use framer-motion `AnimatedValue` hooks that count up from 0 to target on mount, plus staggered entry animation per card.
+- **Health Score Breakdown — Dynamic Props**: Enhanced `HealthScoreBreakdown` to accept optional `categories` and `score` props for future dynamic updates.
+### Modified Files
+- `frontend/src/NGO/ASHADashboard.jsx`: Added imports for LiveImpactCounter, JudgePanel, Stethoscope; added demoScenario state, demoMetrics; enhanced handleDemoSimulation with malnutrition + notification support; added LiveImpactCounter and JudgePanel sections to dashboard grid.
+- `frontend/src/NGO/components/JudgeDemoMode.jsx`: Rewritten with clickable scenario cards, showAll toggle, independent completion tracking.
+- `frontend/src/NGO/components/OfflineFirstHealth.jsx`: Added demoData prop, seeded stats, progress bars, sync health indicator.
+- `frontend/src/NGO/components/VoiceAssistantFAB.jsx`: Added 5 demo commands, AI responses, auto-detect demo mode.
+- `frontend/src/NGO/components/SmartTaskManager.jsx`: Added priority colors, due time, route, AI rec, renamed actions.
+- `frontend/src/NGO/components/EmergencyResponseWorkflow.jsx`: Added 6-step visual workflow progress bar, driver contact.
+- `frontend/src/NGO/components/OutbreakResponseCenter.jsx`: Added containment progress, tabbed UI, heat indicators.
+- `frontend/src/NGO/components/HealthScoreBreakdown.jsx`: Added dynamic categories/score props.
+- `frontend/src/NGO/components/LiveFieldImpact.jsx`: Added AnimatedValue counter, framer-motion entry.
+### New Files
+- `frontend/src/NGO/components/LiveImpactCounter.jsx`: Animated impact counter with 6 stats.
+- `frontend/src/NGO/components/JudgePanel.jsx`: "Why SwasthAI Wins" collapsible judge panel.
+### Build
+- `npm run build`: ✓ built in 50.70s — zero errors, zero warnings.
+
 ## June 17, 2026
 ### Added
 - **AI Health Assistant Panel**: Enhanced existing AI Daily Priority with "AI Health Assistant" card featuring actionable buttons for high-risk pregnancy, fever verification, malnutrition follow-up, and vaccination due list. All buttons wired to dashboard state.

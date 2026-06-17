@@ -1,7 +1,7 @@
 import React from 'react';
 import { TrendingUp, TrendingDown, Minus, Activity } from 'lucide-react';
 
-const categories = [
+const DEFAULT_CATEGORIES = [
   { label: 'Vaccination', value: 91, color: '#059669', bg: '#ECFDF5', trend: 'up', change: '+3%' },
   { label: 'Maternal Health', value: 78, color: '#D97706', bg: '#FFFBEB', trend: 'up', change: '+2%' },
   { label: 'Child Nutrition', value: 74, color: '#7C3AED', bg: '#F5F3FF', trend: 'down', change: '-1%' },
@@ -25,7 +25,7 @@ const trendColor = (trend, inverse) => {
   return 'text-slate-400';
 };
 
-export default function HealthScoreBreakdown({ score = 82, className = '' }) {
+export default function HealthScoreBreakdown({ score = 82, categories = DEFAULT_CATEGORIES, className = '' }) {
   return (
     <div className={`bg-white border border-slate-100 rounded-3xl p-5 shadow-xs ${className}`}>
       <div className="flex items-center justify-between mb-4">

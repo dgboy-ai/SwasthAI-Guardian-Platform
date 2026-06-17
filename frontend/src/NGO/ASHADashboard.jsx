@@ -14,7 +14,7 @@ import {
   FileText, BarChart3, Radio, Ambulance, HeartHandshake,
   Send, User, PlusCircle, Check, AlertCircle, Sparkles, Navigation,
   Calendar, Layers, CheckSquare, BookOpen, LogOut,
-  Database, HardDrive, Mic, MicOff, Thermometer,
+  Database, HardDrive, Mic, MicOff, Thermometer, Stethoscope,
   ArrowUpCircle, UserPlus, Play, Loader2
 } from 'lucide-react';
 
@@ -44,8 +44,10 @@ import {
 
 import HealthScoreBreakdown from './components/HealthScoreBreakdown';
 import LiveFieldImpact from './components/LiveFieldImpact';
+import LiveImpactCounter from './components/LiveImpactCounter';
 import VoiceAssistantFAB from './components/VoiceAssistantFAB';
 import JudgeDemoMode from './components/JudgeDemoMode';
+import JudgePanel from './components/JudgePanel';
 import EmergencyResponseWorkflow from './components/EmergencyResponseWorkflow';
 import OutbreakResponseCenter from './components/OutbreakResponseCenter';
 import SmartTaskManager from './components/SmartTaskManager';
@@ -141,6 +143,14 @@ export default function ASHADashboard() {
   const [pageLoading, setPageLoading] = useState(true);
   const [voiceResult, setVoiceResult] = useState(null);
   const [demoMode, setDemoMode] = useState(false);
+  const [demoScenario, setDemoScenario] = useState(null);
+  const [demoMetrics] = useState([
+    { label: 'Pregnancies Monitored', value: 24, icon: Heart, color: '#F97316', bg: '#FFF7ED', change: '+2 this week' },
+    { label: 'Children Screened', value: 156, icon: Baby, color: '#8B5CF6', bg: '#F5F3FF', change: '+12 this week' },
+    { label: 'Symptoms Checked', value: 18, icon: Stethoscope, color: '#059669', bg: '#ECFDF5', change: 'Today' },
+    { label: 'Emergency Responses', value: 7, icon: Ambulance, color: '#EF4444', bg: '#FEF2F2', change: '3 active' },
+    { label: 'Villagers Served / Month', value: 412, icon: Users, color: '#2563EB', bg: '#EFF6FF', change: '+18% vs last month' },
+  ]);
 
   // ─── Flip loading after mount ───────────────────────────────────────────────
   useEffect(() => {
@@ -179,6 +189,13 @@ export default function ASHADashboard() {
         status: 'Needs Visit',
         visits: ['2026-06-20 (Urgent)']
       }, ...prev]);
+    } else if (stepId === 'malnutrition') {
+      setMalnutritionChildren(prev => [
+        { id: `C-D${Date.now()}`, name: 'Demo SAM Child', age: '1.5 Years', weight: '7.2kg', height: '72cm', muac: '10.5', status: 'Severe (SAM)', trend: 'declining', action: 'Immediate therapeutic feeding' },
+        { id: `C-D${Date.now()+1}`, name: 'Demo MAM Child', age: '2 Years', weight: '8.8kg', height: '80cm', muac: '11.8', status: 'Moderate (MAM)', trend: 'improving', action: 'Nutrition supplement delivery' },
+        ...prev
+      ]);
+      setNotifications(prev => [{ id: `N-mal-${Date.now()}`, type: 'pregnancy', text: 'Malnutrition alert: 3 new SAM/MAM cases detected in Village V101', time: 'Just now', unread: true, related: 'malnutrition' }, ...prev]);
     } else if (stepId === 'outbreak') {
       setActiveOutbreak(prev => ({
         ...prev,
@@ -186,6 +203,7 @@ export default function ASHADashboard() {
         riskScore: Math.min(99, prev.riskScore + 5),
         affectedVillages: prev.affectedVillages + 1
       }));
+      setNotifications(prev => [{ id: `N-out-${Date.now()}`, type: 'outbreak', text: `Outbreak escalated: ${activeOutbreak.disease} cases rising — ${activeOutbreak.reports + 8} total`, time: 'Just now', unread: true, related: 'outbreak' }, ...prev]);
     } else if (stepId === 'sos') {
       setEmergencyRequests(prev => [{
         id: `E-D${Date.now()}`,
@@ -197,7 +215,10 @@ export default function ASHADashboard() {
       }, ...prev]);
     } else if (stepId === 'sync') {
       handleSync();
+      setLastSync('Just now');
+      setSyncHealth(99);
     }
+    setDemoScenario(stepId);
   }, []);
 
   // ─── Clean up voice results after use ────────────────────────────────────────
@@ -952,10 +973,16 @@ export default function ASHADashboard() {
         </div>
 
         {/* Offline-First Healthcare Status */}
-        <OfflineFirstHealth isOffline={isOffline} lastSync={lastSync} onSync={handleSync} />
+        <OfflineFirstHealth isOffline={isOffline} lastSync={lastSync} onSync={handleSync} demoData={{ active: demoMode }} />
 
-        {/* Judge Demo Mode */}
-        <JudgeDemoMode onSimulate={handleDemoSimulation} />
+        {/* Live Impact Counter with animated stats */}
+        <LiveImpactCounter />
+
+        {/* Judge Demo Mode — clickable scenarios */}
+        <JudgeDemoMode onSimulate={handleDemoSimulation} isSimulating={!!demoScenario} lastScenario={demoScenario} />
+
+        {/* Why SwasthAI Wins — Judge Panel */}
+        <JudgePanel />
 
       </div>
     );
