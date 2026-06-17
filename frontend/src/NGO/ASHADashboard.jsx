@@ -614,7 +614,7 @@ export default function ASHADashboard() {
       <div className="space-y-4">
         
         {/* Status Row */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 auto-rows-auto">
           {/* Village V101 Card */}
           <div className="bg-white border border-slate-100 rounded-2xl p-4 shadow-xs flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-[#ECFDF5] flex items-center justify-center shrink-0">
@@ -665,13 +665,13 @@ export default function ASHADashboard() {
           </button>
         </div>
         {/* Village Health Score Card */}
-        <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-xs mt-4">
+        <div className="bg-white border border-slate-100 rounded-3xl p-4 sm:p-5 shadow-xs mt-4">
           <h3 className="text-sm font-black text-slate-900 mb-2">Village V101 – Health Score</h3>
-          <div className="flex items-center mb-2">
-            <div className="w-24 h-24 bg-[#ECFDF5] rounded-full flex items-center justify-center">
-              <span className="text-2xl font-black text-[#059669]">82/100</span>
+          <div className="flex flex-col xs:flex-row items-center xs:items-center gap-3 xs:gap-0 mb-2">
+            <div className="w-20 h-20 sm:w-24 sm:h-24 bg-[#ECFDF5] rounded-full flex items-center justify-center shrink-0">
+              <span className="text-xl sm:text-2xl font-black text-[#059669]">82/100</span>
             </div>
-            <div className="ml-4 text-xs space-y-1">
+            <div className="xs:ml-4 text-xs space-y-1 text-center xs:text-left">
               <div>Vaccination: 91%</div>
               <div>Maternal Health: 78%</div>
               <div>Nutrition: 74%</div>
@@ -684,21 +684,20 @@ export default function ASHADashboard() {
         <HealthScoreBreakdown score={82} />
 
         {/* Active Outbreak Alert Banner */}
-        <div className="bg-[#FEF2F2] border border-[#FEE2E2] rounded-3xl p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 shadow-xs relative overflow-hidden text-left">
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-[#EF4444] text-white flex items-center justify-center shrink-0 shadow shadow-red-500/20">
-              <AlertTriangle className="w-6.5 h-6.5" />
+        <div className="bg-[#FEF2F2] border border-[#FEE2E2] rounded-3xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 shadow-xs relative overflow-hidden text-left">
+          <div className="flex items-start gap-3 sm:gap-4 w-full sm:w-auto">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-[#EF4444] text-white flex items-center justify-center shrink-0 shadow shadow-red-500/20">
+              <AlertTriangle className="w-5 h-5 sm:w-6.5 sm:h-6.5" />
             </div>
-            <div className="space-y-1">
-              <p className="text-xs font-black text-[#EF4444] uppercase tracking-widest leading-none">Active Outbreak Alert</p>
-              <h4 className="text-base font-black text-slate-900 leading-snug">{activeOutbreak.disease} cases are increasing in your area</h4>
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-xs text-slate-500 font-semibold">
-                <span>{activeOutbreak.reports} Reports this week</span>
-                <span className="text-slate-300">•</span>
-                <span>{activeOutbreak.nearby} Nearby Villages</span>
-                <span className="text-slate-300">•</span>
+            <div className="space-y-1 min-w-0 flex-1">
+              <p className="text-[11px] sm:text-xs font-black text-[#EF4444] uppercase tracking-widest leading-none">Active Outbreak Alert</p>
+              <h4 className="text-sm sm:text-base font-black text-slate-900 leading-snug">{activeOutbreak.disease} cases are increasing in your area</h4>
+              <div className="flex flex-wrap items-center gap-x-2 sm:gap-x-3 gap-y-1 mt-1 text-[11px] sm:text-xs text-slate-500 font-semibold">
+                <span>{activeOutbreak.reports} Reports</span>
+                <span className="text-slate-300 hidden xs:inline">•</span>
+                <span className="hidden xs:inline">{activeOutbreak.nearby} Nearby Villages</span>
                 <span className="flex items-center gap-0.5 text-red-600 font-black">
-                  Trend: {activeOutbreak.trend} <TrendingUp className="w-4 h-4" />
+                  <TrendingUp className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> {activeOutbreak.trend}
                 </span>
               </div>
             </div>
@@ -706,9 +705,9 @@ export default function ASHADashboard() {
 
           <button 
             onClick={() => setActiveKPIModal('outbreak')} 
-            className="bg-[#DC2626] hover:bg-red-700 text-white text-xs font-black uppercase tracking-wider px-5 py-2.5 rounded-xl flex items-center gap-1 transition-colors self-start sm:self-center shadow-lg shadow-red-500/10 active:scale-95"
+            className="bg-[#DC2626] hover:bg-red-700 text-white text-xs font-black uppercase tracking-wider px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl flex items-center justify-center gap-1 transition-colors self-start sm:self-center shadow-lg shadow-red-500/10 active:scale-95 w-full sm:w-auto"
           >
-            View Details <ChevronRight className="w-4 h-4" />
+            View Details <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           </button>
         </div>
         {/* AI Health Assistant Card */}
@@ -732,8 +731,8 @@ export default function ASHADashboard() {
               { emoji: '🟡', text: 'Follow-up malnutrition case (Raju Kumar)', action: 'Follow-up', color: 'amber' },
               { emoji: '🟢', text: 'Vaccination due list: 3 children pending', action: 'Check List', color: 'emerald' },
             ].map((item, i) => (
-              <li key={i} className="flex items-center justify-between py-1.5 border-b border-slate-50 last:border-0">
-                <span className="font-medium text-slate-700"><span className="mr-1.5">{item.emoji}</span>{item.text}</span>
+              <li key={i} className="flex flex-col xs:flex-row items-start xs:items-center justify-between gap-1.5 py-2 border-b border-slate-50 last:border-0">
+                <span className="font-medium text-slate-700 text-[11px] xs:text-xs leading-snug"><span className="mr-1.5">{item.emoji}</span>{item.text}</span>
                 <button
                   onClick={() => {
                     if (i === 0) setActiveKPIModal('pregnancy');
@@ -741,7 +740,7 @@ export default function ASHADashboard() {
                     else if (i === 2) setActiveKPIModal('malnutrition');
                     else showToast('Vaccination list loaded', 'info');
                   }}
-                  className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider whitespace-nowrap transition-all active:scale-95 ${
+                  className={`px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-wider whitespace-nowrap transition-all active:scale-95 shrink-0 self-start xs:self-auto ${
                     item.color === 'red' ? 'bg-red-100 text-red-700 hover:bg-red-200' :
                     item.color === 'orange' ? 'bg-orange-100 text-orange-700 hover:bg-orange-200' :
                     item.color === 'amber' ? 'bg-amber-100 text-amber-700 hover:bg-amber-200' :
@@ -756,7 +755,7 @@ export default function ASHADashboard() {
         </div>
 
         {/* Health Summary Cards (Grid of 4) */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {/* Card 1: SOS Alerts */}
           <div 
             onClick={() => setActiveKPIModal('sos')}
@@ -865,46 +864,46 @@ export default function ASHADashboard() {
                 <div 
                   key={task.id} 
                   onClick={() => setActiveTaskModal(task)}
-                  className={`py-4 flex items-center justify-between gap-4 cursor-pointer hover:bg-slate-50/50 px-2.5 rounded-2xl transition-colors ${task.done ? 'opacity-50' : ''}`}
+                  className={`py-4 flex flex-col xs:flex-row items-start xs:items-center justify-between gap-3 cursor-pointer hover:bg-slate-50/50 px-2.5 rounded-2xl transition-colors ${task.done ? 'opacity-50' : ''}`}
                 >
-                  <div className="flex items-center gap-3.5">
+                  <div className="flex items-center gap-3.5 w-full xs:w-auto">
                     <div className="w-11 h-11 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-xl shrink-0">
                       {task.icon === 'pregnancy' ? '🤰' : task.icon === 'child' ? '👶' : '💉'}
                     </div>
-                    <div>
+                    <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <p className="text-sm font-bold text-slate-800">{task.patientName}</p>
+                        <p className="text-sm font-bold text-slate-800 truncate max-w-[160px] xs:max-w-none">{task.patientName}</p>
                         {task.priority && (
-                          <span className={`text-[9px] font-black px-2 py-0.5 rounded ${
+                          <span className={`text-[9px] font-black px-2 py-0.5 rounded shrink-0 ${
                             task.priorityColor === 'red' ? 'bg-red-100 text-red-700' : 'bg-orange-100 text-orange-700'
                           }`}>
                             {task.priority}
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-slate-400 font-semibold mt-0.5">{task.type} {task.detail ? `• ${task.detail}` : ''}</p>
+                      <p className="text-xs text-slate-400 font-semibold mt-0.5 truncate">{task.type} {task.detail ? `• ${task.detail}` : ''}</p>
                       <p className="text-[10px] text-slate-400 flex items-center gap-0.5 mt-0.5 font-bold">
-                        <MapPin className="w-3.5 h-3.5 text-slate-300" /> {task.distance}
+                        <MapPin className="w-3.5 h-3.5 text-slate-300 shrink-0" /> <span className="truncate">{task.distance}</span>
                       </p>
                     </div>
                   </div>
 
-                  <div onClick={(e) => e.stopPropagation()}>
+                  <div onClick={(e) => e.stopPropagation()} className="self-end xs:self-auto w-full xs:w-auto">
                     {task.done ? (
-                      <div className="w-9 h-9 rounded-full bg-emerald-50 flex items-center justify-center text-[#059669]">
+                      <div className="w-9 h-9 rounded-full bg-emerald-50 flex items-center justify-center text-[#059669] ml-auto">
                         <Check className="w-5.5 h-5.5 stroke-[3px]" />
                       </div>
                     ) : task.icon === 'vaccination' ? (
                       <button
                         onClick={() => handleMarkTaskCompleted(task.id)}
-                        className="px-4 py-2 border border-[#059669] text-[#059669] hover:bg-[#ECFDF5] text-xs font-black rounded-xl transition-colors active:scale-95 whitespace-nowrap"
+                        className="w-full xs:w-auto px-4 py-2.5 xs:py-2 border border-[#059669] text-[#059669] hover:bg-[#ECFDF5] text-xs font-black rounded-xl transition-colors active:scale-95 whitespace-nowrap"
                       >
                         Mark Done
                       </button>
                     ) : (
                       <button
                         onClick={() => setActiveTaskModal(task)}
-                        className="px-4 py-2 bg-[#059669] hover:bg-[#047857] text-white text-xs font-black rounded-xl transition-colors active:scale-95 shadow shadow-emerald-500/10 whitespace-nowrap"
+                        className="w-full xs:w-auto px-4 py-2.5 xs:py-2 bg-[#059669] hover:bg-[#047857] text-white text-xs font-black rounded-xl transition-colors active:scale-95 shadow shadow-emerald-500/10 whitespace-nowrap"
                       >
                         Visit Now
                       </button>
@@ -916,10 +915,10 @@ export default function ASHADashboard() {
           </div>
 
           {/* Quick Actions Panel */}
-          <div className="xl:col-span-4 bg-white border border-slate-100 rounded-3xl p-5 shadow-xs text-left space-y-4">
+          <div className="xl:col-span-4 bg-white border border-slate-100 rounded-3xl p-4 sm:p-5 shadow-xs text-left space-y-4">
             <h3 className="text-xs font-black uppercase text-[#059669] tracking-wider">Quick Add Record</h3>
             
-            <div className="grid grid-cols-2 xl:grid-cols-1 gap-2.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-1 gap-2.5">
               {[
                 { id: 'pregnancy', label: 'Pregnancy Record', icon: '🤰', color: 'bg-rose-50 border-rose-100 text-rose-600' },
                 { id: 'nutrition', label: 'Child Nutrition', icon: '👶', color: 'bg-purple-50 border-purple-100 text-purple-600' },
@@ -929,9 +928,9 @@ export default function ASHADashboard() {
                 <button
                   key={act.id}
                   onClick={() => setShowQuickForm(act.id)}
-                  className="bg-white border border-slate-100 rounded-2xl p-4.5 shadow-xs flex flex-row items-center gap-4 text-left hover:shadow active:scale-98 transition-all w-full"
+                  className="bg-white border border-slate-100 rounded-2xl p-3.5 sm:p-4.5 shadow-xs flex flex-row items-center gap-3 sm:gap-4 text-left hover:shadow active:scale-98 transition-all w-full min-h-[56px]"
                 >
-                  <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-xl shrink-0 ${act.color}`}>
+                  <div className={`w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center text-lg sm:text-xl shrink-0 ${act.color}`}>
                     {act.icon}
                   </div>
                   <span className="text-xs font-black text-slate-700 leading-snug">{act.label}</span>
@@ -942,27 +941,27 @@ export default function ASHADashboard() {
         </div>
 
         {/* Sync Status Bottom Strip */}
-        <div className={`rounded-2xl p-4 border shadow-xs transition-colors ${
+        <div className={`rounded-2xl p-3 sm:p-4 border shadow-xs transition-colors ${
           isOffline ? 'bg-red-50 border-red-100 text-red-700' : 'bg-[#ECFDF5] border-[#D1FAE5] text-slate-700'
-        } flex flex-col sm:flex-row items-center justify-between gap-3 text-left`}>
-          <div className="flex items-center gap-3.5">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${isOffline ? 'bg-red-500' : 'bg-[#059669]'}`}>
-              <Check className="w-5 h-5 text-white stroke-[3px]" />
+        } flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-3 text-left`}>
+          <div className="flex items-start sm:items-center gap-2.5 sm:gap-3.5 w-full sm:w-auto">
+            <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5 sm:mt-0 ${isOffline ? 'bg-red-500' : 'bg-[#059669]'}`}>
+              <Check className="w-4 h-4 sm:w-5 sm:h-5 text-white stroke-[3px]" />
             </div>
-            <div>
-              <p className="text-xs font-black text-slate-800">
-                {isOffline ? 'Offline Mode Active — local IndexedDB storage in use' : 'All systems normal'}
+            <div className="min-w-0 flex-1">
+              <p className="text-[11px] sm:text-xs font-black text-slate-800 leading-snug">
+                {isOffline ? 'Offline Mode Active' : 'All systems normal'}
               </p>
-              <p className="text-[10px] text-slate-400 font-bold mt-0.5">
-                Last Sync: {lastSync} • Offline Queue: {queueCount} items
+              <p className="text-[10px] text-slate-400 font-bold mt-0.5 truncate">
+                Last Sync: {lastSync} • Queue: {queueCount} items
               </p>
             </div>
           </div>
           
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 sm:gap-4 self-end sm:self-auto">
             <div className="text-right">
-              <p className="text-lg font-black text-slate-900 leading-none">{syncHealth}%</p>
-              <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mt-1">Sync Health</p>
+              <p className="text-base sm:text-lg font-black text-slate-900 leading-none">{syncHealth}%</p>
+              <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mt-0.5">Sync Health</p>
             </div>
             
             {/* AWS Logo style */}
@@ -1404,7 +1403,7 @@ export default function ASHADashboard() {
             <div className="fixed inset-0 bg-black/40 z-55 backdrop-blur-xs" onClick={() => setActiveKPIModal(null)} />
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
-              className="fixed inset-x-4 top-[10%] mx-auto max-w-md bg-white border border-slate-100 rounded-3xl z-55 p-6 shadow-2xl text-left"
+              className="fixed inset-x-3 sm:inset-x-4 top-[5%] sm:top-[10%] mx-auto max-w-md bg-white border border-slate-100 rounded-3xl z-55 p-4 sm:p-6 shadow-2xl text-left overflow-y-auto max-h-[90vh]"
             >
               <div className="flex items-center justify-between pb-3.5 border-b border-slate-50 mb-4">
                 <h4 className="text-sm font-black uppercase text-slate-800 tracking-wider flex items-center gap-1.5">
@@ -1606,7 +1605,7 @@ export default function ASHADashboard() {
             <div className="fixed inset-0 bg-black/40 z-55 backdrop-blur-xs" onClick={() => setActiveTaskModal(null)} />
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
-              className="fixed inset-x-4 top-[15%] mx-auto max-w-md bg-white border border-slate-100 rounded-3xl z-55 p-6 shadow-2xl text-left"
+              className="fixed inset-x-3 sm:inset-x-4 top-[5%] sm:top-[15%] mx-auto max-w-md bg-white border border-slate-100 rounded-3xl z-55 p-4 sm:p-6 shadow-2xl text-left overflow-y-auto max-h-[90vh]"
             >
               <div className="flex items-center justify-between pb-3 border-b border-slate-50 mb-4">
                 <h4 className="text-sm font-black uppercase text-slate-800 tracking-wider">Patient Task Details</h4>
@@ -1632,9 +1631,9 @@ export default function ASHADashboard() {
             <div className="fixed inset-0 bg-black/45 z-55 backdrop-blur-xs" onClick={() => setShowQuickForm(null)} />
             <motion.div
               initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
-              className="fixed bottom-0 left-0 right-0 bg-white rounded-t-[2.5rem] border-t border-slate-100 z-55 p-6 max-h-[85vh] overflow-y-auto text-left"
+              className="fixed bottom-0 left-0 right-0 bg-white rounded-t-[2.5rem] border-t border-slate-100 z-55 p-4 sm:p-6 max-h-[90vh] sm:max-h-[85vh] overflow-y-auto text-left"
             >
-              <div className="flex items-center justify-between pb-3.5 border-b border-slate-55 mb-4 max-w-lg mx-auto bg-white sticky top-0 z-10">
+              <div className="flex items-center justify-between pb-3 sm:pb-3.5 border-b border-slate-55 mb-4 max-w-lg mx-auto bg-white sticky top-0 z-10">
                 <h4 className="text-sm font-black uppercase text-slate-900 tracking-wider">
                   Create {showQuickForm.toUpperCase()} Record
                 </h4>
