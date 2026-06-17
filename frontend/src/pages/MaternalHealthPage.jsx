@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { HeartPulse, PlusCircle, X, ArrowLeft, RefreshCw, AlertTriangle, CheckCircle, Calendar, User, Activity, ShieldCheck, Baby, FlaskConical } from 'lucide-react';
+import { HeartPulse, PlusCircle, X, ArrowLeft, RefreshCw, AlertTriangle, CheckCircle, Calendar, User, Activity, ShieldCheck, Baby, FlaskConical, Phone, MapPin } from 'lucide-react';
 import api from '../services/api';
 import Navbar from '../components/Navbar';
 import { queueMaternalRecord, getPendingMaternal, syncAllQueues } from '../utils/offlineSyncQueue';
@@ -393,67 +393,112 @@ export default function MaternalHealthPage() {
     setShowForm(false);
   };
   const filtered = filter === 'All' ? records : records.filter(r => r.riskLevel === filter);
-  const stats = { total: records.length, high: records.filter(r => r.riskLevel === 'High Risk').length, medium: records.filter(r => r.riskLevel === 'Medium Risk').length, low: records.filter(r => r.riskLevel === 'Low Risk').length };
+  const stats = { total: records.length, high: records.filter(r => r.riskLevel === 'High Risk').length, medium: records.filter(r => r.riskLevel === 'Medium Risk').length, low: records.filter(r => r.riskLevel === 'Low Risk').length, deliveries: records.filter(r => r.trimester === 3).length, followups: records.filter(r => r.riskLevel === 'High Risk' || r.riskLevel === 'Medium Risk').length };
 
   return (
     <div className="bg-white min-h-screen font-inter">
       <Navbar role="ngo" />
-      <main className="max-w-[1600px] mx-auto p-4 sm:p-8 lg:p-10 pt-28 overflow-y-auto">
+      <main className="max-w-[1600px] mx-auto p-4 sm:p-6 lg:p-8 pt-4 overflow-y-auto">
 
-        {/* HEADER */}
-        <motion.header initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} className="mb-4 sm:mb-10 flex flex-col md:flex-row justify-between items-start md:items-end gap-4 sm:gap-6 pb-5 sm:pb-8 border-b border-slate-200">
-          <div className="space-y-1">
-            <button onClick={() => navigate('/ngo')} className="flex items-center gap-1 text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-rose-600 transition-colors mb-2">
-              <ArrowLeft className="w-2.5 h-2.5" /> Back
+        {/* COMPACT HERO */}
+        <motion.header initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
+          className="mb-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
+            <button onClick={() => navigate('/ngo')} className="w-8 h-8 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400 hover:text-rose-600 hover:border-rose-200 transition-all shrink-0">
+              <ArrowLeft className="w-4 h-4" />
             </button>
-            <div className="flex items-center gap-1.5 text-rose-600 font-black uppercase tracking-[0.2em] sm:tracking-[0.4em] text-[7px] sm:text-[10px] mb-0.5 sm:mb-2">
-              <HeartPulse className="w-3 h-3 sm:w-4 sm:h-4" /> Maternal Module
-            </div>
-            <h1 className="text-2xl sm:text-4xl md:text-5xl font-black text-slate-900 tracking-tighter leading-none">
-              Maternal <span className="text-rose-600 italic">Health.</span>
-            </h1>
-            <p className="text-slate-400 font-bold text-[10px] sm:text-sm mt-0.5 sm:mt-2">AI Risk Assessment · WHO Protocol</p>
-            {isDemoMode && (
-              <div className="flex items-center gap-1.5 mt-2 px-3 py-1.5 bg-violet-50 border border-violet-200 rounded-full w-fit">
-                <FlaskConical className="w-3 h-3 text-violet-500" />
-                <span className="text-[9px] font-black text-violet-600 uppercase tracking-widest">Judge Demo Mode — Representative Data · Sehore District</span>
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-rose-50 text-rose-600 rounded-xl"><HeartPulse className="w-5 h-5" /></div>
+              <div>
+                <h1 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight leading-none">Maternal Health</h1>
+                <p className="text-[10px] text-slate-400 font-semibold">AI Risk Assessment · WHO Protocol</p>
               </div>
+            </div>
+            {isDemoMode && (
+              <span className="px-2.5 py-1 bg-violet-50 border border-violet-200 rounded-full text-[8px] font-black text-violet-600 uppercase tracking-widest flex items-center gap-1">
+                <FlaskConical className="w-3 h-3" /> Demo
+              </span>
             )}
           </div>
-          <div className="flex gap-2 w-full sm:w-auto">
-            <button onClick={fetchRecords} className="flex-1 sm:flex-none p-2.5 bg-white border border-slate-200 rounded-xl text-slate-400 hover:text-rose-600 transition-all shadow-sm flex items-center justify-center">
-              <RefreshCw className="w-4 h-4 sm:w-5 sm:h-5" />
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-slate-50 rounded-lg border border-slate-100">
+              <HeartPulse className="w-3.5 h-3.5 text-rose-400" />
+              <span className="text-[10px] font-bold text-slate-600">{stats.total} Patients</span>
+            </div>
+            <button onClick={fetchRecords} className="w-9 h-9 rounded-xl bg-white border border-slate-200 text-slate-400 hover:text-rose-600 transition-all flex items-center justify-center shadow-sm">
+              <RefreshCw className="w-4 h-4" />
             </button>
-            <button onClick={() => setShowForm(true)} className="flex-[4] sm:flex-none flex items-center justify-center gap-1.5 px-5 py-3 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-black text-[10px] sm:text-sm uppercase tracking-widest transition-all shadow-lg shadow-rose-200">
-              <PlusCircle className="w-3 h-3 sm:w-4 sm:h-4" /> New Patient
+            <button onClick={() => setShowForm(true)} className="flex items-center gap-1.5 px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-black text-[10px] uppercase tracking-widest transition-all shadow-lg shadow-rose-200/50">
+              <PlusCircle className="w-3.5 h-3.5" /> New Patient
             </button>
           </div>
         </motion.header>
 
-        {/* STATS */}
-        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
+        {/* PREMIUM KPI CARDS */}
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           {[
-            { label: 'Total', val: stats.total, cls: 'bg-slate-50 text-slate-600', icon: User },
-            { label: 'High', val: stats.high, cls: 'bg-rose-50 text-rose-600', icon: AlertTriangle },
-            { label: 'Medium', val: stats.medium, cls: 'bg-amber-50 text-amber-600', icon: Activity },
-            { label: 'Low', val: stats.low, cls: 'bg-emerald-50 text-emerald-600', icon: CheckCircle },
+            { label: 'Total Pregnancies', val: stats.total, sub: '+2 this month', icon: HeartPulse, tint: 'bg-blue-50/40', iconBg: 'bg-blue-50 text-blue-600 border-blue-100', accent: 'text-blue-700' },
+            { label: 'High Risk Cases', val: stats.high, sub: 'Needs attention', icon: AlertTriangle, tint: 'bg-rose-50/40', iconBg: 'bg-rose-50 text-rose-600 border-rose-100', accent: 'text-rose-700' },
+            { label: 'Expected Deliveries', val: stats.deliveries, sub: 'Next 30 days', icon: Baby, tint: 'bg-emerald-50/40', iconBg: 'bg-emerald-50 text-emerald-600 border-emerald-100', accent: 'text-emerald-700' },
+            { label: 'Follow-up Visits Due', val: stats.followups, sub: 'Visits pending', icon: Activity, tint: 'bg-amber-50/40', iconBg: 'bg-amber-50 text-amber-600 border-amber-100', accent: 'text-amber-700' },
           ].map(s => {
             const Icon = s.icon;
             return (
-              <div key={s.label} className="bg-white rounded-2xl sm:rounded-[1.5rem] p-4 sm:p-6 border border-slate-100 shadow-sm">
-                <div className={`p-1.5 sm:p-2 rounded-lg w-fit mb-2 sm:mb-3 ${s.cls}`}><Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" /></div>
-                <p className="text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400 mb-0.5 sm:mb-1">{s.label}</p>
-                <p className="text-xl sm:text-3xl font-black text-slate-900 tracking-tighter">{s.val}</p>
+              <div key={s.label} className={`relative rounded-2xl p-5 border border-slate-100 shadow-sm hover:shadow-md transition-all overflow-hidden ${s.tint}`}>
+                <div className="flex items-start justify-between mb-3">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">{s.label}</span>
+                  <div className={`w-9 h-9 rounded-xl ${s.iconBg} border flex items-center justify-center`}>
+                    <Icon className="w-4.5 h-4.5" />
+                  </div>
+                </div>
+                <p className="text-3xl font-black text-slate-900 tracking-tight leading-none mb-1">{s.val}</p>
+                <p className={`text-[11px] font-bold ${s.accent}`}>{s.sub}</p>
               </div>
             );
           })}
         </motion.div>
 
+        {/* PATIENTS REQUIRING ATTENTION */}
+        <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="mb-5">
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-xs font-black uppercase tracking-widest text-slate-600">Patients Requiring Attention</h3>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-sm">🔥</span>
+                  <span className="text-xs font-black text-rose-600">{stats.high} High Risk</span>
+                </div>
+                <span className="text-slate-200">|</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-sm">⚠️</span>
+                  <span className="text-xs font-black text-amber-600">{stats.medium} Medium Risk</span>
+                </div>
+                <span className="text-slate-200">|</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-sm">✅</span>
+                  <span className="text-xs font-black text-emerald-600">{stats.low} Low Risk</span>
+                </div>
+              </div>
+            </div>
+            <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+              <div className="flex h-full rounded-full overflow-hidden">
+                {stats.total > 0 && (
+                  <>
+                    <div className="bg-rose-500 h-full transition-all" style={{ width: `${(stats.high / stats.total) * 100}%` }} />
+                    <div className="bg-amber-400 h-full transition-all" style={{ width: `${(stats.medium / stats.total) * 100}%` }} />
+                    <div className="bg-emerald-500 h-full transition-all" style={{ width: `${(stats.low / stats.total) * 100}%` }} />
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </motion.div>
+
         {/* FILTERS */}
-        <div className="flex gap-2 mb-5 sm:mb-6 flex-wrap">
+        <div className="flex gap-2 mb-5 flex-wrap">
           {['All', 'High Risk', 'Medium Risk', 'Low Risk'].map(f => (
             <button key={f} onClick={() => setFilter(f)}
-              className={`px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-[8px] sm:text-[10px] font-black uppercase tracking-widest border transition-all ${filter === f ? 'bg-rose-600 text-white border-rose-600 shadow-lg shadow-rose-100' : 'bg-white text-slate-400 border-slate-200 hover:border-rose-200'}`}>
+              className={`px-3.5 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest border transition-all ${filter === f ? 'bg-rose-600 text-white border-rose-600 shadow-md shadow-rose-200/50' : 'bg-white text-slate-400 border-slate-200 hover:border-rose-200 hover:text-rose-600'}`}>
               {f}
             </button>
           ))}
@@ -463,7 +508,7 @@ export default function MaternalHealthPage() {
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {[1, 2, 3].map(i => (
-              <div key={i} className="bg-white rounded-[1.5rem] p-6 border border-slate-100 shadow-sm animate-pulse">
+              <div key={i} className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm animate-pulse">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-slate-100 rounded-xl" />
@@ -474,113 +519,160 @@ export default function MaternalHealthPage() {
                   </div>
                   <div className="w-20 h-6 bg-slate-100 rounded-full" />
                 </div>
-                <div className="space-y-3 mt-4">
-                  <div className="flex justify-between"><div className="w-16 h-3 bg-slate-100 rounded" /><div className="w-20 h-3 bg-slate-100 rounded" /></div>
-                  <div className="flex justify-between"><div className="w-16 h-3 bg-slate-100 rounded" /><div className="w-20 h-3 bg-slate-100 rounded" /></div>
-                  <div className="flex justify-between"><div className="w-16 h-3 bg-slate-100 rounded" /><div className="w-20 h-3 bg-slate-100 rounded" /></div>
-                </div>
-                <div className="mt-4 pt-3 border-t border-slate-50">
-                  <div className="flex justify-between mb-1.5"><div className="w-12 h-2 bg-slate-100 rounded" /><div className="w-3 h-3 bg-slate-100 rounded" /></div>
-                  <div className="w-full h-1.5 bg-slate-100 rounded-full" />
+                <div className="space-y-2">
+                  <div className="h-3 bg-slate-100 rounded w-3/4" />
+                  <div className="h-3 bg-slate-100 rounded w-1/2" />
                 </div>
               </div>
             ))}
           </div>
         ) : error ? (
-          <div className="p-6 bg-rose-50 border border-rose-200 rounded-2xl flex items-center gap-3">
-            <AlertTriangle className="w-5 h-5 text-rose-600" /><p className="text-sm font-bold text-rose-700">{error}</p>
+          <div className="p-5 bg-rose-50 border border-rose-200 rounded-2xl flex items-center gap-3">
+            <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0" /><p className="text-sm font-bold text-rose-700">{error}</p>
           </div>
         ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-64 text-center">
-            <div className="w-20 h-20 bg-rose-50 rounded-full flex items-center justify-center mb-4"><HeartPulse className="w-10 h-10 text-rose-200" /></div>
-            <p className="font-black text-slate-300 uppercase tracking-widest text-sm">No Records Found</p>
-            <button onClick={() => setShowForm(true)} className="mt-4 px-6 py-3 bg-rose-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-rose-700 transition-all">
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="w-16 h-16 bg-rose-50 rounded-full flex items-center justify-center mb-4"><HeartPulse className="w-8 h-8 text-rose-200" /></div>
+            <p className="font-black text-slate-300 uppercase tracking-widest text-sm mb-4">No Records Found</p>
+            <button onClick={() => setShowForm(true)} className="px-6 py-3 bg-rose-600 text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-rose-700 transition-all shadow-lg shadow-rose-200/50">
               + Add First Patient
             </button>
           </div>
         ) : (
           <motion.div layout className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             <AnimatePresence>
-              {filtered.map((r, i) => {
+              {[...filtered].sort((a, b) => {
+                const order = { 'High Risk': 0, 'Medium Risk': 1, 'Low Risk': 2 };
+                return (order[a.riskLevel] ?? 3) - (order[b.riskLevel] ?? 3);
+              }).map((r, i) => {
                 const risk = getRisk(r.riskLevel);
-                const RiskIcon = risk.icon;
+                const v = r.vitals || {};
+                const riskScore = v.systolic_bp ? Math.min(100, Math.round(
+                  ((v.systolic_bp >= 160 || v.diastolic_bp >= 110 ? 5 : v.systolic_bp >= 140 || v.diastolic_bp >= 90 ? 3 : v.systolic_bp >= 130 || v.diastolic_bp >= 85 ? 1 : 0) +
+                  (v.bs >= 11.1 ? 5 : v.bs >= 8.5 ? 3 : v.bs >= 5.1 ? 1 : 0) +
+                  ((r.age || 25) < 16 || (r.age || 25) > 40 ? 3 : (r.age || 25) < 18 || (r.age || 25) > 35 ? 2 : 0) +
+                  (v.heart_rate > 120 ? 3 : v.heart_rate > 110 ? 2 : v.heart_rate > 100 ? 1 : 0)) * 6.25
+                )) : r.riskLevel === 'High Risk' ? 82 : r.riskLevel === 'Medium Risk' ? 45 : 12;
+                const meterColor = riskScore >= 70 ? 'bg-rose-500' : riskScore >= 40 ? 'bg-amber-500' : 'bg-emerald-500';
+                const meterLabel = riskScore >= 70 ? 'Critical' : riskScore >= 40 ? 'Moderate' : 'Safe';
+
+                const nextAction = riskScore >= 70
+                  ? { label: 'Visit Required', color: 'text-rose-600 bg-rose-50 border-rose-200' }
+                  : riskScore >= 40
+                    ? { label: 'Follow-up Required', color: 'text-amber-600 bg-amber-50 border-amber-200' }
+                    : { label: 'Routine Monitoring', color: 'text-emerald-600 bg-emerald-50 border-emerald-200' };
+
                 return (
-                  <motion.div key={r.id || i} layout initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
+                  <motion.div key={r.id || i} layout initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95 }} transition={{ delay: i * 0.04 }}
-                    className="bg-white rounded-[1.5rem] p-6 border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-slate-200/50 transition-all">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-rose-50 rounded-xl flex items-center justify-center font-black text-rose-400 text-lg">
-                          {(r.name || 'P')[0].toUpperCase()}
-                        </div>
-                        <div>
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                            <p className="font-black text-slate-900 text-sm uppercase tracking-tight">{r.name || 'Unknown'}</p>
-                            {r.isOffline ? (
-                              <span className="px-1.5 py-0.5 bg-slate-100 text-slate-500 border border-slate-200 rounded-md text-[7px] font-bold uppercase tracking-wider animate-pulse flex items-center gap-0.5 shrink-0">
-                                <RefreshCw className="w-2 h-2 animate-spin shrink-0" /> Sync Pending
-                              </span>
-                            ) : (
-                              <span className="px-1.5 py-0.5 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-md text-[7px] font-bold uppercase tracking-wider flex items-center gap-0.5 shrink-0">
-                                <ShieldCheck className="w-2 h-2 shrink-0" /> Synced to AWS
-                              </span>
-                            )}
+                    className={`group bg-white rounded-2xl border shadow-sm hover:shadow-lg hover:shadow-slate-200/40 hover:border-slate-200 transition-all duration-200 ${
+                      r.riskLevel === 'High Risk' ? 'border-l-[4px] border-l-rose-500 border-slate-100 shadow-md' : 'border-slate-100'
+                    }`}>
+
+                    <div className="p-5">
+                      {/* Header: Avatar + Name + Badge */}
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-base shrink-0 ${
+                            r.riskLevel === 'High Risk' ? 'bg-rose-50 text-rose-500' : r.riskLevel === 'Medium Risk' ? 'bg-amber-50 text-amber-500' : 'bg-emerald-50 text-emerald-500'
+                          }`}>
+                            {(r.name || 'P')[0].toUpperCase()}
                           </div>
-                          <p className="text-[10px] text-slate-400 font-bold">Age: {r.age} yrs</p>
-                        </div>
-                      </div>
-                      <span className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border ${risk.color}`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${risk.dot}`} />{r.riskLevel || 'Assessed'}
-                      </span>
-                    </div>
-                    <div className="space-y-0 text-[11px] divide-y divide-slate-50">
-                      <div className="flex justify-between items-center py-2"><span className="text-slate-400 font-bold flex items-center gap-1.5"><Baby className="w-3 h-3" /> Trimester</span><span className="font-black text-slate-700">{TRIM_LABELS[r.trimester] || `T${r.trimester}`}</span></div>
-                      <div className="flex justify-between items-center py-2"><span className="text-slate-400 font-bold flex items-center gap-1.5"><Calendar className="w-3 h-3" /> Due Date</span><span className="font-black text-slate-700">{r.dueDate || 'N/A'}</span></div>
-                      <div className="flex justify-between items-center py-2"><span className="text-slate-400 font-bold flex items-center gap-1.5"><ShieldCheck className="w-3 h-3" /> Village</span><span className="font-black text-slate-700">{r.villageId || 'N/A'}</span></div>
-                    </div>
-                    <div className="mt-4 pt-3 border-t border-slate-50">
-                      <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest">Risk Level</span>
-                        <RiskIcon className={`w-3 h-3 ${r.riskLevel === 'High Risk' ? 'text-rose-500' : r.riskLevel === 'Medium Risk' ? 'text-amber-500' : 'text-emerald-500'}`} />
-                      </div>
-                      <div className="w-full h-1.5 bg-slate-100 rounded-full">
-                        <div className={`h-full rounded-full ${risk.bar}`} />
-                      </div>
-                    </div>
-                    {/* Collapsible XAI Risk Explanation */}
-                    <div className="mt-3 pt-2 border-t border-slate-100">
-                      <button
-                        onClick={() => setSelectedRecordId(selectedRecordId === r.id ? null : r.id)}
-                        className="w-full text-center text-[8px] font-black text-slate-400 uppercase tracking-widest hover:text-rose-600 transition-colors flex items-center justify-center gap-1"
-                      >
-                        {selectedRecordId === r.id ? '✕ Close Risk Analysis' : '👁️ View Risk Analysis'}
-                      </button>
-                      
-                      {selectedRecordId === r.id && (
-                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mt-3 space-y-3">
-                          <div className="flex items-center justify-between text-[10px] font-black text-slate-700 bg-slate-50 p-2 rounded-xl">
-                            <span>Clinical Risk Severity:</span>
-                            <span className="text-rose-600">
-                              {r.vitals ? (
-                                `${Math.min(100, Math.round(
-                                  ((r.vitals?.systolic_bp >= 160 || r.vitals?.diastolic_bp >= 110 ? 5 : r.vitals?.systolic_bp >= 140 || r.vitals?.diastolic_bp >= 90 ? 3 : r.vitals?.systolic_bp >= 130 || r.vitals?.diastolic_bp >= 85 ? 1 : 0) +
-                                  (r.vitals?.bs >= 11.1 ? 5 : r.vitals?.bs >= 8.5 ? 3 : r.vitals?.bs >= 5.1 ? 1 : 0) +
-                                  (r.age < 16 || r.age > 40 ? 3 : r.age < 18 || r.age > 35 ? 2 : 0) +
-                                  (r.vitals?.heart_rate > 120 ? 3 : r.vitals?.heart_rate > 110 ? 2 : r.vitals?.heart_rate > 100 ? 1 : 0)) * 6.25
-                                ))}%`
+                          <div>
+                            <div className="flex items-center gap-1.5">
+                              <p className="text-sm font-black text-slate-900 leading-tight">{r.name || 'Unknown'}</p>
+                              {r.isOffline ? (
+                                <span className="px-1.5 py-0.5 bg-slate-100 text-slate-500 border border-slate-200 rounded-md text-[7px] font-bold tracking-wider flex items-center gap-0.5">
+                                  <RefreshCw className="w-2 h-2 animate-spin" /> Sync
+                                </span>
                               ) : (
-                                r.riskLevel === 'High Risk' ? '82%' : r.riskLevel === 'Medium Risk' ? '45%' : '12%'
+                                <span className="px-1.5 py-0.5 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-md text-[7px] font-bold flex items-center gap-0.5">
+                                  <ShieldCheck className="w-2 h-2" /> AWS
+                                </span>
                               )}
-                            </span>
+                            </div>
+                            <p className="text-[11px] text-slate-400 font-semibold">{r.age} yrs · {TRIM_LABELS[r.trimester] || `T${r.trimester}`}</p>
                           </div>
-                          
-                          <div className="space-y-2.5">
+                        </div>
+                      </div>
+
+                      {/* Detail Grid */}
+                      <div className="grid grid-cols-2 gap-y-2 mb-4 text-[12px]">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="w-3.5 h-3.5 text-slate-300 shrink-0" />
+                          <span className="text-slate-500 font-semibold">Due:</span>
+                          <span className="font-bold text-slate-700">{r.dueDate || 'N/A'}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <MapPin className="w-3.5 h-3.5 text-slate-300 shrink-0" />
+                          <span className="text-slate-500 font-semibold">Village:</span>
+                          <span className="font-bold text-slate-700 truncate">{r.villageId || 'N/A'}</span>
+                        </div>
+                      </div>
+
+                      {/* Risk Score - Visual Focus */}
+                      <div className="bg-slate-50 rounded-xl p-4 mb-3 text-center">
+                        <div className="flex items-center justify-center gap-3 mb-1">
+                          <span className={`text-4xl font-black tracking-tight leading-none ${
+                            riskScore >= 70 ? 'text-rose-600' : riskScore >= 40 ? 'text-amber-600' : 'text-emerald-600'
+                          }`}>{riskScore}</span>
+                          <div className="text-left">
+                            <p className={`text-xs font-black uppercase tracking-wider ${
+                              riskScore >= 70 ? 'text-rose-500' : riskScore >= 40 ? 'text-amber-500' : 'text-emerald-500'
+                            }`}>{meterLabel} Risk</p>
+                            <p className="text-[10px] text-slate-400 font-semibold">out of 100</p>
+                          </div>
+                        </div>
+                        <div className="w-full h-2 bg-slate-200/60 rounded-full overflow-hidden mt-2">
+                          <motion.div
+                            initial={{ width: 0 }} animate={{ width: `${riskScore}%` }}
+                            transition={{ duration: 0.6, ease: 'easeOut' }}
+                            className={`h-full rounded-full ${meterColor}`}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Next Action */}
+                      <div className={`flex items-center justify-between px-3 py-2 rounded-xl border ${nextAction.color}`}>
+                        <span className="text-[10px] font-bold uppercase tracking-wider">Next Action</span>
+                        <span className="text-[10px] font-black">{nextAction.label}</span>
+                      </div>
+
+                      {/* Quick Actions - hover reveal */}
+                      <div className="mt-3 pt-3 border-t border-slate-50 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => setSelectedRecordId(selectedRecordId === r.id ? null : r.id)}
+                            className="flex-1 flex items-center justify-center gap-1 py-2 bg-slate-50 hover:bg-rose-50 border border-slate-100 hover:border-rose-200 rounded-xl text-[9px] font-black text-slate-500 hover:text-rose-600 uppercase tracking-widest transition-all"
+                          >
+                            {selectedRecordId === r.id ? '✕ Close' : '👁️ Details'}
+                          </button>
+                          <button className="flex-1 flex items-center justify-center gap-1 py-2 bg-slate-50 hover:bg-emerald-50 border border-slate-100 hover:border-emerald-200 rounded-xl text-[9px] font-black text-slate-500 hover:text-emerald-600 uppercase tracking-widest transition-all">
+                            <Calendar className="w-3 h-3" /> Visit
+                          </button>
+                          <button className="flex-1 flex items-center justify-center gap-1 py-2 bg-slate-50 hover:bg-blue-50 border border-slate-100 hover:border-blue-200 rounded-xl text-[9px] font-black text-slate-500 hover:text-blue-600 uppercase tracking-widest transition-all">
+                            <Phone className="w-3 h-3" /> Call
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Collapsible XAI Risk Analysis */}
+                    {selectedRecordId === r.id && (
+                      <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
+                        className="border-t border-slate-100 bg-slate-50/50">
+                        <div className="p-4 space-y-3">
+                          <div className="flex items-center justify-between text-[10px] font-black text-slate-700 bg-white p-2.5 rounded-xl border border-slate-100">
+                            <span>Clinical Risk Severity</span>
+                            <span className={riskScore >= 70 ? 'text-rose-600' : riskScore >= 40 ? 'text-amber-600' : 'text-emerald-600'}>{riskScore}%</span>
+                          </div>
+                          <div className="space-y-2">
                             {((r.factors && r.factors.length > 0) ? r.factors : getLocalFactors(r)).map((f, fIdx) => {
                               const barColor = f.status === 'high' ? 'bg-rose-500' : f.status === 'medium' ? 'bg-amber-500' : 'bg-emerald-500';
                               const textColor = f.status === 'high' ? 'text-rose-600' : f.status === 'medium' ? 'text-amber-600' : 'text-emerald-600';
                               const trendArrow = f.trend === 'up' ? '↗️' : f.trend === 'down' ? '↘️' : '➡️';
                               const trendColor = f.trend === 'up' ? 'text-rose-500' : f.trend === 'down' ? 'text-emerald-500' : 'text-slate-400';
-                              
+
                               return (
                                 <div key={fIdx} className="space-y-0.5">
                                   <div className="flex justify-between items-center text-[9px] font-black">
@@ -593,16 +685,16 @@ export default function MaternalHealthPage() {
                                   <div className="w-full bg-slate-100 h-1 rounded-full overflow-hidden">
                                     <div className={`h-full rounded-full ${barColor}`} style={{ width: `${Math.max(5, f.weight)}%` }} />
                                   </div>
-                                  <p className="text-[8px] text-slate-400 leading-relaxed font-bold bg-slate-50/50 p-1.5 rounded-lg border border-slate-100 mt-0.5">
+                                  <p className="text-[8px] text-slate-400 leading-relaxed font-bold bg-white p-2 rounded-lg border border-slate-100 mt-0.5">
                                     💡 {f.advice}
                                   </p>
                                 </div>
                               );
                             })}
                           </div>
-                        </motion.div>
-                      )}
-                    </div>
+                        </div>
+                      </motion.div>
+                    )}
                   </motion.div>
                 );
               })}
