@@ -1,190 +1,211 @@
-// ─── SwasthAI Guardian – Mock Healthcare Dataset ──────────────────────────────
-// Realistic rural healthcare data for IEEE YESIST12 demonstration
+// ─── Named constant exports used by ASHADashboard.jsx ───────────────────────
 
 export const VILLAGE_INFO = {
-  id: 'V101',
-  name: 'Village V101',
-  location: 'Rampur Sector 4, Block Rampur',
-  district: 'Rampur',
-  state: 'Uttar Pradesh',
+  name: 'Village Sundarnagar',
+  district: 'Pune Rural',
   population: 1240,
   households: 248,
+  lastUpdated: new Date().toLocaleDateString('en-IN'),
 };
 
 export const ASHA_WORKER = {
-  id: 'ASHA-001',
-  name: 'Sunita Devi',
+  name: 'Priya Sharma',
+  id: 'ASHA-2024-001',
+  zone: 'Zone B',
   phone: '+91-9876543210',
-  villageId: 'V101',
-  yearsActive: 6,
-  avatar: null,
+  experience: '5 years',
+  rating: 4.8,
 };
 
 export const OUTBREAK_ALERTS = [
   {
-    id: 'OB-001',
-    type: 'Malaria',
-    message: 'Malaria cases are increasing in your area',
-    severity: 'HIGH',
-    reports: 12,
-    nearby: 2,
-    trend: 'Increasing',
-    trendDirection: 'up',
-    timestamp: new Date(Date.now() - 3600000).toISOString(),
+    id: 1,
+    disease: 'Dengue',
+    severity: 'high',
+    cases: 12,
+    village: 'V103',
+    trend: 'increasing',
+    message: 'Dengue spike detected — 12 new cases in last 48 hours',
   },
   {
-    id: 'OB-002',
-    type: 'Dengue',
-    message: 'Dengue risk elevated – stagnant water detected',
-    severity: 'MEDIUM',
-    reports: 5,
-    nearby: 1,
-    trend: 'Stable',
-    trendDirection: 'stable',
-    timestamp: new Date(Date.now() - 7200000).toISOString(),
-  },
-  {
-    id: 'OB-003',
-    type: 'Heatwave',
-    message: 'Heatwave warning – max temp 44°C expected',
-    severity: 'MEDIUM',
-    reports: 3,
-    nearby: 0,
-    trend: 'Decreasing',
-    trendDirection: 'down',
-    timestamp: new Date(Date.now() - 10800000).toISOString(),
+    id: 2,
+    disease: 'Malaria',
+    severity: 'medium',
+    cases: 5,
+    village: 'V101',
+    trend: 'stable',
+    message: 'Malaria cases stable — continue monitoring',
   },
 ];
 
 export const KPI_CARDS = [
-  {
-    id: 'sos',
-    label: 'SOS Alerts',
-    count: 3,
-    status: 'High Priority',
-    statusColor: 'red',
-    icon: 'ambulance',
-    bgColor: '#FF6B6B',
-    route: '/ngo/sos',
-  },
-  {
-    id: 'pregnancy',
-    label: 'High Risk Pregnancy',
-    count: 1,
-    status: 'Needs Visit',
-    statusColor: 'orange',
-    icon: 'pregnancy',
-    bgColor: '#FF9F43',
-    route: '/ngo/maternal',
-  },
-  {
-    id: 'malnutrition',
-    label: 'Malnutrition Cases',
-    count: 2,
-    status: 'Follow Up',
-    statusColor: 'purple',
-    icon: 'child',
-    bgColor: '#A29BFE',
-    route: '/ngo/child-nutrition',
-  },
-  {
-    id: 'pads',
-    label: 'Pad Requests',
-    count: 0,
-    status: 'No Pending',
-    statusColor: 'green',
-    icon: 'pad',
-    bgColor: '#55EFC4',
-    route: '/ngo/pads',
-  },
+  { id: 1, label: 'Families Covered', value: 248, icon: '🏠', color: '#6366f1' },
+  { id: 2, label: 'Visits This Month', value: 84, icon: '🩺', color: '#10b981' },
+  { id: 3, label: 'High-Risk Cases', value: 7, icon: '⚠️', color: '#ef4444' },
+  { id: 4, label: 'Vaccinations Done', value: 132, icon: '💉', color: '#f59e0b' },
 ];
 
 export const TODAY_TASKS = [
   {
-    id: 'T001',
+    id: 1,
+    icon: 'pregnancy',
     patientName: 'Sunita Devi',
     type: 'Pregnancy',
     detail: '8 Months',
-    priority: 'High Risk',
-    priorityColor: 'red',
     distance: '1.2 km',
-    icon: 'pregnancy',
+    priority: 'HIGH RISK',
+    priorityColor: 'red',
     done: false,
   },
   {
-    id: 'T002',
+    id: 2,
+    icon: 'child',
     patientName: 'Raju Kumar',
     type: 'Malnutrition',
     detail: '2 Years',
-    priority: 'Moderate',
-    priorityColor: 'orange',
     distance: '0.8 km',
-    icon: 'child',
+    priority: 'FOLLOW-UP',
+    priorityColor: 'orange',
     done: false,
   },
   {
-    id: 'T003',
+    id: 3,
+    icon: 'vaccination',
     patientName: 'Vaccination Follow-up',
     type: '3 children due',
-    detail: null,
+    detail: '',
+    distance: '2.1 km',
     priority: null,
     priorityColor: null,
-    distance: '2.1 km',
-    icon: 'vaccination',
     done: false,
   },
 ];
 
 export const QUICK_ACTIONS = [
-  { id: 'pregnancy', label: 'Pregnancy Record', icon: 'pregnancy', color: '#FF6B6B', route: '/ngo/maternal' },
-  { id: 'nutrition', label: 'Child Nutrition', icon: 'child', color: '#A29BFE', route: '/ngo/child-nutrition' },
-  { id: 'symptoms', label: 'Symptoms Check', icon: 'symptoms', color: '#00B894', route: '/symptoms' },
-  { id: 'emergency', label: 'Emergency Record', icon: 'emergency', color: '#FF7675', route: '/ambulance' },
+  { id: 1, label: 'Report Symptom', icon: '🩺', action: 'report_symptom' },
+  { id: 2, label: 'Dispatch Ambulance', icon: '🚑', action: 'dispatch_ambulance' },
+  { id: 3, label: 'Create Referral', icon: '📋', action: 'create_referral' },
+  { id: 4, label: 'Sync Data', icon: '🔄', action: 'sync_data' },
 ];
 
 export const SYSTEM_HEALTH = {
-  syncHealth: 98,
-  offlineQueue: 3,
+  syncStatus: 'Online',
   lastSync: '2 min ago',
-  awsStatus: 'connected',
-  isNormal: true,
+  pendingUploads: 3,
+  batteryMode: false,
+  offlineRecords: 0,
 };
 
 export const AI_RECOMMENDATIONS = [
-  {
-    id: 'REC-001',
-    type: 'urgent',
-    message: 'Visit Village V101 immediately due to rising malaria cases.',
-    action: 'Schedule Visit',
-  },
-  {
-    id: 'REC-002',
-    type: 'warning',
-    message: 'Sunita Devi (8 months pregnant) has not been visited in 14 days. High-risk flag.',
-    action: 'Visit Now',
-  },
-  {
-    id: 'REC-003',
-    type: 'info',
-    message: '3 children overdue for polio vaccination in your sector.',
-    action: 'Schedule',
-  },
+  { id: 1, priority: 'high', text: 'Visit 3 high-risk pregnancies today', icon: '🔴' },
+  { id: 2, priority: 'medium', text: 'Malaria trend increasing by 12% — deploy awareness', icon: '🟠' },
+  { id: 3, priority: 'medium', text: 'Vaccination camp recommended for Village V104', icon: '🟡' },
+  { id: 4, priority: 'low', text: '5 malnutrition follow-ups overdue', icon: '🟢' },
 ];
 
 export const OFFLINE_QUEUE = [
-  { id: 'Q001', type: 'Pregnancy Record', patient: 'Meena Devi', timestamp: '10:30 AM' },
-  { id: 'Q002', type: 'SOS Alert', patient: 'Ram Singh', timestamp: '11:15 AM' },
-  { id: 'Q003', type: 'Nutrition Log', patient: 'Baby Arjun', timestamp: '12:05 PM' },
+  { id: 1, type: 'symptom_report', patient: 'Meena Kumari', time: '09:15', synced: false },
+  { id: 2, type: 'visit_log', patient: 'Raju (3yr)', time: '10:30', synced: false },
+  { id: 3, type: 'referral', patient: 'Sunita Devi', time: '11:00', synced: true },
 ];
 
-// ─── AI Risk Engine (Mock Scoring) ─────────────────────────────────────────────
-export function computeRiskScore(type, data = {}) {
-  const scores = {
-    malaria: { base: 68, trend: 'increasing', level: 'HIGH' },
-    dengue: { base: 42, trend: 'stable', level: 'MEDIUM' },
-    pregnancy: { base: 85, trend: 'increasing', level: 'CRITICAL' },
-    malnutrition: { base: 55, trend: 'stable', level: 'MEDIUM' },
-    heatwave: { base: 30, trend: 'decreasing', level: 'LOW' },
-  };
-  return scores[type] || { base: 20, trend: 'stable', level: 'LOW' };
-}
+// ─── Async fetch helpers used by ASHAApp.jsx ────────────────────────────────
+
+export const fetchDailyPriority = async () => [
+  { id: 1, icon: '🔴', title: 'Visit Sunita Devi (High-Risk Pregnancy)', urgency: 'high' },
+  { id: 2, icon: '🟠', title: 'Verify Fever Cluster in Village V101', urgency: 'medium' },
+  { id: 3, icon: '🟡', title: 'Follow-up Malnutrition Case', urgency: 'low' },
+  { id: 4, icon: '🟢', title: 'Vaccination Camp: 3 doses', urgency: 'info' },
+];
+
+export const fetchVillageScore = async () => ({
+  score: 84,
+  riskLevel: 'moderate',
+  details: { vaccination: 78, nutrition: 69, pregnancyRisk: 12 },
+});
+
+export const fetchLiveFeed = async () => [
+  { id: 1, time: '08:12', msg: '🩺 New symptom report from Village V103' },
+  { id: 2, time: '08:45', msg: '🚑 Ambulance dispatched for emergency labor' },
+  { id: 3, time: '09:03', msg: '⚠️ Outbreak alert: Dengue spikes in District Pune Rural' },
+  { id: 4, time: '09:20', msg: '📦 Sync completed – 23 records uploaded' },
+];
+
+export const fetchVoiceAssistant = async () => ({
+  message: 'You have 2 vaccinations due this week and 1 high-risk pregnancy to follow up.',
+});
+
+export const fetchEmergencyNearYou = async () => [
+  { id: 1, time: '10:05', msg: '🚨 Child birth emergency in Village V102' },
+  { id: 2, time: '10:30', msg: '🔥 Fire reported near Village V104' },
+];
+
+export const fetchSmartTasks = async () => [
+  { id: 1, icon: '🔴', title: 'Attend high-risk pregnancy', urgency: 'high' },
+  { id: 2, icon: '🟠', title: 'Check fever cluster', urgency: 'medium' },
+  { id: 3, icon: '🟡', title: 'Follow-up nutrition case', urgency: 'low' },
+];
+
+export const fetchDailyImpact = async () => ({
+  visitsCompleted: 25,
+  childrenScreened: 40,
+  pregnancyFollowUps: 12,
+  emergenciesHandled: 3,
+  villagersHelped: 150,
+  impactScore: 88,
+});
+
+export const fetchAICopilotData = async () => ({
+  greeting: 'Good Morning ASHA Worker',
+  missionScore: 92,
+  actions: [
+    { icon: '🔴', text: 'High-Risk Pregnancy Follow-up' },
+    { icon: '🟠', text: 'Fever Cluster Verification' },
+    { icon: '🟡', text: 'Malnutrition Screening' },
+    { icon: '🟢', text: 'Vaccination Follow-up' },
+  ],
+  expectedImpact: '14 Villagers Helped Today',
+});
+
+export const fetchSmartRouteData = async () => ({
+  route: ['Sunita Devi', 'Raju Kumar', 'Vaccination Camp'],
+  distance: 4.1,
+  estimatedTime: 52,
+  timeSaved: 28,
+});
+
+export const fetchDiseaseForecast = async () => ({
+  disease: 'Malaria',
+  today: 32,
+  threeDays: 48,
+  sevenDays: 71,
+  recommendation: ['Deploy Awareness Drive', 'Schedule Village Screening'],
+});
+
+export const fetchEmergencyTriage = async () => [
+  { patient: 'Asha Sharma', distance: '2 km', condition: 'Critical', action: 'Dispatch Ambulance', eta: '10 min' },
+  { patient: 'Ramesh Patel', distance: '3.5 km', condition: 'High', action: 'Notify PHC', eta: '20 min' },
+];
+
+export const fetchReferralTracking = async () =>
+  ['Case Created', 'PHC Assigned', 'Doctor Reviewed', 'Treatment Started', 'Follow-Up', 'Closed'];
+
+export const fetchTodayImpact = async () => ({
+  visitsCompleted: 25,
+  childrenScreened: 40,
+  pregnancyFollowUps: 12,
+  emergenciesHandled: 3,
+  villagersHelped: 150,
+  impactScore: 88,
+});
+
+export const fetchVillageRiskMap = async () => [
+  { village: 'Village A', risk: 'Low', color: '#10b981' },
+  { village: 'Village B', risk: 'Medium', color: '#f59e0b' },
+  { village: 'Village C', risk: 'High', color: '#ef4444' },
+];
+
+export const fetchJudgeDemo = async () => {
+  console.log('Judge Demo started');
+  return true;
+};
