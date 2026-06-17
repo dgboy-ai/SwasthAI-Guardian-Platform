@@ -1,13 +1,13 @@
-// ─── SwasthAI Guardian — Responsive Dashboard & Command Center ────────────────
-// Visual-accurate recreation matching the reference image across all sizes.
-// Fully connected to backend APIs (ngoService) and IndexedDB local offline queue.
+// ─── SwasthAI — Responsive ASHA Dashboard & Field Command Center ──────────────
+// Production-ready dashboard with real-time pregnancy tracking, malnutrition triage,
+// outbreak response, emergency dispatch, and offline-first sync.
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Menu, Bell, Wifi, WifiOff, Home, AlertTriangle,
-  Plus, Users, MoreHorizontal, ChevronRight,
+  Plus, Users, MoreHorizontal, ChevronRight, ChevronDown,
   MapPin, CheckCircle, RefreshCw, X, Search,
   TrendingUp, TrendingDown, Minus, Zap, Shield,
   Heart, Baby, Activity, Clock, Filter, Settings,
@@ -15,7 +15,8 @@ import {
   Send, User, PlusCircle, Check, AlertCircle, Sparkles, Navigation,
   Calendar, Layers, CheckSquare, BookOpen, LogOut,
   Database, HardDrive, Mic, MicOff, Thermometer, Stethoscope,
-  ArrowUpCircle, UserPlus, Play, Loader2
+  ArrowUpCircle, UserPlus, Play, Loader2, HelpCircle,
+  ExternalLink, Info, Trash2, Eye, EyeOff, Sun, Moon
 } from 'lucide-react';
 
 import ngoService from '../services/ngoService';
@@ -44,14 +45,12 @@ import {
 
 import HealthScoreBreakdown from './components/HealthScoreBreakdown';
 import LiveFieldImpact from './components/LiveFieldImpact';
-import LiveImpactCounter from './components/LiveImpactCounter';
+import BrandLogo from './components/BrandLogo';
 import VoiceAssistantFAB from './components/VoiceAssistantFAB';
-import JudgeDemoMode from './components/JudgeDemoMode';
-import JudgePanel from './components/JudgePanel';
 import EmergencyResponseWorkflow from './components/EmergencyResponseWorkflow';
 import OutbreakResponseCenter from './components/OutbreakResponseCenter';
 import SmartTaskManager from './components/SmartTaskManager';
-import OfflineFirstHealth from './components/OfflineFirstHealth';
+
 
 export default function ASHADashboard() {
   const navigate = useNavigate();
@@ -82,6 +81,10 @@ export default function ASHADashboard() {
   const [notificationFilter, setNotificationFilter] = useState('all'); // 'all' | 'outbreak' | 'sos' | 'pregnancy' | 'system'
   const [showNotifs, setShowNotifs] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showSearch, setShowSearch] = useState(false);
   const [activeTab, setActiveTab] = useState('home'); // 'home' | 'alerts' | 'patients' | 'records'
 
   // ─── Interactive Patient Details Modals ──────────────────────────────────────
@@ -139,18 +142,9 @@ export default function ASHADashboard() {
   const [dispatchProgress, setDispatchProgress] = useState(0);
   const [dispatchAmbulanceId, setDispatchAmbulanceId] = useState(null);
 
-  // ─── Loading & Voice & Demo States ──────────────────────────────────────────
+  // ─── Loading & Voice States ─────────────────────────────────────────────────
   const [pageLoading, setPageLoading] = useState(true);
   const [voiceResult, setVoiceResult] = useState(null);
-  const [demoMode, setDemoMode] = useState(false);
-  const [demoScenario, setDemoScenario] = useState(null);
-  const [demoMetrics] = useState([
-    { label: 'Pregnancies Monitored', value: 24, icon: Heart, color: '#F97316', bg: '#FFF7ED', change: '+2 this week' },
-    { label: 'Children Screened', value: 156, icon: Baby, color: '#8B5CF6', bg: '#F5F3FF', change: '+12 this week' },
-    { label: 'Symptoms Checked', value: 18, icon: Stethoscope, color: '#059669', bg: '#ECFDF5', change: 'Today' },
-    { label: 'Emergency Responses', value: 7, icon: Ambulance, color: '#EF4444', bg: '#FEF2F2', change: '3 active' },
-    { label: 'Villagers Served / Month', value: 412, icon: Users, color: '#2563EB', bg: '#EFF6FF', change: '+18% vs last month' },
-  ]);
 
   // ─── Flip loading after mount ───────────────────────────────────────────────
   useEffect(() => {
@@ -172,53 +166,6 @@ export default function ASHADashboard() {
       setShowQuickForm('nutrition');
     }
     showToast(`Voice captured in ${result.lang}`, 'success');
-  }, []);
-
-  // ─── Handle judge demo simulation ────────────────────────────────────────────
-  const handleDemoSimulation = useCallback((stepId) => {
-    setDemoMode(true);
-    if (stepId === 'pregnancy') {
-      setPregnancyPatients(prev => [{
-        id: `M-D${Date.now()}`,
-        name: 'Demo Patient (Pregnancy)',
-        months: 7,
-        bp: '150/95',
-        hb: '9.8',
-        weight: '58',
-        risk: 'High',
-        status: 'Needs Visit',
-        visits: ['2026-06-20 (Urgent)']
-      }, ...prev]);
-    } else if (stepId === 'malnutrition') {
-      setMalnutritionChildren(prev => [
-        { id: `C-D${Date.now()}`, name: 'Demo SAM Child', age: '1.5 Years', weight: '7.2kg', height: '72cm', muac: '10.5', status: 'Severe (SAM)', trend: 'declining', action: 'Immediate therapeutic feeding' },
-        { id: `C-D${Date.now()+1}`, name: 'Demo MAM Child', age: '2 Years', weight: '8.8kg', height: '80cm', muac: '11.8', status: 'Moderate (MAM)', trend: 'improving', action: 'Nutrition supplement delivery' },
-        ...prev
-      ]);
-      setNotifications(prev => [{ id: `N-mal-${Date.now()}`, type: 'pregnancy', text: 'Malnutrition alert: 3 new SAM/MAM cases detected in Village V101', time: 'Just now', unread: true, related: 'malnutrition' }, ...prev]);
-    } else if (stepId === 'outbreak') {
-      setActiveOutbreak(prev => ({
-        ...prev,
-        reports: prev.reports + 8,
-        riskScore: Math.min(99, prev.riskScore + 5),
-        affectedVillages: prev.affectedVillages + 1
-      }));
-      setNotifications(prev => [{ id: `N-out-${Date.now()}`, type: 'outbreak', text: `Outbreak escalated: ${activeOutbreak.disease} cases rising — ${activeOutbreak.reports + 8} total`, time: 'Just now', unread: true, related: 'outbreak' }, ...prev]);
-    } else if (stepId === 'sos') {
-      setEmergencyRequests(prev => [{
-        id: `E-D${Date.now()}`,
-        name: 'Demo Emergency Patient',
-        location: 'Village V103 Sector 2',
-        time: 'Just now',
-        condition: 'Severe chest pain / breathing difficulty',
-        status: 'pending'
-      }, ...prev]);
-    } else if (stepId === 'sync') {
-      handleSync();
-      setLastSync('Just now');
-      setSyncHealth(99);
-    }
-    setDemoScenario(stepId);
   }, []);
 
   // ─── Clean up voice results after use ────────────────────────────────────────
@@ -614,11 +561,11 @@ export default function ASHADashboard() {
       <div className="space-y-4">
         
         {/* Status Row */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 auto-rows-auto">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {/* Village V101 Card */}
-          <div className="bg-white border border-slate-100 rounded-2xl p-4 shadow-xs flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-[#ECFDF5] flex items-center justify-center shrink-0">
-              <MapPin className="w-5 h-5 text-[#059669]" />
+          <div className="bg-white border border-slate-100 rounded-xl p-3.5 sm:p-4 shadow-sm flex items-center gap-3">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-[#ECFDF5] flex items-center justify-center shrink-0">
+              <MapPin className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-[#059669]" />
             </div>
             <div className="text-left min-w-0">
               <p className="text-sm font-black text-slate-900 leading-tight">Village V101</p>
@@ -629,9 +576,9 @@ export default function ASHADashboard() {
           </div>
 
           {/* ASHA Worker Profile Card */}
-          <div className="bg-white border border-slate-100 rounded-2xl p-4 shadow-xs flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center shrink-0 border border-slate-100">
-              <User className="w-5 h-5 text-slate-500" />
+          <div className="bg-white border border-slate-100 rounded-xl p-3.5 sm:p-4 shadow-sm flex items-center gap-3">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-slate-50 flex items-center justify-center shrink-0 border border-slate-100">
+              <User className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-slate-500" />
             </div>
             <div className="text-left min-w-0">
               <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">ASHA Worker</p>
@@ -642,13 +589,13 @@ export default function ASHADashboard() {
           {/* Offline Mode card */}
           <button
             onClick={handleToggleOffline}
-            className={`border rounded-2xl p-4 shadow-xs flex items-center justify-between transition-all w-full text-left active:scale-98 ${
+            className={`border rounded-xl p-3.5 sm:p-4 shadow-sm flex items-center justify-between transition-all w-full text-left active:scale-[0.98] ${
               isOffline ? 'bg-red-50 border-red-200' : 'bg-white border-slate-100'
             }`}
           >
             <div className="flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${isOffline ? 'bg-red-100' : 'bg-slate-50 border border-slate-100'}`}>
-                {isOffline ? <WifiOff className="w-5 h-5 text-red-600" /> : <Wifi className="w-5 h-5 text-[#059669]" />}
+              <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center shrink-0 ${isOffline ? 'bg-red-100' : 'bg-slate-50 border border-slate-100'}`}>
+                {isOffline ? <WifiOff className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-red-600" /> : <Wifi className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-[#059669]" />}
               </div>
               <div className="min-w-0">
                 <p className={`text-sm font-black leading-tight ${isOffline ? 'text-red-700' : 'text-slate-900'}`}>
@@ -664,112 +611,7 @@ export default function ASHADashboard() {
             </div>
           </button>
         </div>
-        {/* Executive Healthcare Intelligence Card */}
-        <div className="bg-white border border-slate-100 rounded-3xl shadow-xs mt-4 overflow-hidden">
-          {/* Header */}
-          <div className="flex items-center justify-between px-4 sm:px-5 pt-4 sm:pt-5 pb-3">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-[#ECFDF5] flex items-center justify-center">
-                <Activity className="w-4 h-4 text-[#059669]" />
-              </div>
-              <h3 className="text-sm font-black text-slate-900">Village V101 – Health Score</h3>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-black px-2 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
-                Risk: Medium
-              </span>
-            </div>
-          </div>
-
-          {/* 4 KPI Mini Cards */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 px-4 sm:px-5 pb-3">
-            {[
-              { label: 'Population Served', value: '1,428', icon: Users, color: '#059669' },
-              { label: 'High Risk Cases', value: '12', icon: AlertTriangle, color: '#EF4444' },
-              { label: 'Vaccination Coverage', value: '91%', icon: Shield, color: '#8B5CF6' },
-              { label: 'Active Alerts', value: '3', icon: Bell, color: '#F97316' },
-            ].map((kpi) => {
-              const Icon = kpi.icon;
-              return (
-                <div key={kpi.label} className="bg-slate-50 rounded-xl p-2.5 sm:p-3 flex items-center gap-2.5">
-                  <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: kpi.color + '15' }}>
-                    <Icon className="w-4 h-4 sm:w-4.5 sm:h-4.5" style={{ color: kpi.color }} />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-base sm:text-lg font-black text-slate-900 leading-none">{kpi.value}</p>
-                    <p className="text-[9px] sm:text-[10px] font-bold text-slate-500 leading-tight mt-0.5 truncate">{kpi.label}</p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Score Ring + Trend + Progress Bars Row */}
-          <div className="flex flex-col xs:flex-row gap-3 px-4 sm:px-5 pb-4 sm:pb-5">
-            {/* Score Ring */}
-            <div className="flex items-center gap-3 shrink-0">
-              <div className="relative w-16 h-16 sm:w-[72px] sm:h-[72px]">
-                <svg className="w-16 h-16 sm:w-[72px] sm:h-[72px] -rotate-90" viewBox="0 0 72 72">
-                  <circle cx="36" cy="36" r="30" fill="none" stroke="#E2E8F0" strokeWidth="6" />
-                  <circle
-                    cx="36" cy="36" r="30" fill="none" stroke="#059669" strokeWidth="6"
-                    strokeDasharray={`${2 * Math.PI * 30}`}
-                    strokeDashoffset={`${2 * Math.PI * 30 * (1 - 82 / 100)}`}
-                    strokeLinecap="round"
-                  />
-                </svg>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-base sm:text-lg font-black text-[#059669]">82</span>
-                </div>
-              </div>
-              <div className="text-left">
-                <div className="flex items-center gap-1">
-                  <span className="text-[11px] sm:text-xs font-black text-slate-900">Overall Health</span>
-                  <span className="flex items-center gap-0.5 text-[10px] font-black text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full">
-                    <TrendingUp className="w-3 h-3" /> +4
-                  </span>
-                </div>
-                <p className="text-[10px] text-slate-500 font-semibold">This month</p>
-              </div>
-            </div>
-
-            {/* Compact Progress Bars */}
-            <div className="flex-1 grid grid-cols-2 gap-x-4 gap-y-2 min-w-0">
-              {[
-                { label: 'Vaccination', value: 91, color: '#059669' },
-                { label: 'Maternal Health', value: 78, color: '#D97706' },
-                { label: 'Child Nutrition', value: 74, color: '#7C3AED' },
-                { label: 'Disease Risk', value: 32, color: '#DC2626', inverse: true },
-              ].map((bar) => (
-                <div key={bar.label} className="min-w-0">
-                  <div className="flex items-center justify-between mb-0.5">
-                    <span className="text-[9px] sm:text-[10px] font-bold text-slate-600 truncate">{bar.label}</span>
-                    <span className="text-[9px] sm:text-[10px] font-black" style={{ color: bar.inverse ? (bar.value > 50 ? '#DC2626' : '#059669') : bar.color }}>
-                      {bar.inverse ? `${100 - bar.value}%` : `${bar.value}%`}
-                    </span>
-                  </div>
-                  <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all duration-700"
-                      style={{ width: `${bar.inverse ? 100 - bar.value : bar.value}%`, backgroundColor: bar.color }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Footer: Last Updated */}
-          <div className="border-t border-slate-50 px-4 sm:px-5 py-2 flex items-center justify-between">
-            <div className="flex items-center gap-1.5 text-[10px] text-slate-400 font-semibold">
-              <Clock className="w-3 h-3" />
-              Last updated: Today, 10:30 AM
-            </div>
-            <span className="text-[9px] font-bold text-slate-300">V101 · Rampur Sector 4</span>
-          </div>
-        </div>
-
-        {/* Health Score Breakdown (enhanced below existing health score) */}
+        {/* Health Command Center */}
         <HealthScoreBreakdown score={82} />
 
         {/* Active Outbreak Alert Banner */}
@@ -799,48 +641,73 @@ export default function ASHADashboard() {
             View Details <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           </button>
         </div>
-        {/* AI Health Assistant Card */}
-        <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-xs mt-4 flex flex-col gap-3">
-          <div className="flex items-center justify-between">
+        {/* AI Priority Center */}
+        <div className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-slate-50">
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-[#059669] flex items-center justify-center">
-                <Sparkles className="w-4 h-4 text-white" />
+              <div className="w-6 h-6 rounded-lg bg-emerald-50 flex items-center justify-center">
+                <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
               </div>
-              <h3 className="text-sm font-black text-slate-900">AI Health Assistant</h3>
+              <h3 className="text-xs font-bold text-slate-900">AI Priority Center</h3>
+              <span className="px-1.5 py-0.5 text-[9px] font-semibold bg-amber-50 text-amber-700 rounded-full">4 Priorities</span>
             </div>
-            <button onClick={() => navigate('/asha/priority')} className="text-xs font-black text-[#059669] hover:underline">View All</button>
+            <button onClick={() => navigate('/asha/priority')} className="text-[10px] font-semibold text-emerald-600 hover:text-emerald-700 transition-colors">
+              Manage Priorities &rarr;
+            </button>
           </div>
-          <p className="text-[10px] text-slate-400 font-semibold">
-            Daily priorities generated from village health data
-          </p>
-          <ul className="space-y-2 text-xs">
-            {[
-              { emoji: '🔴', text: 'Visit high-risk pregnancy patient (Sunita Devi)', action: 'Visit Now', color: 'red' },
-              { emoji: '🟠', text: 'Verify fever outbreak cluster in Village V101', action: 'Verify', color: 'orange' },
-              { emoji: '🟡', text: 'Follow-up malnutrition case (Raju Kumar)', action: 'Follow-up', color: 'amber' },
-              { emoji: '🟢', text: 'Vaccination due list: 3 children pending', action: 'Check List', color: 'emerald' },
-            ].map((item, i) => (
-              <li key={i} className="flex flex-col xs:flex-row items-start xs:items-center justify-between gap-1.5 py-2 border-b border-slate-50 last:border-0">
-                <span className="font-medium text-slate-700 text-[11px] xs:text-xs leading-snug"><span className="mr-1.5">{item.emoji}</span>{item.text}</span>
-                <button
-                  onClick={() => {
-                    if (i === 0) setActiveKPIModal('pregnancy');
-                    else if (i === 1) setActiveKPIModal('outbreak');
-                    else if (i === 2) setActiveKPIModal('malnutrition');
-                    else showToast('Vaccination list loaded', 'info');
-                  }}
-                  className={`px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-wider whitespace-nowrap transition-all active:scale-95 shrink-0 self-start xs:self-auto ${
-                    item.color === 'red' ? 'bg-red-100 text-red-700 hover:bg-red-200' :
-                    item.color === 'orange' ? 'bg-orange-100 text-orange-700 hover:bg-orange-200' :
-                    item.color === 'amber' ? 'bg-amber-100 text-amber-700 hover:bg-amber-200' :
-                    'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
-                  }`}
-                >
-                  {item.action}
-                </button>
-              </li>
-            ))}
-          </ul>
+
+          <div className="p-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+              {[
+                {
+                  id: 'pregnancy', icon: AlertTriangle, iconBg: 'bg-red-100 text-red-600',
+                  badge: 'HIGH RISK', badgeCls: 'bg-red-50 text-red-600',
+                  title: 'High Risk Pregnancy', summary: 'Sunita Devi — 8 months, elevated BP. Urgent visit recommended.',
+                  action: 'Visit Now', btnCls: 'bg-red-500 hover:bg-red-600 text-white',
+                  onClick: () => setActiveKPIModal('pregnancy')
+                },
+                {
+                  id: 'fever', icon: Thermometer, iconBg: 'bg-orange-100 text-orange-600',
+                  badge: 'CLUSTER', badgeCls: 'bg-orange-50 text-orange-600',
+                  title: 'Fever Cluster', summary: 'Village V101 — 12 cases reported in 48h. Verification needed.',
+                  action: 'Verify', btnCls: 'bg-orange-500 hover:bg-orange-600 text-white',
+                  onClick: () => setActiveKPIModal('outbreak')
+                },
+                {
+                  id: 'malnutrition', icon: Heart, iconBg: 'bg-amber-100 text-amber-600',
+                  badge: 'FOLLOW-UP', badgeCls: 'bg-amber-50 text-amber-600',
+                  title: 'Malnutrition Follow-up', summary: 'Raju Kumar — SAM grade, MUAC 11.2cm. Weekly follow-up due.',
+                  action: 'Follow Up', btnCls: 'bg-amber-500 hover:bg-amber-600 text-white',
+                  onClick: () => setActiveKPIModal('malnutrition')
+                },
+                {
+                  id: 'vaccination', icon: Shield, iconBg: 'bg-emerald-100 text-emerald-600',
+                  badge: 'DUE', badgeCls: 'bg-emerald-50 text-emerald-600',
+                  title: 'Vaccination Due', summary: '3 children pending — BCG, OPV, Measles doses. Schedule visit.',
+                  action: 'Check List', btnCls: 'bg-emerald-500 hover:bg-emerald-600 text-white',
+                  onClick: () => showToast('Vaccination list loaded', 'info')
+                },
+              ].map((card) => {
+                const Icon = card.icon;
+                return (
+                  <div key={card.id} onClick={card.onClick}
+                    className="rounded-xl border border-slate-100 p-3 bg-white hover:shadow-sm hover:border-slate-200 transition-all duration-200 cursor-pointer">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${card.iconBg}`}>
+                        <Icon className="w-3.5 h-3.5" />
+                      </div>
+                      <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full ${card.badgeCls}`}>{card.badge}</span>
+                    </div>
+                    <p className="text-xs font-semibold text-slate-800 leading-snug mb-1.5">{card.title}</p>
+                    <p className="text-[10px] text-slate-500 leading-snug mb-3">{card.summary}</p>
+                    <button className={`w-full py-1.5 rounded-lg text-[10px] font-semibold transition-all active:scale-95 ${card.btnCls}`}>
+                      {card.action}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
 
         {/* Health Summary Cards (Grid of 4) */}
@@ -848,10 +715,10 @@ export default function ASHADashboard() {
           {/* Card 1: SOS Alerts */}
           <div 
             onClick={() => setActiveKPIModal('sos')}
-            className="bg-[#FEF2F2] border border-[#FEE2E2] rounded-3xl p-5 shadow-xs flex flex-col gap-3.5 text-left hover:shadow-md cursor-pointer transition-shadow"
+            className="bg-[#FEF2F2] border border-[#FEE2E2] rounded-2xl p-4 sm:p-5 shadow-sm flex flex-col gap-3 sm:gap-3.5 text-left hover:shadow-md cursor-pointer transition-all active:scale-[0.98] group"
           >
-            <div className="w-12 h-12 rounded-2xl bg-[#EF4444] text-white flex items-center justify-center text-2xl shrink-0 shadow shadow-red-500/10">
-              <span>🚑</span>
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-[#EF4444] text-white flex items-center justify-center shrink-0 shadow-sm shadow-red-500/10 group-hover:bg-red-600 transition-colors">
+              <Ambulance className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
             <div>
               <h3 className="text-4.5xl font-black text-slate-900 leading-none">{kpiCounts.sos}</h3>
@@ -868,10 +735,10 @@ export default function ASHADashboard() {
           {/* Card 2: High Risk Pregnancy */}
           <div 
             onClick={() => setActiveKPIModal('pregnancy')}
-            className="bg-[#FFF7ED] border border-[#FFEDD5] rounded-3xl p-5 shadow-xs flex flex-col gap-3.5 text-left hover:shadow-md cursor-pointer transition-shadow"
+            className="bg-[#FFF7ED] border border-[#FFEDD5] rounded-2xl p-4 sm:p-5 shadow-sm flex flex-col gap-3 sm:gap-3.5 text-left hover:shadow-md cursor-pointer transition-all active:scale-[0.98] group"
           >
-            <div className="w-12 h-12 rounded-2xl bg-[#F97316] text-white flex items-center justify-center text-2xl shrink-0 shadow shadow-orange-500/10">
-              <span>🤰</span>
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-[#F97316] text-white flex items-center justify-center shrink-0 shadow-sm shadow-orange-500/10 group-hover:bg-orange-600 transition-colors">
+              <Heart className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
             <div>
               <h3 className="text-4.5xl font-black text-slate-900 leading-none">{kpiCounts.pregnancy}</h3>
@@ -888,10 +755,10 @@ export default function ASHADashboard() {
           {/* Card 3: Malnutrition Cases */}
           <div 
             onClick={() => setActiveKPIModal('malnutrition')}
-            className="bg-[#F5F3FF] border border-[#DDD6FE] rounded-3xl p-5 shadow-xs flex flex-col gap-3.5 text-left hover:shadow-md cursor-pointer transition-shadow"
+            className="bg-[#F5F3FF] border border-[#DDD6FE] rounded-2xl p-4 sm:p-5 shadow-sm flex flex-col gap-3 sm:gap-3.5 text-left hover:shadow-md cursor-pointer transition-all active:scale-[0.98] group"
           >
-            <div className="w-12 h-12 rounded-2xl bg-[#8B5CF6] text-white flex items-center justify-center text-2xl shrink-0 shadow shadow-purple-500/10">
-              <span>👶</span>
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-[#8B5CF6] text-white flex items-center justify-center shrink-0 shadow-sm shadow-purple-500/10 group-hover:bg-violet-600 transition-colors">
+              <Baby className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
             <div>
               <h3 className="text-4.5xl font-black text-slate-900 leading-none">{kpiCounts.malnutrition}</h3>
@@ -908,10 +775,10 @@ export default function ASHADashboard() {
           {/* Card 4: Pad Requests */}
           <div 
             onClick={() => setActiveKPIModal('pads')}
-            className="bg-[#ECFDF5] border border-[#D1FAE5] rounded-3xl p-5 shadow-xs flex flex-col gap-3.5 text-left hover:shadow-md cursor-pointer transition-shadow"
+            className="bg-[#ECFDF5] border border-[#D1FAE5] rounded-2xl p-4 sm:p-5 shadow-sm flex flex-col gap-3 sm:gap-3.5 text-left hover:shadow-md cursor-pointer transition-all active:scale-[0.98] group"
           >
-            <div className="w-12 h-12 rounded-2xl bg-[#10B981] text-white flex items-center justify-center text-2xl shrink-0 shadow shadow-emerald-500/10">
-              <span>💊</span>
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-[#10B981] text-white flex items-center justify-center shrink-0 shadow-sm shadow-emerald-500/10 group-hover:bg-emerald-600 transition-colors">
+              <HeartHandshake className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
             <div>
               <h3 className="text-4.5xl font-black text-slate-900 leading-none">{kpiCounts.pads}</h3>
@@ -932,7 +799,7 @@ export default function ASHADashboard() {
         {/* Two-Column Stack on larger layouts */}
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 items-start">
           {/* Today's Tasks */}
-          <div className="xl:col-span-8 bg-white border border-slate-100 rounded-3xl p-5 shadow-xs text-left">
+          <div className="xl:col-span-8 bg-white border border-slate-100 rounded-2xl p-5 shadow-sm text-left">
             <div className="flex items-center justify-between pb-3.5 border-b border-slate-50 mb-3.5">
               <div className="flex items-center gap-2">
                 <div className="w-6 h-6 rounded-lg bg-[#059669] text-white flex items-center justify-center">
@@ -949,7 +816,19 @@ export default function ASHADashboard() {
             </div>
 
             <div className="divide-y divide-slate-50">
-              {tasks.map(task => (
+              {tasks.length === 0 ? (
+                <div className="py-8 text-center">
+                  <CheckCircle className="w-10 h-10 text-emerald-200 mx-auto mb-2" />
+                  <p className="text-sm font-bold text-slate-400">All tasks completed</p>
+                  <p className="text-[10px] text-slate-300 mt-1">No pending tasks for today</p>
+                </div>
+              ) : tasks.filter(t => !t.done).length === 0 ? (
+                <div className="py-8 text-center">
+                  <CheckCircle className="w-10 h-10 text-emerald-200 mx-auto mb-2" />
+                  <p className="text-sm font-bold text-slate-400">All tasks completed</p>
+                  <p className="text-[10px] text-slate-300 mt-1">Great work! All tasks marked done.</p>
+                </div>
+              ) : (tasks.map(task => (
                 <div 
                   key={task.id} 
                   onClick={() => setActiveTaskModal(task)}
@@ -997,14 +876,14 @@ export default function ASHADashboard() {
                         Visit Now
                       </button>
                     )}
+                    </div>
                   </div>
-                </div>
-              ))}
+              )))}
             </div>
           </div>
 
           {/* Quick Actions Panel */}
-          <div className="xl:col-span-4 bg-white border border-slate-100 rounded-3xl p-4 sm:p-5 shadow-xs text-left space-y-4">
+          <div className="xl:col-span-4 bg-white border border-slate-100 rounded-2xl p-4 sm:p-5 shadow-sm text-left space-y-4">
             <h3 className="text-xs font-black uppercase text-[#059669] tracking-wider">Quick Add Record</h3>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-1 gap-2.5">
@@ -1017,7 +896,7 @@ export default function ASHADashboard() {
                 <button
                   key={act.id}
                   onClick={() => setShowQuickForm(act.id)}
-                  className="bg-white border border-slate-100 rounded-2xl p-3.5 sm:p-4.5 shadow-xs flex flex-row items-center gap-3 sm:gap-4 text-left hover:shadow active:scale-98 transition-all w-full min-h-[56px]"
+                  className="bg-white border border-slate-100 rounded-xl p-3.5 sm:p-4.5 shadow-sm flex flex-row items-center gap-3 sm:gap-4 text-left hover:shadow-md active:scale-[0.98] transition-all w-full min-h-[52px] cursor-pointer"
                 >
                   <div className={`w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center text-lg sm:text-xl shrink-0 ${act.color}`}>
                     {act.icon}
@@ -1030,7 +909,7 @@ export default function ASHADashboard() {
         </div>
 
         {/* Sync Status Bottom Strip */}
-        <div className={`rounded-2xl p-3 sm:p-4 border shadow-xs transition-colors ${
+        <div className={`rounded-xl p-3 sm:p-4 border shadow-sm transition-colors ${
           isOffline ? 'bg-red-50 border-red-100 text-red-700' : 'bg-[#ECFDF5] border-[#D1FAE5] text-slate-700'
         } flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-3 text-left`}>
           <div className="flex items-start sm:items-center gap-2.5 sm:gap-3.5 w-full sm:w-auto">
@@ -1060,17 +939,167 @@ export default function ASHADashboard() {
           </div>
         </div>
 
-        {/* Offline-First Healthcare Status */}
-        <OfflineFirstHealth isOffline={isOffline} lastSync={lastSync} onSync={handleSync} demoData={{ active: demoMode }} />
+        {/* Village Analytics Overview */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {[
+            { label: 'Villages Covered', value: '12', icon: MapPin, color: '#059669', change: '+2 this quarter' },
+            { label: 'Active Patients', value: '847', icon: Users, color: '#2563EB', change: '+12% vs last month' },
+            { label: 'Health Workers', value: '24', icon: UserPlus, color: '#8B5CF6', change: '3 on field now' },
+            { label: 'Monthly Checkups', value: '1,204', icon: Calendar, color: '#F97316', change: '+8% this month' },
+          ].map((stat) => {
+            const Icon = stat.icon;
+            return (
+              <div key={stat.label} className="bg-white border border-slate-100 rounded-xl p-3.5 sm:p-4 shadow-sm flex items-center gap-3 hover:shadow-md transition-all">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: stat.color + '15' }}>
+                  <Icon className="w-5 h-5" style={{ color: stat.color }} />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-lg font-black text-slate-900 leading-none">{stat.value}</p>
+                  <p className="text-[10px] font-semibold text-slate-500 leading-tight mt-0.5 truncate">{stat.label}</p>
+                  <p className="text-[8px] font-bold mt-0.5" style={{ color: stat.color }}>{stat.change}</p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
 
-        {/* Live Impact Counter with animated stats */}
-        <LiveImpactCounter />
+        {/* Monthly Impact Summary + Health Trends */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Monthly Impact Card */}
+          <div className="bg-white border border-slate-100 rounded-xl p-4 sm:p-5 shadow-sm">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-xs font-black uppercase text-slate-800 tracking-wider flex items-center gap-1.5">
+                <BarChart3 className="w-4 h-4 text-[#059669]" /> Monthly Impact
+              </h3>
+              <span className="text-[9px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">June 2026</span>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { label: 'Pregnancies', value: '24', sub: '12 high-risk', color: '#F97316' },
+                { label: 'Children', value: '156', sub: '8 SAM cases', color: '#8B5CF6' },
+                { label: 'Vaccinations', value: '312', sub: '91% coverage', color: '#059669' },
+              ].map((item) => (
+                <div key={item.label} className="text-center p-2.5 bg-slate-50 rounded-xl">
+                  <p className="text-xl sm:text-2xl font-black text-slate-900">{item.value}</p>
+                  <p className="text-[9px] sm:text-[10px] font-bold text-slate-500">{item.label}</p>
+                  <p className="text-[8px] font-semibold mt-0.5" style={{ color: item.color }}>{item.sub}</p>
+                </div>
+              ))}
+            </div>
+          </div>
 
-        {/* Judge Demo Mode — clickable scenarios */}
-        <JudgeDemoMode onSimulate={handleDemoSimulation} isSimulating={!!demoScenario} lastScenario={demoScenario} />
+          {/* Health Trends Card */}
+          <div className="bg-white border border-slate-100 rounded-xl p-4 sm:p-5 shadow-sm">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-xs font-black uppercase text-slate-800 tracking-wider flex items-center gap-1.5">
+                <TrendingUp className="w-4 h-4 text-[#059669]" /> Health Trends
+              </h3>
+              <span className="text-[9px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">This Week</span>
+            </div>
+            <div className="space-y-2.5">
+              {[
+                { label: 'Maternal Health', value: 78, color: '#059669', trend: 'up', change: '+2%' },
+                { label: 'Child Nutrition', value: 74, color: '#8B5CF6', trend: 'down', change: '-1%' },
+                { label: 'Disease Surveillance', value: 88, color: '#2563EB', trend: 'up', change: '+5%' },
+                { label: 'Emergency Response', value: 92, color: '#F97316', trend: 'up', change: '+3%' },
+              ].map((trend) => (
+                <div key={trend.label} className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <span className="text-[10px] sm:text-xs font-bold text-slate-600 truncate">{trend.label}</span>
+                    <span className={`flex items-center gap-0.5 text-[9px] font-black ${trend.trend === 'up' ? 'text-emerald-600' : 'text-red-500'}`}>
+                      {trend.trend === 'up' ? <TrendingUp className="w-2.5 h-2.5" /> : <TrendingDown className="w-2.5 h-2.5" />}
+                      {trend.change}
+                    </span>
+                  </div>
+                  <span className="text-xs font-black text-slate-700 ml-2">{trend.value}%</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
 
-        {/* Why SwasthAI Wins — Judge Panel */}
-        <JudgePanel />
+        {/* Resource Allocation + Community Risk Heatmap */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Resource Allocation Card */}
+          <div className="bg-white border border-slate-100 rounded-xl p-4 sm:p-5 shadow-sm">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-xs font-black uppercase text-slate-800 tracking-wider flex items-center gap-1.5">
+                <Zap className="w-4 h-4 text-[#059669]" /> Resource Allocation
+              </h3>
+            </div>
+            <div className="space-y-3">
+              {[
+                { label: 'ASHA Workers Deployed', current: 18, total: 24, color: '#059669' },
+                { label: 'Ambulances Active', current: 4, total: 6, color: '#EF4444' },
+                { label: 'Vaccination Stock', current: 85, total: 100, color: '#8B5CF6' },
+                { label: 'Nutrition Kits Distributed', current: 142, total: 200, color: '#F97316' },
+              ].map((res) => (
+                <div key={res.label}>
+                  <div className="flex justify-between text-[10px] font-semibold mb-1">
+                    <span className="text-slate-600">{res.label}</span>
+                    <span className="text-slate-800 font-black">{res.current}/{res.total}</span>
+                  </div>
+                  <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                    <div className="h-full rounded-full transition-all" style={{ width: `${(res.current / res.total) * 100}%`, backgroundColor: res.color }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Community Risk Heatmap — compact */}
+          <div className="bg-white border border-slate-100 rounded-xl p-4 sm:p-5 shadow-sm">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-xs font-black uppercase text-slate-800 tracking-wider flex items-center gap-1.5">
+                <Shield className="w-4 h-4 text-[#059669]" /> Community Risk Heatmap
+              </h3>
+            </div>
+            <div className="space-y-2">
+              {[
+                { village: 'V101 - Rampur', risk: 'Medium', score: 62, color: '#F97316', bg: '#FFF7ED' },
+                { village: 'V102 - Nagwa', risk: 'Low', score: 28, color: '#059669', bg: '#ECFDF5' },
+                { village: 'V103 - Sarai', risk: 'High', score: 81, color: '#EF4444', bg: '#FEF2F2' },
+                { village: 'V104 - Dariyapur', risk: 'Low', score: 15, color: '#059669', bg: '#ECFDF5' },
+                { village: 'V105 - Kashirampur', risk: 'Medium', score: 45, color: '#F97316', bg: '#FFF7ED' },
+              ].map((v) => (
+                <div key={v.village} className={`flex items-center justify-between p-2.5 rounded-xl text-xs`} style={{ backgroundColor: v.bg }}>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className={`w-2 h-2 rounded-full shrink-0`} style={{ backgroundColor: v.color }} />
+                    <span className="font-bold text-slate-700 truncate">{v.village}</span>
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <span className="text-[10px] font-black" style={{ color: v.color }}>{v.risk}</span>
+                    <span className="text-[10px] font-bold text-slate-400">{v.score}/100</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Program Performance Metrics */}
+        <div className="bg-white border border-slate-100 rounded-xl p-4 sm:p-5 shadow-sm">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-xs font-black uppercase text-slate-800 tracking-wider flex items-center gap-1.5">
+              <Activity className="w-4 h-4 text-[#059669]" /> Program Performance
+            </h3>
+            <button className="text-[10px] font-black text-[#059669] hover:underline">View Full Report</button>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[
+              { label: 'Maternal Care', value: '87%', color: '#059669', desc: 'Target: 85%' },
+              { label: 'Child Nutrition', value: '74%', color: '#8B5CF6', desc: 'Target: 80%' },
+              { label: 'Vaccination Drive', value: '91%', color: '#2563EB', desc: 'Target: 95%' },
+              { label: 'Emergency Response', value: '94%', color: '#F97316', desc: 'Target: 90%' },
+            ].map((prog) => (
+              <div key={prog.label} className="text-center p-3 bg-slate-50 rounded-xl">
+                <p className="text-lg sm:text-xl font-black" style={{ color: prog.color }}>{prog.value}</p>
+                <p className="text-[10px] font-bold text-slate-600">{prog.label}</p>
+                <p className="text-[8px] text-slate-400 font-semibold mt-0.5">{prog.desc}</p>
+              </div>
+              ))}
+            </div>
+          </div>
 
       </div>
     );
@@ -1081,11 +1110,7 @@ export default function ASHADashboard() {
       {pageLoading && (
         <div className="fixed inset-0 bg-white z-[100] flex items-center justify-center">
           <div className="text-center">
-            <div className="w-12 h-12 bg-[#059669] rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-emerald-200 animate-pulse">
-              <Heart className="w-7 h-7 text-white" />
-            </div>
-            <div className="h-3 w-36 bg-slate-100 rounded-full mx-auto mb-2 animate-pulse" />
-            <div className="h-2 w-24 bg-slate-50 rounded-full mx-auto animate-pulse" />
+            <BrandLogo size="md" />
             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-4">Loading ASHA Dashboard...</p>
           </div>
         </div>
@@ -1102,20 +1127,7 @@ export default function ASHADashboard() {
           }`}>
             {/* Branding Header */}
             <div className="flex items-center gap-3 p-5 border-b border-slate-100 bg-white justify-between">
-              {!sidebarCollapsed && (
-                <div className="flex items-center gap-2">
-                  <div className="w-9 h-9 bg-[#059669] rounded-xl flex items-center justify-center shadow shadow-emerald-500/20">
-                    <Heart className="w-5 h-5 text-white" />
-                  </div>
-                  <div className="text-left leading-none">
-                    <div className="flex items-baseline gap-0.5">
-                      <span className="text-sm font-black text-slate-900">SwasthAI</span>
-                      <span className="text-sm font-black text-[#059669]">GUARDIAN</span>
-                    </div>
-                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider mt-0.5">ASHA Field Center</p>
-                  </div>
-                </div>
-              )}
+              {!sidebarCollapsed && <BrandLogo size="lg" />}
               {sidebarCollapsed && (
                 <div className="w-9 h-9 bg-[#059669] rounded-xl flex items-center justify-center mx-auto shadow shadow-emerald-500/20">
                   <Heart className="w-5 h-5 text-white" />
@@ -1177,32 +1189,78 @@ export default function ASHADashboard() {
           {/* Main Panel */}
           <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
             {/* Topbar */}
-            <header className="sticky top-0 bg-white border-b border-slate-100 px-8 py-3.5 flex items-center justify-between z-20 backdrop-blur-md bg-opacity-95">
-              <h1 className="text-lg font-black text-slate-900 flex items-center gap-2">
-                ASHA Health Worker Portal
-              </h1>
+            <header className="sticky top-0 bg-white border-b border-slate-100 px-6 lg:px-8 py-2.5 flex items-center justify-between z-20 backdrop-blur-md bg-opacity-95">
+              <div className="flex items-center gap-4">
+                <h1 className="text-sm lg:text-base font-black text-slate-900 tracking-tight">
+                  ASHA Health Worker Portal
+                </h1>
+                <div className="h-5 w-px bg-slate-200 hidden md:block" />
+                <div className="hidden md:flex items-center gap-2.5 text-[10px] text-slate-400 font-semibold flex-wrap">
+                  <span className="flex items-center gap-1.5 bg-slate-50 border border-slate-100 rounded-lg px-2 py-1">
+                    <Calendar className="w-3 h-3 text-slate-400" />
+                    {new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  </span>
+                  <span className={`flex items-center gap-1.5 bg-slate-50 border rounded-lg px-2 py-1 ${isOffline ? 'border-red-100' : 'border-slate-100'}`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${isOffline ? 'bg-red-500' : 'bg-emerald-500'} ${!isOffline ? 'animate-pulse' : ''}`} />
+                    <span className={`${isOffline ? 'text-red-500' : 'text-emerald-600'}`}>{isOffline ? 'Offline' : 'Live'}</span>
+                  </span>
+                  <span className="flex items-center gap-1.5 bg-slate-50 border border-slate-100 rounded-lg px-2 py-1">
+                    <Clock className="w-3 h-3 text-slate-400" />
+                    Sync: {lastSync}
+                  </span>
+                  <span className={`flex items-center gap-1.5 bg-slate-50 border rounded-lg px-2 py-1 ${isOffline ? 'border-red-100' : 'border-slate-100'}`}>
+                    <Wifi className="w-3 h-3" />
+                    <span className={isOffline ? 'text-red-400' : 'text-emerald-600'}>{isOffline ? 'Disconnected' : 'AWS Live'}</span>
+                  </span>
+                </div>
+              </div>
 
-              <div className="flex items-center gap-3">
-                {/* Cloud indicators */}
+              <div className="flex items-center gap-2">
+                {/* Quick Search */}
+                <div className="relative hidden sm:block">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search patients, villages..."
+                    className="w-40 lg:w-52 pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-100 rounded-xl text-xs text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 focus:bg-white transition-all font-medium"
+                    aria-label="Search patients, villages, cases"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                      aria-label="Clear search"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Sync button */}
                 <button 
                   onClick={handleSync}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-black transition-all ${
-                    isOffline ? 'bg-red-50 text-red-600 border-red-200' : 'bg-[#ECFDF5] text-[#065F46] border-[#D1FAE5]'
+                  disabled={syncing}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[10px] lg:text-xs font-semibold transition-all active:scale-95 ${
+                    isOffline ? 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100' : 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
                   }`}
+                  aria-label={`Sync to AWS, last sync ${lastSync}`}
                 >
-                  <Wifi className={`w-3.5 h-3.5 ${syncing ? 'animate-pulse' : ''}`} />
-                  <span>{isOffline ? 'Offline' : 'Synced to AWS'}</span>
+                  <RefreshCw className={`w-3 h-3 ${syncing ? 'animate-spin' : ''}`} />
+                  <span className="hidden xs:inline">{syncing ? 'Syncing...' : isOffline ? 'Offline' : 'Sync'}</span>
                 </button>
 
                 {/* Notifications Bell */}
                 <div className="relative">
                   <button 
                     onClick={() => setShowNotifs(!showNotifs)}
-                    className="w-9 h-9 bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-center text-slate-500 hover:text-slate-800"
+                    className="w-8 h-8 lg:w-9 lg:h-9 bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-center text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-all active:scale-95"
+                    aria-label={`Notifications, ${notifications.filter(n => n.unread).length} unread`}
                   >
-                    <Bell className="w-4.5 h-4.5" />
+                    <Bell className="w-4 h-4 lg:w-4.5 lg:h-4.5" />
                     {notifications.filter(n => n.unread).length > 0 && (
-                      <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[9px] font-black w-4.5 h-4.5 rounded-full flex items-center justify-center border border-white">
+                      <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[9px] font-black w-4 h-4 lg:w-4.5 lg:h-4.5 rounded-full flex items-center justify-center border border-white">
                         {notifications.filter(n => n.unread).length}
                       </span>
                     )}
@@ -1217,15 +1275,27 @@ export default function ASHADashboard() {
                           animate={{ opacity: 1, y: 0, scale: 1 }}
                           exit={{ opacity: 0, y: 8, scale: 0.95 }}
                           className="absolute right-0 mt-2 w-80 bg-white border border-slate-100 rounded-2xl shadow-2xl z-40 overflow-hidden text-left"
+                          role="dialog"
+                          aria-label="Notifications"
                         >
                           <div className="flex items-center justify-between p-4 border-b border-slate-50 bg-[#F8FAFC]">
-                            <p className="text-xs font-black text-slate-800 uppercase tracking-wider">Operational Alerts</p>
-                            <button 
-                              onClick={() => setNotifications(prev => prev.map(n => ({...n, unread: false})))}
-                              className="text-[10px] font-bold text-[#059669] hover:underline"
-                            >
-                              Mark All Read
-                            </button>
+                            <p className="text-xs font-black text-slate-800 uppercase tracking-wider">Notifications</p>
+                            <div className="flex items-center gap-2">
+                              <button 
+                                onClick={() => setNotifications(prev => prev.map(n => ({...n, unread: false})))}
+                                className="text-[10px] font-bold text-[#059669] hover:underline"
+                                aria-label="Mark all notifications as read"
+                              >
+                                Mark All Read
+                              </button>
+                              <button 
+                                onClick={() => setNotifications([])}
+                                className="text-[10px] font-bold text-slate-400 hover:text-red-500 hover:underline"
+                                aria-label="Clear all notifications"
+                              >
+                                Clear All
+                              </button>
+                            </div>
                           </div>
                           
                           {/* Filters */}
@@ -1234,11 +1304,12 @@ export default function ASHADashboard() {
                               <button
                                 key={filter}
                                 onClick={() => setNotificationFilter(filter)}
-                                className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full transition-colors ${
+                                className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full transition-all active:scale-95 ${
                                   notificationFilter === filter 
                                     ? 'bg-[#059669] text-white' 
                                     : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
                                 }`}
+                                aria-label={`Filter by ${filter}`}
                               >
                                 {filter}
                               </button>
@@ -1247,8 +1318,10 @@ export default function ASHADashboard() {
 
                           <div className="max-h-72 overflow-y-auto divide-y divide-slate-50">
                             {filteredNotifications.length === 0 ? (
-                              <div className="p-6 text-center text-xs text-slate-400 font-semibold">
-                                No recent alerts in this category
+                              <div className="p-8 text-center">
+                                <Bell className="w-8 h-8 text-slate-200 mx-auto mb-2" />
+                                <p className="text-xs text-slate-400 font-semibold">No notifications</p>
+                                <p className="text-[10px] text-slate-300 mt-1">All caught up!</p>
                               </div>
                             ) : (
                               filteredNotifications.map(n => (
@@ -1256,8 +1329,12 @@ export default function ASHADashboard() {
                                   key={n.id} 
                                   onClick={() => handleNotificationClick(n)}
                                   className={`p-4 text-xs transition-colors flex gap-2.5 cursor-pointer hover:bg-slate-50/50 ${n.unread ? 'bg-[#ECFDF5]/35' : ''}`}
+                                  role="button"
+                                  tabIndex={0}
+                                  aria-label={`${n.text}, ${n.time}`}
+                                  onKeyDown={(e) => e.key === 'Enter' && handleNotificationClick(n)}
                                 >
-                                  <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${n.unread ? 'bg-red-500 animate-pulse' : 'bg-slate-300'}`} />
+                                  <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${n.unread ? 'bg-[#059669]' : 'bg-slate-300'}`} />
                                   <div>
                                     <p className="font-semibold text-slate-700 leading-snug">{n.text}</p>
                                     <p className="text-[9px] text-slate-400 mt-1">{n.time}</p>
@@ -1265,6 +1342,82 @@ export default function ASHADashboard() {
                                 </div>
                               ))
                             )}
+                          </div>
+                        </motion.div>
+                      </>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                {/* User Profile Dropdown */}
+                <div className="relative">
+                  <button
+                    onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+                    className="flex items-center gap-2 pl-2.5 pr-2 py-1.5 bg-slate-50 border border-slate-100 rounded-xl hover:bg-slate-100 transition-all active:scale-95"
+                    aria-label="User profile menu"
+                    aria-expanded={showProfileDropdown}
+                  >
+                    <div className="w-7 h-7 rounded-lg bg-[#059669] flex items-center justify-center">
+                      <User className="w-4 h-4 text-white" />
+                    </div>
+                    <div className="text-left hidden lg:block">
+                      <p className="text-xs font-black text-slate-900 leading-none">Sunita Devi</p>
+                      <p className="text-[9px] text-slate-400 font-semibold leading-none mt-0.5">ASHA Worker</p>
+                    </div>
+                    <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${showProfileDropdown ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  <AnimatePresence>
+                    {showProfileDropdown && (
+                      <>
+                        <div className="fixed inset-0 z-35" onClick={() => setShowProfileDropdown(false)} />
+                        <motion.div
+                          initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                          className="absolute right-0 mt-2 w-56 bg-white border border-slate-100 rounded-2xl shadow-2xl z-40 overflow-hidden text-left"
+                          role="menu"
+                        >
+                          <div className="p-4 border-b border-slate-50 bg-[#F8FAFC]">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-xl bg-[#059669] flex items-center justify-center">
+                                <User className="w-5 h-5 text-white" />
+                              </div>
+                              <div>
+                                <p className="text-sm font-black text-slate-900">Sunita Devi</p>
+                                <p className="text-[10px] text-slate-500 font-semibold">ASHA Worker · V101</p>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="py-1">
+                            {[
+                              { icon: User, label: 'Profile', action: () => navigate('/profile') },
+                              { icon: Settings, label: 'Settings', action: () => showToast('Settings coming soon', 'info') },
+                              { icon: HelpCircle, label: 'Help Center', action: () => showToast('Help Center coming soon', 'info') },
+                            ].map((item) => {
+                              const Icon = item.icon;
+                              return (
+                                <button
+                                  key={item.label}
+                                  onClick={() => { setShowProfileDropdown(false); item.action(); }}
+                                  className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+                                  role="menuitem"
+                                >
+                                  <Icon className="w-4 h-4 text-slate-400" />
+                                  {item.label}
+                                </button>
+                              );
+                            })}
+                            <hr className="my-1 border-slate-50" />
+                            <button
+                              onClick={() => { setShowProfileDropdown(false); setShowLogoutConfirm(true); }}
+                              className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-semibold text-red-600 hover:bg-red-50 transition-colors"
+                              role="menuitem"
+                            >
+                              <LogOut className="w-4 h-4" />
+                              Logout
+                            </button>
                           </div>
                         </motion.div>
                       </>
@@ -1288,67 +1441,170 @@ export default function ASHADashboard() {
         <div className="flex flex-col min-h-screen bg-slate-50/50 relative pb-24 overflow-x-hidden">
           
           {/* Header */}
-          <header className="sticky top-0 bg-white border-b border-slate-100 px-4 py-3 flex items-center justify-between z-40 shadow-xs">
-            <div className="flex items-center gap-3">
+          <header className="sticky top-0 bg-white border-b border-slate-100 px-3 sm:px-4 py-2.5 flex items-center justify-between z-40 shadow-xs backdrop-blur-md bg-opacity-95">
+            <div className="flex items-center gap-2 sm:gap-3">
               <button 
                 onClick={() => setShowMenu(true)} 
-                className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-50 border border-slate-100 active:scale-95 transition-transform"
+                className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-xl bg-slate-50 border border-slate-100 hover:bg-slate-100 active:scale-95 transition-all"
+                aria-label="Open menu"
               >
-                <Menu className="w-5 h-5 text-slate-600" />
+                <Menu className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-slate-600" />
               </button>
               
               {/* Branding */}
-              <div className="flex items-center gap-1.5">
-                <div className="w-8.5 h-8.5 bg-[#059669] rounded-xl flex items-center justify-center">
-                  <Heart className="w-4.5 h-4.5 text-white" />
-                </div>
-                <div className="leading-none text-left">
-                  <div className="flex items-baseline gap-0.5">
-                    <span className="text-sm font-black text-slate-900">SwasthAI</span>
-                    <span className="text-sm font-black text-[#059669]">GUARDIAN</span>
-                  </div>
-                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mt-0.5">
-                    Rural Health Network
-                  </p>
-                </div>
-              </div>
+              <BrandLogo size="md" />
             </div>
 
-            {/* Top Right Cloud Indicator and Notification Bell */}
-            <div className="flex items-center gap-2">
+            {/* Top Right Status and Action Icons */}
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              {/* Search toggle */}
+              <button
+                onClick={() => setShowSearch(!showSearch)}
+                className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-xl bg-slate-50 border border-slate-100 text-slate-500 hover:text-slate-800 hover:bg-slate-100 active:scale-95 transition-all sm:hidden"
+                aria-label="Toggle search"
+              >
+                <Search className="w-4 h-4" />
+              </button>
+
+              {/* Sync status pill */}
               <button
                 onClick={handleSync}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-black transition-all ${
+                disabled={syncing}
+                className={`flex items-center gap-1 px-2 sm:px-3 py-1.5 rounded-full border text-[10px] sm:text-xs font-semibold transition-all active:scale-95 ${
                   isOffline
-                    ? 'bg-red-50 text-red-600 border-red-200'
-                    : 'bg-[#ECFDF5] text-[#065F46] border-[#D1FAE5]'
+                    ? 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100'
+                    : 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
                 }`}
+                aria-label={`Sync status: ${isOffline ? 'Offline' : 'Connected'}`}
               >
-                {isOffline ? (
-                  <WifiOff className="w-3.5 h-3.5" />
+                {syncing ? (
+                  <RefreshCw className="w-3 h-3 animate-spin" />
+                ) : isOffline ? (
+                  <WifiOff className="w-3 h-3" />
                 ) : (
-                  <Wifi className={`w-3.5 h-3.5 ${syncing ? 'animate-pulse' : ''}`} />
+                  <Wifi className="w-3 h-3" />
                 )}
-                <div className="text-left hidden xs:block">
-                  <p className="text-[9px] font-black leading-none">{isOffline ? 'Offline' : 'Synced to AWS'}</p>
-                  <p className="text-[8px] font-semibold opacity-75 mt-0.5 leading-none">Last Sync: {lastSync}</p>
-                </div>
+                <span className="hidden sm:inline text-[9px] sm:text-[10px]">
+                  {syncing ? 'Syncing' : isOffline ? 'Offline' : 'AWS'}
+                </span>
               </button>
 
               {/* Notification Bell */}
               <button 
                 onClick={() => setShowNotifs(!showNotifs)}
-                className="relative w-9 h-9 flex items-center justify-center rounded-xl bg-slate-50 border border-slate-100 text-slate-600 active:scale-95 transition-transform"
+                className="relative w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-xl bg-slate-50 border border-slate-100 text-slate-600 hover:text-slate-800 hover:bg-slate-100 active:scale-95 transition-all"
+                aria-label={`Notifications, ${notifications.filter(n => n.unread).length} unread`}
               >
-                <Bell className="w-4.5 h-4.5" />
+                <Bell className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
                 {notifications.filter(n => n.unread).length > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[9px] font-black w-4.5 h-4.5 rounded-full flex items-center justify-center border border-white">
+                  <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[8px] sm:text-[9px] font-black w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 rounded-full flex items-center justify-center border border-white">
                     {notifications.filter(n => n.unread).length}
                   </span>
                 )}
               </button>
+
+              {/* User Profile Avatar */}
+              <button
+                onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+                className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[#059669] flex items-center justify-center active:scale-95 transition-transform"
+                aria-label="User profile"
+                aria-expanded={showProfileDropdown}
+              >
+                <User className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-white" />
+              </button>
             </div>
           </header>
+
+          {/* Mobile Search Bar */}
+          <AnimatePresence>
+            {showSearch && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                className="bg-white border-b border-slate-100 px-3 sm:px-4 overflow-hidden"
+              >
+                <div className="relative pb-3">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search patients, villages..."
+                    className="w-full pl-10 pr-8 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 focus:bg-white transition-all font-medium"
+                    autoFocus
+                    aria-label="Search patients, villages, cases"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                      aria-label="Clear search"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Mobile Profile Dropdown */}
+          <AnimatePresence>
+            {showProfileDropdown && !isDesktop && (
+              <>
+                <div className="fixed inset-0 z-45 bg-black/20" onClick={() => setShowProfileDropdown(false)} />
+                <motion.div
+                  initial={{ opacity: 0, y: -8, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -8, scale: 0.95 }}
+                  className="absolute top-14 right-3 z-50 w-56 bg-white border border-slate-100 rounded-2xl shadow-2xl overflow-hidden text-left"
+                  role="menu"
+                >
+                  <div className="p-4 border-b border-slate-50 bg-[#F8FAFC]">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-[#059669] flex items-center justify-center">
+                        <User className="w-4.5 h-4.5 text-white" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-black text-slate-900">Sunita Devi</p>
+                        <p className="text-[10px] text-slate-500 font-semibold">ASHA Worker · V101</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="py-1">
+                    {[
+                      { icon: User, label: 'Profile', action: () => navigate('/profile') },
+                      { icon: Settings, label: 'Settings', action: () => showToast('Settings coming soon', 'info') },
+                      { icon: HelpCircle, label: 'Help Center', action: () => showToast('Help Center coming soon', 'info') },
+                    ].map((item) => {
+                      const Icon = item.icon;
+                      return (
+                        <button
+                          key={item.label}
+                          onClick={() => { setShowProfileDropdown(false); item.action(); }}
+                          className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+                          role="menuitem"
+                        >
+                          <Icon className="w-4 h-4 text-slate-400" />
+                          {item.label}
+                        </button>
+                      );
+                    })}
+                    <hr className="my-1 border-slate-50" />
+                    <button
+                      onClick={() => { setShowProfileDropdown(false); setShowLogoutConfirm(true); }}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-semibold text-red-600 hover:bg-red-50 transition-colors"
+                      role="menuitem"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      Logout
+                    </button>
+                  </div>
+                </motion.div>
+              </>
+            )}
+          </AnimatePresence>
 
           {/* Main Content Area */}
           <main className="flex-1 p-4 max-w-xl mx-auto w-full">
@@ -2029,15 +2285,7 @@ export default function ASHADashboard() {
               className="fixed top-0 left-0 bottom-0 w-72 bg-white z-50 shadow-2xl flex flex-col text-left"
             >
               <div className="flex items-center justify-between p-5 border-b border-slate-100 bg-white">
-                <div className="flex items-center gap-2">
-                  <div className="w-8.5 h-8.5 bg-[#059669] rounded-xl flex items-center justify-center shadow shadow-emerald-500/20">
-                    <Heart className="w-5 h-5 text-white" />
-                  </div>
-                  <div className="text-left leading-none">
-                    <p className="text-xs font-black text-slate-900 leading-none">SwasthAI Guardian</p>
-                    <p className="text-[9px] text-slate-400 font-semibold uppercase mt-0.5">ASHA Field Center</p>
-                  </div>
-                </div>
+                <BrandLogo size="sm" />
                 <button onClick={() => setShowMenu(false)} className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-400">
                   <X className="w-4 h-4" />
                 </button>
@@ -2071,9 +2319,56 @@ export default function ASHADashboard() {
               </nav>
 
               <div className="p-4 border-t border-slate-100 bg-slate-50 text-[10px] font-bold text-slate-400 text-center uppercase tracking-wide">
-                SwasthAI Guardian PWA v1.2.0
+                SwasthAI PWA v1.2.0
               </div>
             </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Logout Confirmation Modal */}
+      <AnimatePresence>
+        {showLogoutConfirm && (
+          <>
+            <div className="fixed inset-0 bg-black/40 z-55 backdrop-blur-xs" onClick={() => setShowLogoutConfirm(false)} />
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="fixed inset-x-3 sm:inset-x-4 top-[30%] mx-auto max-w-sm bg-white border border-slate-100 rounded-3xl z-55 p-5 sm:p-6 shadow-2xl text-left"
+              role="alertdialog"
+              aria-label="Confirm logout"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-2xl bg-red-100 flex items-center justify-center">
+                  <LogOut className="w-5 h-5 text-red-600" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-black text-slate-900">Logout</h4>
+                  <p className="text-xs text-slate-500 font-medium mt-0.5">Are you sure you want to logout?</p>
+                </div>
+              </div>
+              <div className="flex gap-2.5">
+                <button
+                  onClick={() => setShowLogoutConfirm(false)}
+                  className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-black transition-all active:scale-95"
+                  aria-label="Cancel logout"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    setShowLogoutConfirm(false);
+                    navigate('/login');
+                    showToast('Logged out successfully', 'info');
+                  }}
+                  className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-black transition-all active:scale-95 shadow shadow-red-500/10"
+                  aria-label="Confirm logout"
+                >
+                  Logout
+                </button>
+              </div>
+            </motion.div>
           </>
         )}
       </AnimatePresence>

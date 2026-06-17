@@ -2,6 +2,42 @@
 
 All notable changes and feature developments completed during the project development window are documented in this file chronologically.
 
+## June 17, 2026 (Round 4 — Health Score Breakdown Redesign)
+### Changed
+- **Health Score Breakdown — Widget-Style Metric Card Grid**: Completely redesigned `HealthScoreBreakdown.jsx`. Replaced giant vertical progress bars with a responsive 4-column metric card grid (4-col desktop → 2-col tablet → 1-col mobile). Each card features an icon (Shield/HeartPulse/Apple/AlertTriangle), compact progress bar, trend indicator, and status badge. Overall Health Score (82/100) moved into a compact summary bar. Added health status badge, trend summary (+2.1 pts), and "Updated today" timestamp in header. Section height reduced ~65%. Zero horizontal scrolling. Modern SaaS-analytics aesthetic matching Stripe/Linear design language.
+### Modified Files
+- `frontend/src/NGO/components/HealthScoreBreakdown.jsx`: Complete rewrite with metric card grid, removed progress bars, compact layout, responsive breakpoints.
+
+---
+
+## June 17, 2026 (Round 3 — Product Polish & Branding Overhaul)
+### Added
+- **BrandLogo Component**: New reusable `BrandLogo` component (`NGO/components/BrandLogo.jsx`) with 3 size variants (sm/md/lg), heart icon, and "SwasthAI / EMPOWERING RURAL BHARAT" subtitle.
+- **Village Analytics Dashboard Section**: New real product feature sections replacing hackathon judge panels — includes Village Analytics overview cards (Villages Covered, Active Patients, Health Workers, Monthly Checkups), Monthly Impact Summary, Health Trends (Maternal, Child Nutrition, Disease Surveillance, Emergency Response), Resource Allocation with progress bars, Community Risk Heatmap, and Program Performance metrics.
+- **User Profile Dropdown**: Top-right profile menu with Profile, Settings, and Logout — consistent across desktop sidebar and mobile header.
+
+### Changed
+- **Branding Overhaul**: All branding standardized to "SwasthAI / EMPOWERING RURAL BHARAT" across Navbar, Footer, Login, Register, ASHA Dashboard (sidebar, mobile header, loading screen, mobile drawer). Removed all "GUARDIAN" and "ASHA Field Center" references.
+- **Health Score Section — Compact 2-Column Layout**: Restructured Village V101 Health Score card into a compact 2-column layout (score ring + progress bars on left, 2x2 KPI cards on right), reducing vertical height by ~40%. Progress bars given `max-w-[180px]` to prevent full-width stretching. Tooltips removed. Mobile renders as single-column stack.
+- **Dashboard Header**: Collapsed sidebar branding reduced to centered icon-only; loading screen uses BrandLogo.
+
+### Removed
+- **Hackathon/Judge Sections**: Removed `JudgeDemoMode`, `JudgePanel`, and `LiveImpactCounter` components from dashboard. Removed demo state management (`demoScenario`, `demoMode`, `handleDemoSimulation`). Removed unused imports.
+- **Unused Imports**: Cleaned up `OfflineFirstHealth`, `LiveImpactCounter`, `JudgeDemoMode`, `JudgePanel` imports.
+
+### Fixed
+- **React Build Error — Parentheses Balance**: Fixed missing closing parenthesis in nested ternary `.map()` callback (line 957) — added third `)` to match `(tasks.map(task => ( ... )))` nesting. Fixed extra closing parenthesis in Program Performance metrics map (line 1176).
+
+### Modified Files
+- `frontend/src/NGO/ASHADashboard.jsx`: Branding replacement, removed judge sections, added real product features, compacted health score section, fixed paren bugs.
+- `frontend/src/NGO/components/BrandLogo.jsx`: New reusable brand component.
+- `frontend/src/components/Navbar.jsx`: Branding updated.
+- `frontend/src/components/Footer.jsx`: Branding updated.
+- `frontend/src/pages/LoginPage.jsx`: Branding updated.
+- `frontend/src/pages/RegisterPage.jsx`: Branding updated.
+
+---
+
 ## June 17, 2026 (Round 2 — Hackathon Judge-Upgrade)
 ### Added
 - **Live Impact Counter**: New `LiveImpactCounter` component with 6 animated stats (Pregnancies: 24, Children: 156, Symptoms: 418, Emergencies: 37, Villagers: 1428, Lives Saved: 860+) using framer-motion count-up animation on mount. Dark-themed gradient card matching Judge Demo Mode style.
@@ -30,6 +66,13 @@ All notable changes and feature developments completed during the project develo
 - `frontend/src/NGO/components/JudgePanel.jsx`: "Why SwasthAI Wins" collapsible judge panel.
 ### Build
 - `npm run build`: ✓ built in 50.70s — zero errors, zero warnings.
+
+### Branding Restored to Original SwasthAI Guardian
+- **ASHADashboard.jsx** — Mobile header branding: "Rural Health Network" → "ASHA Field Center" to match the desktop sidebar
+- **ASHADashboard.jsx** — Mobile menu sidebar branding: unified from plain "SwasthAI Guardian" text to split "SwasthAI" / "GUARDIAN" (with green highlight) matching the desktop sidebar treatment; subtitle remains "ASHA Field Center"
+- **Footer.jsx** — Removed "Empowering Rural Bharat" tagline, replaced with "Rural Health Network" for consistent brand voice
+- Original icon (`Heart`), original spacing, and original color palette (`#059669` green) preserved everywhere
+- No dashboard features, workflows, modals, or responsiveness affected
 
 ### Responsive Polish & Executive Health Intelligence Card
 - **Executive Healthcare Intelligence Card**: Completely redesigned the "Village V101 – Health Score" section into a compact executive intelligence card with:

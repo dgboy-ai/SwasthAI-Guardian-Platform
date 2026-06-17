@@ -29,7 +29,7 @@ export default function Footer() {
                   SwasthAI <span className="text-emerald-500 font-medium">Guardian</span>
                 </span>
                 <span className="text-[9px] font-black text-emerald-500/60 mt-0.5 uppercase tracking-widest">
-                  Empowering Rural Bharat
+                  Rural Health Network
                 </span>
               </div>
             </div>
