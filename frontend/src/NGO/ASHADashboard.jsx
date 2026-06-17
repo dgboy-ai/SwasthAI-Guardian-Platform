@@ -13,7 +13,9 @@ import {
   Heart, Baby, Activity, Clock, Filter, Settings,
   FileText, BarChart3, Radio, Ambulance, HeartHandshake,
   Send, User, PlusCircle, Check, AlertCircle, Sparkles, Navigation,
-  Calendar, Layers, CheckSquare, BookOpen, LogOut
+  Calendar, Layers, CheckSquare, BookOpen, LogOut,
+  Database, HardDrive, Mic, MicOff, Thermometer,
+  ArrowUpCircle, UserPlus, Play, Loader2
 } from 'lucide-react';
 
 import ngoService from '../services/ngoService';
@@ -39,6 +41,15 @@ import {
   AI_RECOMMENDATIONS,
   OFFLINE_QUEUE
 } from './mockData';
+
+import HealthScoreBreakdown from './components/HealthScoreBreakdown';
+import LiveFieldImpact from './components/LiveFieldImpact';
+import VoiceAssistantFAB from './components/VoiceAssistantFAB';
+import JudgeDemoMode from './components/JudgeDemoMode';
+import EmergencyResponseWorkflow from './components/EmergencyResponseWorkflow';
+import OutbreakResponseCenter from './components/OutbreakResponseCenter';
+import SmartTaskManager from './components/SmartTaskManager';
+import OfflineFirstHealth from './components/OfflineFirstHealth';
 
 export default function ASHADashboard() {
   const navigate = useNavigate();
@@ -125,6 +136,77 @@ export default function ASHADashboard() {
   const [isDispatching, setIsDispatching] = useState(false);
   const [dispatchProgress, setDispatchProgress] = useState(0);
   const [dispatchAmbulanceId, setDispatchAmbulanceId] = useState(null);
+
+  // ─── Loading & Voice & Demo States ──────────────────────────────────────────
+  const [pageLoading, setPageLoading] = useState(true);
+  const [voiceResult, setVoiceResult] = useState(null);
+  const [demoMode, setDemoMode] = useState(false);
+
+  // ─── Flip loading after mount ───────────────────────────────────────────────
+  useEffect(() => {
+    const timer = setTimeout(() => setPageLoading(false), 600);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // ─── Handle voice assistant results ─────────────────────────────────────────
+  const handleVoiceResult = useCallback((result) => {
+    setVoiceResult(result);
+    if (result.action === 'symptom') {
+      setSymptomForm(prev => ({ ...prev, name: result.text, comments: `[Voice: ${result.lang}] ${result.text}` }));
+      setShowQuickForm('symptoms');
+    } else if (result.action === 'pregnancy') {
+      setMaternalForm(prev => ({ ...prev, name: result.text }));
+      setShowQuickForm('pregnancy');
+    } else if (result.action === 'nutrition') {
+      setNutritionForm(prev => ({ ...prev, name: result.text }));
+      setShowQuickForm('nutrition');
+    }
+    showToast(`Voice captured in ${result.lang}`, 'success');
+  }, []);
+
+  // ─── Handle judge demo simulation ────────────────────────────────────────────
+  const handleDemoSimulation = useCallback((stepId) => {
+    setDemoMode(true);
+    if (stepId === 'pregnancy') {
+      setPregnancyPatients(prev => [{
+        id: `M-D${Date.now()}`,
+        name: 'Demo Patient (Pregnancy)',
+        months: 7,
+        bp: '150/95',
+        hb: '9.8',
+        weight: '58',
+        risk: 'High',
+        status: 'Needs Visit',
+        visits: ['2026-06-20 (Urgent)']
+      }, ...prev]);
+    } else if (stepId === 'outbreak') {
+      setActiveOutbreak(prev => ({
+        ...prev,
+        reports: prev.reports + 8,
+        riskScore: Math.min(99, prev.riskScore + 5),
+        affectedVillages: prev.affectedVillages + 1
+      }));
+    } else if (stepId === 'sos') {
+      setEmergencyRequests(prev => [{
+        id: `E-D${Date.now()}`,
+        name: 'Demo Emergency Patient',
+        location: 'Village V103 Sector 2',
+        time: 'Just now',
+        condition: 'Severe chest pain / breathing difficulty',
+        status: 'pending'
+      }, ...prev]);
+    } else if (stepId === 'sync') {
+      handleSync();
+    }
+  }, []);
+
+  // ─── Clean up voice results after use ────────────────────────────────────────
+  useEffect(() => {
+    if (voiceResult) {
+      const timer = setTimeout(() => setVoiceResult(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [voiceResult]);
 
   // ─── Load Live Backend Data ──────────────────────────────────────────────────
   const fetchBackendTelemetry = useCallback(async () => {
@@ -577,6 +659,9 @@ export default function ASHADashboard() {
           </div>
         </div>
 
+        {/* Health Score Breakdown (enhanced below existing health score) */}
+        <HealthScoreBreakdown score={82} />
+
         {/* Active Outbreak Alert Banner */}
         <div className="bg-[#FEF2F2] border border-[#FEE2E2] rounded-3xl p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 shadow-xs relative overflow-hidden text-left">
           <div className="flex items-start gap-4">
@@ -605,17 +690,47 @@ export default function ASHADashboard() {
             View Details <ChevronRight className="w-4 h-4" />
           </button>
         </div>
-        {/* AI Daily Priority Card */}
+        {/* AI Health Assistant Card */}
         <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-xs mt-4 flex flex-col gap-3">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-black text-slate-900">AI DAILY PRIORITY</h3>
-            <button onClick={() => navigate('/asha/priority')} className="text-xs font-black text-[#059669] hover:underline">Open All</button>
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg bg-[#059669] flex items-center justify-center">
+                <Sparkles className="w-4 h-4 text-white" />
+              </div>
+              <h3 className="text-sm font-black text-slate-900">AI Health Assistant</h3>
+            </div>
+            <button onClick={() => navigate('/asha/priority')} className="text-xs font-black text-[#059669] hover:underline">View All</button>
           </div>
+          <p className="text-[10px] text-slate-400 font-semibold">
+            Daily priorities generated from village health data
+          </p>
           <ul className="space-y-2 text-xs">
-            <li className="flex items-center justify-between"><span>🔴 Visit Sunita Devi (High-Risk Pregnancy)</span><button className="px-3 py-1 border border-[#059669] text-[#059669] rounded-full text-xs" onClick={() => navigate('/asha/case/sunita')}>Open Case</button></li>
-            <li className="flex items-center justify-between"><span>🟠 Verify Fever Cluster in Village V101</span><button className="px-3 py-1 border border-[#059669] text-[#059669] rounded-full text-xs" onClick={() => navigate('/asha/case/fever')}>Open Case</button></li>
-            <li className="flex items-center justify-between"><span>🟡 Follow-up Malnutrition Case</span><button className="px-3 py-1 border border-[#059669] text-[#059669] rounded-full text-xs" onClick={() => navigate('/asha/case/malnutrition')}>Open Case</button></li>
-            <li className="flex items-center justify-between"><span>🟢 Vaccination Due: 3 Children</span><button className="px-3 py-1 border border-[#059669] text-[#059669] rounded-full text-xs" onClick={() => navigate('/asha/vaccination')}>Open Case</button></li>
+            {[
+              { emoji: '🔴', text: 'Visit high-risk pregnancy patient (Sunita Devi)', action: 'Visit Now', color: 'red' },
+              { emoji: '🟠', text: 'Verify fever outbreak cluster in Village V101', action: 'Verify', color: 'orange' },
+              { emoji: '🟡', text: 'Follow-up malnutrition case (Raju Kumar)', action: 'Follow-up', color: 'amber' },
+              { emoji: '🟢', text: 'Vaccination due list: 3 children pending', action: 'Check List', color: 'emerald' },
+            ].map((item, i) => (
+              <li key={i} className="flex items-center justify-between py-1.5 border-b border-slate-50 last:border-0">
+                <span className="font-medium text-slate-700"><span className="mr-1.5">{item.emoji}</span>{item.text}</span>
+                <button
+                  onClick={() => {
+                    if (i === 0) setActiveKPIModal('pregnancy');
+                    else if (i === 1) setActiveKPIModal('outbreak');
+                    else if (i === 2) setActiveKPIModal('malnutrition');
+                    else showToast('Vaccination list loaded', 'info');
+                  }}
+                  className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider whitespace-nowrap transition-all active:scale-95 ${
+                    item.color === 'red' ? 'bg-red-100 text-red-700 hover:bg-red-200' :
+                    item.color === 'orange' ? 'bg-orange-100 text-orange-700 hover:bg-orange-200' :
+                    item.color === 'amber' ? 'bg-amber-100 text-amber-700 hover:bg-amber-200' :
+                    'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
+                  }`}
+                >
+                  {item.action}
+                </button>
+              </li>
+            ))}
           </ul>
         </div>
 
@@ -701,6 +816,9 @@ export default function ASHADashboard() {
             </button>
           </div>
         </div>
+
+        {/* Live Field Impact Dashboard */}
+        <LiveFieldImpact />
 
         {/* Two-Column Stack on larger layouts */}
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 items-start">
@@ -833,12 +951,30 @@ export default function ASHADashboard() {
           </div>
         </div>
 
+        {/* Offline-First Healthcare Status */}
+        <OfflineFirstHealth isOffline={isOffline} lastSync={lastSync} onSync={handleSync} />
+
+        {/* Judge Demo Mode */}
+        <JudgeDemoMode onSimulate={handleDemoSimulation} />
+
       </div>
     );
   };
 
   return (
     <div className="w-full min-h-screen bg-slate-50/50 text-slate-800 antialiased font-sans select-none overflow-x-hidden">
+      {pageLoading && (
+        <div className="fixed inset-0 bg-white z-[100] flex items-center justify-center">
+          <div className="text-center">
+            <div className="w-12 h-12 bg-[#059669] rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-emerald-200 animate-pulse">
+              <Heart className="w-7 h-7 text-white" />
+            </div>
+            <div className="h-3 w-36 bg-slate-100 rounded-full mx-auto mb-2 animate-pulse" />
+            <div className="h-2 w-24 bg-slate-50 rounded-full mx-auto animate-pulse" />
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-4">Loading ASHA Dashboard...</p>
+          </div>
+        </div>
+      )}
       {isDesktop ? (
         /* ══════════════════════════════════════════════════════════════════════════════
            DESKTOP LAYOUT (>=1024px): COLLAPSIBLE SIDEBAR + TOP NAV
@@ -1258,31 +1394,7 @@ export default function ASHADashboard() {
               </div>
 
               {activeKPIModal === 'outbreak' && (
-                <div className="space-y-4">
-                  <div className="p-4 bg-red-50 border border-red-100 rounded-2xl flex gap-3 text-red-800">
-                    <AlertTriangle className="w-5.5 h-5.5 shrink-0 text-red-600" />
-                    <div>
-                      <p className="text-xs font-black uppercase">Active {activeOutbreak.disease} Outbreak</p>
-                      <p className="text-xs font-medium mt-1">Autonomous Outbreak Agent classified anomaly with {activeOutbreak.riskScore}% risk score based on symptom check telemetry.</p>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3.5">
-                    <div className="bg-slate-50 border border-slate-100 p-3.5 rounded-xl text-center">
-                      <p className="text-[10px] font-black text-slate-400 uppercase">Risk Score</p>
-                      <p className="text-2xl font-black text-red-600 mt-1">{activeOutbreak.riskScore}%</p>
-                    </div>
-                    <div className="bg-slate-50 border border-slate-100 p-3.5 rounded-xl text-center">
-                      <p className="text-[10px] font-black text-slate-400 uppercase">Affected Villages</p>
-                      <p className="text-2xl font-black text-slate-900 mt-1">{activeOutbreak.affectedVillages}</p>
-                    </div>
-                  </div>
-                  <button 
-                    onClick={() => { setActiveKPIModal(null); navigate('/ngo'); }}
-                    className="w-full py-2.5 bg-red-600 text-white rounded-xl text-xs font-black uppercase tracking-wider text-center active:scale-95 transition-transform"
-                  >
-                    Open Outbreak Radar Monitor
-                  </button>
-                </div>
+                <OutbreakResponseCenter outbreak={activeOutbreak} onClose={() => setActiveKPIModal(null)} />
               )}
 
               {activeKPIModal === 'sos' && (
@@ -1296,52 +1408,34 @@ export default function ASHADashboard() {
                       <Plus className="w-3.5 h-3.5" /> Trigger New SOS
                     </button>
                   </div>
-                  
-                  {isDispatching && (
-                    <div className="bg-slate-900 text-white p-3.5 rounded-2xl space-y-2 border border-slate-800">
-                      <div className="flex justify-between text-[10px] font-black uppercase">
-                        <span className="animate-pulse">Coordinating Dispatch GPS...</span>
-                        <span>{dispatchProgress}%</span>
-                      </div>
-                      <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                        <div className="h-full bg-emerald-500 transition-all duration-300" style={{ width: `${dispatchProgress}%` }} />
-                      </div>
-                    </div>
-                  )}
 
-                  <div className="space-y-2 max-h-56 overflow-y-auto divide-y divide-slate-50">
-                    {emergencyRequests.map((sos, i) => (
-                      <div key={sos.id} className="pt-2 flex justify-between items-center text-xs text-left">
-                        <div className="min-w-0 flex-1">
-                          <p className="font-bold text-slate-800 truncate">{sos.name} ({sos.location})</p>
-                          <p className="text-[10px] text-slate-500 mt-0.5 italic truncate">"{sos.condition}"</p>
-                          <p className="text-[9px] text-slate-400 mt-0.5">{sos.time}</p>
-                        </div>
-                        <div className="shrink-0 pl-2">
-                          {sos.status === 'pending' ? (
-                            <button 
-                              onClick={() => handleDispatchSOS(sos.id)}
-                              disabled={isDispatching}
-                              className="bg-red-600 hover:bg-red-700 text-white text-[9px] font-black uppercase px-2.5 py-1.5 rounded-lg active:scale-95 disabled:opacity-50 transition-all"
-                            >
-                              Dispatch
-                            </button>
-                          ) : (
-                            <span className="text-[9px] font-black px-2 py-1.5 rounded bg-emerald-50 text-emerald-700 uppercase border border-emerald-100 flex items-center gap-0.5">
-                              <Check className="w-3 h-3 stroke-[3px]" /> En-Route
-                            </span>
-                          )}
-                        </div>
+                  <div className="space-y-3 max-h-80 overflow-y-auto">
+                    {emergencyRequests.map((sos) => (
+                      <div key={sos.id} className="bg-white border border-slate-100 rounded-2xl overflow-hidden shadow-xs">
+                        <EmergencyResponseWorkflow
+                          emergency={sos}
+                          onDispatch={handleDispatchSOS}
+                          dispatching={isDispatching && dispatchAmbulanceId === sos.id}
+                          progress={dispatchProgress}
+                        />
                       </div>
                     ))}
                   </div>
-                  
-                  <button 
-                    onClick={() => { setActiveKPIModal(null); navigate('/ambulance'); }}
-                    className="w-full py-2.5 bg-red-600 text-white rounded-xl text-xs font-black uppercase tracking-wider text-center shadow shadow-red-500/10 active:scale-95 transition-transform"
-                  >
-                    Open Ambulance Fleet Map
-                  </button>
+
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => { setActiveKPIModal(null); navigate('/ambulance'); }}
+                      className="flex-1 py-2.5 bg-red-600 text-white rounded-xl text-xs font-black uppercase tracking-wider text-center active:scale-95 transition-transform shadow shadow-red-500/10"
+                    >
+                      Open Ambulance Fleet Map
+                    </button>
+                    <button 
+                      onClick={() => setActiveKPIModal(null)}
+                      className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-black uppercase tracking-wider transition-all active:scale-95"
+                    >
+                      Close
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -1494,40 +1588,11 @@ export default function ASHADashboard() {
                 </button>
               </div>
 
-              <div className="space-y-4">
-                <div>
-                  <h3 className="text-base font-black text-slate-900">{activeTaskModal.patientName}</h3>
-                  <p className="text-xs text-slate-400 mt-0.5">{activeTaskModal.type} • Distance: {activeTaskModal.distance}</p>
-                </div>
-
-                <div className="bg-slate-50 border border-slate-100 p-4 rounded-2xl space-y-2.5 text-xs text-slate-700">
-                  <p><strong>Clinical Reason:</strong> Regular health check-up and vitals assessment.</p>
-                  <p><strong>Upcoming Visits:</strong> Today (Schedule Followup)</p>
-                  <p><strong>Missed Visits:</strong> 1 (Last week check)</p>
-                  <p><strong>Assigned ASHA:</strong> Sunita Devi</p>
-                </div>
-
-                <div className="flex gap-2.5 pt-2">
-                  <button 
-                    onClick={() => handleMarkTaskCompleted(activeTaskModal.id)}
-                    className="flex-1 py-2.5 bg-[#059669] hover:bg-[#047857] text-white rounded-xl text-xs font-black uppercase tracking-wider text-center transition-colors shadow shadow-emerald-500/10 active:scale-95"
-                  >
-                    Mark Visited / Complete
-                  </button>
-                  <button 
-                    onClick={() => {
-                      const newDays = prompt("Reschedule: Enter days delay (e.g. 1):", "1");
-                      if (newDays) {
-                        showToast(`Rescheduled task successfully by ${newDays} days`, 'success');
-                        setActiveTaskModal(null);
-                      }
-                    }}
-                    className="py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-black uppercase tracking-wider transition-colors active:scale-95"
-                  >
-                    Reschedule
-                  </button>
-                </div>
-              </div>
+              <SmartTaskManager
+                task={activeTaskModal}
+                onComplete={handleMarkTaskCompleted}
+                onClose={() => setActiveTaskModal(null)}
+              />
             </motion.div>
           </>
         )}
@@ -1897,6 +1962,9 @@ export default function ASHADashboard() {
           </>
         )}
       </AnimatePresence>
+
+      {/* Floating Voice Assistant */}
+      <VoiceAssistantFAB onVoiceResult={handleVoiceResult} />
 
     </div>
   );

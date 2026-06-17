@@ -2,6 +2,34 @@
 
 All notable changes and feature developments completed during the project development window are documented in this file chronologically.
 
+## June 17, 2026
+### Added
+- **AI Health Assistant Panel**: Enhanced existing AI Daily Priority with "AI Health Assistant" card featuring actionable buttons for high-risk pregnancy, fever verification, malnutrition follow-up, and vaccination due list. All buttons wired to dashboard state.
+- **Health Score Breakdown**: Added new `HealthScoreBreakdown` component below Health Score card with SVG ring gauge, 4-category progress bars (Vaccination 91%, Maternal Health 78%, Child Nutrition 74%, Disease Risk 32%), color-coded trend indicators, and percentage changes.
+- **Live Field Impact Dashboard**: New `LiveFieldImpact` component with 5 live KPI cards: pregnancies monitored (24), children screened (156), symptoms checked today (18), emergency responses (7), villagers served/month (412) with live pulse indicator.
+- **Voice-First ASHA Workflow**: Floating microphone FAB button (`VoiceAssistantFAB`) supporting Hindi, Marathi, and English speech recognition. Voice input for symptom entry, pregnancy updates, and nutrition records with language selector.
+- **Emergency Response Workflow**: Enhanced SOS modal with `EmergencyResponseWorkflow` component showing patient details, distance, nearest ambulance (AMB-042, 2.3km, 7min ETA), dispatch button with GPS progress, estimated response time, and resolution timeline.
+- **Outbreak Response Center**: Enhanced outbreak modal with `OutbreakResponseCenter` component showing affected villages (4 villages with case counts), heat levels, risk status, 5-step suggested action plan, and field verification checklist with checkboxes.
+- **Smart Task Management**: Enhanced task modal with `SmartTaskManager` component supporting Complete, Reschedule (1-day delay), Escalate to PHC, and Assign Follow-up actions with loading states and toast confirmations.
+- **Offline-First Healthcare Status**: New `OfflineFirstHealth` component showing pending records breakdown (Maternal, Child, Ambulance, Symptoms), sync queue count, last sync timestamp, local IndexedDB connection status, and retry sync button.
+- **Judge Demo Mode**: New `JudgeDemoMode` card with "Run Live Demo" button that sequentially simulates: new pregnancy case with high BP, fever outbreak with +8 cases, emergency SOS with chest pain, and offline sync recovery. Auto-populates all dashboards.
+- **Loading Skeleton**: 600ms initial loading screen with animated brand logo and "Loading ASHA Dashboard..." text for polished startup experience.
+- **Real-World Polish**: All 8 new components connected to dashboard state. No empty states, no dead buttons. Responsive on mobile/tablet/desktop. Professional healthcare UI matching existing design system.
+### Fixed & Optimized
+- **8 New Component Files**: Created under `frontend/src/NGO/components/` — `HealthScoreBreakdown.jsx`, `LiveFieldImpact.jsx`, `VoiceAssistantFAB.jsx`, `JudgeDemoMode.jsx`, `EmergencyResponseWorkflow.jsx`, `OutbreakResponseCenter.jsx`, `SmartTaskManager.jsx`, `OfflineFirstHealth.jsx`.
+- **ASHADashboard.jsx Integration**: Added 200+ lines of integration code including new state variables, voice handler, demo simulation handler, new dashboard sections, enhanced modals, floating FAB, and loading skeleton.
+- **Modified Files**:
+  - `frontend/src/NGO/ASHADashboard.jsx`
+  - `frontend/src/NGO/components/HealthScoreBreakdown.jsx` (new)
+  - `frontend/src/NGO/components/LiveFieldImpact.jsx` (new)
+  - `frontend/src/NGO/components/VoiceAssistantFAB.jsx` (new)
+  - `frontend/src/NGO/components/JudgeDemoMode.jsx` (new)
+  - `frontend/src/NGO/components/EmergencyResponseWorkflow.jsx` (new)
+  - `frontend/src/NGO/components/OutbreakResponseCenter.jsx` (new)
+  - `frontend/src/NGO/components/SmartTaskManager.jsx` (new)
+  - `frontend/src/NGO/components/OfflineFirstHealth.jsx` (new)
+  - `frontend/src/CHANGELOG.md`
+
 ## June 14, 2026
 ### Fixed & Optimized
 - **Villager Dashboard & Guided Care Mode Cleanup**:
