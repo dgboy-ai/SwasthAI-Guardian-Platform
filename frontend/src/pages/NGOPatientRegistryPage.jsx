@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
 import {
-  Users, Search, MapPin, Calendar, Heart, Baby, Activity, ChevronRight,
-  AlertTriangle, CheckCircle, Phone, Clock, User, Sparkles, ArrowRight,
-  Brain, TrendingUp, Home, Shield
+  Users, Search, MapPin, Calendar, Heart, Baby, Activity,
+  AlertTriangle, Phone, Clock, User, Sparkles, ArrowRight,
+  Brain, TrendingUp
 } from 'lucide-react';
-import Navbar from '../components/Navbar';
+import NGOSidebarLayout from '../components/NGOSidebarLayout';
 
 const DEMO_PATIENTS = [
   { id: 'P001', name: 'Sunita Devi', age: 26, gender: 'F', condition: 'High Risk Pregnancy', village: 'Village V101', status: 'Critical', lastVisit: '2026-06-10', nextVisit: '2026-06-17', risk: 'high', score: 87 },
@@ -72,7 +71,6 @@ const RISK_CONFIG = {
 
 export default function NGOPatientRegistryPage() {
   console.log("NGOPatientRegistryPage Rendered");
-  const navigate = useNavigate();
   const [pageLoading, setPageLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filterRisk, setFilterRisk] = useState('all');
@@ -112,9 +110,8 @@ export default function NGOPatientRegistryPage() {
 
   if (pageLoading) {
     return (
-      <div className="bg-[#F0F2F5] min-h-screen font-inter">
-        <Navbar role="ngo" />
-        <main className="max-w-[1440px] mx-auto px-3 sm:px-5 lg:px-8 pt-4 sm:pt-6 pb-8">
+      <NGOSidebarLayout activeTab="patients">
+        <div className="px-6 xl:px-8 pt-4 sm:pt-6 pb-8">
           <div className="animate-pulse">
             <div className="h-10 w-72 bg-slate-200/70 rounded-xl mb-2" />
             <div className="h-4 w-64 bg-slate-200/50 rounded-lg mb-6" />
@@ -150,15 +147,14 @@ export default function NGOPatientRegistryPage() {
               ))}
             </div>
           </div>
-        </main>
-      </div>
+        </div>
+      </NGOSidebarLayout>
     );
   }
 
   return (
-    <div className="bg-[#F0F2F5] min-h-screen font-inter">
-      <Navbar role="ngo" />
-      <main className="max-w-[1440px] mx-auto px-3 sm:px-5 lg:px-8 pt-4 sm:pt-6 pb-10">
+    <NGOSidebarLayout activeTab="patients">
+      <div className="px-6 xl:px-8 pt-4 sm:pt-6 pb-10">
 
         {/* ═══════════════════════════════════════════════════════════════════
            SECTION 1: HERO — Patient Registry Command Center
@@ -479,12 +475,7 @@ export default function NGOPatientRegistryPage() {
           </motion.div>
         )}
 
-        {/* ─── BACK BUTTON ─── */}
-        <button onClick={() => navigate('/ngo')}
-          className="mt-8 w-full py-3.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-2xl text-xs font-black text-slate-500 uppercase tracking-widest transition-all flex items-center justify-center gap-1.5 hover:shadow-md active:scale-[0.98]">
-          <Home className="w-4 h-4" /> Back to Dashboard
-        </button>
-      </main>
-    </div>
+      </div>
+    </NGOSidebarLayout>
   );
 }
