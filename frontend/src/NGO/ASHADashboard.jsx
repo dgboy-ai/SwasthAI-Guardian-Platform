@@ -3,7 +3,7 @@
 // outbreak response, emergency dispatch, and offline-first sync.
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Menu, Bell, Wifi, WifiOff, Home, AlertTriangle,
@@ -53,18 +53,28 @@ import SmartTaskManager from './components/SmartTaskManager';
 
 
 export default function ASHADashboard() {
+  console.log("ASHADashboard Rendered");
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
+
+  // ─── Derive active tab from current pathname ────────────────────────────────
+  const PATH_TAB_MAP = { '/ngo': 'home', '/ngo/alerts': 'alerts', '/ngo/patients': 'patients', '/ngo/records': 'records' };
+  const activeTabFromPath = PATH_TAB_MAP[location.pathname] || 'home';
 
   // ─── Responsive Layout Detect ────────────────────────────────────────────────
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024);
   const [isTablet, setIsTablet] = useState(window.innerWidth >= 768 && window.innerWidth < 1024);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(window.innerWidth < 1024);
 
   useEffect(() => {
     const handleResize = () => {
-      setIsDesktop(window.innerWidth >= 1024);
-      setIsTablet(window.innerWidth >= 768 && window.innerWidth < 1024);
+      const desktop = window.innerWidth >= 1024;
+      const tablet = window.innerWidth >= 768 && window.innerWidth < 1024;
+      setIsDesktop(desktop);
+      setIsTablet(tablet);
+      // Auto-collapse sidebar on tablet
+      if (!desktop) setSidebarCollapsed(true);
     };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
@@ -85,8 +95,6 @@ export default function ASHADashboard() {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
-  const [activeTab, setActiveTab] = useState('home'); // 'home' | 'alerts' | 'patients' | 'records'
-
   // ─── Interactive Patient Details Modals ──────────────────────────────────────
   const [activeTaskModal, setActiveTaskModal] = useState(null); // Task object
   const [activeKPIModal, setActiveKPIModal] = useState(null); // 'sos' | 'pregnancy' | 'malnutrition' | 'pads' | 'outbreak'
@@ -1123,7 +1131,7 @@ export default function ASHADashboard() {
         <div className="flex h-screen overflow-hidden bg-slate-50">
           
           {/* Sidebar */}
-          <aside className={`bg-white border-r border-slate-100 flex flex-col h-full shrink-0 transition-all duration-300 ${
+          <aside className={`bg-white border-r border-slate-100 flex flex-col h-full shrink-0 transition-all duration-300 z-30 ${
             sidebarCollapsed ? 'w-20' : 'w-64'
           }`}>
             {/* Branding Header */}
@@ -1136,48 +1144,66 @@ export default function ASHADashboard() {
               )}
               <button 
                 onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                className="w-8 h-8 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors shrink-0"
+                className="w-8 h-8 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors shrink-0 cursor-pointer"
               >
                 <Menu className="w-4 h-4" />
               </button>
             </div>
 
             {/* Sidebar navigation */}
-            <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto">
-              {[
-                { label: 'Home', icon: Home, tab: 'home' },
-                { label: 'Alerts Logs', icon: AlertTriangle, tab: 'alerts' },
-                { label: 'Patients List', icon: Users, tab: 'patients' },
-                { label: 'Add Record Logs', icon: PlusCircle, tab: 'records' }
-              ].map(item => {
-                const Icon = item.icon;
-                const isActive = activeTab === item.tab;
-                return (
-                  <button
-                    key={item.label}
-                    onClick={() => {
-                      setActiveTab(item.tab);
-                      if (item.tab === 'alerts') navigate('/ngo');
-                      if (item.tab === 'patients') navigate('/ngo/maternal');
-                    }}
-                    className={`flex items-center gap-3.5 w-full px-4 py-3 rounded-xl transition-all border ${
-                      isActive 
-                        ? 'bg-[#ECFDF5] border-[#D1FAE5] text-[#065F46] font-bold' 
-                        : 'bg-transparent border-transparent text-slate-500 hover:bg-slate-50 hover:text-slate-880'
-                    }`}
-                  >
-                    <Icon className={`w-5 h-5 shrink-0 ${isActive ? 'text-[#059669]' : 'text-slate-400'}`} />
-                    {!sidebarCollapsed && <span className="text-sm">{item.label}</span>}
-                  </button>
-                );
-              })}
+            <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+              <AnimatePresence>
+                {[
+                  { label: 'Home', icon: Home, tab: 'home', route: '/ngo' },
+                  { label: 'Alerts Logs', icon: AlertTriangle, tab: 'alerts', route: '/ngo/alerts' },
+                  { label: 'Patients List', icon: Users, tab: 'patients', route: '/ngo/patients' },
+                  { label: 'Add Record Logs', icon: PlusCircle, tab: 'records', route: '/ngo/records' }
+                ].map((item, idx) => {
+                  const Icon = item.icon;
+                  const isActive = activeTabFromPath === item.tab;
+                  return (
+                    <motion.div
+                      key={item.label}
+                      initial={{ opacity: 0, x: -12 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: idx * 0.05, duration: 0.25, ease: 'easeOut' }}
+                    >
+                      <button
+                        onClick={() => { console.log(`[Nav] ${item.label} clicked → ${item.route}`); navigate(item.route); }}
+                        className={`relative flex items-center gap-4 w-full px-4 py-4 rounded-2xl transition-all duration-200 border cursor-pointer group ${
+                          isActive 
+                            ? 'bg-gradient-to-r from-emerald-50 via-emerald-50/90 to-emerald-100/60 border-emerald-200 text-emerald-900 font-extrabold shadow-lg shadow-emerald-200/40' 
+                            : 'bg-transparent border-transparent text-slate-500 hover:bg-slate-50 hover:text-slate-700 hover:border-slate-100 hover:shadow-sm hover:-translate-y-0.5'
+                        }`}
+                      >
+                        {/* Left active indicator bar */}
+                        {isActive && (
+                          <motion.div
+                            layoutId="activeNavIndicator"
+                            initial={{ opacity: 0, scaleY: 0 }}
+                            animate={{ opacity: 1, scaleY: 1 }}
+                            transition={{ duration: 0.2 }}
+                            className="absolute left-0 top-1/2 -translate-y-1/2 w-[4px] h-8 bg-gradient-to-b from-emerald-500 to-emerald-400 rounded-r-full shadow-sm shadow-emerald-500/30"
+                          />
+                        )}
+                        <Icon className={`w-[22px] h-[22px] shrink-0 transition-all duration-200 ${
+                          isActive ? 'text-emerald-600 drop-shadow-sm' : 'text-slate-400 group-hover:text-slate-600 group-hover:scale-110'
+                        }`} />
+                        {!sidebarCollapsed && (
+                          <span className="text-sm font-bold tracking-tight">{item.label}</span>
+                        )}
+                      </button>
+                    </motion.div>
+                  );
+                })}
+              </AnimatePresence>
             </nav>
 
             {/* Collapsible toggle status */}
             <div className="p-4 border-t border-slate-100 bg-slate-50/50">
               <button
                 onClick={handleToggleOffline}
-                className={`w-full flex items-center justify-center gap-2 p-2.5 rounded-xl font-black text-xs transition-colors border ${
+                className={`w-full flex items-center justify-center gap-2 p-2.5 rounded-xl font-black text-xs transition-colors border cursor-pointer ${
                   isOffline ? 'bg-red-50 border-red-200 text-red-600' : 'bg-slate-50 border-slate-100 text-slate-600'
                 }`}
               >
@@ -1618,21 +1644,21 @@ export default function ASHADashboard() {
               
               {/* Home Link */}
               <button 
-                onClick={() => { setActiveTab('home'); }}
-                className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-colors ${
-                  activeTab === 'home' ? 'text-[#059669]' : 'text-slate-400 hover:text-slate-600'
+                onClick={() => { console.log('[Nav] Home clicked → /ngo'); navigate('/ngo'); }}
+                className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-colors cursor-pointer ${
+                  activeTabFromPath === 'home' ? 'text-[#059669]' : 'text-slate-400 hover:text-slate-600'
                 }`}
               >
                 <Home className="w-5 h-5" />
                 <span className="text-[9px] font-black">Home</span>
-                {activeTab === 'home' && <div className="w-1.5 h-1.5 bg-[#059669] rounded-full mt-0.5" />}
+                {activeTabFromPath === 'home' && <div className="w-1.5 h-1.5 bg-[#059669] rounded-full mt-0.5" />}
               </button>
 
               {/* Alerts Link */}
               <button 
-                onClick={() => { navigate('/ngo'); }}
-                className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-colors relative ${
-                  activeTab === 'alerts' ? 'text-[#059669]' : 'text-slate-400 hover:text-slate-600'
+                onClick={() => { console.log('[Nav] Alerts clicked → /ngo/alerts'); navigate('/ngo/alerts'); }}
+                className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-colors relative cursor-pointer ${
+                  activeTabFromPath === 'alerts' ? 'text-[#059669]' : 'text-slate-400 hover:text-slate-600'
                 }`}
               >
                 <AlertTriangle className="w-5 h-5" />
@@ -1657,9 +1683,9 @@ export default function ASHADashboard() {
 
               {/* Patients Link */}
               <button 
-                onClick={() => { navigate('/ngo/maternal'); }}
-                className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-colors ${
-                  activeTab === 'patients' ? 'text-[#059669]' : 'text-slate-400 hover:text-slate-600'
+                onClick={() => { console.log('[Nav] Patients clicked → /ngo/patients'); navigate('/ngo/patients'); }}
+                className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-colors cursor-pointer ${
+                  activeTabFromPath === 'patients' ? 'text-[#059669]' : 'text-slate-400 hover:text-slate-600'
                 }`}
               >
                 <Users className="w-5 h-5" />
@@ -1669,7 +1695,7 @@ export default function ASHADashboard() {
               {/* More Drawer Link */}
               <button 
                 onClick={() => { setShowMenu(true); }}
-                className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl text-slate-400 hover:text-slate-600"
+                className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl text-slate-400 hover:text-slate-600 cursor-pointer"
               >
                 <MoreHorizontal className="w-5 h-5" />
                 <span className="text-[9px] font-black">More</span>
@@ -2306,12 +2332,9 @@ export default function ASHADashboard() {
                     onClick={() => {
                       setShowMenu(false);
                       if (m.action) m.action();
-                      else {
-                        if (m.tab) setActiveTab(m.tab);
-                        navigate(m.route);
-                      }
+                      else { navigate(m.route); }
                     }}
-                    className="flex items-center gap-3.5 w-full px-4 py-3 rounded-xl hover:bg-slate-50 hover:text-[#059669] font-bold text-slate-700 text-sm text-left transition-colors"
+                    className="flex items-center gap-3.5 w-full px-4 py-3 rounded-xl hover:bg-slate-50 hover:text-[#059669] font-bold text-slate-700 text-sm text-left transition-colors cursor-pointer"
                   >
                     <span className="text-lg leading-none">{m.icon}</span>
                     <span>{m.label}</span>

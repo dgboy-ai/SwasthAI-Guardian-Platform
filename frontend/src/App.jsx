@@ -28,6 +28,9 @@ const ChildNutritionPage     = lazy(() => import('./pages/ChildNutritionPage'));
 const GovernmentSchemesPage  = lazy(() => import('./pages/GovernmentSchemesPage'));
 const SchemeDetailPage        = lazy(() => import('./pages/SchemeDetailPage'));
 const MonitoringDashboard    = lazy(() => import('./pages/MonitoringDashboard'));
+const NGOAlertsPage          = lazy(() => import('./pages/NGOAlertsPage'));
+const NGOPatientRegistryPage = lazy(() => import('./pages/NGOPatientRegistryPage'));
+const NGORecordCreationPage  = lazy(() => import('./pages/NGORecordCreationPage'));
 
 // Components
 import Footer from './components/Footer';
@@ -209,6 +212,21 @@ export default function App() {
               <Route path="/ngo/maternal" element={
                 <ProtectedRoute allowedRole="ngo">
                    <ErrorBoundary><MaternalHealthPage /></ErrorBoundary>
+                </ProtectedRoute>
+              } />
+              <Route path="/ngo/alerts" element={
+                <ProtectedRoute allowedRole="ngo">
+                   <ErrorBoundary><NGOAlertsPage /></ErrorBoundary>
+                </ProtectedRoute>
+              } />
+              <Route path="/ngo/patients" element={
+                <ProtectedRoute allowedRole="ngo">
+                   <ErrorBoundary><NGOPatientRegistryPage /></ErrorBoundary>
+                </ProtectedRoute>
+              } />
+              <Route path="/ngo/records" element={
+                <ProtectedRoute allowedRole="ngo">
+                   <ErrorBoundary><NGORecordCreationPage /></ErrorBoundary>
                 </ProtectedRoute>
               } />
               <Route path="/ngo/child-nutrition" element={
