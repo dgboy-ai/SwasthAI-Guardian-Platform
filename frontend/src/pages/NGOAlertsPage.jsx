@@ -1,13 +1,12 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
 import {
   Bell, AlertTriangle, Ambulance, Heart, Activity, MapPin, TrendingUp,
   ChevronRight, ShieldCheck, Wifi, CheckCircle, Clock, Radio, Users,
   Shield, AlertCircle, ArrowRight, Database, HardDrive, WifiOff,
-  Brain, Bug, Gauge, Home, Lightbulb
+  Brain, Bug, Gauge, Lightbulb
 } from 'lucide-react';
-import Navbar from '../components/Navbar';
+import NGOSidebarLayout from '../components/NGOSidebarLayout';
 
 const DEMO_NOTIFICATIONS = [
   { id: 'N1', type: 'outbreak', text: 'AI Outbreak Radar: Malaria cluster anomaly in block sector.', time: '2m ago', unread: true, severity: 'high', village: 'V103' },
@@ -67,7 +66,6 @@ const SEVERITY_CONFIG = {
 
 export default function NGOAlertsPage() {
   console.log("NGOAlertsPage Rendered");
-  const navigate = useNavigate();
   const [pageLoading, setPageLoading] = useState(true);
   const [filter, setFilter] = useState('all');
 
@@ -98,38 +96,34 @@ export default function NGOAlertsPage() {
 
   if (pageLoading) {
     return (
-      <div className="bg-[#F0F2F5] min-h-screen font-inter">
-        <Navbar role="ngo" />
-        <main className="max-w-[1440px] mx-auto px-3 sm:px-5 lg:px-8 pt-4 sm:pt-6 pb-8">
-          <div className="animate-pulse">
-            <div className="h-10 w-64 bg-slate-200/70 rounded-xl mb-4" />
-            <div className="h-4 w-80 bg-slate-200/50 rounded-lg mb-6" />
-            <div className="bg-white/70 backdrop-blur-sm rounded-3xl p-6 mb-6 shadow-sm border border-slate-100">
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                {[1,2,3,4].map(i => <div key={i} className="h-28 bg-slate-100 rounded-2xl" />)}
-              </div>
-            </div>
-            <div className="flex flex-col lg:flex-row gap-6">
-              <div className="flex-1 space-y-4">
-                <div className="h-10 w-56 bg-slate-200/50 rounded-xl" />
-                <div className="flex gap-2">{[1,2,3,4,5].map(i => <div key={i} className="h-9 w-20 bg-slate-200/50 rounded-xl" />)}</div>
-                {[1,2,3].map(i => <div key={i} className="h-32 bg-white rounded-2xl shadow-sm border border-slate-100" />)}
-              </div>
-              <div className="w-full lg:w-[360px] space-y-4">
-                <div className="h-56 bg-white rounded-2xl shadow-sm border border-slate-100" />
-                <div className="h-44 bg-white rounded-2xl shadow-sm border border-slate-100" />
-              </div>
+      <NGOSidebarLayout activeTab="alerts">
+        <div className="px-6 xl:px-8 pt-4 sm:pt-6 pb-8 animate-pulse">
+          <div className="h-10 w-64 bg-slate-200/70 rounded-xl mb-4" />
+          <div className="h-4 w-80 bg-slate-200/50 rounded-lg mb-6" />
+          <div className="bg-white/70 backdrop-blur-sm rounded-3xl p-6 mb-6 shadow-sm border border-slate-100">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              {[1,2,3,4].map(i => <div key={i} className="h-28 bg-slate-100 rounded-2xl" />)}
             </div>
           </div>
-        </main>
-      </div>
+          <div className="grid xl:grid-cols-[1fr_360px] gap-6">
+            <div className="min-w-0 space-y-4">
+              <div className="h-10 w-56 bg-slate-200/50 rounded-xl" />
+              <div className="flex gap-2">{[1,2,3,4,5].map(i => <div key={i} className="h-9 w-20 bg-slate-200/50 rounded-xl" />)}</div>
+              {[1,2,3].map(i => <div key={i} className="h-32 bg-white rounded-2xl shadow-sm border border-slate-100" />)}
+            </div>
+            <div className="w-full space-y-4">
+              <div className="h-56 bg-white rounded-2xl shadow-sm border border-slate-100" />
+              <div className="h-44 bg-white rounded-2xl shadow-sm border border-slate-100" />
+            </div>
+          </div>
+        </div>
+      </NGOSidebarLayout>
     );
   }
 
   return (
-    <div className="bg-[#F0F2F5] min-h-screen font-inter">
-      <Navbar role="ngo" />
-      <main className="max-w-[1440px] mx-auto px-3 sm:px-5 lg:px-8 pt-4 sm:pt-6 pb-10">
+    <NGOSidebarLayout activeTab="alerts">
+      <div className="px-6 xl:px-8 pt-4 sm:pt-6 pb-10">
 
         {/* ═══════════════════════════════════════════════════════════════════
            SECTION 1: HERO OVERVIEW — Glassmorphism Command Header
@@ -184,10 +178,10 @@ export default function NGOAlertsPage() {
         {/* ═══════════════════════════════════════════════════════════════════
            SECTION 2: COMMAND CENTER DASHBOARD
            ═══════════════════════════════════════════════════════════════════ */}
-        <div className="flex flex-col lg:flex-row gap-6">
+        <div className="grid xl:grid-cols-[1fr_380px] gap-6">
 
           {/* ─── LEFT (70%): LIVE ALERT TIMELINE ─── */}
-          <div className="flex-1 min-w-0 space-y-4">
+          <main className="min-h-screen w-full min-w-0 space-y-4">
             <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <h2 className="text-xl font-bold text-slate-900">Live Alert Timeline</h2>
@@ -311,10 +305,10 @@ export default function NGOAlertsPage() {
                 </motion.div>
               )}
             </div>
-          </div>
+          </main>
 
           {/* ─── RIGHT (30%): INTELLIGENCE PANELS — sticky on desktop ─── */}
-          <div className="w-full lg:w-[380px] xl:w-[400px] shrink-0">
+          <aside className="w-full">
             <div className="lg:sticky lg:top-6 space-y-5">
 
               {/* Outbreak Intelligence */}
@@ -640,15 +634,10 @@ export default function NGOAlertsPage() {
                 </div>
               </motion.div>
 
-              {/* Back to Dashboard */}
-              <button onClick={() => navigate('/ngo')}
-                className="w-full py-3.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-2xl text-xs font-black text-slate-500 uppercase tracking-widest transition-all flex items-center justify-center gap-1.5 hover:shadow-md active:scale-[0.98]">
-                <Home className="w-4 h-4" /> Back to Dashboard
-              </button>
             </div>
-          </div>
+          </aside>
         </div>
-      </main>
-    </div>
-  );
-}
+      </div>
+    </NGOSidebarLayout>
+    );
+  }
