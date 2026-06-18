@@ -305,6 +305,108 @@ export default function NGOAlertsPage() {
                 </motion.div>
               )}
             </div>
+
+            {/* ─── SECTION 3: ALERT ANALYTICS & METRICS ─── */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {[
+                { label: 'Resolution Rate', value: '94%', icon: CheckCircle, color: 'text-emerald-600', bg: 'bg-emerald-50', sub: 'Last 24 hours', change: '+2.1%', changeColor: 'text-emerald-600' },
+                { label: 'Avg Response Time', value: '4.2m', icon: Clock, color: 'text-blue-600', bg: 'bg-blue-50', sub: 'Across all teams', change: '-0.8m', changeColor: 'text-emerald-600' },
+                { label: 'Active Responders', value: '14', icon: Users, color: 'text-violet-600', bg: 'bg-violet-50', sub: 'On-field personnel', change: '3 inbound', changeColor: 'text-amber-600' },
+              ].map((m, i) => {
+                const MIcon = m.icon;
+                return (
+                  <motion.div key={m.label} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 + i * 0.06 }}
+                    className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-[10px] font-black uppercase text-slate-400 tracking-[0.12em]">{m.label}</span>
+                      <div className={`w-9 h-9 rounded-xl ${m.bg} flex items-center justify-center`}>
+                        <MIcon className={`w-[18px] h-[18px] ${m.color}`} />
+                      </div>
+                    </div>
+                    <p className={`text-3xl font-black tracking-tight ${m.color} leading-none`}>{m.value}</p>
+                    <div className="flex items-center gap-2 mt-1.5">
+                      <p className="text-[10px] text-slate-400 font-semibold">{m.sub}</p>
+                      <span className={`text-[9px] font-bold ${m.changeColor}`}>{m.change}</span>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+
+            {/* ─── SECTION 4: RESOLUTION PERFORMANCE ─── */}
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
+              className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+              <div className="bg-gradient-to-r from-slate-900 to-slate-800 px-5 py-4">
+                <h3 className="text-xs font-black uppercase tracking-widest text-white flex items-center gap-2">
+                  <Activity className="w-4 h-4 text-emerald-400" /> Resolution Performance
+                </h3>
+              </div>
+              <div className="p-5 space-y-4">
+                {[
+                  { label: 'Critical Alerts Resolved', current: 4, total: 6, pct: 67, color: 'bg-red-500' },
+                  { label: 'High Priority Resolved', current: 8, total: 12, pct: 75, color: 'bg-orange-500' },
+                  { label: 'Medium Priority Resolved', current: 14, total: 16, pct: 88, color: 'bg-yellow-500' },
+                  { label: 'SLA Compliance Rate', current: 22, total: 24, pct: 92, color: 'bg-emerald-500' },
+                ].map((r) => (
+                  <div key={r.label}>
+                    <div className="flex items-center justify-between text-[11px] mb-1.5">
+                      <span className="font-bold text-slate-700">{r.label}</span>
+                      <span className="font-black text-slate-900">{r.current}/{r.total} <span className="text-slate-400 font-semibold">({r.pct}%)</span></span>
+                    </div>
+                    <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                      <motion.div initial={{ width: 0 }} animate={{ width: `${r.pct}%` }} transition={{ duration: 0.8, delay: 0.4 }}
+                        className={`h-full rounded-full ${r.color} shadow-sm`} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+
+            {/* ─── SECTION 5: RECENT ESCALATION ACTIVITY ─── */}
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
+              className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+              <div className="bg-gradient-to-r from-slate-900 to-slate-800 px-5 py-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-black uppercase tracking-widest text-white flex items-center gap-2">
+                    <ChevronRight className="w-4 h-4 text-amber-400" /> Recent Escalation Activity
+                  </h3>
+                  <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">LIVE</span>
+                </div>
+              </div>
+              <div className="divide-y divide-slate-100">
+                {[
+                  { action: 'Escalated to Rapid Response', alert: 'Lata Devi SOS', time: '12m ago', by: 'AI Auto-Escalation', priority: 'critical' },
+                  { action: 'Field team dispatched', alert: 'V103 Malaria Outbreak', time: '2h ago', by: 'Dr. Sharma', priority: 'high' },
+                  { action: 'WHO protocol activated', alert: 'Dengue containment zone', time: '3h ago', by: 'District Officer', priority: 'high' },
+                  { action: 'Resupply order placed', alert: 'V101 Nutrition Program', time: '5h ago', by: 'NGO Coordinator', priority: 'medium' },
+                  { action: 'Patient transferred', alert: 'Ram Singh Chest Pain', time: '6h ago', by: 'EMS Dispatch', priority: 'critical' },
+                ].map((act, i) => (
+                  <div key={i} className="flex items-start gap-3 px-5 py-3.5 hover:bg-slate-50 transition-colors">
+                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+                      act.priority === 'critical' ? 'bg-red-50 text-red-600 ring-1 ring-red-200' :
+                      act.priority === 'high' ? 'bg-orange-50 text-orange-600 ring-1 ring-orange-200' :
+                      'bg-amber-50 text-amber-600'
+                    }`}>
+                      <ChevronRight className="w-4 h-4" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="text-xs font-bold text-slate-800">{act.action}</p>
+                        <span className={`text-[8px] font-black px-1.5 py-0.5 rounded ${
+                          act.priority === 'critical' ? 'bg-red-100 text-red-700' :
+                          act.priority === 'high' ? 'bg-orange-100 text-orange-700' :
+                          'bg-amber-100 text-amber-700'
+                        }`}>{act.priority.toUpperCase()}</span>
+                      </div>
+                      <p className="text-[10px] text-slate-500 font-semibold mt-0.5">{act.alert} · by {act.by}</p>
+                      <p className="text-[9px] text-slate-400 font-medium mt-0.5 flex items-center gap-1">
+                        <Clock className="w-3 h-3" />{act.time}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
           </main>
 
           {/* ─── RIGHT (30%): INTELLIGENCE PANELS — sticky on desktop ─── */}
