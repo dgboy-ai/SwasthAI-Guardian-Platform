@@ -201,7 +201,7 @@ Health Summary Cards → Sync Status → Village Analytics → Program Performan
   - Standardized greetings and content to support dynamic English/Hindi translation states (switching between `"Namaste"` vs `"Welcome"` and adapting all cards/descriptions).
   - Integrated dynamic dual "SwasthAI" branding text widgets at the top header of the mobile phone viewport layout.
 - **Architecture Diagram (SVG)**:
-  - Created `docs/architecture-diagram.svg` covering all 4 layers (Client, Backend, AI Service, Data) with every H0-required arrow: Vercel→Express (REST+SSE), Express→Aurora PostgreSQL, Express→DynamoDB (5 tables with PK/SK/GSI), Express→FastAPI AI, Outbreak Agent↔Express, plus AWS Region `ap-south-1` label and legend.
+  - Created `docs/architecture-diagram.svg` covering all 4 layers (Client, Backend, AI Service, Data) with every architecture-required arrow: Vercel→Express (REST+SSE), Express→Aurora PostgreSQL, Express→DynamoDB (5 tables with PK/SK/GSI), Express→FastAPI AI, Outbreak Agent↔Express, plus AWS Region `ap-south-1` label and legend.
 
 ## June 13, 2026
 ### Fixed & Optimized

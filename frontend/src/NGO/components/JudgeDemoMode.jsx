@@ -93,8 +93,8 @@ export default function JudgeDemoMode({ onSimulate, lastScenario, isSimulating }
             <Activity className="w-4.5 h-4.5 text-white" />
           </div>
           <div>
-            <h3 className="text-sm font-black text-white">Judge Demo Mode</h3>
-            <p className="text-[10px] text-slate-400 font-semibold">Hackathon evaluation simulation — click any scenario</p>
+            <h3 className="text-sm font-black text-white">Evaluation Demo Mode</h3>
+            <p className="text-[10px] text-slate-400 font-semibold">Evaluation and demo simulation — click any scenario</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -157,7 +157,7 @@ export default function JudgeDemoMode({ onSimulate, lastScenario, isSimulating }
 
       {completedScenarios.length === 0 && !runningScenario && (
         <p className="text-[11px] text-slate-400 font-medium leading-relaxed mt-3">
-          Click any scenario card above (or "Run All") to simulate real-world events and populate all dashboard sections with realistic data. Perfect for hackathon judging.
+          Click any scenario card above (or "Run All") to simulate real-world events and populate all dashboard sections with realistic data. Perfect for evaluation and review.
         </p>
       )}
 
