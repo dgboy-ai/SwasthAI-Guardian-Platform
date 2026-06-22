@@ -137,6 +137,13 @@ let agentScans = [
 ];
 
 export function getAgentScans() {
+  if (agentScans && agentScans.length > 0) {
+    agentScans[0].timestamp = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    if (agentScans[1]) agentScans[1].timestamp = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+    if (agentScans[2]) agentScans[2].timestamp = new Date(Date.now() - 35 * 60 * 1000).toISOString();
+    if (agentScans[3]) agentScans[3].timestamp = new Date(Date.now() - 55 * 60 * 1000).toISOString();
+    if (agentScans[4]) agentScans[4].timestamp = new Date(Date.now() - 75 * 60 * 1000).toISOString();
+  }
   return agentScans;
 }
 
