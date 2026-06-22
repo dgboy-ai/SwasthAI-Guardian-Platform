@@ -61,7 +61,7 @@ Jump directly into the detailed architecture logs, code reference maps, and setu
 | :--- | :--- | :--- |
 | **Hybrid Diagnostic Engine (DL + ML)** | Simple Random Forest on a 50-class, English-only dataset (~88% accuracy on that simpler task). | **SymptomNet** (Transformer-based Deep Learning) + Logistic Regression fallback — evaluated on **101 disease classes** across 7 languages. Hold-out accuracy: **64.6%** (SymptomNet) \| **71.1%** (Logistic Regression). For context, random chance across 101 classes = ~1%. *(Note: SymptomNet is disabled by default on the Render Live Demo to fit under the 512MB RAM free-tier limit, using the 71.1% Logistic Regression model. Set `ENABLE_DEEP_MODEL=true` in your `.env` to enable it locally).* |
 | **Sakhi RAG (Retrieval-Augmented)** | Generic LLM chatbot prone to hallucinations. 35 inline knowledge chunks, no memory across turns. | **Grounded RAG system** with **243 clinical knowledge chunks** (2-sentence sliding-window overlap), calibrated retrieval threshold **0.45** (F1=1.00), and full 6-turn conversation memory. |
-| **Hardened Offline-First Sync** | Basic local storage that required an active internet connection to function. | **Judge/demo Offline Login** via pre-seeded credential hashes (hashed securely using SHA-256 for local storage protection) + **Maternal & Child Assessment** caching inside an IndexedDB transactional sync queue. Production path: encrypted device credential cache or WebAuthn/device-bound refresh token. |
+| **Hardened Offline-First Sync** | Basic local storage that required an active internet connection to function. | **Demo Offline Login** via pre-seeded credential hashes (hashed securely using SHA-256 for local storage protection) + **Maternal & Child Assessment** caching inside an IndexedDB transactional sync queue. Production path: encrypted device credential cache or WebAuthn/device-bound refresh token. |
 | **Edge Image Compression** | Standard high-resolution uploads that failed on slow connections. | On-device `browser-image-compression` shrinks images from 5MB+ down to **< 200KB automatically**, making skin scan uploads viable over 2G/EDGE networks. |
 | **Agentic Outbreak Radar** | Manual reporting — a health worker had to notice and file a report. | Autonomous background agent scans village clinical data **every 30 minutes**, clusters symptoms using Groq LLM reasoning, and pushes real-time SSE alerts to admins and ASHA workers. |
 | **API Resilience** | No failover — an LLM outage meant a broken experience. | Groq client wrapped in a **3-attempt exponential backoff loop** (1s → 2s → 4s). On full outage: falls back silently to WHO/ASHA knowledge base — never fails the user. |
@@ -72,9 +72,9 @@ Jump directly into the detailed architecture logs, code reference maps, and setu
 
 Most healthcare apps simply call a third-party LLM API and display the output. SwasthAI **owns its intelligence**, runs offline, and employs a production-grade dual-database architecture:
 
-| Pillar | Core Mechanics | Production Edge & AWS Judge Value |
+| Pillar | Core Mechanics | Production & Evaluation Value |
 | :--- | :--- | :--- |
-| **💾 Decoupled Dual-DB** | **Amazon Aurora PostgreSQL** (ACID Clinical Profiles) + **Amazon DynamoDB** (High-throughput Telemetry). | Decoupled via an asynchronous Event Dispatcher pattern. Features a local SQLite/mock fallback for instant, zero-config judge evaluations. |
+| **💾 Decoupled Dual-DB** | **Amazon Aurora PostgreSQL** (ACID Clinical Profiles) + **Amazon DynamoDB** (High-throughput Telemetry). | Decoupled via an asynchronous Event Dispatcher pattern. Features a local SQLite/mock fallback for instant, zero-config evaluations. |
 | **🤖 Autonomous Agent** | Background daemon queries PostgreSQL symptom clusters to predict and classify imminent outbreaks using Groq Llama-3.3-70B. | Runs asynchronously every 30m; predicts clusters, auto-deduplicates alerts in DynamoDB, and broadcasts real-time Server-Sent Events (SSE). |
 | **🔌 Offline-First Sync** | Transactional client-side **IndexedDB Sync Queue** caches patient vitals and reports during cellular outages. | Replays automatically upon reconnection. Idempotency keys and Last-Write-Wins (LWW) rules guarantee zero database duplication. |
 | **🧠 Grounded RAG** | Low-latency local semantic search engine indexing 243 WHO/MoHFW clinical guideline chunks. | Calibrated threshold (0.45, F1=1.00) and a 6-turn conversation memory prevent model hallucinations. |
@@ -92,7 +92,7 @@ Most healthcare apps simply call a third-party LLM API and display the output. S
 
 ---
 
-## 🔬 Judge API Access & Demo Credentials
+## 🔬 API Access & Demo Credentials
 
 ```bash
 # Full stack status (AWS connections, DynamoDB schema, AI modules)

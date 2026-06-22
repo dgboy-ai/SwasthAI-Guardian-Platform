@@ -1,6 +1,6 @@
 # SwasthAI Guardian: Integrated Rural Health Platform
 
-> **Note to Judges:** Our attached demo video showcases the V1 foundation of our platform. Below is the documentation for our **V3 Production Upgrade**, which adds Grounded RAG, Offline Login, Autonomous Outbreak Agent, NGO B2B Impact Analytics, and Predictive Village Risk Intelligence Early Warning System.
+> **Note on Evaluation:** Our attached demo video showcases the V1 foundation of our platform. Below is the documentation for our **V3 Production Upgrade**, which adds Grounded RAG, Offline Login, Autonomous Outbreak Agent, NGO B2B Impact Analytics, and Predictive Village Risk Intelligence Early Warning System.
 
 A production-grade, AI-powered healthcare platform built for rural India. Connecting remote villagers, ASHA health workers, and district hospitals through real machine learning, offline-first architecture, and regional language support.
 
@@ -27,7 +27,7 @@ Most health applications simply call a third-party AI API and display the result
 *   **Agentic Outbreak Radar (Layer 1 — Autonomous):** An autonomous background AI agent scans village clinical data every 30 minutes. If it detects a localized symptom cluster (e.g., 5+ cases of fever in one village), it triggers instant, targeted notifications for both District Admins and local ASHA workers to stop outbreaks before they become epidemics.
 *   **Predictive Village Risk Intelligence (Layer 2 — Early Warning):** A new dual-layer system that *forecasts elevated village risk before outbreaks begin*. Uses a transparent weighted engine: Symptom Trend Growth (40%), Nearby Outbreak Proximity (25%), NVBDCP Indian Seasonal Calendar (20%), Referral Backlog (15%). Admins get a district-wide risk heatmap; NGO workers see a village risk forecast. Both include XAI contributor bars, prevention checklists, and an Intervention Impact Forecast simulator.
 *   **NGO B2B Impact Analytics:** Grant-proof monthly analytics dashboard with referral closure rates, vaccination completion %, Risk Watchlist (high-risk pregnancies, overdue vaccinations, emergency cases), Top Performers leaderboard, Recommended Actions engine, and clean PDF export.
-*   **Hardened Offline-First Sync:** We engineered a clearly labeled **Judge/Demo Offline Login**. Using IndexedDB and Service Workers, ASHA workers in zero-signal zones can use demo credential hashes, access cached data, and record patient vitals. Production replacement is encrypted device credential cache or WebAuthn/device-bound refresh tokens.
+*   **Hardened Offline-First Sync:** We engineered a clearly labeled **Demo Offline Login**. Using IndexedDB and Service Workers, ASHA workers in zero-signal zones can use demo credential hashes, access cached data, and record patient vitals. Production replacement is encrypted device credential cache or WebAuthn/device-bound refresh tokens.
 *   **Smart Share Peer-to-Peer:** A high-visibility Share Button generates a **Dynamic QR Code**, allowing villagers and ASHA workers to distribute the PWA instantly without needing an app store or internet connection.
 *   **Full Native Localization & Voice:** The entire platform dynamically supports **7 languages natively** (English, Hindi, Hinglish, Marathi, Tamil, Telugu, and Bengali), with Voice-to-Text integration ensuring non-literate users can interact with complex medical AI seamlessly.
 

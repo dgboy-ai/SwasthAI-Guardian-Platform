@@ -307,7 +307,7 @@ export default function MonitoringDashboard() {
     if (demoRunning) return;
     setDemoRunning(true);
     setSimLogs([]);
-    addSimLog('🏁 Starting SwasthAI Judge Demo Pipeline...', '#6366f1');
+    addSimLog('🏁 Starting SwasthAI Demo Pipeline...', '#6366f1');
     
     // 1. Sim Offline
     addSimLog('🔌 Simulating cellular network drop (OFFLINE)...', '#f59e0b');
@@ -606,7 +606,7 @@ export default function MonitoringDashboard() {
       {/* ── AWS Stack Status Banner */}
       <StackStatusBanner online={onlineStatus} />
 
-      {/* ── 👨‍⚖️ Judge Evaluation Toolkit */}
+      {/* ── ⚙️ Demo Evaluation Toolkit */}
       <div style={{
         background: 'linear-gradient(135deg, rgba(99,102,241,0.08) 0%, rgba(139,92,246,0.08) 100%)',
         border: '1px solid rgba(139,92,246,0.2)',
@@ -620,9 +620,9 @@ export default function MonitoringDashboard() {
         gap: 16
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ fontSize: 20 }}>👨‍⚖️</span>
+          <span style={{ fontSize: 20 }}>⚙️</span>
           <div>
-            <h4 style={{ fontSize: 13, fontWeight: 800, margin: 0, color: '#c084fc', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Judge Evaluation Toolkit</h4>
+            <h4 style={{ fontSize: 13, fontWeight: 800, margin: 0, color: '#c084fc', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Demo Evaluation Toolkit</h4>
             <p style={{ fontSize: 11, color: '#9ca3af', margin: '2px 0 0' }}>Simulate offline failures and execute end-to-end user sync flows instantly.</p>
           </div>
         </div>
@@ -706,7 +706,7 @@ export default function MonitoringDashboard() {
             📶 P2P Relay Sim
           </button>
 
-          {/* One-Click Judge Demo */}
+          {/* One-Click Demo Simulation */}
           <button
             onClick={runJudgeDemo}
             disabled={demoRunning}
@@ -725,7 +725,7 @@ export default function MonitoringDashboard() {
               gap: 6
             }}
           >
-            {demoRunning ? '⏳ Running Demo...' : '🚀 One-Click Judge Demo'}
+            {demoRunning ? '⏳ Running Demo...' : '🚀 One-Click Demo Simulation'}
           </button>
 
           {/* Seed loader */}

@@ -1,6 +1,6 @@
 # SwasthAI Guardian: Integrated Rural Health Platform
 
-> **Note to Judges:** Our attached demo video showcases the V1 foundation of our platform. Below is the documentation for our **V3 Production Upgrade**, which introduces Grounded RAG, Offline Login, Local Offline Maternal/Child Sync, Autonomous Outbreak Agent, NGO B2B Impact Analytics, and the Predictive Village Risk Intelligence Early Warning System. Check GitHub Readme.md for full changelog.
+> **Note on Evaluation:** Our attached demo video showcases the V1 foundation of our platform. Below is the documentation for our **V3 Production Upgrade**, which introduces Grounded RAG, Offline Login, Local Offline Maternal/Child Sync, Autonomous Outbreak Agent, NGO B2B Impact Analytics, and the Predictive Village Risk Intelligence Early Warning System. Check GitHub Readme.md for full changelog.
 
 A production-grade, AI-powered B2B district health operations platform for rural India. It connects villagers, ASHA health workers, NGOs, and district health offices through real machine learning, offline-first workflows, regional language support, and live AWS database proof.
 
@@ -30,8 +30,8 @@ Most health applications simply call a third-party AI API and display the result
 | **Under-the-Hood Offline Sync (Maternal & Child Health)** | Required active internet connection for patient registrations. | NGO/ASHA workers can now register maternal pregnancy vitals and child nutrition assessments in zero-signal zones. The app computes risk levels and growth status instantly client-side using **local clinical heuristic engines** (WHO blood pressure criteria and BMI Z-score indexes), queuing records locally with visual **"Sync Pending"** indicators, and silently uploading them as soon as the browser detects an internet signal. |
 | **Edge Visual Guardrails & Image Compression** | Standard high-resolution photo uploads, prone to failure on spotty connections. | Before analyzing skin photos, a **browser-side JavaScript Canvas analysis layer** downscales the image to a 16x16 grid in sub-milliseconds to verify skin tone presence, standard deviation (blank checks), and structural edge density (blur checks). A server-side Pillow validator provides a secondary confirmation pass. If passed, the image is compressed from 5MB+ down to less than 200KB on-the-fly using the browser-image-compression library to guarantee successful uploads over 2G/3G connections. |
 | **Agentic Outbreak Radar (Layer 1)** | None / Manual epidemiology reporting. | An autonomous background AI agent scans village clinical data every 30 minutes. If it detects a localized symptom cluster (e.g., 5+ cases of fever in one village within 24 hours), it triggers instant, targeted notifications for both District Admins and local ASHA workers to stop outbreaks before they become epidemics. |
-| **Predictive Village Risk Intelligence (Layer 2)** | Outbreak alerts only — no proactive risk forecasting. | A new Early Warning System forecasts elevated village-level health risk *before outbreaks begin*, using a transparent weighted engine: symptom trend growth (40%), nearby outbreak proximity (25%), Indian seasonal NVBDCP calendar (20%), and referral backlog (15%). Admins see a district-wide risk heatmap; each village has a drilldown with XAI contributor bars, health category flags, recommended prevention actions, and an Intervention Impact Forecast simulator showing projected risk reduction. NGO workers see their village's Risk Forecast tab. Works offline with graceful demo fallback. |
-| **Hardened Offline-First Login** | Required active network signal to log in. | We engineered a clearly labeled **Judge/Demo Offline Login**. Demo credentials are pre-seeded into a local credential-hash cache on the first page load for evaluation. Production replacement is documented as encrypted device credential cache or WebAuthn/device-bound refresh tokens; the app displays visible offline/demo mode labeling so this is not mistaken for production security. |
+| **Predictive Village Risk Intelligence (Layer 2)** | Outbreak alerts only — no proactive risk forecasting. | A new Early Warning System forecasts elevated village-level health risk *before outbreaks begin*, using a transparent weighted engine: symptom trend growth (40%), nearby outbreak proximity (25%), Indian seasonal NVBDCP calendar (20%), and referral backlog (15%). Admins see a district-wide risk heatmap; each village has a drilldown with XAI contributor drilldown, health category flags, recommended prevention actions, and an Intervention Impact Forecast simulator showing projected risk reduction. NGO workers see their village's Risk Forecast tab. Works offline with graceful demo fallback. |
+| **Hardened Offline-First Login** | Required active network signal to log in. | We engineered a clearly labeled **Demo Offline Login**. Demo credentials are pre-seeded into a local credential-hash cache on the first page load for evaluation. Production replacement is documented as encrypted device credential cache or WebAuthn/device-bound refresh tokens; the app displays visible offline/demo mode labeling so this is not mistaken for production security. |
 | **Smart Share Peer-to-Peer** | Standard app store or download link distribution. | A high-visibility Share Button generates a **Dynamic QR Code**, allowing villagers and ASHA workers to distribute the PWA instantly without needing an app store or internet connection. |
 | **Full Native Localization & Voice** | Basic English-only, text-only interface. | The entire platform dynamically supports **7 languages natively** (English, Hindi, Hinglish, Marathi, Tamil, Telugu, and Bengali) with Voice-to-Text integration ensuring non-literate users can interact with complex medical AI seamlessly. |
 
@@ -46,8 +46,8 @@ SwasthAI Guardian is built on a **true 3-service Microservices Architecture**. E
 |   React + Vite Frontend |---->|  Node.js + Express API   |---->|  FastAPI AI Service    |
 |   (Offline PWA Mode)    |     |  (Secure Backend Hub)    |     |  (Neural AI Engine)    |
 |                         |     |                          |     |                        |
-|  * Luminous Emerald UI  |     |  * JWT Auth & Bcrypt     |     |  * SymptomNet (64.6%) |
-|  * 6-Language i18n      |     |  * Cluster Load Balance  |     |  * Grounded RAG (Sakhi)|
+|  * Luminous Emerald UI  |     |  * JWT Auth & Bcrypt     |     |  * SymptomNet (64.6%)  |
+|  * 7-Language i18n      |     |  * Cluster Load Balance  |     |  * Grounded RAG (Sakhi)|
 |  * Offline Login/Sync   |     |  * SQLite (Offline Sync) |     |  * Edge Photo Guardrail|
 |  * Voice Input/Output   |     |  * Target Alert Routing  |     |  * Outbreak Agent Loop |
 |  * Smart Share QR       |     |  * DISHA 2023 Compliant  |     |  * Clinical Text Guard |
@@ -64,33 +64,6 @@ SwasthAI Guardian uses a **deliberate dual-database strategy** — each database
 |-------|----------|-----|
 | **Transactional Health Records** | Amazon Aurora PostgreSQL | ACID compliance, relational joins across users/records/schemes, SERIAL PKs, TIMESTAMPTZ precision |
 | **Event Streams & Telemetry** | Amazon DynamoDB | Infinitely scalable writes, no schema rigidity for outbreak events, sub-ms latency for SOS streams |
-
-### Aurora PostgreSQL Tables
-- `users` — ASHA/NGO/Admin registry with `aadhaar_hash`, `caste`, `economic_status` for scheme eligibility
-- `village_health` — symptom submissions with outbreak detection metadata
-- `maternal_health` — pregnancy vitals with WHO risk classification
-- `malnutrition_cases` — child Z-score / BMI records
-- `government_schemes` — PM-JAY, JSY, PMMVY, RBSK, PMSBY with eligibility JSON
-- `ambulance_requests` — SOS dispatch records with GPS coordinates
-
-### DynamoDB Tables
-- `outbreak_telemetry` — event stream per village node, timestamp-indexed
-- `sync_queues` — per-device offline queue state for ASHA workers
-- `village_node_state` — real-time connectivity, last sync time, pending count
-- `emergency_streams` — high-priority SOS audit trail
-
-### The Offline→AWS Pipeline
-```
-ASHA Worker (offline zone)
-  → IndexedDB Write Queue (browser)
-  → navigator.onLine reconnect trigger
-  → syncAllQueues() replay
-  → Aurora PostgreSQL (vitals) + DynamoDB (sync_restored event)
-```
-
-This architecture means **clinical data is never lost** — it accumulates locally and flows to production AWS infrastructure the moment signal returns.
-
-The Admin dashboard includes a Live System Verification panel that calls `/api/health/detailed` and shows Aurora status, DynamoDB status, region, table names, pool counts, production readiness, recent request traces, and latest telemetry writes. Local SQLite/mock modes are labeled explicitly for judge/demo evaluation.
 
 ---
 
@@ -196,7 +169,7 @@ The Admin dashboard includes a Live System Verification panel that calls `/api/h
 *   Developed complete **offline Login, Registration, and maternal/child sync** registry.
 *   Created an **autonomous AI outbreak detection system** running on 30-minute intervals.
 *   Built a **Predictive Village Risk Intelligence engine** — a transparent, weighted 4-signal forecasting system (symptom trends, seasonal NVBDCP calendar, outbreak proximity, referral backlogs) giving India's health system proactive early warning before epidemics begin.
-*   Delivered **B2B NGO Impact Analytics** with grant-proof metrics, leaderboards, risk watchlists, and PDF exports — turning operational data into actionable intelligence for NGO grant applications.
+*   Delivered **B2B NGO Impact Analytics** with grant-proof metrics, leaderboards, risk watchlists, and PDF exports.
 *   Achieved **100% multilingual translation key synchronization (366 unique keys)** across **7 Indian languages** (including Hinglish) with voice interaction.
 *   Designed a highly polished, production-grade offline-first PWA.
 *   Built a **V2 Clinical Heuristic Fallback** that refuses uncertain disease guesses and returns conservative ASHA-grounded next steps when models are uncertain.
@@ -224,6 +197,7 @@ We also learned how proactive AI systems can shift medical response from reactiv
 
 *   **Divyansh Gupta (Team Leader):** AI/ML, Backend Architecture, Cloud Deployment.
 *   **Tejshvee Yerpurwad:** Frontend, UX Design, Localization, Grounded RAG Engine.
+*   **Rishabh Agnihotri:** Official Presenter of SwasthAI Guardian.
 
 ***
 
