@@ -1,6 +1,6 @@
 # ⚙️ Installation, Setup & Local Development Guide
 
-> **For judges who just want to evaluate**: The live app is already deployed.
+> **For evaluators who just want to test**: The live app is already deployed.
 > ```
 > https://swasth-ai-guardian-platform.vercel.app
 > ```

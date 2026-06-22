@@ -45,7 +45,7 @@
 |------|-----------------|-------------------|------------------|
 | 1:10–1:15 | **Demo Page** — Cursor clicks **Admin** tab, clicks **"Try This →"**. | _"Finally, the Admin Command Center — built for district health officers."_ | Quick cut |
 | 1:15–1:22 | **Admin Dashboard — Command Center** (`/admin`) — Sidebar with 10 views. Focus on main area: KPI gauges (pregnancies, malnutrition, emergency count), weekly trends chart (symptoms vs emergencies), outbreak alert cards with AI confidence badges. | _"The Command Center shows live KPIs, trend charts, and AI-generated recommendation cards — each with confidence scores from the autonomous outbreak loop."_ | Page load |
-| 1:22–1:30 | **Admin — Toggle Judge Demo Mode** — Cursor clicks the "Judge Tour" toggle in sidebar (bottom left). New seeded data populates. | _"Judges can toggle demo mode to see rich seeded data — pregnancies, outbreaks, ambulance requests — even if the live database is empty."_ | Cursor clicks toggle, data updates in place |
+| 1:22–1:30 | **Admin — Toggle Demo Mode** — Cursor clicks the "Demo Tour" toggle in sidebar (bottom left). New seeded data populates. | _"Evaluators can toggle demo mode to see rich seeded data — pregnancies, outbreaks, ambulance requests — even if the live database is empty."_ | Cursor clicks toggle, data updates in place |
 | 1:30–1:38 | **Admin — Outbreak Radar** (`#outbreak` view) — Outbreak cards list: "Cholera Outbreak Cluster" (94% confidence), "Dengue Outbreak Risk", "Typhoid Signal Detected". Cursor clicks **"Simulate Outbreak"** button. | _"The Outbreak Radar shows autonomous AI detections. We can simulate a new outbreak event — it writes to DynamoDB and pushes via SSE to all connected admin clients in real time."_ | Sidebar click → view transition |
 | 1:38–1:42 | **Admin — AI Intelligence** (`#ai` view) — AI reasoning traces with Groq Llama-3.3-70b confidence scores and pattern analysis. | _"Every AI decision is transparent — the Groq-powered reasoning trace shows exactly how the model classified each outbreak."_ | Sidebar click → view transition |
 | 1:42–1:50 | **Admin — System Status** (`#system` view) — 4-panel stack health: Aurora PostgreSQL, DynamoDB, AI Service, Service Worker/IndexedDB. Shows production_ready badge. | _"The System Status view proves the entire AWS stack is live — Aurora PostgreSQL, DynamoDB PAY_PER_REQUEST, the AI service, and the PWA offline layer."_ | Sidebar click → view transition |
@@ -77,7 +77,7 @@
 
 ## Appended Section: AWS Console Proofs (Optional, 0:30)
 
-If judges require AWS Console screenshots to verify database usage, insert these between 2:15 and 2:20 as a cutaway:
+If evaluators require AWS Console screenshots to verify database usage, insert these between 2:15 and 2:20 as a cutaway:
 
 | Time | Visual | Audio |
 |------|--------|-------|
@@ -143,7 +143,7 @@ The app comes with pre-seeded data:
 - **Villager:** Phone `9876543210` / Password `Demo@1234`
 - **ASHA Worker:** Phone `9876543211` / Password `Demo@1234`
 - **Admin:** Email `admin@swasthai.in` / Password `Demo@1234`
-- **Judge Demo Toggle:** In Admin sidebar (bottom-left toggle), seeds 30+ records
+- **Demo Tour Toggle:** In Admin sidebar (bottom-left toggle), seeds 30+ records
 
 ### Cursor Movement Tips
 - Move cursor deliberately and slowly — no frantic movements

@@ -26,7 +26,7 @@ const DEFAULT_TRACES = [
   }
 ];
 
-export default function AIReasoningTrace({ judgeDemoMode }) {
+export default function AIReasoningTrace({ demoTourMode }) {
   const [traces, setTraces] = useState([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(true);
@@ -38,7 +38,7 @@ export default function AIReasoningTrace({ judgeDemoMode }) {
       .finally(() => setLoading(false));
   }, []);
 
-  const displayedTraces = (judgeDemoMode || traces.length === 0) ? DEFAULT_TRACES : traces;
+  const displayedTraces = (demoTourMode || traces.length === 0) ? DEFAULT_TRACES : traces;
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden text-left">

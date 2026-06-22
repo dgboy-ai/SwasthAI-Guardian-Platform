@@ -218,7 +218,7 @@ router.post('/seed-demo-data', auth, checkRole(['admin']), async (req, res) => {
   }
 });
 
-// GET /api/admin/users — registry for district admin (judges / demos)
+// GET /api/admin/users — registry for district admin (evaluators / demos)
 router.get('/users', auth, checkRole(['admin']), async (req, res) => {
   const db = req.app.locals.db;
   try {

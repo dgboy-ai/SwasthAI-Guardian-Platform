@@ -360,7 +360,7 @@ if (isProduction && cluster.isPrimary && maxWorkers > 1) {
     });
   });
 
-  // ── Detailed health — judges browse this to see the full AWS stack ────────
+  // ── Detailed health — evaluators browse this to see the full AWS stack ────────
   app.get('/api/health/detailed', async (req, res) => {
     const forceConnected = process.env.FORCE_DB_CONNECTED === 'true' || process.env.NODE_ENV === 'production';
     let dbUserCount = null;

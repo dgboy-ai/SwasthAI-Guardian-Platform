@@ -1,9 +1,9 @@
 /**
  * SwasthAI — SQLite Demo Seed
- * Creates demo users with properly bcrypt-hashed passwords for hackathon demos.
+ * Creates demo users with properly bcrypt-hashed passwords for verification.
  * Run with: node seeds/seed_sqlite.js
  *
- * Demo Credentials (for judges):
+ * Demo Credentials (for evaluators):
  *   Villager  → phone: 9998887770  | password: village123
  *   NGO/ASHA  → phone: 9998887771  | password: asha2024
  *   Admin     → email: admin@swasthai.in | password: admin2024

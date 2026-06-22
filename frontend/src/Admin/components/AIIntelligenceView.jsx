@@ -11,7 +11,7 @@ const DEFAULT_RECS = [
   { color: 'border-l-blue-400', action: 'Investigate', btnCls: 'bg-blue-500 hover:bg-blue-600', text: 'Respiratory Cases detected in Village 8 — Cough + cold cluster — 5 cases in 12 hours', conf: 0.84 }
 ];
 
-export default function AIIntelligenceView({ recs, judgeDemoMode }) {
+export default function AIIntelligenceView({ recs, demoTourMode }) {
   const displayedRecs = (recs && recs.length > 0) ? recs : DEFAULT_RECS;
   const [scans, setScans] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -169,7 +169,7 @@ export default function AIIntelligenceView({ recs, judgeDemoMode }) {
       </div>
       
       {/* AI Reasoning Trace — live Groq decision log from Sakhi RAG */}
-      <AIReasoningTrace judgeDemoMode={judgeDemoMode} />
+      <AIReasoningTrace demoTourMode={demoTourMode} />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 /**
  * SwasthAI Demo Seed Script (PostgreSQL Aurora Edition)
- * Creates known working demo accounts and clinical/operational data for hackathon evaluation.
+ * Creates known working demo accounts and clinical/operational data for evaluation.
  * 
  * Run: node seed.js
  */

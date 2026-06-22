@@ -6,7 +6,7 @@ import api from '../services/api';
 import Navbar from '../components/Navbar';
 import { queueChildRecord, getPendingChild, syncAllQueues } from '../utils/offlineSyncQueue';
 
-// ── Judge / Demo seed data — shown when DB returns empty ────────────────────────
+// ── Evaluation / Demo seed data — shown when DB returns empty ────────────────────────
 // Real-world representative data using WHO WHZ-score classification.
 const DEMO_CHILD_RECORDS = [
   {
@@ -355,7 +355,7 @@ export default function ChildNutritionPage() {
             {isDemoMode && (
               <div className="flex items-center gap-1.5 mt-2 px-3 py-1.5 bg-violet-50 border border-violet-200 rounded-full w-fit">
                 <FlaskConical className="w-3 h-3 text-violet-500" />
-                <span className="text-[9px] font-black text-violet-600 uppercase tracking-widest">Judge Demo Mode — Representative Data · Sehore District</span>
+                <span className="text-[9px] font-black text-violet-600 uppercase tracking-widest">Demo Mode — Representative Data · Sehore District</span>
               </div>
             )}
           </div>

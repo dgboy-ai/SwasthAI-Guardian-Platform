@@ -114,7 +114,7 @@ const adminService = {
     }
   },
 
-  // Full stack status for judges (backend: GET /api/health/detailed)
+  // Full stack status for evaluation verification (backend: GET /api/health/detailed)
   getSystemStatus: async () => {
     try {
       const res = await api.get('/health/detailed');

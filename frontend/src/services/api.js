@@ -26,7 +26,7 @@ api.interceptors.request.use(async (config) => {
     config.headers.Authorization = `Bearer ${token}`;
   }
 
-  // Simulated network state for judges evaluation
+  // Simulated network state for evaluation and demo tours
   const simState = localStorage.getItem('simulated_network_state');
   if (simState === 'offline') {
     const err = new Error('Simulated Offline Mode');

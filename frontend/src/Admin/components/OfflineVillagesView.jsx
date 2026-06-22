@@ -10,9 +10,9 @@ const DEFAULT_NODES = [
   { villageId: 'VILLAGE_015', status: 'offline', lastActive: new Date(Date.now() - 3600000).toISOString(), syncPendingCount: 8, deviceName: 'ASHA-Tab-15C' },
 ];
 
-export default function OfflineVillagesView({ S, dynamoFeed, judgeDemoMode }) {
+export default function OfflineVillagesView({ S, dynamoFeed, demoTourMode }) {
   const liveNodes = dynamoFeed?.village_node_state || [];
-  const nodes = (judgeDemoMode || liveNodes.length === 0) 
+  const nodes = (demoTourMode || liveNodes.length === 0) 
     ? DEFAULT_NODES 
     : liveNodes.map(node => ({
         villageId: node.villageId,

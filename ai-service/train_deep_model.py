@@ -160,7 +160,7 @@ artifacts = {
 joblib.dump(artifacts, "deep_disease_model.pkl")
 print("[SAVED] deep_disease_model.pkl")
 
-# ── Audit log (judge-readable) ────────────────────────────────────────────────
+# ── Audit log (evaluator-readable) ────────────────────────────────────────────────
 accuracy_path = os.path.join(os.path.dirname(__file__), "deep_model_accuracy.txt")
 with open(accuracy_path, "w", encoding="utf-8") as f:
     f.write("SwasthAI Guardian - SymptomNet Deep Learning Model\n")

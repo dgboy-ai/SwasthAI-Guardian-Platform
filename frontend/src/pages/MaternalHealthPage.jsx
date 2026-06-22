@@ -6,7 +6,7 @@ import api from '../services/api';
 import Navbar from '../components/Navbar';
 import { queueMaternalRecord, getPendingMaternal, syncAllQueues } from '../utils/offlineSyncQueue';
 
-// ── Judge / Demo seed data — shown when DB returns empty ────────────────────────
+// ── Evaluation / Demo seed data — shown when DB returns empty ────────────────────────
 // Real-world representative data for Sehore district, Madhya Pradesh.
 const DEMO_MATERNAL_RECORDS = [
   {

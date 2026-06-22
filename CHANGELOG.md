@@ -290,9 +290,9 @@ Health Summary Cards → Sync Status → Village Analytics → Program Performan
   - Added high-contrast, glowing "Try This →" CTA buttons that bypass manual authentication checks, dynamically logging the user in using pre-seeded sandbox credentials and automatically routing them to their respective role dashboards.
 - **Floating Language Select on Auth Pages**:
   - Integrated floating, glassmorphic language selector dropdowns at the top right of the forms in `LoginPage.jsx` and `RegisterPage.jsx`.
-  - Empowers judges to test multilingual translation flows (Hindi, English, Marathi, Tamil, Telugu, and Bengali) directly from the authentication gates.
+  - Empowers evaluators to test multilingual translation flows (Hindi, English, Marathi, Tamil, Telugu, and Bengali) directly from the authentication gates.
   - Aligned all "Sign In" text references to "Log In" to match the file naming convention (`LoginPage.jsx`) for semantic consistency.
-  - Added a visual badge on the login page's credentials helper card to explicitly prompt judges to test offline login behavior by disconnecting their internet connection.
+  - Added a visual badge on the login page's credentials helper card to explicitly prompt evaluators to test offline login behavior by disconnecting their internet connection.
   - Implemented an intelligent offline warning banner on `RegisterPage.jsx` notifying users that registration requires a database write connection, prompting them to redirect to the Login page and use cached demo credentials if offline.
 - **Real-Time Symptom → DynamoDB Telemetry Trace**:
   - Upgraded the backend `/symptoms` route handler in `routes/villager.js` to synchronously write symptom telemetry to the `outbreak_telemetry` table in DynamoDB.
@@ -312,7 +312,7 @@ Health Summary Cards → Sync Status → Village Analytics → Program Performan
   - Dynamically configured colors, opacity, and radius based on the risk score calculated from `/admin/heatmap-data`.
 - **Interactive "Watch Sync" Walkthrough**:
   - Built a step-by-step interactive sync guide modal in `MonitoringDashboard.jsx` triggered via a "Watch Sync" button.
-  - Guides judges through simulating a network outage, queuing maternal records in IndexedDB offline, verifying queue states, reconnecting, and auto-syncing.
+  - Guides evaluators through simulating a network outage, queuing maternal records in IndexedDB offline, verifying queue states, reconnecting, and auto-syncing.
 - **ASHA & NGO Dispatch Upgrades**:
   - Upgraded Express server to support WebSocket upgrades on path `/api/telemetry` for live ambulance simulation.
   - Implemented dynamic route location interpolation on `/api/villager/ambulance` to broadcast live coordinates every 3 seconds.
@@ -347,8 +347,8 @@ Health Summary Cards → Sync Status → Village Analytics → Program Performan
 - **User Authentication & Sign-in Upgrades**:
   - Enhanced registration input validation (`RegisterSchema`) using Zod preprocess guards to convert empty string fields (`""`) to `null`, preventing validation errors on optional phone/email fields.
   - Expanded password-based login (`/auth/login-password`) to accept `username` as a valid identifier in addition to `phone` and `email`, fixing sign-in issues for accounts created with customized usernames.
-- **Symptom Checker UI Polish, Responsive optimization & Judge Sandbox**:
-  - Integrated a premium **Judge Testing Sandbox** quick-fill scenarios panel to instantly populate and test mild (cold), moderate (dehydration), and severe (cardiac) presets with matching symptoms and descriptions.
+- **Symptom Checker UI Polish, Responsive optimization & Evaluation Sandbox**:
+  - Integrated a premium **Evaluation Testing Sandbox** quick-fill scenarios panel to instantly populate and test mild (cold), moderate (dehydration), and severe (cardiac) presets with matching symptoms and descriptions.
   - Added interactive **Speech-to-Text Voice Input Simulations** (English & Hindi) that dynamically render voice recording animations and transcribe text word-by-word, verifying regional natural language processing.
   - Revamped the "Analyze Symptoms" action button with vibrant green pulses and interactive hover states when active, replacing the gray appearance with a high-fidelity visual cue.
   - Implemented responsive mobile tabs (`lg:hidden`) separating inputs, checklist selection, and results to guarantee zero vertical scrolling on mobile phones.
@@ -405,7 +405,7 @@ Health Summary Cards → Sync Status → Village Analytics → Program Performan
     - Health category risk flags (Vector-Borne, Respiratory, Waterborne, Maternal Health)
     - Recommended prevention actions checklist
     - Collapsible Intervention Impact Forecast simulator
-  - Fully offline-capable with graceful demo fallback — works in Judge Demo Mode
+  - Fully offline-capable with graceful demo fallback — works in Demo Tour Mode
   - Zero new data sources required — all signals reuse existing `symptoms`, `referrals`, `village_health`, and DynamoDB tables
   - Frontend production build: ✓ built in 8.57s — zero errors
 
@@ -456,18 +456,18 @@ Health Summary Cards → Sync Status → Village Analytics → Program Performan
 ### Added
 - **Production API Fallback & Vercel Fix**: Resolved JSON parsing failures caused by Vercel returning HTML error pages when querying relative paths without a configured proxy. Exposes fallback routing directly to the live Render backend (`https://swasthai-guardian-platform.onrender.com/api`) inside the Axios API client, Schemes page, and Admin SSE feed.
 - **Frictionless Demo Login & SaaS Anchor Pitch**:
-  - Implemented 1-click frictionless demo login shortcuts in both the Landing Page hero and Login Page credential cards to streamline evaluation flows for judges.
+  - Implemented 1-click frictionless demo login shortcuts in both the Landing Page hero and Login Page credential cards to streamline evaluation flows for evaluators.
   - Anchored the platform's presentation with a prominent B2B SaaS pitch tagline for the "Guardian" operations dashboard.
   - Added a custom-designed B2B SaaS Pricing section showing District and State tier subscriptions.
   - Formulated a "Zero Vaporware" telemetry validation panel displaying model accuracy metrics (101 diseases, 64.6% accuracy, 243 RAG chunks) and active AWS RDS/DynamoDB connectivity details.
 - **AI Service Integration Workflow & CI Validation**:
   - Upgraded root `package.json` setup, build, and development commands to automatically install and run the Python FastAPI service concurrently with frontend/backend Node services.
   - Extended the GitHub Actions CI pipeline with an integration health check step that boots the FastAPI microservice and validates it responds successfully to the `/health` endpoint.
-- **Quantified Impact Dashboard (Command Center)**: Added a dynamic Impact Panel to `AdminDashboard.jsx` showing judge-facing metrics — lives potentially impacted (2,34,000), maternal deaths preventable (12/year), avg. outbreak detection time (4.2 hrs vs. 72-hr manual baseline), and cost per ASHA worker (₹0 offline-first).
-- **Agentic Outbreak Simulation**: Added `POST /api/admin/outbreak` backend route and a "Simulate Outbreak Event" button in the Admin Command Center to trigger real-time SSE broadcast events, making the agentic loop visible to judges.
+- **Quantified Impact Dashboard (Command Center)**: Added a dynamic Impact Panel to `AdminDashboard.jsx` showing evaluation-facing metrics — lives potentially impacted (2,34,000), maternal deaths preventable (12/year), avg. outbreak detection time (4.2 hrs vs. 72-hr manual baseline), and cost per ASHA worker (₹0 offline-first).
+- **Agentic Outbreak Simulation**: Added `POST /api/admin/outbreak` backend route and a "Simulate Outbreak Event" button in the Admin Command Center to trigger real-time SSE broadcast events, making the agentic loop visible to evaluators.
 - **Live Reports Panel**: Wired the Admin Reports view to live `/api/admin` endpoints for SOS and symptom cluster counts. Added a "Weekly Health Trends" double-bar chart showing real-time data instead of static seed values.
 - **Documentation Consolidation**:
-  - Merged Aurora ER diagram and DynamoDB table schemas (with GSIs and access patterns) into `docs/system_architecture.md` as a single authoritative reference for AWS database panel judges.
+  - Merged Aurora ER diagram and DynamoDB table schemas (with GSIs and access patterns) into `docs/system_architecture.md` as a single authoritative reference for AWS database evaluation.
   - Removed redundant `docs/data_model.md` — all content consolidated into `docs/system_architecture.md`.
   - Removed `ARCHITECTURE.md` from repo root — content superseded by the enriched `docs/system_architecture.md`.
   - Updated `README.md` technical docs index to point directly to the consolidated architecture file.
@@ -498,7 +498,7 @@ Health Summary Cards → Sync Status → Village Analytics → Program Performan
 - **Speech Recognition Lang-Chain Fallback**: Implemented an automated fallback language chain (e.g., Hindi -> English -> Tamil etc.) for the browser Web Speech API to maximize transcription compatibility on rural devices.
 - **Offline Queue Sync on Online Event**: Integrated `syncAllQueues()` inside `OfflineToast`'s connection recovery listener to trigger automatic replay of queued IndexedDB operations immediately upon returning online.
 - **Navigator Online Behavior Documentation**: Documented the initialization behavior of `wasOnlineRef` from `navigator.onLine` to formally log that preventing the "Back Online" toast on first mount (if already online) is correct behavior.
-- **Admin Dashboard Bundle Optimization**: Extracted all static demo constants (`DEMO_STATS`, `DEMO_SUMMARY`, etc.) to a separate `judgeDemo.js` file and loaded them dynamically via ES import code-splitting when demo mode is activated, preventing leakage into initial production chunks.
+- **Admin Dashboard Bundle Optimization**: Extracted all static demo constants (`DEMO_STATS`, `DEMO_SUMMARY`, etc.) to a separate `demoTourData.js` file and loaded them dynamically via ES import code-splitting when demo mode is activated, preventing leakage into initial production chunks.
 - **Resilient SSE Connection Pathing**: Updated `EventSource` endpoint setup in `AdminDashboard.jsx` to dynamically fallback to `window.location.origin` if the environment is production and `VITE_API_URL` is omitted, resolving live-feed failures on preview server deployments.
 - **Alert Dispatch Error Handling**: Wired try-catch error alerts on the manual outbreak dispatch trigger to show fallback alert failure statuses when backend is unreachable, rather than silently marking alerts as sent.
 - **Demo Mode CSV Headers**: Appended clear `# ⚠️ [DEMO DATA]` headers to client-side report fallbacks generated in offline demo mode to inform evaluators of mock datasets.

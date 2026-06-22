@@ -289,7 +289,7 @@ export const AuthProvider = ({ children }) => {
         );
 
         if (matchedUser) {
-          // Must match credential hash AND role. This is still judge/demo cache, not production authentication.
+          // Must match credential hash AND role. This is still evaluation/demo cache, not production authentication.
           const matchedIdentifier = matchedUser.email || matchedUser.phone || matchedUser.username;
           if (matchedUser.credentialHash !== demoCredentialHash(matchedIdentifier, matchedUser.role, password)) {
             throw new Error('Incorrect password.');
@@ -334,7 +334,7 @@ export const AuthProvider = ({ children }) => {
         (error.response && error.response.status >= 500);
 
       if (isNetworkOrServerError && identifier && password) {
-        console.log('API unreachable or slow. Creating judge/demo offline session.');
+        console.log('API unreachable or slow. Creating evaluation/demo offline session.');
         return createOfflineSession();
       }
       

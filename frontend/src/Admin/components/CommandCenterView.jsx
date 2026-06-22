@@ -24,7 +24,7 @@ export default function CommandCenterView({
   isLoading,
   setActiveView,
   downloadReport,
-  judgeDemoMode,
+  demoTourMode,
   liveAmbulanceLocations = {}
 }) {
   const latestWrite = latestDynamoWrite(dynamoFeed);
@@ -396,17 +396,17 @@ export default function CommandCenterView({
             </div>
           </div>
 
-          {/* Core Engines & Judge Toolkit */}
+          {/* Core Engines & Demo Toolkit */}
           <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-5">
             <div className="flex items-center gap-2 mb-4 border-b border-slate-50 pb-2.5">
               <Activity className="w-4.5 h-4.5 text-emerald-600" />
-              <p className="font-black text-slate-900 text-sm sm:text-base uppercase tracking-wider">Core Engines &amp; Judge Toolkit</p>
+              <p className="font-black text-slate-900 text-sm sm:text-base uppercase tracking-wider">Core Engines &amp; Demo Toolkit</p>
             </div>
             <div className="space-y-2.5">
               {[
                 { label: 'Sakhi RAG Status', right: <span className="text-xs font-black text-emerald-600 flex items-center gap-1">Connected <span className="text-[10px] font-normal text-slate-400">(430ms)</span></span> },
                 { label: 'Offline Sync Queue', right: <span className="text-xs font-black text-rose-600">12 pending</span> },
-                { label: 'Judge Evaluation Toolkit', right: <span className={`px-2 py-0.5 rounded text-xs font-black border ${judgeDemoMode ? 'bg-blue-50 text-blue-700 border-blue-200 animate-pulse' : 'bg-slate-50 text-slate-400 border-slate-200'}`}>{judgeDemoMode ? 'Active' : 'Inactive'}</span> },
+                { label: 'Demo Evaluation Toolkit', right: <span className={`px-2 py-0.5 rounded text-xs font-black border ${demoTourMode ? 'bg-blue-50 text-blue-700 border-blue-200 animate-pulse' : 'bg-slate-50 text-slate-400 border-slate-200'}`}>{demoTourMode ? 'Active' : 'Inactive'}</span> },
                 { label: 'Network Simulator Status', right: <span className="px-2 py-0.5 rounded text-xs font-black bg-emerald-50 text-emerald-700 border border-emerald-200">Normal</span> },
                 { label: 'Outbreak AI Engine', right: <span className="px-2 py-0.5 rounded text-xs font-black bg-emerald-50 text-emerald-700 border border-emerald-200">Scanning</span> },
               ].map((r, i) => (

@@ -52,7 +52,7 @@ if __name__ == "__main__":
     joblib.dump(pipeline, model_export_path)
     print(f"[SAVED] {model_export_path}")
 
-    # Write audit log for judges
+    # Write audit log for evaluators
     accuracy_file = os.path.join(os.path.dirname(__file__), "model_accuracy.txt")
     with open(accuracy_file, "w", encoding="utf-8") as f:
         f.write("SwasthAI Guardian - Disease Prediction Model\n")

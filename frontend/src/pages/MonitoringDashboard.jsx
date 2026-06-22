@@ -303,7 +303,7 @@ export default function MonitoringDashboard() {
     }
   };
 
-  const runJudgeDemo = async () => {
+  const runDemoSimulation = async () => {
     if (demoRunning) return;
     setDemoRunning(true);
     setSimLogs([]);
@@ -708,7 +708,7 @@ export default function MonitoringDashboard() {
 
           {/* One-Click Demo Simulation */}
           <button
-            onClick={runJudgeDemo}
+            onClick={runDemoSimulation}
             disabled={demoRunning}
             style={{
               padding: '8px 16px',

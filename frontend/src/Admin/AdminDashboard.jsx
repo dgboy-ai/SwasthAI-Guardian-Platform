@@ -50,7 +50,7 @@ export default function AdminDashboard() {
     return saved ? parseInt(saved, 10) : 220;
   });
   const [isResizing, setIsResizing] = useState(false);
-  const [judgeDemoMode, setJudgeDemoMode] = useState(false);
+  const [demoTourMode, setDemoTourMode] = useState(false);
   const [demoData, setDemoData] = useState(null);
   const [showNotifications, setShowNotifications] = useState(false);
   const [alertError, setAlertError] = useState(null);
@@ -126,14 +126,14 @@ export default function AdminDashboard() {
   }, [isResizing, sidebarWidth]);
 
   useEffect(() => {
-    if (judgeDemoMode && !demoData) {
-      import('./judgeDemo').then(m => {
+    if (demoTourMode && !demoData) {
+      import('./demoTourData').then(m => {
         setDemoData(m);
       }).catch(err => {
         console.error('Failed to load demo data:', err);
       });
     }
-  }, [judgeDemoMode, demoData]);
+  }, [demoTourMode, demoData]);
 
   /* Live "last sync" ticker */
   useEffect(() => {
@@ -181,7 +181,7 @@ export default function AdminDashboard() {
         setLastSync('Just now');
       } catch (e) {
         console.warn('Admin analytics offline — using demo data:', e.message);
-        setJudgeDemoMode(true);
+        setDemoTourMode(true);
       }
     };
     const loadAmb = async () => {
@@ -319,10 +319,10 @@ export default function AdminDashboard() {
     };
   }, []);
 
-  const S = (judgeDemoMode && demoData ? demoData.DEMO_STATS : stats) || { pregnancies: 0, malnutrition: 0, villages: 0, today_symptoms: 0 };
-  const SM = (judgeDemoMode && demoData ? demoData.DEMO_SUMMARY : summary) || { totalUsers: 0, totalNgos: 0, emergencyCount: 0, sanitaryCount: 0, totalRequests: 0 };
-  const OB = (judgeDemoMode && demoData ? demoData.DEMO_OUTBREAKS : outbreaks) || [];
-  const AM = (judgeDemoMode && demoData ? demoData.DEMO_AMBULANCES : ambulances) || [];
+  const S = (demoTourMode && demoData ? demoData.DEMO_STATS : stats) || { pregnancies: 0, malnutrition: 0, villages: 0, today_symptoms: 0 };
+  const SM = (demoTourMode && demoData ? demoData.DEMO_SUMMARY : summary) || { totalUsers: 0, totalNgos: 0, emergencyCount: 0, sanitaryCount: 0, totalRequests: 0 };
+  const OB = (demoTourMode && demoData ? demoData.DEMO_OUTBREAKS : outbreaks) || [];
+  const AM = (demoTourMode && demoData ? demoData.DEMO_AMBULANCES : ambulances) || [];
 
   const getLiveReport = () => {
     const defaultRep = demoData?.DEMO_REPORT || { villages: { total: 4 }, maternal: { highRiskPregnancies: 28 }, emergencies: { ambulanceRequests: 14 }, outbreakAlerts: { count: 3 } };
@@ -372,7 +372,7 @@ export default function AdminDashboard() {
 
   const REP = getLiveReport();
   const PERF = ashaPerformance && ashaPerformance.length > 0 ? ashaPerformance : (demoData?.DEMO_ASHA_PERFORMANCE || []);
-  const isLoading = stats === null && summary === null && !judgeDemoMode;
+  const isLoading = stats === null && summary === null && !demoTourMode;
   const auroraStatus = systemStatus?.databases?.aurora_postgresql?.status || (systemLoading ? 'Loading' : 'Unavailable');
   const dynamoStatus = systemStatus?.databases?.dynamodb?.status || (systemLoading ? 'Loading' : 'Unavailable');
   const aiStatus = systemStatus?.ai_service ? 'Online' : (systemLoading ? 'Loading' : 'Unavailable');
@@ -436,7 +436,7 @@ export default function AdminDashboard() {
       triggerBlobDownload(url, 'swasthai_admin_report.csv');
     } catch (e) {
       console.warn('Backend download failed, generating client-side report fallback...');
-      const isDemo = judgeDemoMode;
+      const isDemo = demoTourMode;
       let csv = isDemo ? '# ⚠️ [DEMO DATA] - GENERATED IN OFFLINE MODE WITH MOCK DEMO SEEDS\n' : '# OFFLINE MODE REPORT - SYNCED DATA FALLBACK\n';
       csv += 'Record ID,Type,Patient Name/ID,Location/Priority,Status,Date\n';
       AM.forEach((a, i) => {
@@ -582,28 +582,28 @@ export default function AdminDashboard() {
           </div>
         </nav>
 
-        {/* Judge Demo Mode toggle */}
+        {/* Demo Tour Mode toggle */}
         <div className="mx-2 mb-2 p-2.5 bg-white/4 rounded-2xl border border-emerald-500/15 min-w-0">
           <div className="flex items-center justify-between gap-2">
             {!sidebarCollapsed && (
               <div className="animate-in fade-in duration-200 min-w-0">
                 <p className="text-[9.5px] font-black text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" style={{ boxShadow: judgeDemoMode ? '0 0 6px #34d399' : 'none' }} />
-                  Judge Tour
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" style={{ boxShadow: demoTourMode ? '0 0 6px #34d399' : 'none' }} />
+                  Demo Tour
                 </p>
-                <p className="text-[8.5px] text-slate-500 font-medium mt-0.5 truncate">{judgeDemoMode ? '✓ Seeded data active' : 'Off — live data'}</p>
+                <p className="text-[8.5px] text-slate-500 font-medium mt-0.5 truncate">{demoTourMode ? '✓ Seeded data active' : 'Off — live data'}</p>
               </div>
             )}
             <button
-              onClick={() => setJudgeDemoMode(v => !v)}
-              title={sidebarCollapsed ? (judgeDemoMode ? 'Judge Tour: ON' : 'Judge Tour: OFF') : ''}
-              className={`relative w-10 h-5 rounded-full transition-all duration-300 shrink-0 border ${judgeDemoMode
+              onClick={() => setDemoTourMode(v => !v)}
+              title={sidebarCollapsed ? (demoTourMode ? 'Demo Tour: ON' : 'Demo Tour: OFF') : ''}
+              className={`relative w-10 h-5 rounded-full transition-all duration-300 shrink-0 border ${demoTourMode
                   ? 'bg-emerald-500 border-emerald-400/60 shadow-[0_0_8px_rgba(16,185,129,0.5)]'
                   : 'bg-slate-700 border-slate-600'
                 }`}
             >
               <span
-                className={`absolute top-0.5 bottom-0.5 aspect-square bg-white rounded-full shadow-sm transition-all duration-300 ${judgeDemoMode ? 'right-0.5 left-auto' : 'left-0.5 right-auto'
+                className={`absolute top-0.5 bottom-0.5 aspect-square bg-white rounded-full shadow-sm transition-all duration-300 ${demoTourMode ? 'right-0.5 left-auto' : 'left-0.5 right-auto'
                   }`}
               />
             </button>
@@ -819,7 +819,7 @@ export default function AdminDashboard() {
               isLoading={isLoading}
               setActiveView={setActiveView}
               downloadReport={downloadReport}
-              judgeDemoMode={judgeDemoMode}
+              demoTourMode={demoTourMode}
               liveAmbulanceLocations={liveAmbulanceLocations}
             />
           )}
@@ -839,7 +839,7 @@ export default function AdminDashboard() {
           )}
 
           {activeView === 'risk-intel' && (
-            <PredictiveRiskView judgeDemoMode={judgeDemoMode} />
+            <PredictiveRiskView demoTourMode={demoTourMode} />
           )}
 
           {activeView === 'ambulance' && (
@@ -854,14 +854,14 @@ export default function AdminDashboard() {
             <OfflineVillagesView
               S={S}
               dynamoFeed={dynamoFeed}
-              judgeDemoMode={judgeDemoMode}
+              demoTourMode={demoTourMode}
             />
           )}
 
           {activeView === 'ai' && (
             <AIIntelligenceView
               recs={recs}
-              judgeDemoMode={judgeDemoMode}
+              demoTourMode={demoTourMode}
             />
           )}
 

@@ -352,7 +352,7 @@ function AIRecommendedActions() {
   );
 }
 
-export default function PredictiveRiskView({ judgeDemoMode }) {
+export default function PredictiveRiskView({ demoTourMode }) {
   const [heatmapData, setHeatmapData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -381,7 +381,7 @@ export default function PredictiveRiskView({ judgeDemoMode }) {
     setLoading(true);
     setError(null);
     try {
-      if (judgeDemoMode) throw new Error('demo');
+      if (demoTourMode) throw new Error('demo');
       const res = await adminService.getDistrictRiskHeatmap();
       setHeatmapData(res.data);
     } catch (_) {
@@ -389,7 +389,7 @@ export default function PredictiveRiskView({ judgeDemoMode }) {
     } finally {
       setLoading(false);
     }
-  }, [judgeDemoMode]);
+  }, [demoTourMode]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -434,7 +434,7 @@ export default function PredictiveRiskView({ judgeDemoMode }) {
     setSelectedVillage(v);
     setDetailLoading(true);
     try {
-      if (judgeDemoMode) throw new Error('demo');
+      if (demoTourMode) throw new Error('demo');
       const res = await adminService.getVillageRiskDetail(v.villageId);
       setDetailData(res.data);
     } catch (_) {

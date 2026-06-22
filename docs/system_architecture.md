@@ -90,7 +90,7 @@ The SwasthAI architecture is divided into three specialized tiers, built for low
 Most apps use one database for everything. SwasthAI uses a hybrid approach: a local **SQLite** database as an offline edge node and local development fallback, paired with a dual **AWS Cloud** configuration in production.
 
 ### The Local/Edge Database Strategy (SQLite Fallback)
-To ensure the app remains fully functional with zero initial setup for judges or developers, and to simulate offline client-side sync environments, SwasthAI utilizes an embedded **SQLite** engine. 
+To ensure the app remains fully functional with zero initial setup for evaluators or developers, and to simulate offline client-side sync environments, SwasthAI utilizes an embedded **SQLite** engine. 
 * **Local Dev & Evaluation**: When run locally without AWS credentials, the backend automatically boots with SQLite, using the exact same schema structure as our production Aurora database.
 * **Production**: When deployed to cloud environments, the backend dynamically connects to **Amazon Aurora PostgreSQL** via the `DATABASE_URL` connection pool.
 

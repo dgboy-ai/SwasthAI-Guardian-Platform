@@ -62,7 +62,7 @@ function useLiveTraces() {
 
 /* ─── component ─────────────────────────────────────────────────────────────── */
 export default function ProductionEvidencePanel({ systemStatus, dynamoFeed, loading, error }) {
-  const [showJudgeTour, setShowJudgeTour] = useState(false);
+  const [showBlueprintTour, setShowBlueprintTour] = useState(false);
   const [hoveredTable, setHoveredTable] = useState(null);
   const liveTraces = useLiveTraces();
 
@@ -159,12 +159,12 @@ export default function ProductionEvidencePanel({ systemStatus, dynamoFeed, load
 
         <div className="flex flex-wrap items-center gap-2">
           <button
-            onClick={() => setShowJudgeTour(!showJudgeTour)}
+            onClick={() => setShowBlueprintTour(!showBlueprintTour)}
             className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-black bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition-all shadow-[0_0_12px_rgba(16,185,129,0.35)] hover:scale-105 active:scale-95"
           >
             <Sparkles className="w-3.5 h-3.5" />
             Blueprint Insights
-            {showJudgeTour ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+            {showBlueprintTour ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
           </button>
           <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-black border bg-emerald-950/80 text-emerald-400 border-emerald-500/40 whitespace-nowrap">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -174,7 +174,7 @@ export default function ProductionEvidencePanel({ systemStatus, dynamoFeed, load
       </div>
 
       {/* ── Blueprint Insights ── */}
-      {showJudgeTour && (
+      {showBlueprintTour && (
         <div className="mx-6 mt-5 p-5 rounded-2xl bg-gradient-to-br from-emerald-950/40 to-slate-900 border border-emerald-500/20 text-sm text-slate-300 space-y-3">
           <div className="flex items-center gap-2 text-emerald-400 font-black uppercase tracking-wider text-xs">
             <Activity className="w-4 h-4" />
