@@ -324,14 +324,15 @@ export default function AdminDashboard() {
   const OB = (demoTourMode && demoData ? demoData.DEMO_OUTBREAKS : outbreaks) || [];
   const AM = (demoTourMode && demoData ? demoData.DEMO_AMBULANCES : ambulances) || [];
 
+  const isShowingDemoData = demoTourMode || (!stats && !summary);
+
   const getLiveReport = () => {
-    const defaultRep = demoData?.DEMO_REPORT || { villages: { total: 4 }, maternal: { highRiskPregnancies: 28 }, emergencies: { ambulanceRequests: 14 }, outbreakAlerts: { count: 3 } };
-    if (!districtReport) return defaultRep;
+    if (!districtReport) return null;
     return {
-      villages: { total: Math.max(districtReport.villages?.total || 0, defaultRep.villages?.total || 0) },
-      maternal: { highRiskPregnancies: Math.max(districtReport.maternal?.highRiskPregnancies || 0, defaultRep.maternal?.highRiskPregnancies || 0) },
-      emergencies: { ambulanceRequests: Math.max(districtReport.emergencies?.ambulanceRequests || 0, defaultRep.emergencies?.ambulanceRequests || 0) },
-      outbreakAlerts: { count: Math.max(districtReport.outbreakAlerts?.count || 0, defaultRep.outbreakAlerts?.count || 0) }
+      villages: { total: districtReport.villages?.total || 0 },
+      maternal: { highRiskPregnancies: districtReport.maternal?.highRiskPregnancies || 0 },
+      emergencies: { ambulanceRequests: districtReport.emergencies?.ambulanceRequests || 0 },
+      outbreakAlerts: { count: districtReport.outbreakAlerts?.count || 0 }
     };
   };
 
@@ -360,13 +361,10 @@ export default function AdminDashboard() {
       if (idx !== -1) emergencyCounts[idx]++;
     });
 
-    const baselineSymptoms = [3, 5, 2, 7, 4, 6, 8];
-    const baselineEmergencies = [1, 2, 0, 3, 2, 4, 5];
-
     return days.map((d, i) => ({
       label: d.label,
-      symptoms: baselineSymptoms[i] + symptomCounts[i],
-      emergencies: baselineEmergencies[i] + emergencyCounts[i],
+      symptoms: symptomCounts[i],
+      emergencies: emergencyCounts[i],
     }));
   };
 
@@ -801,6 +799,22 @@ export default function AdminDashboard() {
             <span className="text-[10px] font-mono opacity-80">Check server logs or service health dashboard</span>
           </div>
         ))}
+
+        {/* DEMO DATA BANNER — shown when demo tour is active or when no real data loaded */}
+        {isShowingDemoData && (
+          <div className="bg-amber-500 text-white px-6 py-2 flex items-center justify-between shrink-0 border-b border-amber-600 shadow-md z-30">
+            <div className="flex items-center gap-2">
+              <span className="text-[9px] font-black uppercase tracking-widest bg-amber-800 px-2 py-0.5 rounded border border-amber-400">⚠ Demo Mode</span>
+              <span className="text-xs font-bold">Showing sample demo data — not real patient information</span>
+            </div>
+            <button
+              onClick={() => setDemoTourMode(false)}
+              className="text-[9px] font-black uppercase tracking-wider bg-white/20 hover:bg-white/30 px-3 py-1 rounded-full transition-colors"
+            >
+              Show Live Data
+            </button>
+          </div>
+        )}
 
         {/* Scrollable body */}
         <main className="flex-1 overflow-y-auto">

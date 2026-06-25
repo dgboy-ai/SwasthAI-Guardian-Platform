@@ -137,10 +137,10 @@ router.post('/register', async (req, res) => {
 
   const { phone, email, username, name, password, role, villageId, gender, age, economic_status, caste, area_type, passcode } = parseResult.data;
 
-  if (role === 'ngo' && passcode !== (process.env.NGO_REGISTRATION_PASSCODE || 'ASHA2026')) {
+  if (role === 'ngo' && passcode !== (process.env.NGO_REGISTRATION_PASSCODE || process.env.ADMIN_REGISTRATION_PASSCODE)) {
     return res.status(400).json({ error: 'Invalid ASHA/NGO registration passcode.' });
   }
-  if (role === 'admin' && passcode !== (process.env.ADMIN_REGISTRATION_PASSCODE || 'ADMIN2026')) {
+  if (role === 'admin' && passcode !== process.env.ADMIN_REGISTRATION_PASSCODE) {
     return res.status(400).json({ error: 'Invalid Admin registration passcode.' });
   }
 

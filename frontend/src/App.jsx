@@ -12,6 +12,10 @@ import LandingPage from './pages/LandingPage';
 import IntroFlow from './pages/IntroFlow';
 import RegisterPage from './pages/RegisterPage';
 import DemoPage from './pages/DemoPage';
+import PricingPage from './pages/PricingPage';
+import AboutPage from './pages/AboutPage';
+import ContactPage from './pages/ContactPage';
+import PrivacyPage from './pages/PrivacyPage';
 
 // Pages — heavy, lazy-loaded for Vercel edge performance & 2G optimization
 const VillagerDashboard  = lazy(() => import('./Villager/VillagerDashboard'));
@@ -137,6 +141,12 @@ export default function App() {
               <Route path="/intro" element={<IntroFlow />} />
               <Route path="/demo" element={<DemoPage />} />
               
+              {/* B2B SAAS PAGES */}
+              <Route path="/pricing" element={<LayoutWrapper><PricingPage /></LayoutWrapper>} />
+              <Route path="/about" element={<LayoutWrapper><AboutPage /></LayoutWrapper>} />
+              <Route path="/contact" element={<LayoutWrapper><ContactPage /></LayoutWrapper>} />
+              <Route path="/privacy" element={<LayoutWrapper><PrivacyPage /></LayoutWrapper>} />
+
               {/* AUTHENTICATION AXIS */}
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
@@ -242,20 +252,6 @@ export default function App() {
                 </ProtectedRoute>
               } />
               <Route path="/monitor" element={
-                <ProtectedRoute allowedRole={["admin", "ngo", "villager"]}>
-                  <DesktopOnlyWrapper dashboardName="District Simulation & Observability Monitor">
-                    <LayoutWrapper><ErrorBoundary><MonitoringDashboard /></ErrorBoundary></LayoutWrapper>
-                  </DesktopOnlyWrapper>
-                </ProtectedRoute>
-              } />
-              <Route path="/monitoring" element={
-                <ProtectedRoute allowedRole={["admin", "ngo", "villager"]}>
-                  <DesktopOnlyWrapper dashboardName="District Simulation & Observability Monitor">
-                    <LayoutWrapper><ErrorBoundary><MonitoringDashboard /></ErrorBoundary></LayoutWrapper>
-                  </DesktopOnlyWrapper>
-                </ProtectedRoute>
-              } />
-              <Route path="/monitoring-dashboard" element={
                 <ProtectedRoute allowedRole={["admin", "ngo", "villager"]}>
                   <DesktopOnlyWrapper dashboardName="District Simulation & Observability Monitor">
                     <LayoutWrapper><ErrorBoundary><MonitoringDashboard /></ErrorBoundary></LayoutWrapper>
