@@ -5,6 +5,7 @@ import { auth } from '../middleware/auth.js';
 import { checkRole, enforceVillageScope, enforceReferralAccess, enforceAmbulanceAccess } from '../middleware/policy.js';
 import { logAudit } from '../middleware/audit.js';
 import eventEmitter from '../eventDispatcher.js';
+import dynamoHelper from '../dynamodb.js';
 import { PregnancyRiskSchema, MalnutritionSchema, validateAiOutput } from '../utils/aiValidator.js';
 
 const router = express.Router();
@@ -1206,7 +1207,6 @@ function computeVillageRiskScore({ symptomCount7d, symptomCount14d, openReferral
 // GET /api/ngo/village-risk — Predictive Village Risk Score for current NGO's village
 router.get('/village-risk', auth, checkRole(['ngo', 'admin']), async (req, res) => {
   const db = req.app.locals.db;
-  const dynamoHelper = req.app.locals.dynamoHelper;
   const isNGO = req.user.role === 'ngo';
   const villageId = isNGO ? (req.user.villageId || 'unassigned') : (req.query.villageId || 'unassigned');
 

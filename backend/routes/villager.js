@@ -398,19 +398,7 @@ router.post('/symptoms', auth, aiLimiter, checkRole(['villager', 'ngo', 'admin']
   });
 
   // Non-blocking: DynamoDB telemetry, cluster alerts, event emission
-  eventEmitter.emit('symptom_submitted', { userId, villageId, symptoms: text, prediction, timestamp: now, clientRequestId, traceId: req.traceId, skipDynamo: true });
-
-  getDistrictId(db, pool, usingSQLite, villageId).then(districtId => {
-    const ts = new Date().toISOString();
-    dynamoHelper.put("outbreak_telemetry", {
-      villageId, districtId, detectedAt: ts,
-      eventId: `EVT-SYM-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-      eventType: "symptom_submitted", userId, symptoms: text,
-      symptomPattern: text, prediction, classification: prediction,
-      timestamp: ts, traceId: req.traceId || null
-    }).catch(err => console.error("Failed to write symptom telemetry to DynamoDB:", err.message));
-    dynamoHelper.updateNodeState(villageId, "online", ts, 0).catch(() => {});
-  }).catch(() => {});
+  eventEmitter.emit('symptom_submitted', { userId, villageId, symptoms: text, prediction, timestamp: now, clientRequestId, traceId: req.traceId });
 
   const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
   (async () => {
