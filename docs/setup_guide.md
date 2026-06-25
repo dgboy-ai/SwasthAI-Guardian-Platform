@@ -5,7 +5,7 @@
 > https://swasth-ai-guardian-platform.vercel.app
 > ```
 > Login: select any role → enter any phone number → OTP: `1234`
-> Full AWS health status: `GET https://swasthai-guardian-platform.onrender.com/api/health/detailed`
+> Full AWS health status: `GET https://swasthai-guardian-platform-0jsb.onrender.com/api/health/detailed`
 
 ---
 

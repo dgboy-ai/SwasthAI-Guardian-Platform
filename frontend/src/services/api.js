@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Default /api — Vite dev proxy and unified Render deploy both forward to the backend.
 // Override with VITE_API_URL only for split deploy (e.g. Vercel frontend + Render API).
-const BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.MODE === 'production' ? 'https://swasthai-guardian-platform.onrender.com/api' : '/api');
+const BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.MODE === 'production' ? 'https://swasthai-guardian-platform-0jsb.onrender.com/api' : '/api');
 
 const api = axios.create({
   baseURL: BASE_URL,

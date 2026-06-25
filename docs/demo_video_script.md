@@ -2,7 +2,7 @@
 
 **Track:** B2B SaaS · AWS Databases  
 **Duration:** 3 minutes (180 seconds)  
-**URL:** `https://swasthai-guardian-platform.onrender.com` (deployed on Vercel + Render)
+**URL:** `https://swasthai-guardian-platform-0jsb.onrender.com` (deployed on Vercel + Render)
 
 ---
 
@@ -133,7 +133,7 @@ If evaluators require AWS Console screenshots to verify database usage, insert t
 
 ### Environment Setup
 - **Browser:** Chrome/Edge incognito window (1920×1080)
-- **URL:** `https://swasthai-guardian-platform.onrender.com`
+- **URL:** `https://swasthai-guardian-platform-0jsb.onrender.com`
 - **Recording tool:** OBS Studio or built-in screen recorder
 - **FPS:** 30
 - **Resolution:** 1920×1080

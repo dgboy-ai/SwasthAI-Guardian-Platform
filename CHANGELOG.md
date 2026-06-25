@@ -180,7 +180,7 @@ Health Summary Cards → Sync Status → Village Analytics → Program Performan
   - Added 25-second safety timeout (`loadingSafeTimer`) in `SymptomCheckerPage.jsx` that force-clears the loading state — insurance against any hang in cache/offline/error paths.
   - Added missing `req.onblocked` handler in `semanticCache.js` IndexedDB `getDB()` — if another tab blocks the DB, resolves to `null` (memory fallback) instead of hanging forever.
 - **Vercel API Proxy (vercel.json)**:
-  - Added `/api/(.*)` rewrite rule targeting `https://swasthai-guardian-platform.onrender.com/api/$1` so Vercel-deployed frontend can reach the backend without CORS preflight on every request.
+  - Added `/api/(.*)` rewrite rule targeting `https://swasthai-guardian-platform-0jsb.onrender.com/api/$1` so Vercel-deployed frontend can reach the backend without CORS preflight on every request.
 - **AdminDashboard Logout Button**:
   - Added "Secure Logout" button at the bottom of the admin sidebar with collapsed-mode icon support; calls `useAuth().logout()` + navigates to `/login`.
 - **ERD Mermaid Diagram Syntax Fixes**:
@@ -454,7 +454,7 @@ Health Summary Cards → Sync Status → Village Analytics → Program Performan
 
 ## June 7, 2026
 ### Added
-- **Production API Fallback & Vercel Fix**: Resolved JSON parsing failures caused by Vercel returning HTML error pages when querying relative paths without a configured proxy. Exposes fallback routing directly to the live Render backend (`https://swasthai-guardian-platform.onrender.com/api`) inside the Axios API client, Schemes page, and Admin SSE feed.
+- **Production API Fallback & Vercel Fix**: Resolved JSON parsing failures caused by Vercel returning HTML error pages when querying relative paths without a configured proxy. Exposes fallback routing directly to the live Render backend (`https://swasthai-guardian-platform-0jsb.onrender.com/api`) inside the Axios API client, Schemes page, and Admin SSE feed.
 - **Frictionless Demo Login & SaaS Anchor Pitch**:
   - Implemented 1-click frictionless demo login shortcuts in both the Landing Page hero and Login Page credential cards to streamline evaluation flows for evaluators.
   - Anchored the platform's presentation with a prominent B2B SaaS pitch tagline for the "Guardian" operations dashboard.

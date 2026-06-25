@@ -96,7 +96,7 @@ Most healthcare apps simply call a third-party LLM API and display the output. S
 
 ```bash
 # Full stack status (AWS connections, DynamoDB schema, AI modules)
-GET https://swasthai-guardian-platform.onrender.com/api/health/detailed
+GET https://swasthai-guardian-platform-0jsb.onrender.com/api/health/detailed
 
 # Live application URL
 https://swasth-ai-guardian-platform.vercel.app

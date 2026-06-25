@@ -251,7 +251,7 @@ export default function AdminDashboard() {
 
     let API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
     if (import.meta.env.MODE === 'production' && !import.meta.env.VITE_API_URL) {
-      API_BASE = 'https://swasthai-guardian-platform.onrender.com/api';
+      API_BASE = 'https://swasthai-guardian-platform-0jsb.onrender.com/api';
     }
     API_BASE = API_BASE.replace(/\/+$/, '');
     const sseUrl = `${API_BASE}/admin/live-feed?token=${encodeURIComponent(token)}`;

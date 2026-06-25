@@ -1,6 +1,6 @@
 {
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "https://swasthai-guardian-platform.onrender.com/api/$1" },
+    { "source": "/api/(.*)", "destination": "https://swasthai-guardian-platform-0jsb.onrender.com/api/$1" },
     { "source": "/((?!api).*)", "destination": "/index.html" }
   ],
   "headers": [
