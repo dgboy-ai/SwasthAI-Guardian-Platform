@@ -159,7 +159,7 @@ export default function AdminDashboard() {
         setAshaPerformance(performance?.performance || []);
         setDistrictConfig(config?.config || null);
       } catch (err) {
-        console.warn('District report preview unavailable:', err.message || err);
+        console.debug('District report preview unavailable:', err.message || err);
       } finally {
         setReportLoading(false);
       }
@@ -180,7 +180,7 @@ export default function AdminDashboard() {
         lastSyncRef.current = Date.now();
         setLastSync('Just now');
       } catch (e) {
-        console.warn('Admin analytics offline — using demo data:', e.message);
+        console.debug('Admin analytics offline — using demo data:', e.message);
         setDemoTourMode(true);
       }
     };
@@ -212,7 +212,7 @@ export default function AdminDashboard() {
       try {
         const [status, feed, audit] = await Promise.all([
           adminService.getSystemStatus().catch(err => {
-            console.warn('System status API failed, using demo status:', err);
+            console.debug('System status API failed, using demo status:', err);
             return {
               production_ready: true,
               databases: {
@@ -433,7 +433,7 @@ export default function AdminDashboard() {
       const url = window.URL.createObjectURL(new Blob([response.data]));
       triggerBlobDownload(url, 'swasthai_admin_report.csv');
     } catch (e) {
-      console.warn('Backend download failed, generating client-side report fallback...');
+      console.debug('Backend download failed, generating client-side report fallback...');
       const isDemo = demoTourMode;
       let csv = isDemo ? '# ⚠️ [DEMO DATA] - GENERATED IN OFFLINE MODE WITH MOCK DEMO SEEDS\n' : '# OFFLINE MODE REPORT - SYNCED DATA FALLBACK\n';
       csv += 'Record ID,Type,Patient Name/ID,Location/Priority,Status,Date\n';

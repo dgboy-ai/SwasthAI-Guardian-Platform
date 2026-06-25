@@ -13,7 +13,7 @@ function getWsUrl() {
   const loc = window.location;
   const protocol = loc.protocol === 'https:' ? 'wss:' : 'ws:';
   // Fallback for local development if Vite runs on 5173 but backend on 3001
-  const host = loc.port === '5173' || loc.port === '5174' ? `${loc.hostname}:3001` : loc.host;
+  const host = loc.port === '5173' || loc.port === '5174' ? `${loc.hostname}:5000` : loc.host;
   return `${protocol}//${host}/api/telemetry`;
 }
 
@@ -50,7 +50,7 @@ export function connectTelemetry() {
   };
 
   ws.onclose = () => {
-    console.warn('[WS] Telemetry socket closed. Reconnecting in 5s...');
+    console.debug('[WS] Telemetry socket closed. Reconnecting in 5s...');
     ws = null;
     if (!reconnectTimer) {
       reconnectTimer = setTimeout(connectTelemetry, 5000);
