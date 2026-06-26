@@ -142,7 +142,7 @@ SwasthAI Guardian uses a **deliberate dual-database strategy** — each database
 - Transformer Embeddings + SymptomNet Neural Network
 - Random Forest Fallback Model (Tier 2 Safety)
 - FastAPI Test Suite
-- Groq-powered Llama 3.3-70b (RAG) + Llama-3.1-8b-instant (Outbreak Agent)
+- Groq-powered Llama 3.3-70b-versatile (RAG + Outbreak Agent)
 - Grounded RAG Architecture (**243 chunks**, calibrated threshold 0.45, F1=1.00)
 - Sakhi **Conversation Memory** (frontend localStorage + server session cache)
 - Autonomous Outbreak Detection Agent (30-min scan interval)

@@ -24,7 +24,7 @@ flowchart TB
         SYMPTOMNET["SymptomNet-DL<br/>PyTorch, 101 diseases<br/>64.6% accuracy"]
         RF["RandomForest-TFIDF<br/>Fallback classifier<br/>51.8% accuracy"]
         RAG["RAG-Sakhi<br/>243 chunk KB<br/>Multilingual (6 langs)"]
-        OUTBREAK["OutbreakAgent<br/>Groq llama-3.1-8b<br/>30min autonomous loop"]
+        OUTBREAK["OutbreakAgent<br/>Groq llama-3.3-70b<br/>30min autonomous loop"]
         SKIN["SkinAnalyzer<br/>On-device pixel analysis"]
         PREGNANCY["PregnancyRisk<br/>MoHFW WHO thresholds"]
         MALNUTRITION["MalnutritionDetector<br/>WHO Z-score + BMI"]
@@ -37,7 +37,7 @@ flowchart TB
     end
 
     subgraph EXTERNAL["🔗 External APIs"]
-        GROQ["Groq Cloud<br/>llama-3.3-70b (RAG)<br/>llama-3.1-8b (Outbreak)"]
+        GROQ["Groq Cloud<br/>llama-3.3-70b-versatile<br/>(RAG + Outbreak)"]
         TWILIO["Twilio (SMS)"]
     end
 

@@ -554,7 +554,7 @@ if (isProduction && cluster.isPrimary && maxWorkers > 1) {
           'SymptomNet-DL (PyTorch, 64.6% accuracy, 101 diseases)',
           'RandomForest-TFIDF (fallback, 51.8% accuracy)',
           'RAG-Sakhi (243 chunks, threshold=0.45, F1=1.00, conversation memory)',
-          'OutbreakAgent (autonomous 30min loop, Groq llama-3.1-8b-instant)',
+          'OutbreakAgent (autonomous 30min loop, Groq llama-3.3-70b-versatile)',
           'SkinAnalyzer (on-device pixel analysis)',
           'PregnancyRisk (MoHFW WHO clinical thresholds)',
           'MalnutritionDetector (WHO Z-score + BMI)'
@@ -572,7 +572,7 @@ if (isProduction && cluster.isPrimary && maxWorkers > 1) {
         ai: 'FastAPI + PyTorch + Groq Llama-3.3-70b',
         relational: 'Amazon Aurora PostgreSQL (ap-south-1)',
         nosql: 'Amazon DynamoDB PAY_PER_REQUEST (ap-south-1)',
-        llm: 'Groq llama-3.3-70b-versatile (RAG/Sakhi) + llama-3.1-8b-instant (OutbreakAgent)',
+        llm: 'Groq llama-3.3-70b-versatile (RAG/Sakhi + OutbreakAgent)',
         embedding: 'sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2',
         rag_chunks: 243,
         rag_threshold: 0.45,
