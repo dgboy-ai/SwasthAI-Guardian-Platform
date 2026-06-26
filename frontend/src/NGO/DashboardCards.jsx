@@ -5,6 +5,7 @@ import {
   TrendingUp, TrendingDown, Minus, Wifi, WifiOff,
   Heart, Baby, Shield, Zap, Phone
 } from 'lucide-react';
+import { showToast } from '../utils/toast';
 
 /* ── Fade-in animation preset ── */
 const fadeUp = (delay = 0) => ({
@@ -55,7 +56,7 @@ export function KPICard({ card, onClick, loading }) {
       </span>
 
       {/* View All */}
-      <button className="flex items-center gap-1 text-[11px] font-bold text-slate-400 hover:text-emerald-600 transition-colors mt-auto">
+      <button onClick={() => showToast('All items loaded', 'info')} className="flex items-center gap-1 text-[11px] font-bold text-slate-400 hover:text-emerald-600 transition-colors mt-auto">
         View All <ChevronRight className="w-3 h-3" />
       </button>
     </motion.div>

@@ -634,7 +634,7 @@ export default function ASHADashboard() {
                 <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-full">
                   {tasks.filter(t => !t.done).length} Tasks
                 </span>
-                <button className="text-xs font-black text-[#059669] hover:underline">View All</button>
+                <button onClick={() => showToast('All tasks loaded', 'info')} className="text-xs font-black text-[#059669] hover:underline">View All</button>
               </div>
             </div>
 
@@ -965,7 +965,7 @@ export default function ASHADashboard() {
             <span className="text-[10px] font-black px-3 py-1 rounded-full self-start bg-red-100 text-red-700">
               High Priority
             </span>
-            <button className="text-[10px] font-black text-red-600 hover:text-red-700 flex items-center gap-0.5 mt-2">
+            <button onClick={(e) => { e.stopPropagation(); showToast('SOS Alerts – demo view', 'info'); }} className="text-[10px] font-black text-red-600 hover:text-red-700 flex items-center gap-0.5 mt-2">
               View All <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -985,7 +985,7 @@ export default function ASHADashboard() {
             <span className="text-[10px] font-black px-3 py-1 rounded-full self-start bg-orange-100 text-orange-700">
               Needs Visit
             </span>
-            <button className="text-[10px] font-black text-orange-600 hover:text-orange-700 flex items-center gap-0.5 mt-2">
+            <button onClick={(e) => { e.stopPropagation(); showToast('High Risk Pregnancy – demo view', 'info'); }} className="text-[10px] font-black text-orange-600 hover:text-orange-700 flex items-center gap-0.5 mt-2">
               View All <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -1005,7 +1005,7 @@ export default function ASHADashboard() {
             <span className="text-[10px] font-black px-3 py-1 rounded-full self-start bg-purple-100 text-purple-700">
               Follow Up
             </span>
-            <button className="text-[10px] font-black text-purple-600 hover:text-purple-700 flex items-center gap-0.5 mt-2">
+            <button onClick={(e) => { e.stopPropagation(); showToast('Malnutrition Cases – demo view', 'info'); }} className="text-[10px] font-black text-purple-600 hover:text-purple-700 flex items-center gap-0.5 mt-2">
               View All <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -1025,7 +1025,7 @@ export default function ASHADashboard() {
             <span className="text-[10px] font-black px-3 py-1 rounded-full self-start bg-emerald-100 text-emerald-700">
               No Pending
             </span>
-            <button className="text-[10px] font-black text-emerald-600 hover:text-emerald-700 flex items-center gap-0.5 mt-2">
+            <button onClick={(e) => { e.stopPropagation(); showToast('Pad Requests – demo view', 'info'); }} className="text-[10px] font-black text-emerald-600 hover:text-emerald-700 flex items-center gap-0.5 mt-2">
               View All <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -1092,7 +1092,7 @@ export default function ASHADashboard() {
             <h3 className="text-xs font-black uppercase text-slate-800 tracking-wider flex items-center gap-1.5">
               <Activity className="w-4 h-4 text-[#059669]" /> Program Performance
             </h3>
-            <button className="text-[10px] font-black text-[#059669] hover:underline">View Full Report</button>
+            <button onClick={() => showToast('Full report opened', 'info')} className="text-[10px] font-black text-[#059669] hover:underline">View Full Report</button>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {[
@@ -1116,6 +1116,9 @@ export default function ASHADashboard() {
 
   return (
     <div className="w-full min-h-screen bg-slate-50/50 text-slate-800 antialiased font-sans select-none overflow-x-hidden">
+      <div className="bg-amber-500 text-white text-center py-1 text-[9px] font-black uppercase tracking-widest sticky top-0 z-50">
+        ⚠ Demo Mode — Dashboard showing sample data for demonstration
+      </div>
       {pageLoading && (
         <div className="fixed inset-0 bg-white z-[100] flex items-center justify-center">
           <div className="text-center">

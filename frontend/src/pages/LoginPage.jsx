@@ -8,6 +8,7 @@ import {
   ArrowRight, ChevronLeft, MapPin, AlertCircle,
   ShieldCheck, Wifi, Zap, Users, WifiOff, Globe
 } from 'lucide-react';
+import { showToast } from '../utils/toast';
 
 // ── Offline-First Login Helpers ──────────────────────────────────────────────
 // Demo credentials pre-cached for evaluation walkthroughs.
@@ -441,7 +442,7 @@ export default function LoginPage() {
                   {loginMethod === 'password' ? (t.loginPage?.password || 'Password') : (t.loginPage?.enter_otp || 'OTP')}
                 </label>
                 {loginMethod === 'password' && (
-                  <button type="button" className="text-[8px] font-black text-emerald-600 hover:text-emerald-700 uppercase tracking-widest">
+                  <button type="button" onClick={() => showToast('Password reset link sent (demo)', 'info')} className="text-[8px] font-black text-emerald-600 hover:text-emerald-700 uppercase tracking-widest">
                     {t.loginPage?.forgot_password || 'Forgot?'}
                   </button>
                 )}

@@ -244,6 +244,52 @@ const adminService = {
     } catch (error) {
       throw error.response?.data?.error || 'Failed to fetch agent scans';
     }
+  },
+
+  // ── B2B: API Key Management ──
+  getApiKeys: async () => {
+    try {
+      const res = await api.get('/admin/api-keys');
+      return res.data;
+    } catch (error) {
+      throw error.response?.data?.error || 'Failed to fetch API keys';
+    }
+  },
+
+  createApiKey: async (name, tenantId, permissions) => {
+    try {
+      const res = await api.post('/admin/api-keys', { name, tenantId, permissions });
+      return res.data;
+    } catch (error) {
+      throw error.response?.data?.error || 'Failed to create API key';
+    }
+  },
+
+  toggleApiKey: async (id) => {
+    try {
+      const res = await api.put(`/admin/api-keys/${id}/toggle`);
+      return res.data;
+    } catch (error) {
+      throw error.response?.data?.error || 'Failed to toggle API key';
+    }
+  },
+
+  deleteApiKey: async (id) => {
+    try {
+      const res = await api.delete(`/admin/api-keys/${id}`);
+      return res.data;
+    } catch (error) {
+      throw error.response?.data?.error || 'Failed to delete API key';
+    }
+  },
+
+  getApiKeyUsage: async () => {
+    try {
+      const res = await api.get('/admin/api-keys/usage');
+      return res.data;
+    } catch (error) {
+      throw error.response?.data?.error || 'Failed to fetch API key usage';
+    }
   }
 };
 

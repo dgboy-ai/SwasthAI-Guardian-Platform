@@ -10,6 +10,28 @@ import { PregnancyRiskSchema, MalnutritionSchema, validateAiOutput } from '../ut
 
 const router = express.Router();
 
+// ── Data provenance: marks every response with the backing store ──
+const DB_PROVENANCE = { _db: 'postgresql' };
+
+router.use((req, res, next) => {
+  res.set('X-Data-Source', 'postgresql');
+  const originalJson = res.json.bind(res);
+  res.json = function(body) {
+    if (typeof body === 'object' && body !== null && !Array.isArray(body) && !body._db && !body._source) {
+      body._db = 'postgresql';
+    }
+    return originalJson(body);
+  };
+  const originalSend = res.send.bind(res);
+  res.send = function(body) {
+    if (typeof body === 'object' && body !== null && !Array.isArray(body) && !body._db && !body._source) {
+      body._db = 'postgresql';
+    }
+    return originalSend(body);
+  };
+  next();
+});
+
 const sanitize = (str) => {
   if (typeof str !== 'string') return str;
   return str.replace(/<[^>]*>/g, '').trim();
@@ -102,42 +124,49 @@ router.post('/maternal', auth, checkRole(['ngo', 'admin', 'villager']), logAudit
   }
 
   const villageId = req.user.villageId || 'unassigned';
-  const patientVitals = vitals || { systolic_bp: 120, diastolic_bp: 80, bs: 5.0, body_temp: 98, heart_rate: 75 };
+  const patientVitals = vitals || {};
 
-  if (clientRequestId) {
-    const existing = await db.get(
-      'SELECT id, "updated_at", "riskLevel", "villageId", systolic_bp, diastolic_bp, bs, body_temp, heart_rate, factors_json FROM pregnancy_data WHERE client_request_id = ?',
-      [clientRequestId]
-    );
-    if (existing) {
-      const dbUpdatedAt = new Date(existing.updated_at || 0).getTime();
-      const incomingTs = Number(req.body.clientUpdatedAt || req.body.ts || 0);
+  try {
+    if (clientRequestId) {
+      const existing = await db.get(
+        'SELECT id, "updated_at", "riskLevel", "villageId", systolic_bp, diastolic_bp, bs, body_temp, heart_rate, factors_json FROM pregnancy_data WHERE client_request_id = ?',
+        [clientRequestId]
+      );
+      if (existing) {
+        const dbUpdatedAt = new Date(existing.updated_at || 0).getTime();
+        const incomingTs = Number(req.body.clientUpdatedAt || req.body.ts || 0);
 
-      // Conflict Resolution: If online database record is newer than incoming sync, keep the database record
-      if (dbUpdatedAt >= incomingTs) {
-        req.log('info', 'Sync conflict resolved: Online record is newer than incoming sync. Keeping online data.', { clientRequestId });
-        return res.send({
-          riskLevel: existing.riskLevel,
-          villageId: existing.villageId,
-          recordId: existing.id,
-          duplicate: true,
-          clientRequestId,
-          vector_score: existing.riskLevel.toLowerCase().includes('high') ? 8 : existing.riskLevel.toLowerCase().includes('medium') ? 4 : 0,
-          factors: existing.factors_json ? JSON.parse(existing.factors_json) : []
-        });
+        if (dbUpdatedAt >= incomingTs) {
+          req.log('info', 'Sync conflict resolved: Online record is newer than incoming sync. Keeping online data.', { clientRequestId });
+          return res.send({
+            riskLevel: existing.riskLevel,
+            villageId: existing.villageId,
+            recordId: existing.id,
+            duplicate: true,
+            clientRequestId,
+            vector_score: existing.riskLevel.toLowerCase().includes('high') ? 8 : existing.riskLevel.toLowerCase().includes('medium') ? 4 : 0,
+            factors: existing.factors_json ? JSON.parse(existing.factors_json) : []
+          });
+        }
+
+        req.log('info', 'Sync conflict resolved: Incoming sync is newer. Overwriting existing record (Last-Write-Wins).', { clientRequestId });
+        await db.run('DELETE FROM pregnancy_data WHERE id = ?', [existing.id]);
       }
-      
-      // If incoming sync is newer, overwrite the record. Delete the old one so the subsequent flow inserts the newer one.
-      req.log('info', 'Sync conflict resolved: Incoming sync is newer. Overwriting existing record (Last-Write-Wins).', { clientRequestId });
-      await db.run('DELETE FROM pregnancy_data WHERE id = ?', [existing.id]);
     }
+  } catch (dedupErr) {
+    req.log('warn', 'Dedup check failed for maternal record, proceeding without dedup', { error: dedupErr.message, clientRequestId });
   }
 
   // ── Fetch previous vitals to compute Risk Velocity (trends) ──
-  const previous = await db.get(
-    'SELECT systolic_bp, diastolic_bp, bs, body_temp, heart_rate FROM pregnancy_data WHERE name = ? ORDER BY id DESC LIMIT 1',
-    [name]
-  );
+  let previous = null;
+  try {
+    previous = await db.get(
+      'SELECT systolic_bp, diastolic_bp, bs, body_temp, heart_rate FROM pregnancy_data WHERE name = ? ORDER BY id DESC LIMIT 1',
+      [name]
+    );
+  } catch (prevErr) {
+    req.log('warn', 'Failed to fetch previous vitals for trend calculation', { error: prevErr.message });
+  }
 
   const computeTrend = (currVal, prevVal) => {
     if (prevVal === undefined || prevVal === null) return 'stable';
@@ -266,6 +295,18 @@ router.post('/maternal', auth, checkRole(['ngo', 'admin', 'villager']), logAudit
         JSON.stringify(validated.factors || [])
       ]
     );
+    dynamoHelper.put('sync_queues', {
+      deviceId: `ngo_maternal_${villageId}`,
+      recordId: `mat_${saved.lastID}`,
+      recordType: 'pregnancy',
+      villageId,
+      name,
+      riskLevel,
+      clientRequestId: clientRequestId || undefined,
+      status: 'synced',
+      createdAt: new Date().toISOString()
+    }).catch(err => req.log('warn', 'DynamoDB write failed for maternal record', { error: err.message }));
+
     if (String(riskLevel || '').toLowerCase().includes('high')) {
       eventEmitter.emit('maternal_alert', { name, age, villageId, riskLevel, vitals: patientVitals, timestamp: new Date().toISOString(), traceId: req.traceId });
     }
@@ -278,6 +319,23 @@ router.post('/maternal', auth, checkRole(['ngo', 'admin', 'villager']), logAudit
       factors: validated.factors
     });
   } catch (err) {
+    if (clientRequestId && (err.message?.includes('UNIQUE') || err.code === 'SQLITE_CONSTRAINT')) {
+      const existing = await db.get(
+        'SELECT id, "riskLevel", "villageId", vector_score, factors_json FROM pregnancy_data WHERE client_request_id = ?',
+        [clientRequestId]
+      ).catch(() => null);
+      if (existing) {
+        return res.send({
+          riskLevel: existing.riskLevel,
+          villageId: existing.villageId,
+          recordId: existing.id,
+          duplicate: true,
+          clientRequestId,
+          vector_score: existing.vector_score || 0,
+          factors: existing.factors_json ? JSON.parse(existing.factors_json) : []
+        });
+      }
+    }
     req.log('error', 'Failed to save pregnancy data', { error: err.message });
     res.status(500).json({ error: 'Failed to save pregnancy risk assessment' });
   }
@@ -303,31 +361,33 @@ router.post('/malnutrition', auth, checkRole(['ngo', 'admin', 'villager']), asyn
   }
 
   const villageId = req.user.villageId || 'unassigned';
-  if (clientRequestId) {
-    const existing = await db.get(
-      'SELECT id, "updated_at", status, "villageId" FROM malnutrition_data WHERE client_request_id = ?',
-      [clientRequestId]
-    );
-    if (existing) {
-      const dbUpdatedAt = new Date(existing.updated_at || 0).getTime();
-      const incomingTs = Number(req.body.clientUpdatedAt || req.body.ts || 0);
+  try {
+    if (clientRequestId) {
+      const existing = await db.get(
+        'SELECT id, "updated_at", status, "villageId" FROM malnutrition_data WHERE client_request_id = ?',
+        [clientRequestId]
+      );
+      if (existing) {
+        const dbUpdatedAt = new Date(existing.updated_at || 0).getTime();
+        const incomingTs = Number(req.body.clientUpdatedAt || req.body.ts || 0);
 
-      // Conflict Resolution: If online database record is newer than incoming sync, keep the database record
-      if (dbUpdatedAt >= incomingTs) {
-        req.log('info', 'Sync conflict resolved (Malnutrition): Online record is newer. Keeping online data.', { clientRequestId });
-        return res.send({
-          status: existing.status,
-          villageId: existing.villageId,
-          recordId: existing.id,
-          duplicate: true,
-          clientRequestId
-        });
+        if (dbUpdatedAt >= incomingTs) {
+          req.log('info', 'Sync conflict resolved (Malnutrition): Online record is newer. Keeping online data.', { clientRequestId });
+          return res.send({
+            status: existing.status,
+            villageId: existing.villageId,
+            recordId: existing.id,
+            duplicate: true,
+            clientRequestId
+          });
+        }
+
+        req.log('info', 'Sync conflict resolved (Malnutrition): Incoming sync is newer. Overwriting existing record.', { clientRequestId });
+        await db.run('DELETE FROM malnutrition_data WHERE id = ?', [existing.id]);
       }
-      
-      // If incoming sync is newer, overwrite the record. Delete the old one so the subsequent flow inserts the newer one.
-      req.log('info', 'Sync conflict resolved (Malnutrition): Incoming sync is newer. Overwriting existing record.', { clientRequestId });
-      await db.run('DELETE FROM malnutrition_data WHERE id = ?', [existing.id]);
     }
+  } catch (dedupErr) {
+    req.log('warn', 'Dedup check failed for malnutrition record, proceeding without dedup', { error: dedupErr.message, clientRequestId });
   }
 
   let status, bmi, action;
@@ -358,8 +418,27 @@ router.post('/malnutrition', auth, checkRole(['ngo', 'admin', 'villager']), asyn
       'INSERT INTO malnutrition_data ("childName", "ageMonths", weight, height, status, "villageId", client_request_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
       [name, age, weight, height, status, villageId, clientRequestId]
     );
+    dynamoHelper.put('sync_queues', {
+      deviceId: `ngo_nutrition_${villageId}`,
+      recordId: `nut_${saved.lastID}`,
+      recordType: 'malnutrition',
+      villageId,
+      childName: name,
+      status,
+      clientRequestId: clientRequestId || undefined,
+      createdAt: new Date().toISOString()
+    }).catch(err => req.log('warn', 'DynamoDB write failed for malnutrition record', { error: err.message }));
     res.send({ status, bmi, action, villageId, recordId: saved.lastID, clientRequestId });
   } catch (err) {
+    if (clientRequestId && (err.message?.includes('UNIQUE') || err.code === 'SQLITE_CONSTRAINT')) {
+      const existing = await db.get(
+        'SELECT id, status, "villageId" FROM malnutrition_data WHERE client_request_id = ?',
+        [clientRequestId]
+      ).catch(() => null);
+      if (existing) {
+        return res.send({ status: existing.status, villageId: existing.villageId, recordId: existing.id, duplicate: true, clientRequestId });
+      }
+    }
     req.log('error', 'Failed to save malnutrition data', { error: err.message });
     res.status(500).json({ error: 'Failed to save malnutrition assessment' });
   }
@@ -373,7 +452,7 @@ router.get('/ambulances', auth, checkRole(['ngo', 'admin']), async (req, res) =>
     let rows;
     if (req.user.role !== 'admin') {
       const villageId = req.user.villageId || 'unassigned';
-      rows = await db.all("SELECT * FROM ambulance_requests WHERE request_type = 'ambulance' AND location = ? ORDER BY id DESC LIMIT ? OFFSET ?", [villageId, limit, offset]);
+      rows = await db.all("SELECT * FROM ambulance_requests WHERE request_type = 'ambulance' AND (location = ? OR \"villageId\" = ?) ORDER BY id DESC LIMIT ? OFFSET ?", [villageId, villageId, limit, offset]);
     } else {
       rows = await db.all("SELECT * FROM ambulance_requests WHERE request_type = 'ambulance' ORDER BY id DESC LIMIT ? OFFSET ?", [limit, offset]);
     }
@@ -392,7 +471,7 @@ router.get('/pads', auth, checkRole(['ngo', 'admin']), async (req, res) => {
     let rows;
     if (req.user.role !== 'admin') {
       const villageId = req.user.villageId || 'unassigned';
-      rows = await db.all("SELECT * FROM ambulance_requests WHERE request_type = 'pad_request' AND location = ? ORDER BY id DESC LIMIT ? OFFSET ?", [villageId, limit, offset]);
+      rows = await db.all("SELECT * FROM ambulance_requests WHERE request_type = 'pad_request' AND (location = ? OR \"villageId\" = ?) ORDER BY id DESC LIMIT ? OFFSET ?", [villageId, villageId, limit, offset]);
     } else {
       rows = await db.all("SELECT * FROM ambulance_requests WHERE request_type = 'pad_request' ORDER BY id DESC LIMIT ? OFFSET ?", [limit, offset]);
     }
@@ -445,21 +524,25 @@ router.post('/referral', auth, checkRole(['ngo', 'admin']), logAudit('create', '
   const villageId   = req.user.villageId || 'unassigned';
   const referred_by = req.user.id;
 
-  if (clientRequestId) {
-    const existing = await db.get(
-      'SELECT id, patient_name, referred_to, priority, "villageId", status FROM referrals WHERE client_request_id = ?',
-      [clientRequestId]
-    );
-    if (existing) {
-      return res.status(200).json({
-        success: true,
-        referralId: existing.id,
-        message: `Referral for ${existing.patient_name} to ${existing.referred_to} recorded.`,
-        data: { patient_name: existing.patient_name, referred_to: existing.referred_to, priority: existing.priority, villageId: existing.villageId, status: existing.status },
-        duplicate: true,
-        clientRequestId
-      });
+  try {
+    if (clientRequestId) {
+      const existing = await db.get(
+        'SELECT id, patient_name, referred_to, priority, "villageId", status FROM referrals WHERE client_request_id = ?',
+        [clientRequestId]
+      );
+      if (existing) {
+        return res.status(200).json({
+          success: true,
+          referralId: existing.id,
+          message: `Referral for ${existing.patient_name} to ${existing.referred_to} recorded.`,
+          data: { patient_name: existing.patient_name, referred_to: existing.referred_to, priority: existing.priority, villageId: existing.villageId, status: existing.status },
+          duplicate: true,
+          clientRequestId
+        });
+      }
     }
+  } catch (dedupErr) {
+    req.log('warn', 'Dedup check failed for referral, proceeding without dedup', { error: dedupErr.message, clientRequestId });
   }
 
   try {
@@ -477,6 +560,22 @@ router.post('/referral', auth, checkRole(['ngo', 'admin']), logAudit('create', '
       clientRequestId
     });
   } catch (err) {
+    if (clientRequestId && (err.message?.includes('UNIQUE') || err.code === 'SQLITE_CONSTRAINT')) {
+      const existing = await db.get(
+        'SELECT id, patient_name, referred_to, priority, "villageId", status FROM referrals WHERE client_request_id = ?',
+        [clientRequestId]
+      ).catch(() => null);
+      if (existing) {
+        return res.status(200).json({
+          success: true,
+          referralId: existing.id,
+          message: `Referral for ${existing.patient_name} to ${existing.referred_to} recorded.`,
+          data: { patient_name: existing.patient_name, referred_to: existing.referred_to, priority: existing.priority, villageId: existing.villageId, status: existing.status },
+          duplicate: true,
+          clientRequestId
+        });
+      }
+    }
     console.error('[REFERRAL] Insert error:', err.message);
     res.status(500).json({ success: false, error: { code: 'REFERRAL_FAILED', message: 'Failed to create referral' } });
   }
@@ -591,20 +690,24 @@ router.post('/vaccinations', auth, checkRole(['ngo', 'admin']), enforceVillageSc
   const userVillageId = req.user.role === 'admin' ? (villageId || 'unassigned') : (req.user.villageId || 'unassigned');
   const recordedBy = req.user.id;
 
-  if (clientRequestId) {
-    const existing = await db.get(
-      'SELECT id, child_name, vaccine_name FROM vaccination_records WHERE client_request_id = ?',
-      [clientRequestId]
-    );
-    if (existing) {
-      return res.status(200).json({
-        success: true,
-        vaccinationId: existing.id,
-        message: `Vaccination record for ${existing.child_name} registered successfully.`,
-        duplicate: true,
-        clientRequestId
-      });
+  try {
+    if (clientRequestId) {
+      const existing = await db.get(
+        'SELECT id, child_name, vaccine_name FROM vaccination_records WHERE client_request_id = ?',
+        [clientRequestId]
+      );
+      if (existing) {
+        return res.status(200).json({
+          success: true,
+          vaccinationId: existing.id,
+          message: `Vaccination record for ${existing.child_name} registered successfully.`,
+          duplicate: true,
+          clientRequestId
+        });
+      }
     }
+  } catch (dedupErr) {
+    req.log('warn', 'Dedup check failed for vaccination, proceeding without dedup', { error: dedupErr.message, clientRequestId });
   }
 
   try {
@@ -621,6 +724,21 @@ router.post('/vaccinations', auth, checkRole(['ngo', 'admin']), enforceVillageSc
       clientRequestId
     });
   } catch (err) {
+    if (clientRequestId && (err.message?.includes('UNIQUE') || err.code === 'SQLITE_CONSTRAINT')) {
+      const existing = await db.get(
+        'SELECT id, child_name, vaccine_name FROM vaccination_records WHERE client_request_id = ?',
+        [clientRequestId]
+      ).catch(() => null);
+      if (existing) {
+        return res.status(200).json({
+          success: true,
+          vaccinationId: existing.id,
+          message: `Vaccination record for ${existing.child_name} registered successfully.`,
+          duplicate: true,
+          clientRequestId
+        });
+      }
+    }
     console.error('[VACCINATION] Insert error:', err.message);
     res.status(500).json({ success: false, error: { code: 'VACCINATION_FAILED', message: 'Failed to record vaccination' } });
   }
@@ -668,14 +786,15 @@ router.get('/outbreaks', auth, checkRole(['ngo', 'admin']), async (req, res) => 
   const { villageId } = req.query;
   try {
     const daysBack = parseInt(req.query.days) || 7;
-    let outbreaks = await import('../dynamodb.js').then(m => m.default.queryRecentAll('outbreak_telemetry', daysBack));
+    const MAX_OUTBREAKS = Math.min(parseInt(req.query.limit) || 20, 100);
+    let outbreaks = dynamoHelper.queryRecentAll('outbreak_telemetry', daysBack, MAX_OUTBREAKS);
     outbreaks.sort((a, b) => (b.detectedAt || '').localeCompare(a.detectedAt || ''));
     // Server-side village filter — never expose other villages' data
     const activeVillage = req.user.role === 'admin' ? villageId : (req.user.villageId || 'unassigned');
     if (activeVillage) {
       outbreaks = outbreaks.filter(o => o.villageId === activeVillage);
     }
-    res.json({ outbreaks: outbreaks.slice(0, 20) });
+    res.json({ outbreaks: outbreaks.slice(0, MAX_OUTBREAKS), _db: dynamoHelper.isMock ? 'mock' : 'dynamodb' });
   } catch (err) {
     res.status(503).json({ success: false, error: { code: 'OUTBREAKS_UNAVAILABLE', message: err.message } });
   }
@@ -695,12 +814,12 @@ router.get('/stats', auth, checkRole(['ngo', 'admin']), async (req, res) => {
 
     if (req.user.role !== 'admin') {
       const villageId = req.user.villageId || 'unassigned';
-      queryAmbulances += " AND location = ?";
-      queryPads += " AND location = ?";
+      queryAmbulances += " AND (location = ? OR \"villageId\" = ?)";
+      queryPads += " AND (location = ? OR \"villageId\" = ?)";
       queryPregnancies += ' WHERE "villageId" = ?';
       queryMalnutrition += ' AND "villageId" = ?';
       queryVillagers += ' AND "villageId" = ?';
-      params.push(villageId, villageId, villageId, villageId, villageId);
+      params.push(villageId, villageId, villageId, villageId, villageId, villageId, villageId);
     }
 
     const [ambulances, pads, pregnancies, malnutrition, villagers] = await Promise.all([
@@ -730,8 +849,8 @@ router.get('/workload', auth, checkRole(['ngo', 'admin']), async (req, res) => {
   try {
     const villageId = req.user.role === 'admin' ? req.query.villageId : req.user.villageId;
     const scoped = villageId ? ' AND "villageId" = ?' : '';
-    const scopedAmb = villageId ? ' AND location = ?' : '';
-    const params = villageId ? [villageId] : [];
+    const scopedAmb = villageId ? ' AND (location = ? OR "villageId" = ?)' : '';
+    const params = villageId ? [villageId, villageId] : [];
 
     const [referrals, highRiskPregnancies, missedVaccinations, padRequests, sosItems] = await Promise.all([
       db.get(`SELECT COUNT(*) as c FROM referrals WHERE status IN ('pending','accepted','in_transit')${scoped}`, params).catch(() => ({ c: 0 })),
@@ -807,9 +926,9 @@ router.get('/impact-report', auth, checkRole(['ngo', 'admin']), logAudit('genera
 
     if (isNGO) {
       whereClause = ' WHERE "villageId" = ?';
-      whereClauseAmb = ' WHERE location = ?';
-      params.push(villageId);
-      paramsAmb.push(villageId);
+      whereClauseAmb = ' WHERE (location = ? OR "villageId" = ?)';
+      params.push(villageId, villageId);
+      paramsAmb.push(villageId, villageId);
     }
 
     // 1. Core aggregates
@@ -832,9 +951,9 @@ router.get('/impact-report', auth, checkRole(['ngo', 'admin']), logAudit('genera
       db.get(`SELECT COUNT(*) as c FROM referrals${isNGO ? ' WHERE "villageId" = ? AND ' : ' WHERE '}(status = 'completed' OR status = 'closed' OR closed_at IS NOT NULL) AND updated_at >= ? AND updated_at <= ?`, isNGO ? [villageId, prevMonthStart, prevMonthEnd] : [prevMonthStart, prevMonthEnd]),
       db.get(`SELECT COUNT(*) as c FROM referrals${isNGO ? ' WHERE "villageId" = ? AND ' : ' WHERE '}(status = 'completed' OR status = 'closed' OR closed_at IS NOT NULL)`, params),
 
-      db.get(`SELECT COUNT(*) as c FROM ambulance_requests${isNGO ? ' WHERE location = ? AND ' : ' WHERE '}request_type = 'ambulance' AND status = 'completed' AND updated_at >= ?`, isNGO ? [villageId, thisMonthStart] : [thisMonthStart]),
-      db.get(`SELECT COUNT(*) as c FROM ambulance_requests${isNGO ? ' WHERE location = ? AND ' : ' WHERE '}request_type = 'ambulance' AND status = 'completed' AND updated_at >= ? AND updated_at <= ?`, isNGO ? [villageId, prevMonthStart, prevMonthEnd] : [prevMonthStart, prevMonthEnd]),
-      db.get(`SELECT COUNT(*) as c FROM ambulance_requests${isNGO ? ' WHERE location = ? AND ' : ' WHERE '}request_type = 'ambulance' AND status = 'completed'`, paramsAmb),
+      db.get(`SELECT COUNT(*) as c FROM ambulance_requests${isNGO ? ' WHERE (location = ? OR "villageId" = ?) AND ' : ' WHERE '}request_type = 'ambulance' AND status = 'completed' AND updated_at >= ?`, isNGO ? [villageId, villageId, thisMonthStart] : [thisMonthStart]),
+      db.get(`SELECT COUNT(*) as c FROM ambulance_requests${isNGO ? ' WHERE (location = ? OR "villageId" = ?) AND ' : ' WHERE '}request_type = 'ambulance' AND status = 'completed' AND updated_at >= ? AND updated_at <= ?`, isNGO ? [villageId, villageId, prevMonthStart, prevMonthEnd] : [prevMonthStart, prevMonthEnd]),
+      db.get(`SELECT COUNT(*) as c FROM ambulance_requests${isNGO ? ' WHERE (location = ? OR "villageId" = ?) AND ' : ' WHERE '}request_type = 'ambulance' AND status = 'completed'`, paramsAmb),
 
       db.get(`SELECT COUNT(DISTINCT "villageId") as c FROM village_health${whereClause}`, params),
       db.get(`SELECT COUNT(*) as c FROM users${isNGO ? ' WHERE role = \'ngo\' AND "villageId" = ?' : ' WHERE role = \'ngo\''}`, params),
@@ -851,14 +970,16 @@ router.get('/impact-report', auth, checkRole(['ngo', 'admin']), logAudit('genera
 
     const totalReferralsCount = count(allReferrals);
     const closedReferralsCount = count(referralsTotal);
-    const referralClosureRate = totalReferralsCount > 0 ? Math.round((closedReferralsCount / totalReferralsCount) * 100) : 92;
+    const hasReferralData = totalReferralsCount > 0;
+    const referralClosureRate = hasReferralData ? Math.round((closedReferralsCount / totalReferralsCount) * 100) : 92;
 
     const totalVaccinationsCount = count(allVaccinations);
     const completedVaccinationsCount = count(vaccinationsTotal);
-    const vaccinationCompletionRate = totalVaccinationsCount > 0 ? Math.round((completedVaccinationsCount / totalVaccinationsCount) * 100) : 89;
+    const hasVaccinationData = totalVaccinationsCount > 0;
+    const vaccinationCompletionRate = hasVaccinationData ? Math.round((completedVaccinationsCount / totalVaccinationsCount) * 100) : 89;
 
     // Calculate response times
-    const responseTimes = await db.all(`SELECT created_at, updated_at FROM ambulance_requests WHERE request_type = 'ambulance' AND status = 'completed'${isNGO ? ' AND location = ?' : ''} AND updated_at >= ?`, isNGO ? [villageId, prevMonthStart] : [prevMonthStart]);
+    const responseTimes = await db.all(`SELECT created_at, updated_at FROM ambulance_requests WHERE request_type = 'ambulance' AND status = 'completed'${isNGO ? ' AND (location = ? OR "villageId" = ?)' : ''} AND updated_at >= ?`, isNGO ? [villageId, villageId, prevMonthStart] : [prevMonthStart]);
     
     let totalResponseMins = 0;
     let validResponseCount = 0;
@@ -872,7 +993,8 @@ router.get('/impact-report', auth, checkRole(['ngo', 'admin']), logAudit('genera
       }
     });
 
-    const avgResponseTime = validResponseCount > 0 ? Math.round(totalResponseMins / validResponseCount) : 18; // default to 18 mins if no logs
+    const hasResponseTimeData = validResponseCount > 0;
+    const avgResponseTime = hasResponseTimeData ? Math.round(totalResponseMins / validResponseCount) : 18; // default to 18 mins if no logs
 
     // Response time score factor
     let responseScore = 95;
@@ -915,7 +1037,7 @@ router.get('/impact-report', auth, checkRole(['ngo', 'admin']), logAudit('genera
     const [watchlistReferrals, watchlistVaccinations, watchlistEmergencies] = await Promise.all([
       db.get(`SELECT COUNT(*) as c FROM referrals WHERE status IN ('pending','accepted','in_transit')${isNGO ? ' AND "villageId" = ?' : ''}`, isNGO ? [villageId] : []),
       db.get(`SELECT COUNT(*) as c FROM vaccination_records WHERE status IN ('scheduled','missed') AND COALESCE(given_date, '') = ''${isNGO ? ' AND "villageId" = ?' : ''}`, isNGO ? [villageId] : []),
-      db.get(`SELECT COUNT(*) as c FROM ambulance_requests WHERE request_type = 'ambulance' AND status IN ('pending','assigned','in_progress')${isNGO ? ' AND location = ?' : ''}`, isNGO ? [villageId] : []),
+      db.get(`SELECT COUNT(*) as c FROM ambulance_requests WHERE request_type = 'ambulance' AND status IN ('pending','assigned','in_progress')${isNGO ? ' AND (location = ? OR "villageId" = ?)' : ''}`, isNGO ? [villageId, villageId] : []),
     ]);
 
     const openReferralsCount = count(watchlistReferrals);
@@ -985,7 +1107,14 @@ router.get('/impact-report', auth, checkRole(['ngo', 'admin']), logAudit('genera
           highRiskPregnancies: highRiskPregnanciesCount,
           activeASHAs: ashaCount,
           villagesReached: villagesCount,
-          populationCoverage: villagesCount * 1250, // standard estimate per village
+          populationCoverage: villagesCount * 1250,
+          _estimated: {
+            referralClosureRate: !hasReferralData,
+            vaccinationCompletionRate: !hasVaccinationData,
+            avgResponseTime: !hasResponseTimeData,
+            populationCoverage: true,
+            topPerformers: !topASHARow || !topVillageRow || !improvedVillageRow
+          }
         },
         momTrends: {
           pregnancies: { current: count(pregnanciesThis), change: pregnanciesTrend },
@@ -1240,7 +1369,7 @@ router.get('/village-risk', auth, checkRole(['ngo', 'admin']), async (req, res) 
           'outbreak_telemetry',
           'districtId = :did AND detectedAt >= :cutoff',
           { ':did': process.env.DISTRICT_NAME || 'district_main', ':cutoff': cutoff14 },
-          'district-index'
+          'district-time-index'
         ).catch(() => null);
         if (outbreaks && Array.isArray(outbreaks)) {
           // Exclude the current village itself
@@ -1289,7 +1418,7 @@ router.get('/village-risk', auth, checkRole(['ngo', 'admin']), async (req, res) 
         `INSERT INTO audit_logs (user_id, action, resource, resource_id, ip_address) VALUES (?, ?, ?, ?, ?)`,
         [req.user.id, 'read', 'village_risk_forecast', villageId, req.ip || 'unknown']
       );
-    } catch (_) {}
+    } catch (auditErr) { console.error('[AUDIT LOG FAILURE]', auditErr.message); }
 
     res.json({
       success: true,

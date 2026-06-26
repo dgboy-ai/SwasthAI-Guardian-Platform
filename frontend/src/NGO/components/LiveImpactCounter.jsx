@@ -38,12 +38,12 @@ export default function LiveImpactCounter({ className = '' }) {
             </div>
             <h3 className="text-sm font-black text-white">Live Impact Counter</h3>
           </div>
-          <p className="text-[10px] text-slate-400 font-semibold mt-1">Real-time field impact across your block</p>
+          <p className="text-[10px] text-slate-400 font-semibold mt-1">Sample demo data — not real patient information</p>
         </div>
-        <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-900/30 px-2.5 py-1 rounded-full border border-emerald-800/50">
-          <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
-          LIVE
-        </span>
+          <span className="flex items-center gap-1 text-[10px] font-bold text-amber-400 bg-amber-900/30 px-2.5 py-1 rounded-full border border-amber-800/50">
+            <span className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-pulse" />
+            DEMO
+          </span>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">

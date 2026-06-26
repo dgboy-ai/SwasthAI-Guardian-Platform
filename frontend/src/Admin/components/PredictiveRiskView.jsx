@@ -356,6 +356,7 @@ export default function PredictiveRiskView({ demoTourMode }) {
   const [heatmapData, setHeatmapData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [usingMockData, setUsingMockData] = useState(false);
   const [selectedVillage, setSelectedVillage] = useState(null);
   const [detailData, setDetailData] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -384,8 +385,10 @@ export default function PredictiveRiskView({ demoTourMode }) {
       if (demoTourMode) throw new Error('demo');
       const res = await adminService.getDistrictRiskHeatmap();
       setHeatmapData(res.data);
+      setUsingMockData(false);
     } catch (_) {
       setHeatmapData({ villages: DEMO_VILLAGES, summary: DEMO_SUMMARY, generatedAt: new Date().toISOString() });
+      setUsingMockData(true);
     } finally {
       setLoading(false);
     }
@@ -506,6 +509,12 @@ export default function PredictiveRiskView({ demoTourMode }) {
 
   return (
     <div className="p-5 lg:p-6 space-y-5 text-left select-none">
+
+      {usingMockData && (
+        <div className="bg-amber-500 text-white text-center py-1 text-[9px] font-black uppercase tracking-widest rounded-lg">
+          ⚠ Demo Mode — Sample risk data for demonstration
+        </div>
+      )}
 
       <div className="flex items-start justify-between gap-4 flex-wrap bg-white/75 backdrop-blur-md border border-slate-100 rounded-[2rem] p-6 shadow-[0_8px_30px_rgba(0,0,0,0.015)]">
         <div className="flex-1 min-w-0">

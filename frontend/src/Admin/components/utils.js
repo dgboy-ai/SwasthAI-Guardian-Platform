@@ -44,6 +44,14 @@ export const stackStatusMeta = (status = '') => {
   return { label: status || 'Unavailable', dot: 'bg-rose-500', pill: 'bg-rose-50 text-rose-700 border-rose-100' };
 };
 
+// Returns a source badge config for data provenance (DynamoDB / Aurora / Mock / Unavailable)
+export const dataSourceBadge = (demoTourMode, isMock = null) => {
+  if (demoTourMode) return { label: 'Demo', bg: 'bg-amber-100', text: 'text-amber-700', border: 'border-amber-200', dot: 'bg-amber-500' };
+  if (isMock === false) return { label: 'DynamoDB', bg: 'bg-emerald-100', text: 'text-emerald-700', border: 'border-emerald-200', dot: 'bg-emerald-500' };
+  if (isMock === true) return { label: 'Mock', bg: 'bg-sky-100', text: 'text-sky-700', border: 'border-sky-200', dot: 'bg-sky-500' };
+  return { label: 'Unavailable', bg: 'bg-rose-100', text: 'text-rose-700', border: 'border-rose-200', dot: 'bg-rose-500' };
+};
+
 export const latestDynamoWrite = (feed) => {
   if (!feed) return null;
   const records = [

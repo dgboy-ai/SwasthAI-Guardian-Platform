@@ -63,8 +63,11 @@ export default function HealthScoreBreakdown({ score = 82, categories = DEFAULT_
           <span className="text-[10px] font-medium text-emerald-600 flex items-center gap-1">
             <TrendingUp className="w-3 h-3" /> +2.1 pts
           </span>
+          <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">
+            ⚠ Demo
+          </span>
           <span className="text-[10px] text-slate-400 flex items-center gap-1">
-            <Clock className="w-3 h-3" /> Updated today
+            <Clock className="w-3 h-3" /> Static sample data
           </span>
         </div>
       </div>

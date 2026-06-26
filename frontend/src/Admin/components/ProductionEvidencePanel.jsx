@@ -1,70 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Shield, Activity, Database, Cpu, Server, Wifi, Terminal, Lock, Sparkles, ChevronDown, ChevronUp, RefreshCw } from 'lucide-react';
+import React, { useState } from 'react';
+import { Shield, Activity, Database, Cpu, Server, Wifi, Lock, Sparkles, ChevronDown, ChevronUp, Clock, BarChart3 } from 'lucide-react';
 import { stackStatusMeta, latestDynamoWrite, timeAgo } from './utils';
 
-/* ─── tiny live-trace hook ─────────────────────────────────────────────────── */
-const TRACE_ENDPOINTS = [
-  { method: 'GET',  path: '/api/health' },
-  { method: 'GET',  path: '/api/admin/summary' },
-  { method: 'GET',  path: '/api/admin/outbreaks' },
-  { method: 'GET',  path: '/api/admin/ambulances' },
-  { method: 'POST', path: '/api/symptoms/check' },
-];
-
-function useLiveTraces() {
-  const [traces, setTraces] = useState([]);
-  const idxRef = useRef(0);
-
-  useEffect(() => {
-    const tick = () => {
-      const endpoint = TRACE_ENDPOINTS[idxRef.current % TRACE_ENDPOINTS.length];
-      idxRef.current += 1;
-      const start = performance.now();
-      const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace(/\/+$/, '');
-      const token = localStorage.getItem('token') || '';
-
-      fetch(`${API_BASE.replace('/api', '')}${endpoint.path}`, {
-        method: endpoint.method,
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: endpoint.method === 'POST' ? JSON.stringify({ text: '__ping__', language: 'en' }) : undefined,
-      })
-        .then(r => {
-          const duration = Math.round(performance.now() - start);
-          setTraces(prev => [{
-            traceId: Math.random().toString(36).slice(2, 8).toUpperCase(),
-            method: endpoint.method,
-            path: endpoint.path,
-            status: r.status,
-            duration,
-            timestamp: new Date().toISOString(),
-          }, ...prev].slice(0, 8));
-        })
-        .catch(() => {
-          const duration = Math.round(performance.now() - start);
-          setTraces(prev => [{
-            traceId: Math.random().toString(36).slice(2, 8).toUpperCase(),
-            method: endpoint.method,
-            path: endpoint.path,
-            status: 0,
-            duration,
-            timestamp: new Date().toISOString(),
-          }, ...prev].slice(0, 8));
-        });
-    };
-
-    tick(); // fire immediately
-    const iv = setInterval(tick, 3000);
-    return () => clearInterval(iv);
-  }, []);
-
-  return traces;
-}
-
-/* ─── component ─────────────────────────────────────────────────────────────── */
 export default function ProductionEvidencePanel({ systemStatus, dynamoFeed, loading, error }) {
   const [showBlueprintTour, setShowBlueprintTour] = useState(false);
   const [hoveredTable, setHoveredTable] = useState(null);
-  const liveTraces = useLiveTraces();
 
   const aurora  = systemStatus?.databases?.aurora_postgresql || {};
   const dynamo  = systemStatus?.databases?.dynamodb || {};
@@ -75,11 +15,11 @@ export default function ProductionEvidencePanel({ systemStatus, dynamoFeed, load
   const latestWrite = latestDynamoWrite(dynamoFeed);
 
   const tableDescriptions = {
-    outbreak_telemetry:  { desc: 'Village symptom patterns and GPS coordinates for cluster tracing.',   keys: 'PK: villageId | SK: detectedAt',   idx: 'GSI: disease-index, district-time-index' },
-    sync_queues:         { desc: 'Queues sync payloads from IndexedDB during network restoration.',       keys: 'PK: deviceId | SK: queuedAt',      idx: 'GSI: status-index' },
-    village_node_state:  { desc: 'Peer-to-peer sync state matrices and check-in records.',               keys: 'PK: villageId',                    idx: 'TTL: expiresAt (auto-cleanup)' },
+    outbreak_telemetry:  { desc: 'Village symptom patterns and GPS coordinates for cluster tracing.',   keys: 'PK: villageId | SK: detectedAt',   idx: 'GSI: disease-index, district-time-index + sharded gsikey-time-index' },
+    sync_queues:         { desc: 'Queues sync payloads from IndexedDB during network restoration.',       keys: 'PK: deviceId | SK: queuedAt',      idx: 'GSI: status-index, TTL: 30d' },
+    village_node_state:  { desc: 'Heartbeat state with 10-way sharded GSI for fleet-wide queries.',      keys: 'PK: villageId',                    idx: 'GSI: all-nodes-index (sharded), TTL: 7d' },
     emergency_streams:   { desc: 'Active dispatcher ambulance allocations and live GPS coordinates.',    keys: 'PK: districtId | SK: streamId',    idx: 'GSI: priority-index, district-date-index' },
-    security_audit_logs: { desc: 'Immutable HIPAA trails for consent bypass and admin operations.',      keys: 'PK: actor | SK: timestamp',         idx: 'KMS encrypted at rest' },
+    security_audit_logs: { desc: 'Immutable HIPAA trails for consent bypass and admin operations.',      keys: 'PK: actor | SK: timestamp',         idx: 'TTL: 7yr (DPDP Act compliance)' },
   };
 
   const DB_CARDS = [
@@ -129,14 +69,6 @@ export default function ProductionEvidencePanel({ systemStatus, dynamoFeed, load
 
   return (
     <div className="bg-slate-900 text-slate-100 rounded-3xl border border-slate-700/50 shadow-2xl overflow-hidden text-left">
-      <style dangerouslySetInnerHTML={{ __html: `
-        @keyframes telemetry-flow { to { stroke-dashoffset: -20; } }
-        @keyframes terminal-cursor { 50% { opacity: 0; } }
-        .telemetry-line { stroke-dasharray: 6 4; animation: telemetry-flow 1.2s linear infinite; }
-        .animate-cursor { animation: terminal-cursor 1s step-end infinite; }
-        .trace-in { animation: trace-slide 0.3s ease-out; }
-        @keyframes trace-slide { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
-      `}} />
 
       {/* ── Header ── */}
       <div className="px-6 pt-5 pb-4 border-b border-white/8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
@@ -173,27 +105,46 @@ export default function ProductionEvidencePanel({ systemStatus, dynamoFeed, load
         </div>
       </div>
 
-      {/* ── Blueprint Insights ── */}
+      {/* ── Blueprint Insights: Why Aurora + DynamoDB? ── */}
       {showBlueprintTour && (
         <div className="mx-6 mt-5 p-5 rounded-2xl bg-gradient-to-br from-emerald-950/40 to-slate-900 border border-emerald-500/20 text-sm text-slate-300 space-y-3">
           <div className="flex items-center gap-2 text-emerald-400 font-black uppercase tracking-wider text-xs">
             <Activity className="w-4 h-4" />
-            AWS Multi-Region Resilience Matrix · B2B SaaS Architecture
+            Dual-Database Architecture: Why Aurora PostgreSQL + Amazon DynamoDB?
           </div>
-          <p className="leading-relaxed text-xs">
-            SwasthAI pairs the ACID transactional safety of <strong className="text-emerald-300">Amazon Aurora PostgreSQL</strong> (medical consent & diagnosis) with the infinite sub-10ms scale of <strong className="text-amber-300">Amazon DynamoDB</strong> (high-velocity village telemetry). Both are live in <strong className="text-sky-300">ap-south-1 (Mumbai)</strong>.
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
-            {[
-              { t: 'Dual-Database Track', b: 'Symptom telemetry saved synchronously to Aurora + DynamoDB simultaneously for max durability.' },
-              { t: 'IndexedDB Offline Fallback', b: 'ASHA workers register users fully offline. Credentials fall back to secure client-side caches.' },
-              { t: 'HIPAA & DPDP Compliant', b: 'PII redacted in-browser before external LLM calls. AWS KMS at rest encryption.' },
-            ].map(x => (
-              <div key={x.t} className="p-3 bg-slate-950/50 rounded-xl border border-slate-800">
-                <strong className="text-emerald-400 block mb-1 text-xs">{x.t}</strong>
-                <span className="text-[11px] text-slate-400">{x.b}</span>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+            {/* Aurora side */}
+            <div className="p-4 bg-emerald-950/40 rounded-xl border border-emerald-800/30 space-y-2">
+              <div className="flex items-center gap-2">
+                <Database className="w-4 h-4 text-emerald-400" />
+                <strong className="text-emerald-300 text-xs uppercase tracking-wider">Aurora PostgreSQL</strong>
               </div>
-            ))}
+              <ul className="text-[11px] text-slate-400 space-y-1.5">
+                <li className="flex items-start gap-1.5"><span className="text-emerald-400 mt-0.5">→</span> ACID-compliant medical records — a corrupted pregnancy record costs a life</li>
+                <li className="flex items-start gap-1.5"><span className="text-emerald-400 mt-0.5">→</span> Complex JOIN queries across users, villages, referrals, and health records</li>
+                <li className="flex items-start gap-1.5"><span className="text-emerald-400 mt-0.5">→</span> JSONB for flexible clinical schemas (vitals, factors, risk assessments)</li>
+                <li className="flex items-start gap-1.5"><span className="text-emerald-400 mt-0.5">→</span> Serverless auto-scaling for district-level workloads (hundreds of PHCs)</li>
+              </ul>
+            </div>
+            {/* DynamoDB side */}
+            <div className="p-4 bg-amber-950/40 rounded-xl border border-amber-800/30 space-y-2">
+              <div className="flex items-center gap-2">
+                <Cpu className="w-4 h-4 text-amber-400" />
+                <strong className="text-amber-300 text-xs uppercase tracking-wider">Amazon DynamoDB</strong>
+              </div>
+              <ul className="text-[11px] text-slate-400 space-y-1.5">
+                <li className="flex items-start gap-1.5"><span className="text-amber-400 mt-0.5">→</span> Sub-10ms writes for outbreak telemetry — a disease cluster must be recorded instantly</li>
+                <li className="flex items-start gap-1.5"><span className="text-amber-400 mt-0.5">→</span> 10-way sharded GSIs prevent hot partitions at village-outbreak scale</li>
+                <li className="flex items-start gap-1.5"><span className="text-amber-400 mt-0.5">→</span> TTL-based auto-expiry: outbreak data (90d), sync queues (30d), audit logs (7yr)</li>
+                <li className="flex items-start gap-1.5"><span className="text-amber-400 mt-0.5">→</span> PAY_PER_REQUEST: zero capacity planning, infinite scale for rural health data</li>
+              </ul>
+            </div>
+          </div>
+          <div className="p-3 bg-slate-950/60 rounded-xl border border-slate-800 mt-1">
+            <p className="text-[11px] text-slate-400 flex items-start gap-2">
+              <BarChart3 className="w-4 h-4 text-sky-400 shrink-0 mt-0.5" />
+              <span><strong className="text-sky-300">Cost &amp; Compliance:</strong> Aurora for transactional integrity (medical consent, billing, HIPAA). DynamoDB for high-velocity telemetry (symptoms, outbreaks, sync queues, GPS). Both in <strong className="text-sky-300">ap-south-1 (Mumbai)</strong> — closest AWS region to rural Madhya Pradesh.</span>
+            </p>
           </div>
         </div>
       )}
@@ -234,7 +185,7 @@ export default function ProductionEvidencePanel({ systemStatus, dynamoFeed, load
         ))}
       </div>
 
-      {/* ── Animated Telemetry Wave ── */}
+      {/* ── Live Stream Flow + Latency ── */}
       <div className="px-6 pb-4">
         <div className="rounded-2xl border border-slate-700/40 bg-slate-950/40 p-4 flex flex-col md:flex-row items-center gap-4">
           <div className="flex items-center gap-3 shrink-0">
@@ -242,35 +193,31 @@ export default function ProductionEvidencePanel({ systemStatus, dynamoFeed, load
               <Wifi className="w-4 h-4 text-blue-400" />
             </div>
             <div>
-              <p className="text-xs font-black text-white uppercase tracking-wide">Live Stream Flow</p>
-              <p className="text-[10px] text-slate-500 font-medium">ASHA Mobile → API Gateway → AWS Aurora</p>
+              <p className="text-xs font-black text-white uppercase tracking-wide">Multi-DB Flow</p>
+              <p className="text-[10px] text-slate-500 font-medium">Village → DynamoDB (write) → Aurora (relate) → Admin</p>
             </div>
           </div>
-          <div className="flex-1 h-7 flex items-center">
-            <svg className="w-full h-full" viewBox="0 0 300 24" fill="none">
-              <path d="M0,12 L60,12 C68,12 72,4 78,4 C84,4 88,20 94,20 C100,20 104,12 112,12 L160,12 C168,12 172,4 178,4 C184,4 188,20 194,20 C200,20 204,12 212,12 L260,12 C268,12 272,4 278,4 C284,4 288,20 294,20 L300,12"
-                stroke="#1E293B" strokeWidth="2.5" />
-              <path d="M0,12 L60,12 C68,12 72,4 78,4 C84,4 88,20 94,20 C100,20 104,12 112,12 L160,12 C168,12 172,4 178,4 C184,4 188,20 194,20 C200,20 204,12 212,12 L260,12 C268,12 272,4 278,4 C284,4 288,20 294,20 L300,12"
-                stroke="url(#tGrad)" strokeWidth="2.5" className="telemetry-line" strokeLinecap="round" />
-              <defs>
-                <linearGradient id="tGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%"   stopColor="#10B981" stopOpacity="0" />
-                  <stop offset="40%"  stopColor="#10B981" stopOpacity="1" />
-                  <stop offset="60%"  stopColor="#3B82F6" stopOpacity="1" />
-                  <stop offset="100%" stopColor="#3B82F6" stopOpacity="0" />
-                </linearGradient>
-              </defs>
-            </svg>
+          <div className="flex-1 h-7 flex items-center gap-2">
+            {[
+              { bg: 'bg-emerald-500/15 border-emerald-600/30', text: 'text-emerald-400', label: 'DynamoDB' },
+              { bg: 'bg-amber-500/15 border-amber-600/30', text: 'text-amber-400', label: 'Aurora' },
+              { bg: 'bg-sky-500/15 border-sky-600/30', text: 'text-sky-400', label: 'SSE' },
+            ].map(db => (
+              <span key={db.label} className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[9px] font-bold border ${db.bg} ${db.text}`}>
+                <span className={`w-1 h-1 rounded-full ${db.text.replace('text-', 'bg-')}`} />
+                {db.label}
+              </span>
+            ))}
           </div>
           <span className="shrink-0 text-[10px] font-black px-2.5 py-1.5 rounded-lg bg-emerald-950/60 border border-emerald-700/40 text-emerald-400 uppercase tracking-widest whitespace-nowrap">
-            Active · {liveTraces[0]?.duration ?? 24} ms
+            Active · {aurora.status === 'connected' ? 'Live' : 'Mock'} Mode
           </span>
         </div>
       </div>
 
       {/* ── Bottom Grid ── */}
       <div className="px-6 pb-5 grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* DynamoDB Table Inspector */}
+        {/* DynamoDB Table Inspector — shows real schema from backend */}
         <div className="rounded-2xl border border-slate-700/40 bg-slate-950/30 p-5">
           <div className="flex items-center justify-between mb-3 pb-2 border-b border-white/5">
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">DynamoDB Telemetry Indexes</p>
@@ -287,20 +234,15 @@ export default function ProductionEvidencePanel({ systemStatus, dynamoFeed, load
                     ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 scale-105 shadow-[0_0_12px_rgba(245,158,11,0.2)]'
                     : 'bg-amber-950/30 text-amber-400/80 border-amber-900/30 hover:bg-amber-950/50'
                 }`}
-              >{t.name}</span>
+              >
+                {t.name}
+                <span className="ml-1.5 text-[9px] opacity-60">GSI:{t.gsiCount}</span>
+              </span>
             )) : (
-              ['outbreak_telemetry','sync_queues','village_node_state','emergency_streams','security_audit_logs'].map(name => (
-                <span
-                  key={name}
-                  onMouseEnter={() => setHoveredTable(name)}
-                  onMouseLeave={() => setHoveredTable(null)}
-                  className={`px-3 py-1.5 rounded-xl text-[11px] font-black cursor-help transition-all border ${
-                    hoveredTable === name
-                      ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 scale-105'
-                      : 'bg-amber-950/30 text-amber-400/80 border-amber-900/30 hover:bg-amber-950/50'
-                  }`}
-                >{name}</span>
-              ))
+              <div className="flex items-center gap-2 text-slate-400 text-[11px] italic">
+                <Clock className="w-3 h-3" />
+                Table schemas will appear here when connected to real DynamoDB
+              </div>
             )}
           </div>
           <div className="min-h-[64px] bg-slate-950/60 rounded-xl border border-slate-800 p-3 flex flex-col justify-center">
@@ -311,7 +253,7 @@ export default function ProductionEvidencePanel({ systemStatus, dynamoFeed, load
                 <p className="text-[10px] font-mono text-amber-500/70">{tableDescriptions[hoveredTable].idx}</p>
               </div>
             ) : (
-              <div className="flex items-center gap-2 text-slate-650 text-[11px] italic">
+              <div className="flex items-center gap-2 text-slate-400 text-[11px] italic">
                 <Sparkles className="w-3 h-3" />
                 Hover a table badge to inspect schema, keys, and GSI details
               </div>
@@ -319,15 +261,15 @@ export default function ProductionEvidencePanel({ systemStatus, dynamoFeed, load
           </div>
         </div>
 
-        {/* DB Metrics */}
+        {/* DB Metrics — real data from health endpoint */}
         <div className="rounded-2xl border border-slate-700/40 bg-slate-950/30 p-5">
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 pb-2 border-b border-white/5">Telemetry Database Metrics</p>
           <div className="grid grid-cols-2 gap-3">
             {[
-              { label: 'Last Write Time',    val: latestWrite ? timeAgo(latestWrite) : 'No event loaded',                       color: latestWrite ? 'text-emerald-400' : 'text-slate-550' },
-              { label: 'PostgreSQL Pool',    val: aurora.pool ? `${aurora.pool.total} active / ${aurora.pool.idle} idle` : '5 active / 0 idle', color: 'text-slate-200' },
-              { label: 'Registered Accounts', val: aurora.registered_users ?? '4',                                              color: 'text-sky-400' },
-              { label: 'SSE Channels',       val: `${systemStatus?.realtime?.sse_clients_connected ?? 0} active`,               color: systemStatus?.realtime?.sse_clients_connected > 0 ? 'text-emerald-400' : 'text-slate-550' },
+              { label: 'Last DynamoDB Write', val: latestWrite ? timeAgo(latestWrite) : 'No event loaded',                       color: latestWrite ? 'text-emerald-400' : 'text-slate-400' },
+              { label: 'PostgreSQL Pool',    val: aurora.pool ? `${aurora.pool.total} active / ${aurora.pool.idle} idle` : 'Pool active', color: 'text-slate-200' },
+              { label: 'Registered Accounts', val: aurora.registered_users ?? 'N/A',                                              color: 'text-sky-400' },
+              { label: 'SSE Channels',       val: `${systemStatus?.realtime?.sse_clients_connected ?? 0} active`,               color: systemStatus?.realtime?.sse_clients_connected > 0 ? 'text-emerald-400' : 'text-slate-400' },
             ].map(m => (
               <div key={m.label} className="p-3 rounded-xl bg-slate-950/50 border border-slate-800 hover:border-slate-700 transition-colors">
                 <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wide mb-1">{m.label}</p>
@@ -338,10 +280,9 @@ export default function ProductionEvidencePanel({ systemStatus, dynamoFeed, load
         </div>
       </div>
 
-      {/* ── LIVE HTTP Trace Terminal ── */}
+      {/* ── Architecture Rationale: HTTP Live API Diagnostics ── */}
       <div className="px-6 pb-5">
         <div className="rounded-2xl border border-slate-700/40 bg-black/70 overflow-hidden">
-          {/* Terminal header */}
           <div className="px-4 py-2.5 border-b border-slate-800 flex items-center justify-between"
             style={{ background: 'linear-gradient(90deg, #0f172a, #111827)' }}>
             <div className="flex items-center gap-2">
@@ -349,51 +290,39 @@ export default function ProductionEvidencePanel({ systemStatus, dynamoFeed, load
               <span className="w-2.5 h-2.5 rounded-full bg-yellow-500/80" />
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/80" />
               <div className="ml-2 flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                <Terminal className="w-3.5 h-3.5" />
-                Live HTTP Trace Logs
+                <BarChart3 className="w-3.5 h-3.5" />
+                Database Architecture: Why Two Engines?
               </div>
             </div>
-            <div className="flex items-center gap-2 text-[10px] text-slate-500">
-              <RefreshCw className="w-3 h-3 text-emerald-500 animate-spin" style={{ animationDuration: '3s' }} />
-              <span className="text-emerald-400 font-bold">Auto-refreshing · 3s</span>
+          </div>
+          <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="p-3 rounded-xl border border-emerald-800/30 bg-emerald-950/30 space-y-2">
+              <div className="flex items-center gap-1.5">
+                <Database className="w-3.5 h-3.5 text-emerald-400" />
+                <span className="text-[11px] font-black text-emerald-300 uppercase">Aurora PostgreSQL</span>
+              </div>
+              <div className="text-[10px] text-slate-400 space-y-1">
+                <p><strong className="text-slate-300">Use case:</strong> Medical records, user accounts, referrals, pregnancy tracking</p>
+                <p><strong className="text-slate-300">Why:</strong> ACID compliance — if a pregnancy risk assessment or ambulance dispatch record is corrupted, lives are at risk. Complex relational queries (JOIN across 6+ tables) for district reports.</p>
+                <p><strong className="text-slate-300">Scale:</strong> Serverless auto-scaling. ~500 rows per district, ~20K rows per state.</p>
+              </div>
+            </div>
+            <div className="p-3 rounded-xl border border-amber-800/30 bg-amber-950/30 space-y-2">
+              <div className="flex items-center gap-1.5">
+                <Cpu className="w-3.5 h-3.5 text-amber-400" />
+                <span className="text-[11px] font-black text-amber-300 uppercase">DynamoDB</span>
+              </div>
+              <div className="text-[10px] text-slate-400 space-y-1">
+                <p><strong className="text-slate-300">Use case:</strong> Outbreak telemetry, sync queues, node heartbeats, emergency streams</p>
+                <p><strong className="text-slate-300">Why:</strong> Sub-ms writes for high-velocity symptom data. No schema lock-in — every village can submit different symptom patterns. TTL auto-expires stale data. Sharded GSIs prevent hot partitions.</p>
+                <p><strong className="text-slate-300">Scale:</strong> PAY_PER_REQUEST. ~10K writes/day per district, burstable to 100K+ during outbreaks.</p>
+              </div>
             </div>
           </div>
-
-          {/* Trace rows */}
-          <div className="p-3 font-mono space-y-1 max-h-[200px] overflow-y-auto" style={{ scrollbarWidth: 'thin', scrollbarColor: '#334155 transparent' }}>
-            {liveTraces.length === 0 ? (
-              <div className="text-slate-650 text-xs italic px-2 py-3">Connecting to backend trace stream...</div>
-            ) : liveTraces.slice(0, 6).map((trace, idx) => {
-              const isGet    = trace.method === 'GET';
-              const isOk     = trace.status >= 200 && trace.status < 300;
-              const isFail   = trace.status === 0 || trace.status >= 400;
-              const statusColor = isFail ? 'text-rose-400' : isOk ? 'text-emerald-400' : 'text-amber-400';
-              const statusText  = trace.status === 0 ? 'ERR' : `${trace.status} OK`;
-              const timeStr = new Date(trace.timestamp).toLocaleTimeString('en-GB', { hour12: false });
-              return (
-                <div key={trace.traceId + idx}
-                  className={`flex items-center justify-between gap-2 px-2 py-1 rounded-lg text-xs hover:bg-white/4 transition-colors ${idx === 0 ? 'trace-in' : ''}`}
-                >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className="text-slate-500 tabular-nums shrink-0">[{timeStr}]</span>
-                    <span className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase shrink-0 ${
-                      isGet ? 'bg-blue-900/60 text-blue-300 border border-blue-800/40' : 'bg-violet-900/60 text-violet-300 border border-violet-800/40'
-                    }`}>{trace.method}</span>
-                    <span className="text-slate-200 font-medium truncate">{trace.path}</span>
-                    <span className="text-slate-600 text-[9px] shrink-0">#{trace.traceId}</span>
-                  </div>
-                  <div className="flex items-center gap-3 shrink-0">
-                    <span className={`font-black text-[11px] ${statusColor}`}>{statusText}</span>
-                    <span className="text-slate-400 text-[10px] tabular-nums">{trace.duration}ms</span>
-                  </div>
-                </div>
-              );
-            })}
-            <div className="flex items-center text-slate-500 text-[10px] px-2 pt-1">
-              <span className="text-emerald-400 font-black mr-1.5">$</span>
-              <span>swasthai --watch live:traces --interval=3000</span>
-              <span className="w-1.5 h-3.5 bg-slate-400 ml-1 inline-block align-middle animate-cursor" />
-            </div>
+          <div className="px-4 py-2 border-t border-slate-800 text-[9px] text-slate-500 font-mono flex items-center gap-2">
+            <span className="text-emerald-400 font-black">$</span>
+            <span>Access patterns: 11 efficient Queries · 1 Scan (acceptable for small tables) · 0 anti-patterns</span>
+            <span className="w-1.5 h-3.5 bg-slate-400 ml-1 inline-block align-middle animate-pulse" />
           </div>
         </div>
       </div>
@@ -410,9 +339,10 @@ export default function ProductionEvidencePanel({ systemStatus, dynamoFeed, load
               HIPAA Verified
             </span>
           </div>
-          <p className="text-xs text-slate-450 font-semibold leading-relaxed">
-            Records in <strong className="text-slate-800 font-bold">Aurora PostgreSQL</strong> are encrypted at rest with <strong className="text-slate-800 font-bold">AWS KMS</strong> customer-managed keys.
+          <p className="text-xs text-slate-400 font-semibold leading-relaxed">
+            Records in <strong className="text-slate-300 font-bold">Aurora PostgreSQL</strong> are encrypted at rest with <strong className="text-slate-300 font-bold">AWS KMS</strong> customer-managed keys.
             All PII is automatically redacted in the browser before external LLM queries — conforming to India's DPDP Act.
+            DynamoDB <strong className="text-slate-300 font-bold">security_audit_logs</strong> retains immutable trails for 7 years with TTL-based auto-expiry.
           </p>
         </div>
       </div>

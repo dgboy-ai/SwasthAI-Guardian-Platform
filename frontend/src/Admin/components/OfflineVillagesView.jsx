@@ -26,6 +26,11 @@ export default function OfflineVillagesView({ S, dynamoFeed, demoTourMode }) {
 
   return (
     <div className="p-4 lg:p-5 space-y-4 text-left">
+      {(demoTourMode || liveNodes.length === 0) && (
+        <div className="bg-amber-500 text-white text-center py-1 text-[9px] font-black uppercase tracking-widest rounded-lg">
+          ⚠ Demo Mode — Sample node data shown for demonstration
+        </div>
+      )}
       {/* Top Banner */}
       <div className="bg-slate-900 rounded-2xl p-8 text-white relative overflow-hidden">
         <div className="absolute right-6 top-6 opacity-[0.04]"><WifiOff className="w-48 h-48" /></div>

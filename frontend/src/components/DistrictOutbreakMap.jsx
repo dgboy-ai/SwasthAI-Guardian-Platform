@@ -40,6 +40,7 @@ export default function DistrictOutbreakMap({ onNodeSelect, activeVillageId = nu
   const [selectedNode, setSelectedNode] = useState(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [nodes, setNodes] = useState(DEFAULT_NODES);
+  const [usingDefaultNodes, setUsingDefaultNodes] = useState(true);
   const [isPolling, setIsPolling] = useState(false);
   const [pollSuccess, setPollSuccess] = useState(false);
   
@@ -153,6 +154,7 @@ export default function DistrictOutbreakMap({ onNodeSelect, activeVillageId = nu
             outbreakScore: score
           };
         }));
+        setUsingDefaultNodes(false);
       } catch (_) {
         /* Keep default/mock nodes on failure or offline mode */
       }
@@ -338,6 +340,11 @@ export default function DistrictOutbreakMap({ onNodeSelect, activeVillageId = nu
 
   return (
     <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm p-6 sm:p-8 relative overflow-hidden flex flex-col lg:flex-row gap-6">
+      {usingDefaultNodes && (
+        <div className="absolute top-0 left-0 right-0 z-50 bg-amber-500 text-white text-center py-0.5 text-[8px] font-black uppercase tracking-widest">
+          ⚠ Demo Map — Sample village nodes for demonstration
+        </div>
+      )}
       
       {/* MAP CONTAINER */}
       <div className="flex-1 flex flex-col justify-between relative min-h-[460px] lg:min-h-[520px] bg-slate-950 rounded-[2rem] overflow-hidden border border-slate-900 shadow-[0_0_30px_rgba(16,185,129,0.08)]">

@@ -28,6 +28,9 @@ export default function EmergencyResponseWorkflow({ emergency, onDispatch, dispa
 
   return (
     <div className="space-y-4">
+      <div className="bg-amber-100 border border-amber-200 rounded-xl px-3 py-1.5 text-[9px] font-black uppercase text-amber-700 tracking-wider text-center">
+        ⚠ Demo Mode — Dispatch simulation
+      </div>
       <div className="bg-red-50 border border-red-100 rounded-2xl p-4">
         <div className="flex items-start gap-3">
           <div className="w-10 h-10 rounded-xl bg-red-500 flex items-center justify-center shrink-0">

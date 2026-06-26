@@ -316,8 +316,8 @@ async def add_trace_id_and_log(request, call_next):
 # AI service is called only by the Node.js backend — never directly by the browser
 # Restrict CORS to backend URL only (open wildcard was a security gap)
 _ALLOWED_ORIGINS = [
-    os.getenv("BACKEND_URL", "http://localhost:3001"),
-    "http://127.0.0.1:3001",   # local dev fallback (port 3001)
+    os.getenv("BACKEND_URL", "http://localhost:5000"),
+    "http://127.0.0.1:5000",   # local dev fallback (port 5000)
     "http://localhost:5000",
     "http://127.0.0.1:5000",
 ]

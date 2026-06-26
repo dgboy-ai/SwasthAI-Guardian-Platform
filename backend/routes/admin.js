@@ -17,8 +17,13 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const DLQ_PATH = path.join(__dirname, '../failed_events_dlq.json');
 
+// NOTE: adminSseClients is in-memory per-worker. In cluster mode (server.js),
+// each worker has its own Map — SSE broadcasts from worker 1 won't reach
+// clients connected to worker 2. For production HA, replace with a shared
+// pub/sub store (Redis pub/sub or DynamoDB streams with DB polling).
 const adminSseClients = new Map(); // clientId → res
 const MAX_SSE_CLIENTS = 20;
+const agentScans = []; // In-memory scan log — lost on restart, DynamoDB is source of truth
 
 // Structured Error helper
 const sendError = (res, statusCode, code, message, details = null) => {
@@ -78,77 +83,53 @@ export function broadcastToAdmins(eventType, data) {
   console.log(`[SSE] Broadcast '${eventType}' to ${adminSseClients.size} admin client(s)`);
 }
 
-let agentScans = [
-  {
-    villageId: 'v102',
-    villageName: 'Shivpur',
-    casesScanned: 12,
-    symptoms: 'High fever, joint pain, skin rash',
-    outbreakDetected: true,
-    disease: 'Dengue Fever',
-    confidence: 0.88,
-    action: 'Distribute mosquito nets, conduct fogging, check standing water.',
-    timestamp: new Date(Date.now() - 15 * 60 * 1000).toISOString()
-  },
-  {
-    villageId: 'v101',
-    villageName: 'Rampur',
-    casesScanned: 2,
-    symptoms: 'Mild cough and cold',
-    outbreakDetected: false,
-    disease: 'Seasonal Influenza',
-    confidence: 0.15,
-    action: 'Monitor symptoms locally. Standard outpatient care.',
-    timestamp: new Date(Date.now() - 45 * 60 * 1000).toISOString()
-  },
-  {
-    villageId: 'v104',
-    villageName: 'Babatpur',
-    casesScanned: 1,
-    symptoms: 'Nausea, fever',
-    outbreakDetected: false,
-    disease: 'Mild Gastrointestinal Noise',
-    confidence: 0.12,
-    action: 'Hydration counseling, track family members.',
-    timestamp: new Date(Date.now() - 75 * 60 * 1000).toISOString()
-  },
-  {
-    villageId: 'v105',
-    villageName: 'Chiraigaon',
-    casesScanned: 4,
-    symptoms: 'Watery stools, vomiting',
-    outbreakDetected: true,
-    disease: 'Mild Cholera Alert',
-    confidence: 0.72,
-    action: 'Provide chlorine tablets, deploy ORS packets immediately.',
-    timestamp: new Date(Date.now() - 105 * 60 * 1000).toISOString()
-  },
-  {
-    villageId: 'v103',
-    villageName: 'Kharela',
-    casesScanned: 1,
-    symptoms: 'Headache, fatigue',
-    outbreakDetected: false,
-    disease: 'Fatigue / Heat stroke',
-    confidence: 0.05,
-    action: 'Advise hydration and rest during peak afternoon hours.',
-    timestamp: new Date(Date.now() - 135 * 60 * 1000).toISOString()
-  }
-];
+export async function getAgentScans() {
+  // Derive scans from live outbreak_telemetry data when available
+  // (outbreak events with detectedAt in the last 24h grouped by village)
+  // Queries all 10 shards in parallel for complete coverage
+  try {
+    const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const shardResults = await Promise.all(
+      Array.from({ length: 10 }, (_, i) =>
+        dynamoHelper.query(
+          'outbreak_telemetry',
+          '#gsk = :gk AND detectedAt >= :cutoff',
+          { ':gk': `outbreak_v0#${i}`, ':cutoff': cutoff },
+          'gsikey-time-index',
+          { ExpressionAttributeNames: { '#gsk': '_gsikey' } }
+        ).catch(() => [])
+      )
+    );
+    const liveData = shardResults.flat();
+    if (liveData && liveData.length > 0) {
+      const byVillage = {};
+      for (const item of liveData) {
+        const v = item.villageId;
+        if (!byVillage[v]) byVillage[v] = { cases: 0, diseases: new Set(), firstSeen: item.detectedAt };
+        byVillage[v].cases++;
+        if (item.classification) byVillage[v].diseases.add(item.classification);
+      }
+      return Object.entries(byVillage).map(([villageId, info]) => ({
+        villageId,
+        villageName: `Village ${villageId.replace('v', '')}`,
+        casesScanned: info.cases,
+        symptoms: `${[...info.diseases].slice(0, 3).join(', ')} symptoms in ${info.cases} cases`,
+        outbreakDetected: info.cases >= parseInt(process.env.OUTBREAK_THRESHOLD, 10) || 3,
+        disease: [...info.diseases][0] || 'Under investigation',
+        confidence: Math.min(0.5 + info.cases * 0.08, 0.95),
+        action: info.cases >= (parseInt(process.env.OUTBREAK_THRESHOLD, 10) || 3) ? 'Deploy ASHA team immediately. Alert district health officer.' : 'Continue monitoring. Standard surveillance.',
+        timestamp: new Date().toISOString(),
+        source: 'dynamodb',
+      }));
+    }
+  } catch (_) { /* DynamoDB unavailable — return empty, agent will populate on next cycle */ }
 
-export function getAgentScans() {
-  if (agentScans && agentScans.length > 0) {
-    agentScans[0].timestamp = new Date(Date.now() - 5 * 60 * 1000).toISOString();
-    if (agentScans[1]) agentScans[1].timestamp = new Date(Date.now() - 15 * 60 * 1000).toISOString();
-    if (agentScans[2]) agentScans[2].timestamp = new Date(Date.now() - 35 * 60 * 1000).toISOString();
-    if (agentScans[3]) agentScans[3].timestamp = new Date(Date.now() - 55 * 60 * 1000).toISOString();
-    if (agentScans[4]) agentScans[4].timestamp = new Date(Date.now() - 75 * 60 * 1000).toISOString();
-  }
-  return agentScans;
+  return [];
 }
 
-router.get('/agent-scans', auth, checkRole(['admin', 'ngo']), (req, res) => {
-  res.json(agentScans);
+router.get('/agent-scans', auth, checkRole(['admin', 'ngo']), async (req, res) => {
+  const scans = await getAgentScans();
+  res.json(scans);
 });
 
 router.post('/agent-scan', async (req, res) => {
@@ -196,6 +177,25 @@ router.post('/agent-scan', async (req, res) => {
     action: action || 'Monitor closely.',
     timestamp: timestamp || new Date().toISOString()
   };
+
+  // Persist to DynamoDB outbreak_telemetry so scans survive server restarts
+  try {
+    const districtId = await resolveDistrictId(db, villageId);
+    await dynamoHelper.put('outbreak_telemetry', {
+      villageId,
+      districtId,
+      detectedAt: newScan.timestamp,
+      disease: newScan.disease,
+      classification: newScan.disease,
+      action: newScan.action,
+      confidence: newScan.confidence,
+      caseCount: newScan.casesScanned,
+      symptomPattern: newScan.symptoms,
+      source: 'agent-scan',
+      scanType: newScan.outbreakDetected ? 'outbreak' : 'routine',
+      severity: newScan.outbreakDetected ? 'monitor' : 'info',
+    });
+  } catch (_) { /* non-critical — in-memory fallback still works */ }
 
   agentScans.unshift(newScan);
   if (agentScans.length > 50) {
@@ -264,19 +264,19 @@ router.get('/analytics', auth, checkRole(['admin']), async (req, res) => {
     const aCount = await db.get('SELECT COUNT(*) as c FROM ambulance_requests');
     const usingSQLite = req.app.locals.usingSQLite;
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-    const alerts = await db.all(
+    const alertRow = await db.get(
       usingSQLite
-        ? `SELECT id FROM symptoms WHERE "createdAt" >= ?`
-        : `SELECT id FROM symptoms WHERE "createdAt" >= NOW() - INTERVAL '1 day'`,
+        ? `SELECT COUNT(*) as c FROM symptoms WHERE "createdAt" >= ?`
+        : `SELECT COUNT(*) as c FROM symptoms WHERE "createdAt" >= NOW() - INTERVAL '1 day'`,
       usingSQLite ? [oneDayAgo] : []
-    ).catch(() => []);
+    ).catch(() => ({ c: 0 }));
 
     res.send({
       villages: parseInt(vCount?.c || vCount?.count || 0),
       pregnancies: parseInt(pCount?.c || pCount?.count || 0),
       malnutrition: parseInt(mCount?.c || mCount?.count || 0),
       ambulances: parseInt(aCount?.c || aCount?.count || 0),
-      today_symptoms: alerts.length
+      today_symptoms: parseInt(alertRow?.c || 0)
     });
   } catch (err) {
     sendError(res, 500, 'ANALYTICS_FAILED', err.message);
@@ -305,12 +305,26 @@ router.get('/ambulances', auth, checkRole(['admin']), async (req, res) => {
 
 router.get('/villages', auth, checkRole(['admin', 'ngo']), async (req, res) => {
   const db = req.app.locals.db;
+  const limit = Math.min(parseInt(req.query.limit) || 100, 500);
+  const districtId = requestedDistrict(req);
   try {
-    const villages = await db.all(
-      `SELECT v.*, u.phone AS asha_phone, u.name AS asha_name
-       FROM village_health v
-       LEFT JOIN users u ON u."villageId" = v."villageId" AND u.role = 'ngo'`
-    );
+    let villages;
+    if (districtId) {
+      villages = await db.all(
+        `SELECT v.*, u.phone AS asha_phone, u.name AS asha_name
+         FROM village_health v
+         LEFT JOIN users u ON u."villageId" = v."villageId" AND u.role = 'ngo'
+         WHERE v."districtId" = ?
+         LIMIT ?`, [districtId, limit]
+      );
+    } else {
+      villages = await db.all(
+        `SELECT v.*, u.phone AS asha_phone, u.name AS asha_name
+         FROM village_health v
+         LEFT JOIN users u ON u."villageId" = v."villageId" AND u.role = 'ngo'
+         LIMIT ?`, [limit]
+      );
+    }
     res.send(villages);
   } catch (err) {
     sendError(res, 500, 'FETCH_VILLAGES_FAILED', err.message);
@@ -371,22 +385,16 @@ router.get('/summary', auth, checkRole(['admin']), async (req, res) => {
     const totalUsers = await db.get("SELECT COUNT(*) as c FROM users WHERE role = 'villager'");
     const totalNgos = await db.get("SELECT COUNT(*) as c FROM users WHERE role = 'ngo'");
 
-    let totalReqs = { c: 0 };
-    let sanitaryReqs = { c: 0 };
-    try {
-      totalReqs = await db.get('SELECT COUNT(*) as c FROM requests');
-      sanitaryReqs = await db.get('SELECT COUNT(*) as c FROM requests WHERE type = "sanitary_pad"');
-    } catch (e) { /* ignore if table missing */ }
-
-    const emergencyReqs = await db.get("SELECT COUNT(*) as c FROM ambulance_requests WHERE request_type = 'ambulance'");
-    const padReqs = await db.get("SELECT COUNT(*) as c FROM ambulance_requests WHERE request_type = 'pad_request'");
+    const emergencyReqs = await db.get("SELECT COUNT(*) as c FROM ambulance_requests WHERE request_type = 'ambulance'").catch(() => ({ c: 0 }));
+    const padReqs = await db.get("SELECT COUNT(*) as c FROM ambulance_requests WHERE request_type = 'pad_request'").catch(() => ({ c: 0 }));
 
     res.send({
+      districtId: requestedDistrict(req),
       totalUsers: totalUsers?.c || 0,
       totalNgos: totalNgos?.c || 0,
-      totalRequests: (totalReqs?.c || 0) + (emergencyReqs?.c || 0) + (padReqs?.c || 0),
+      totalRequests: (emergencyReqs?.c || 0) + (padReqs?.c || 0),
       emergencyCount: emergencyReqs?.c || 0,
-      sanitaryCount: (sanitaryReqs?.c || 0) + (padReqs?.c || 0)
+      sanitaryCount: padReqs?.c || 0
     });
   } catch (err) {
     console.error('Summary fetch error:', err);
@@ -409,20 +417,13 @@ const sanitizeCsvCell = (val) => {
 router.get('/report', auth, checkRole(['admin']), logAudit('export_report', 'ambulance_and_pad_requests'), async (req, res) => {
   const db = req.app.locals.db;
   try {
-    const ambulances = await db.all('SELECT * FROM ambulance_requests ORDER BY id DESC');
+    const ambulances = await db.all('SELECT * FROM ambulance_requests ORDER BY id DESC LIMIT ?', [5000]);
 
     let csv = 'Record ID,Type,Patient Name/ID,Location/Priority,Status,Date\n';
 
     ambulances.forEach(a => {
       csv += `AMB-${sanitizeCsvCell(a.id)},${sanitizeCsvCell(a.type || 'ambulance')},"${sanitizeCsvCell(a.name || 'User ' + a.user_id)}","${sanitizeCsvCell(a.location || '')} (${sanitizeCsvCell(a.priority || '')})",${sanitizeCsvCell(a.status)},${sanitizeCsvCell(a.created_at)}\n`;
     });
-
-    try {
-      const padReqs = await db.all('SELECT * FROM requests ORDER BY id DESC');
-      padReqs.forEach(r => {
-        csv += `REQ-${sanitizeCsvCell(r.id)},${sanitizeCsvCell(r.type)},User ${sanitizeCsvCell(r.user_id)},N/A,${sanitizeCsvCell(r.status)},${sanitizeCsvCell(r.created_at)}\n`;
-      });
-    } catch (e) { /* ignore if table missing */ }
 
     res.header('Content-Type', 'text/csv');
     res.attachment('swasthai_admin_report.csv');
@@ -456,6 +457,7 @@ router.get('/clusters', async (req, res) => {
     return sendError(res, 403, 'FORBIDDEN', 'Forbidden');
   }
 
+  const OUTBREAK_THRESHOLD = parseInt(process.env.OUTBREAK_THRESHOLD, 10) || 3;
   try {
     const rows = await db.all(
       usingSQLite
@@ -464,15 +466,16 @@ router.get('/clusters', async (req, res) => {
            FROM symptoms
            WHERE "createdAt" >= datetime('now', '-1 day')
            GROUP BY "villageId"
-           HAVING COUNT(*) >= 3
+           HAVING COUNT(*) >= ?
            ORDER BY count DESC`
         : `SELECT "villageId", COUNT(*) as count,
                   string_agg(symptoms, ' | ') as symptoms
            FROM symptoms
            WHERE "createdAt" >= NOW() - INTERVAL '1 day'
            GROUP BY "villageId"
-           HAVING COUNT(*) >= 3
-           ORDER BY count DESC`
+           HAVING COUNT(*) >= ?
+           ORDER BY count DESC`,
+      [OUTBREAK_THRESHOLD]
     );
     res.send(rows);
   } catch (err) {
@@ -561,7 +564,8 @@ router.post('/outbreak-alert', async (req, res) => {
     }
 
     console.log(`[OUTBREAK] ✅ ${disease} in ${villageId} → DynamoDB + SSE broadcast`);
-    res.status(201).json({ status: 'stored', store: 'dynamodb', sseClients: 0 });
+    const storeType = dynamoHelper && dynamoHelper.isMock ? 'mock' : 'dynamodb';
+    res.status(201).json({ status: 'stored', store: storeType, sseClients: 0 });
   } catch (err) {
     console.error('[OUTBREAK] Error:', err.message);
     sendError(res, 500, 'OUTBREAK_STORAGE_FAILED', 'Failed to store outbreak alert', err.message);
@@ -630,8 +634,9 @@ router.post('/outbreak', auth, checkRole(['admin']), async (req, res) => {
       });
     }
 
-    console.log(`[OUTBREAK SIMULATOR] ✅ ${resolvedDisease} in ${resolvedVillageId} -> DynamoDB + SSE broadcast`);
-    res.status(201).json({ status: 'stored', store: 'dynamodb', sseBroadcast: true });
+    const storeType = dynamoHelper && dynamoHelper.isMock ? 'mock' : 'dynamodb';
+    console.log(`[OUTBREAK SIMULATOR] ✅ ${resolvedDisease} in ${resolvedVillageId} -> ${storeType} + SSE broadcast`);
+    res.status(201).json({ status: 'stored', store: storeType, sseBroadcast: true });
   } catch (err) {
     console.error('[OUTBREAK SIMULATOR] Error:', err.message);
     sendError(res, 500, 'OUTBREAK_SIMULATION_FAILED', 'Failed to store and broadcast simulated outbreak alert', err.message);
@@ -701,7 +706,13 @@ router.get('/dynamo-feed', auth, async (req, res) => {
     const [outbreaks, syncQueues, nodeStates, emergencies] = await Promise.all([
       dynamoHelper.queryByDistrict('outbreak_telemetry', districtId, daysBack),
       dynamoHelper.scan('sync_queues'),
-      dynamoHelper.scan('village_node_state'),
+      // Query all 10 shards of village_node_state via all-nodes-index GSI in parallel
+      (async () => {
+        const shardPromises = Array.from({ length: 10 }, (_, i) =>
+          dynamoHelper.query('village_node_state', '#gpk = :pk', { ':pk': `node_state_all#${i}` }, 'all-nodes-index', { ExpressionAttributeNames: { '#gpk': '_gsiPk' } }).catch(() => [])
+        );
+        return (await Promise.all(shardPromises)).flat();
+      })(),
       dynamoHelper.queryEmergenciesByDistrictDate(districtId, daysBack),
     ]);
     const sort = (arr) => (arr || [])
@@ -1050,7 +1061,12 @@ router.get('/live-feed', async (req, res) => {
   try {
     const headerToken = req.header('Authorization')?.replace('Bearer ', '');
     const queryToken  = req.query.token;
-    const token = headerToken || queryToken;
+    const cookieToken = req.cookies?.token;
+    // Token priority: Authorization header > cookie > query param
+    // Query param kept only as last-resort fallback for environments where
+    // EventSource cannot set headers/cookies. In production, use WebSocket
+    // or a short-lived session cookie instead.
+    const token = headerToken || cookieToken || queryToken;
     if (!token) return sendError(res, 401, 'AUTH_REQUIRED', 'Auth Required');
     decoded = jwt.verify(token, process.env.JWT_SECRET);
     if (decoded.role !== 'admin') return sendError(res, 403, 'ADMIN_ACCESS_ONLY', 'Admin access only');

@@ -445,6 +445,24 @@ export async function initSchema(db, pool, usingSQLite) {
       CREATE UNIQUE INDEX IF NOT EXISTS idx_referrals_client_request      ON referrals(client_request_id) WHERE client_request_id IS NOT NULL;
       CREATE UNIQUE INDEX IF NOT EXISTS idx_vaccination_client_request    ON vaccination_records(client_request_id) WHERE client_request_id IS NOT NULL;
     `);
+
+    // ── B2B: API Keys table for NGO/Enterprise integrations ──
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS api_keys (
+        id SERIAL PRIMARY KEY,
+        key_id VARCHAR(40) UNIQUE NOT NULL,
+        name VARCHAR(120) NOT NULL,
+        tenant_id VARCHAR(80) DEFAULT NULL,
+        created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+        last_used_at TIMESTAMPTZ DEFAULT NULL,
+        expires_at TIMESTAMPTZ DEFAULT NULL,
+        is_active BOOLEAN DEFAULT TRUE,
+        permissions VARCHAR(255) DEFAULT 'read',
+        usage_count INTEGER DEFAULT 0
+      );
+    `);
+    // Add placeholder reference in SQLite compatible block
   } else {
     // ── SQLite Schema Auto-Creation & Demo Data Seeding ──────────────────────
     console.log('📦 Initializing SQLite database schema and indexing...');
@@ -617,6 +635,20 @@ export async function initSchema(db, pool, usingSQLite) {
         helpline TEXT DEFAULT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS api_keys (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        key_id TEXT UNIQUE NOT NULL,
+        name TEXT NOT NULL,
+        tenant_id TEXT DEFAULT NULL,
+        created_by INTEGER,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        last_used_at DATETIME DEFAULT NULL,
+        expires_at DATETIME DEFAULT NULL,
+        is_active INTEGER DEFAULT 1,
+        permissions TEXT DEFAULT 'read',
+        usage_count INTEGER DEFAULT 0
       );
 
       CREATE TABLE IF NOT EXISTS referrals (

@@ -6,6 +6,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { showToast } from '../utils/toast';
 import {
   AreaChart, Area, BarChart, Bar, LineChart, Line,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell
@@ -18,6 +19,7 @@ import {
 } from 'lucide-react';
 
 // ── Mock Data ────────────────────────────────────────────────────────────────
+// ⚠️ DEMO DATA — This is sample data for demonstration purposes
 const vaccData = [
   { month: 'Jan', coverage: 62 }, { month: 'Feb', coverage: 68 },
   { month: 'Mar', coverage: 71 }, { month: 'Apr', coverage: 74 },
@@ -155,6 +157,10 @@ export default function DistrictCommandCenter() {
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
     <div className="flex min-h-screen bg-slate-950 text-slate-100 font-sans overflow-hidden">
+      {/* ⚠️ DEMO DATA BADGE */}
+      <div className="fixed top-0 left-0 right-0 z-50 bg-amber-500 text-white text-center py-1 text-[9px] font-black uppercase tracking-widest">
+        ⚠ Demo Mode — Mock data shown for demonstration. Not real patient information.
+      </div>
 
       {/* ── SIDEBAR ──────────────────────────────────────────────────────────── */}
       <aside className={`flex flex-col bg-slate-900 border-r border-slate-800 h-screen sticky top-0 shrink-0 transition-all duration-300 z-30 ${sidebarCollapsed ? 'w-16' : 'w-64'}`}>
@@ -431,8 +437,8 @@ export default function DistrictCommandCenter() {
                       <span className="ml-auto text-slate-600">{s.time}</span>
                     </div>
                     <div className="flex gap-2 mt-2">
-                      <button className="flex-1 py-1.5 text-[10px] font-black bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors">Dispatch Ambulance</button>
-                      <button className="px-3 py-1.5 text-[10px] font-bold bg-slate-700 text-slate-300 rounded-lg hover:bg-slate-600 transition-colors">Track</button>
+                      <button onClick={() => showToast('Ambulance dispatched (demo)', 'success')} className="flex-1 py-1.5 text-[10px] font-black bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors">Dispatch Ambulance</button>
+                      <button onClick={() => showToast('Tracking view opened (demo)', 'info')} className="px-3 py-1.5 text-[10px] font-bold bg-slate-700 text-slate-300 rounded-lg hover:bg-slate-600 transition-colors">Track</button>
                     </div>
                   </motion.div>
                 ))}
@@ -622,7 +628,7 @@ export default function DistrictCommandCenter() {
                 </div>
                 <div className="flex gap-2">
                   {['PDF', 'CSV', 'Excel'].map(fmt => (
-                    <button key={fmt} className="px-2 py-1 text-[9px] font-black bg-slate-800 hover:bg-slate-700 text-slate-400 rounded-lg transition-colors">{fmt}</button>
+                    <button key={fmt} onClick={() => showToast(`Exporting ${fmt} (demo)`, 'info')} className="px-2 py-1 text-[9px] font-black bg-slate-800 hover:bg-slate-700 text-slate-400 rounded-lg transition-colors">{fmt}</button>
                   ))}
                 </div>
               </div>

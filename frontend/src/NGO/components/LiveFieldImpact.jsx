@@ -31,11 +31,11 @@ export default function LiveFieldImpact({ metrics = DEFAULT_METRICS, className =
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-black text-slate-900 flex items-center gap-2">
           <TrendingUp className="w-4 h-4 text-[#059669]" />
-          Live Field Impact
+          Demo Field Impact
         </h3>
-        <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full">
-          <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-          LIVE
+        <span className="flex items-center gap-1 text-[10px] font-bold text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full">
+          <span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse" />
+          DEMO
         </span>
       </div>
 

@@ -25,7 +25,7 @@ if sys.stdout.encoding and sys.stdout.encoding.lower() not in ('utf-8', 'utf-8-s
     except Exception:
         pass
 
-BACKEND_URL   = os.getenv("BACKEND_URL", "http://localhost:3001")
+BACKEND_URL   = os.getenv("BACKEND_URL", "http://localhost:5000")
 AGENT_SECRET  = os.getenv("AGENT_SECRET")
 
 if not AGENT_SECRET or AGENT_SECRET == "REPLACE_WITH_RANDOM_AGENT_SECRET":

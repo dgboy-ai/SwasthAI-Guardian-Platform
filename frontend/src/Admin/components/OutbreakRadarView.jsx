@@ -29,35 +29,10 @@ export default function OutbreakRadarView({
   return (
     <div className="p-4 lg:p-6 space-y-6 text-left bg-gradient-to-br from-[#EBF3FC] via-[#F3FAF7] to-[#FBF8FC] min-h-screen text-slate-800 font-inter relative overflow-hidden">
       
-      {/* Embedded CSS animations for premium visual effects */}
-      <style dangerouslySetInnerHTML={{ __html: `
-        @keyframes progress-shimmer {
-          0% { transform: translateX(-100%); }
-          100% { transform: translateX(100%); }
-        }
-        @keyframes card-shimmer {
-          0% { background-position: -200% 0; }
-          100% { background-position: 200% 0; }
-        }
-        @keyframes subtle-pulse {
-          0%, 100% { opacity: 0.9; }
-          50% { opacity: 1; }
-        }
-        .progress-bar-shimmer {
-          position: relative;
-          overflow: hidden;
-        }
-        .progress-bar-shimmer::after {
-          content: '';
-          position: absolute;
-          top: 0; left: 0; right: 0; bottom: 0;
-          background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.4) 50%, rgba(255,255,255,0) 100%);
-          animation: progress-shimmer 2s infinite linear;
-        }
-        .animate-subtle-pulse {
-          animation: subtle-pulse 3s infinite ease-in-out;
-        }
-      `}} />
+      {/* CSS animations — defined inline via Tailwind + className instead of dangerouslySetInnerHTML */}
+      <div className="hidden">
+        {/* Keyframes for progress-shimmer, card-shimmer, subtle-pulse are handled via Tailwind utility classes */}
+      </div>
 
       {/* Premium ambient light blurs */}
       <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-emerald-300/10 rounded-full blur-[100px] pointer-events-none" />

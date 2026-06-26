@@ -346,7 +346,7 @@ export const GOVERNMENT_SCHEMES = [
   }
 ];
 
-export async function seedData(db, pool, usingSQLite, bcrypt) {
+export async function seedData(db, pool, usingSQLite, bcrypt, dynamoHelper) {
   // Allow seeding even in production if the database is empty so demo deployments have accounts
 
 
@@ -443,6 +443,72 @@ export async function seedData(db, pool, usingSQLite, bcrypt) {
       );
       console.log('   🔧 Default SQLite district config seeded.');
     }
+  }
+
+  // ── Seed DynamoDB demo data (both mock and real modes) ────────────────────
+  if (dynamoHelper) {
+    const now = new Date();
+    const ts = now.toISOString();
+    const districts = ['varanasi_district', 'lucknow_district'];
+    const diseases = ['Malaria', 'Dengue', 'Typhoid', 'Acute Diarrhea', 'Viral Fever'];
+    const villages = [
+      { id: 'v101', district: 'varanasi_district', name: 'Rampur', lat: 25.3176, lng: 82.9739 },
+      { id: 'v102', district: 'lucknow_district', name: 'Mohanlal Ganj', lat: 26.7606, lng: 80.8893 },
+      { id: 'v103', district: 'varanasi_district', name: 'Nagwa', lat: 25.2890, lng: 82.9590 },
+      { id: 'v104', district: 'lucknow_district', name: 'Sarojini Nagar', lat: 26.7600, lng: 80.8900 },
+    ];
+
+    // Seed outbreak_telemetry with recent historical data
+    for (let day = 14; day >= 0; day--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - day);
+      for (const v of villages) {
+        if (Math.random() > 0.55) continue; // 45% chance of an event per village per day
+        const disease = diseases[Math.floor(Math.random() * diseases.length)];
+        const eventTs = d.toISOString();
+        await dynamoHelper.put('outbreak_telemetry', {
+          villageId: v.id,
+          detectedAt: eventTs,
+          districtId: v.district,
+          eventId: `EVT-SEED-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          eventType: 'symptom_submitted',
+          userId: 'seed_demo',
+          symptoms: `${disease} symptoms observed in ${v.name}`,
+          symptomPattern: `fever, ${disease.toLowerCase().includes('fever') ? 'high_temp' : 'body_ache'}`,
+          prediction: `${disease} - Monitor and report`,
+          classification: disease,
+          timestamp: eventTs,
+          traceId: `seed-${day}-${v.id}`,
+        });
+      }
+    }
+
+    // Seed village_node_state for all demo villages
+    for (const v of villages) {
+      const lastActive = new Date(now - Math.random() * 3600000).toISOString();
+      await dynamoHelper.updateNodeState(v.id, 'online', lastActive, Math.floor(Math.random() * 5));
+    }
+
+    // Seed emergency_streams with recent ambulance dispatches
+    const emergencies = [
+      { districtId: 'varanasi_district', streamId: `EMR-SEED-1`, priority: 'HIGH', patientName: 'Ramesh Kumar', patientAge: 45, symptoms: 'Chest pain', status: 'dispatched', location: 'Rampur' },
+      { districtId: 'lucknow_district', streamId: `EMR-SEED-2`, priority: 'MEDIUM', patientName: 'Sunita Devi', patientAge: 28, symptoms: 'Pregnancy complication', status: 'en_route', location: 'Mohanlal Ganj' },
+    ];
+    for (const em of emergencies) {
+      const ts = new Date(now - Math.random() * 86400000).toISOString();
+      const day = ts.slice(0, 10);
+      const item = {
+        ...em,
+        timestamp: ts,
+        districtDateBucket: `${em.districtId}#${day}`,
+        detectedAt: ts,
+        createdAt: ts,
+        updatedAt: ts,
+      };
+      await dynamoHelper.put('emergency_streams', item);
+    }
+
+    console.log('   🗄️ DynamoDB demo data seeded (outbreak_telemetry, village_node_state, emergency_streams).');
   }
 }
 

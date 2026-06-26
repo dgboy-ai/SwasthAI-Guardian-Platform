@@ -51,6 +51,9 @@ export default function SmartTaskManager({ task, onComplete, onClose }) {
 
   return (
     <div className="space-y-4">
+      <div className="bg-amber-100 border border-amber-200 rounded-xl px-3 py-1.5 text-[9px] font-black uppercase text-amber-700 tracking-wider text-center">
+        ⚠ Demo Mode — Task simulation
+      </div>
       <div className="flex items-start justify-between">
         <div>
           <h3 className="text-base font-black text-slate-900">{taskDetails.patientName}</h3>

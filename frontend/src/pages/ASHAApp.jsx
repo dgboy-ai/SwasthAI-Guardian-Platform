@@ -91,6 +91,9 @@ export default function ASHAApp() {
       fontFamily: "'Inter', sans-serif",
       padding: '24px 20px',
     }}>
+      <div style={{ background: '#d97706', color: '#fff', textAlign: 'center', padding: '4px 8px', fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', borderRadius: 8, marginBottom: 12 }}>
+        ⚠ Demo Mode — Sample field operations data for demonstration
+      </div>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28, flexWrap: 'wrap', gap: 12 }}>
         <div>
@@ -434,6 +437,9 @@ const [dailyImpact, setDailyImpact] = useState(null);
       fontFamily: "'Inter', sans-serif",
       padding: '24px 20px',
     }}>
+      <div style={{ background: '#d97706', color: '#fff', textAlign: 'center', padding: '4px 8px', fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', borderRadius: 8, marginBottom: 12 }}>
+        ⚠ Demo Mode — Sample field operations data for demonstration
+      </div>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28, flexWrap: 'wrap', gap: 12 }}>
         <div>

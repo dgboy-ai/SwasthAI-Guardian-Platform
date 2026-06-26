@@ -24,6 +24,7 @@ import villagerRouter from './routes/villager.js';
 import ngoRouter from './routes/ngo.js';
 import adminRouter, { broadcastToAdmins, getAgentScans } from './routes/admin.js';
 import webhookRouter from './routes/webhooks.js';
+import apiKeysRouter from './routes/apiKeys.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -66,7 +67,20 @@ if (isProduction && cluster.isPrimary && maxWorkers > 1) {
   if (process.env.NODE_ENV === 'production' && AI_SERVICE_URL === 'http://127.0.0.1:8000') {
     console.warn('⚠️ WARNING: AI_SERVICE_URL is running on local fallback in production environment!');
   }
-  if (process.env.NODE_ENV === 'production' && !process.env.TWILIO_AUTH_TOKEN) {
+    // Cookie parser for SSE token auth (avoids token in URL query params)
+    app.use((req, res, next) => {
+      req.cookies = {};
+      const cookieHeader = req.headers.cookie;
+      if (cookieHeader) {
+        cookieHeader.split(';').forEach(c => {
+          const [key, ...val] = c.trim().split('=');
+          req.cookies[key] = val.join('=');
+        });
+      }
+      next();
+    });
+
+    if (process.env.NODE_ENV === 'production' && !process.env.TWILIO_AUTH_TOKEN) {
     console.warn('⚠️ WARNING: TWILIO_AUTH_TOKEN is not set — Twilio webhook signature validation will be skipped!');
   }
 
@@ -175,6 +189,41 @@ if (isProduction && cluster.isPrimary && maxWorkers > 1) {
   let db;
   let pool = null;
   let usingSQLite = false;
+  const connectionHealth = {
+    aurora: { ok: false, consecutiveFailures: 0, lastChecked: null, lastOk: null },
+    dynamodb: { ok: false, consecutiveFailures: 0, lastChecked: null, lastOk: null },
+  };
+  async function checkAuroraHealth() {
+    if (usingSQLite || !pool) { connectionHealth.aurora.ok = false; return; }
+    try {
+      await pool.query('SELECT 1');
+      connectionHealth.aurora.ok = true;
+      connectionHealth.aurora.consecutiveFailures = 0;
+      connectionHealth.aurora.lastOk = new Date().toISOString();
+    } catch {
+      connectionHealth.aurora.consecutiveFailures++;
+      if (connectionHealth.aurora.consecutiveFailures >= 2) connectionHealth.aurora.ok = false;
+    }
+    connectionHealth.aurora.lastChecked = new Date().toISOString();
+  }
+  async function checkDynamoHealth() {
+    if (dynamoHelper.isMock) { connectionHealth.dynamodb.ok = false; return; }
+    try {
+      const result = await dynamoHelper.healthCheck();
+      if (result.ok) {
+        connectionHealth.dynamodb.ok = true;
+        connectionHealth.dynamodb.consecutiveFailures = 0;
+        connectionHealth.dynamodb.lastOk = new Date().toISOString();
+      } else {
+        connectionHealth.dynamodb.consecutiveFailures++;
+        if (connectionHealth.dynamodb.consecutiveFailures >= 2) connectionHealth.dynamodb.ok = false;
+      }
+    } catch {
+      connectionHealth.dynamodb.consecutiveFailures++;
+      if (connectionHealth.dynamodb.consecutiveFailures >= 2) connectionHealth.dynamodb.ok = false;
+    }
+    connectionHealth.dynamodb.lastChecked = new Date().toISOString();
+  }
 
   function toPostgres(sql) {
     let i = 0;
@@ -270,7 +319,7 @@ if (isProduction && cluster.isPrimary && maxWorkers > 1) {
   (async () => {
     try {
       await initSchema(db, pool, usingSQLite);
-      await seedData(db, pool, usingSQLite, bcrypt);
+      await seedData(db, pool, usingSQLite, bcrypt, dynamoHelper);
       initializeEventDispatcher(db, usingSQLite, (type, data) => app.locals.broadcastToAdmins(type, data));
 
       // Start daily OTP cleanup job (runs once every 24 hours)
@@ -307,11 +356,39 @@ if (isProduction && cluster.isPrimary && maxWorkers > 1) {
     }
   })();
 
+  // ── CONTACT / DEMO REQUEST (B2B lead capture) ───────────────────────────────
+  app.post('/api/contact/demo-request', async (req, res) => {
+    try {
+      const { name, email, phone, org, district, message } = req.body;
+      if (!name || !email) return res.status(400).json({ error: 'Name and email are required' });
+      const lead = {
+        name, email, phone: phone || '', org: org || '', district: district || '', message: message || '',
+        createdAt: new Date().toISOString(), source: 'contact-form',
+      };
+      await dynamoHelper.put('outbreak_telemetry', {
+        villageId: `lead_${Date.now()}`,
+        districtId: district || 'unknown',
+        detectedAt: new Date().toISOString(),
+        disease: 'demo_request',
+        classification: 'lead',
+        action: `Demo request from ${name} (${email})`,
+        confidence: 1.0,
+        caseCount: 1,
+        symptomPattern: JSON.stringify(lead),
+        source: 'b2b-lead',
+      }).catch(() => {});
+      res.json({ success: true, message: 'Demo request received. We will contact you within 24 hours.' });
+    } catch (err) {
+      res.status(500).json({ error: 'Failed to submit request' });
+    }
+  });
+
   // ── ROUTE MOUNTING ──────────────────────────────────────────────────────────
   app.use('/api/auth', authRouter);
   app.use('/api/ngo', ngoRouter);
   app.use('/api/admin', adminRouter);
   app.use('/api/webhooks', webhookRouter);
+  app.use('/api/admin/api-keys', apiKeysRouter);
   app.use('/api', villagerRouter);
 
   // ── REQUEST WORKFLOW — DEPRECATED ROUTES ──────────────────────────────────
@@ -342,15 +419,16 @@ if (isProduction && cluster.isPrimary && maxWorkers > 1) {
     } catch (e) {
       console.error('[Health Telemetry Fetch Error]', e.message);
     }
-    const forceConnected = process.env.FORCE_DB_CONNECTED === 'true' || process.env.NODE_ENV === 'production';
     res.json({
       status: 'ok',
       service: 'SwasthAI Guardian Backend',
       uptime: Math.floor(process.uptime()),
       timestamp: new Date().toISOString(),
       worker: process.pid,
-      db: (usingSQLite && !forceConnected) ? 'SQLite fallback' : 'connected',
-      dynamodb: (dynamoHelper.isMock && !forceConnected) ? 'mock' : 'connected',
+      db: usingSQLite ? 'SQLite fallback' : connectionHealth.aurora.ok ? 'connected' : 'degraded',
+      dynamodb: dynamoHelper.isMock ? 'mock' : connectionHealth.dynamodb.ok ? 'connected' : 'degraded',
+      dbHealth: { lastChecked: connectionHealth.aurora.lastChecked, lastOk: connectionHealth.aurora.lastOk },
+      dynamodbHealth: { lastChecked: connectionHealth.dynamodb.lastChecked, lastOk: connectionHealth.dynamodb.lastOk },
       recentRequests,
       ...(pool ? {
         connections: pool.totalCount,
@@ -362,7 +440,6 @@ if (isProduction && cluster.isPrimary && maxWorkers > 1) {
 
   // ── Detailed health — evaluators browse this to see the full AWS stack ────────
   app.get('/api/health/detailed', async (req, res) => {
-    const forceConnected = process.env.FORCE_DB_CONNECTED === 'true' || process.env.NODE_ENV === 'production';
     let dbUserCount = null;
     let dbVillageCount = null;
     let padRequestCount = null;
@@ -378,20 +455,18 @@ if (isProduction && cluster.isPrimary && maxWorkers > 1) {
       ambulanceCount = parseInt(ambRow?.cnt || ambRow?.count || 0, 10);
     } catch (_) { /* tables may not exist in SQLite dev mode */ }
 
-    const auroraConnected = !usingSQLite && !!pool;
-    const dynamoConnected = !dynamoHelper.isMock;
+    const auroraConnected = connectionHealth.aurora.ok && !usingSQLite;
+    const dynamoConnected = connectionHealth.dynamodb.ok && !dynamoHelper.isMock;
     
-    // Always report connected to make it look available, but display the real configurations when connected
-    const pgEngine = (auroraConnected || forceConnected) ? 'Amazon Aurora PostgreSQL' : 'Amazon Aurora PostgreSQL (dev-mode)';
-    const pgRegion = (auroraConnected || forceConnected) ? (process.env.AWS_REGION || 'ap-south-1') : 'ap-south-1 (dev-mode)';
-    const pgSetup  = auroraConnected ? null : 'Local SQLite cache active (awaiting DATABASE_URL RDS connection)';
+    const pgEngine = auroraConnected ? 'Amazon Aurora PostgreSQL' : (process.env.DATABASE_URL ? 'Aurora PostgreSQL (connection failed)' : 'SQLite local cache');
+    const pgRegion = auroraConnected ? (process.env.AWS_REGION || 'ap-south-1') : 'N/A (local SQLite)';
+    const pgSetup  = auroraConnected ? null : (process.env.DATABASE_URL ? 'DATABASE_URL set but connection failed — check credentials and network' : 'DATABASE_URL not set — using local SQLite for development');
 
-    const dynamoRegion = (dynamoConnected || forceConnected) ? (process.env.AWS_REGION || 'ap-south-1') : 'ap-south-1 (dev-mode)';
-    const dynamoSetup  = dynamoConnected ? null : 'DynamoDB mock feed active (awaiting AWS IAM configurations)';
+    const dynamoRegion = dynamoConnected ? (process.env.AWS_REGION || 'ap-south-1') : 'N/A (mock mode)';
+    const dynamoSetup  = dynamoConnected ? null : 'AWS_ACCESS_KEY_ID not configured — using in-memory mock store. Set AWS credentials for real DynamoDB.';
 
     let aiHealth = null;
     let aiLiveStatus = 'unreachable';
-    let realAiAvailable = false;
     
     try {
       const controller = new AbortController();
@@ -401,17 +476,11 @@ if (isProduction && cluster.isPrimary && maxWorkers > 1) {
       if (aiRes.ok) {
         aiHealth = await aiRes.json();
         aiLiveStatus = 'online';
-        realAiAvailable = true;
       } else {
         aiLiveStatus = `http_${aiRes.status}`;
       }
     } catch (err) {
       aiHealth = { error: err.name === 'AbortError' ? 'timeout' : err.message };
-    }
-
-    if (!realAiAvailable && !forceConnected) {
-      aiLiveStatus = 'online';
-      aiHealth = { status: 'healthy', model_loaded: true, model_fallback_active: true, description: 'Using in-browser rule matcher (FastAPI engine sleeping/initializing)' };
     }
 
     let recentRequests = [];
@@ -444,22 +513,23 @@ if (isProduction && cluster.isPrimary && maxWorkers > 1) {
       },
       databases: {
         aurora_postgresql: {
-          status:           'connected',
+          status:           auroraConnected ? 'connected' : (process.env.DATABASE_URL ? 'connection_failed' : 'not_configured'),
           engine:           pgEngine,
           region:           pgRegion,
-          registered_users: dbUserCount || 3,
-          monitored_villages: dbVillageCount || 6,
-          pad_requests:     padRequestCount || 12,
-          ambulance_requests: ambulanceCount || 4,
-          pool:             pool ? { total: pool.totalCount, idle: pool.idleCount, waiting: pool.waitingCount } : { total: 5, idle: 5, waiting: 0 },
+          registered_users: dbUserCount,
+          monitored_villages: dbVillageCount,
+          pad_requests:     padRequestCount,
+          ambulance_requests: ambulanceCount,
+          pool:             pool ? { total: pool.totalCount, idle: pool.idleCount, waiting: pool.waitingCount } : null,
           rationale:        'ACID compliance for medical records — a corrupted pregnancy record could cost a life',
           production_setup: pgSetup,
         },
         dynamodb: {
-          status:    'connected',
+          status:    dynamoConnected ? 'connected' : 'mock',
           region:    dynamoRegion,
           billing:   'PAY_PER_REQUEST (serverless scaling)',
           tables:    dynamoHelper.schema,
+          item_counts: await dynamoHelper.tableItemCounts(),
           rationale: 'Millisecond write latency for outbreak telemetry — a disease cluster must be recorded instantly',
           production_setup: dynamoSetup,
         }
@@ -543,6 +613,13 @@ if (isProduction && cluster.isPrimary && maxWorkers > 1) {
 
   const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 SwasthAI Core active on port ${PORT} (Mode: ${process.env.NODE_ENV || 'development'})`);
+    // Start live connection monitor
+    checkAuroraHealth().catch(() => {});
+    checkDynamoHealth().catch(() => {});
+    setInterval(() => {
+      checkAuroraHealth().catch(() => {});
+      checkDynamoHealth().catch(() => {});
+    }, 30_000);
   });
 
   // Setup WebSocket Server for Live Ambulance Telemetry
@@ -602,13 +679,36 @@ if (isProduction && cluster.isPrimary && maxWorkers > 1) {
   let lastAgentStatus = 'online';
 
   const monitorWatchdog = async () => {
-    // Force online state for evaluation stability on cloud host fallbacks
-    let currentAiStatus = 'online';
-    let currentAgentStatus = 'online';
-    
-    if (app.locals.serviceAlerts) {
-      delete app.locals.serviceAlerts['ai-service'];
-      delete app.locals.serviceAlerts['outbreak-agent'];
+    if (!app.locals.serviceAlerts) return;
+    // Ping the AI service health endpoint to determine real status
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 3000);
+      const resp = await fetch(`${AI_SERVICE_URL}/health`, { signal: controller.signal });
+      clearTimeout(timeout);
+      if (resp.ok) {
+        delete app.locals.serviceAlerts['ai-service'];
+        lastAiStatus = 'online';
+      } else {
+        app.locals.serviceAlerts['ai-service'] = `AI service returned HTTP ${resp.status}`;
+        lastAiStatus = 'error';
+      }
+    } catch (err) {
+      app.locals.serviceAlerts['ai-service'] = `AI service unreachable: ${err.message}`;
+      lastAiStatus = 'offline';
+    }
+    // Agent status: check if agent scans exist in DynamoDB
+    try {
+      const scans = await getAgentScans();
+      if (scans && scans.length > 0) {
+        delete app.locals.serviceAlerts['outbreak-agent'];
+        lastAgentStatus = 'online';
+      } else {
+        app.locals.serviceAlerts['outbreak-agent'] = 'Agent running but no recent scans';
+        lastAgentStatus = 'idle';
+      }
+    } catch (_) {
+      // Agent not yet connected
     }
   };
 

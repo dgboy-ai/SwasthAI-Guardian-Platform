@@ -2,30 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { BrainCircuit, Check, ShieldAlert } from 'lucide-react';
 import api from '../../services/api';
 
-const DEFAULT_TRACES = [
-  {
-    query: "What is the referral protocol for a pregnant woman with blood pressure 150/95 in Village 47?",
-    latency: 320,
-    grounded: true,
-    sources: ["WHO Maternal Vitals Handbook 2024 (p. 42)", "National Health Mission Protocol v4"],
-    timestamp: new Date(Date.now() - 120000).toISOString()
-  },
-  {
-    query: "Identify disease outbreak risks for a cluster of high fever + joint pain reported in Sehore district.",
-    latency: 410,
-    grounded: true,
-    sources: ["WHO Malaria & Dengue Vector Control Guidelines", "SymptomNet Outbreak Classification Engine"],
-    timestamp: new Date(Date.now() - 3600000).toISOString()
-  },
-  {
-    query: "How should an ASHA worker handle severe child malnutrition acute symptoms in zero-signal zone?",
-    latency: 280,
-    grounded: true,
-    sources: ["UNICEF Child Care & SAM Guidelines (2025)", "ASHA Offline Sync Training Manual Module 3"],
-    timestamp: new Date(Date.now() - 7200000).toISOString()
-  }
-];
-
 export default function AIReasoningTrace({ demoTourMode }) {
   const [traces, setTraces] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -38,7 +14,7 @@ export default function AIReasoningTrace({ demoTourMode }) {
       .finally(() => setLoading(false));
   }, []);
 
-  const displayedTraces = (demoTourMode || traces.length === 0) ? DEFAULT_TRACES : traces;
+  const displayedTraces = traces;
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden text-left">
