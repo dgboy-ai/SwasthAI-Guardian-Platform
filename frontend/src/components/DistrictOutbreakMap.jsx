@@ -339,9 +339,9 @@ export default function DistrictOutbreakMap({ onNodeSelect, activeVillageId = nu
   };
 
   return (
-    <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm p-6 sm:p-8 relative overflow-hidden flex flex-col lg:flex-row gap-6">
+    <div className={`bg-white rounded-[2.5rem] border border-slate-100 shadow-sm p-6 sm:p-8 relative overflow-hidden flex flex-col lg:flex-row gap-6 ${usingDefaultNodes ? 'pt-10' : ''}`}>
       {usingDefaultNodes && (
-        <div className="absolute top-0 left-0 right-0 z-50 bg-emerald-600 text-white text-center py-0.5 text-[8px] font-black uppercase tracking-widest">
+        <div className="absolute top-0 left-0 right-0 z-50 bg-emerald-600 text-white text-center py-1 text-[8px] font-black uppercase tracking-widest">
           Live Village Map · DynamoDB Node State
         </div>
       )}
