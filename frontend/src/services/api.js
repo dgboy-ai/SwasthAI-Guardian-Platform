@@ -9,7 +9,7 @@ const api = axios.create({
   // 🌐 Rural India 2G optimization: 5s timeout prevents indefinite hangs on poor networks.
   // All components have offline fallbacks that trigger immediately on timeout/network errors.
   // Reduced from 8s → 5s: Render.com cold-starts are handled by the offline LocalSymptomNet fallback.
-  timeout: 5000,
+  timeout: 15000,
   headers: {
     'Content-Type': 'application/json',
   },
