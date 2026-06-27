@@ -5,6 +5,7 @@ import {
   Menu, Bell, Wifi, WifiOff, Home, AlertTriangle,
   Plus, Users, MoreHorizontal, X, Heart, Clock
 } from 'lucide-react';
+import BrandLogo from '../NGO/components/BrandLogo';
 
 const NAV_ITEMS = [
   { label: 'Home', icon: Home, tab: 'home', route: '/ngo' },
@@ -35,18 +36,6 @@ export default function NGOSidebarLayout({ children, activeTab }) {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
-
-  const BrandLogo = ({ size }) => (
-    <div className="flex items-center gap-2.5">
-      <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/20"
-        style={{ width: size === 'lg' ? 36 : size === 'md' ? 32 : 28, height: size === 'lg' ? 36 : size === 'md' ? 32 : 28 }}>
-        <Heart className="text-white" style={{ width: size === 'lg' ? 18 : 14, height: size === 'lg' ? 18 : 14 }} />
-      </div>
-      <span className={`font-black text-slate-800 tracking-tight ${size === 'lg' ? 'text-lg' : 'text-sm'}`}>
-        Swasth<span className="text-emerald-600">AI</span>
-      </span>
-    </div>
-  );
 
   const handleNavigation = (route) => {
     navigate(route);

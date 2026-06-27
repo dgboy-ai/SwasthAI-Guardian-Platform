@@ -19,6 +19,7 @@ import {
   ExternalLink, Info, Trash2, Eye, EyeOff, Sun, Moon
 } from 'lucide-react';
 
+import api from '../services/api';
 import ngoService from '../services/ngoService';
 import { useAuth } from '../context/AuthContext';
 import { showToast } from '../utils/toast';
@@ -597,6 +598,9 @@ export default function ASHADashboard() {
           {/* Offline Mode card */}
           <button
             onClick={handleToggleOffline}
+            role="switch"
+            aria-checked={isOffline}
+            aria-label={isOffline ? 'Switch to online mode' : 'Switch to offline mode'}
             className={`border rounded-xl p-3.5 sm:p-4 shadow-sm flex items-center justify-between transition-all w-full text-left active:scale-[0.98] ${
               isOffline ? 'bg-red-50 border-red-200' : 'bg-white border-slate-100'
             }`}
@@ -652,9 +656,12 @@ export default function ASHADashboard() {
                   <p className="text-[10px] text-slate-300 mt-1">Great work! All tasks marked done.</p>
                 </div>
               ) : (tasks.map(task => (
-                <div 
-                  key={task.id} 
+                <div
+                  key={task.id}
                   onClick={() => setActiveTaskModal(task)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => e.key === 'Enter' && setActiveTaskModal(task)}
                   className={`py-4 flex flex-col xs:flex-row items-start xs:items-center justify-between gap-3 cursor-pointer px-2.5 rounded-2xl transition-colors ${task.done ? 'opacity-50' : 'hover:bg-emerald-50/40 border-l-[3px] border-l-emerald-400/60'}`}
                 >
                   <div className="flex items-center gap-3.5 w-full xs:w-auto">
@@ -732,7 +739,11 @@ export default function ASHADashboard() {
         </div>
 
         {/* Active Outbreak Alert Banner */}
-        <div className="bg-[#FEF2F2] border border-[#FEE2E2] rounded-3xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 shadow-xs relative overflow-hidden text-left">
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="bg-[#FEF2F2] border border-[#FEE2E2] rounded-3xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 shadow-xs relative overflow-hidden text-left">
           <div className="flex items-start gap-3 sm:gap-4 w-full sm:w-auto">
             <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-[#EF4444] text-white flex items-center justify-center shrink-0 shadow shadow-red-500/20">
               <AlertTriangle className="w-5 h-5 sm:w-6.5 sm:h-6.5" />
@@ -757,7 +768,7 @@ export default function ASHADashboard() {
           >
             View Details <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           </button>
-        </div>
+        </motion.div>
 
         {/* AI Priority Center */}
         <div className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden">
@@ -805,10 +816,15 @@ export default function ASHADashboard() {
                   action: 'Check List', btnCls: 'bg-emerald-500 hover:bg-emerald-600 text-white',
                   onClick: () => showToast('Vaccination list loaded', 'info')
                 },
-              ].map((card) => {
+              ].map((card, idx) => {
                 const Icon = card.icon;
                 return (
-                  <div key={card.id} onClick={card.onClick}
+                  <motion.div
+                    key={card.id}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.05 + idx * 0.06 }}
+                    onClick={card.onClick}
                     className="rounded-xl border border-slate-100 p-3 bg-white hover:shadow-sm hover:border-slate-200 transition-all duration-200 cursor-pointer">
                     <div className="flex items-center justify-between mb-2">
                       <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${card.iconBg}`}>
@@ -821,7 +837,7 @@ export default function ASHADashboard() {
                     <button className={`w-full py-1.5 rounded-lg text-[10px] font-semibold transition-all active:scale-95 ${card.btnCls}`}>
                       {card.action}
                     </button>
-                  </div>
+                  </motion.div>
                 );
               })}
             </div>
@@ -849,12 +865,17 @@ export default function ASHADashboard() {
                 { label: 'Pregnancies', value: '24', sub: '12 high-risk', color: '#F97316' },
                 { label: 'Children', value: '156', sub: '8 SAM cases', color: '#8B5CF6' },
                 { label: 'Vaccinations', value: '312', sub: '91% coverage', color: '#059669' },
-              ].map((item) => (
-                <div key={item.label} className="text-center p-2.5 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors">
+              ].map((item, idx) => (
+                <motion.div
+                  key={item.label}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.1 + idx * 0.08 }}
+                  className="text-center p-2.5 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors">
                   <p className="text-xl sm:text-2xl font-black text-slate-900">{item.value}</p>
                   <p className="text-[9px] sm:text-[10px] font-bold text-slate-500">{item.label}</p>
                   <p className="text-[8px] font-semibold mt-0.5" style={{ color: item.color }}>{item.sub}</p>
-                </div>
+                </motion.div>
               ))}
             </div>
           </div>
@@ -873,8 +894,13 @@ export default function ASHADashboard() {
                 { label: 'Child Nutrition', value: 74, color: '#8B5CF6', trend: 'down', change: '-1%' },
                 { label: 'Disease Surveillance', value: 88, color: '#2563EB', trend: 'up', change: '+5%' },
                 { label: 'Emergency Response', value: 92, color: '#F97316', trend: 'up', change: '+3%' },
-              ].map((trend) => (
-                <div key={trend.label} className="flex items-center justify-between">
+              ].map((trend, idx) => (
+                <motion.div
+                  key={trend.label}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.1 + idx * 0.06 }}
+                  className="flex items-center justify-between">
                   <div className="flex items-center gap-2 min-w-0 flex-1">
                     <span className="text-[10px] sm:text-xs font-bold text-slate-600 truncate">{trend.label}</span>
                     <span className={`flex items-center gap-0.5 text-[9px] font-black ${trend.trend === 'up' ? 'text-emerald-600' : 'text-red-500'}`}>
@@ -883,7 +909,7 @@ export default function ASHADashboard() {
                     </span>
                   </div>
                   <span className="text-xs font-black text-slate-700 ml-2">{trend.value}%</span>
-                </div>
+                </motion.div>
               ))}
             </div>
           </div>
@@ -911,7 +937,13 @@ export default function ASHADashboard() {
                     <span className="text-slate-800 font-black">{res.current}/{res.total}</span>
                   </div>
                   <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                    <div className="h-full rounded-full transition-all" style={{ width: `${(res.current / res.total) * 100}%`, backgroundColor: res.color }} />
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${(res.current / res.total) * 100}%` }}
+                      transition={{ duration: 0.8, delay: 0.2 }}
+                      className="h-full rounded-full"
+                      style={{ backgroundColor: res.color }}
+                    />
                   </div>
                 </div>
               ))}
@@ -932,8 +964,13 @@ export default function ASHADashboard() {
                 { village: 'V103 - Sarai', risk: 'High', score: 81, color: '#EF4444', bg: '#FEF2F2' },
                 { village: 'V104 - Dariyapur', risk: 'Low', score: 15, color: '#059669', bg: '#ECFDF5' },
                 { village: 'V105 - Kashirampur', risk: 'Medium', score: 45, color: '#F97316', bg: '#FFF7ED' },
-              ].map((v) => (
-                <div key={v.village} className={`flex items-center justify-between p-2.5 rounded-xl text-xs transition-all hover:brightness-95`} style={{ backgroundColor: v.bg }}>
+              ].map((v, idx) => (
+                <motion.div
+                  key={v.village}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.05 + idx * 0.05 }}
+                  className={`flex items-center justify-between p-2.5 rounded-xl text-xs transition-all hover:brightness-95`} style={{ backgroundColor: v.bg }}>
                   <div className="flex items-center gap-2 min-w-0">
                     <span className={`w-2 h-2 rounded-full shrink-0`} style={{ backgroundColor: v.color }} />
                     <span className="font-bold text-slate-700 truncate">{v.village}</span>
@@ -942,7 +979,7 @@ export default function ASHADashboard() {
                     <span className="text-[10px] font-black" style={{ color: v.color }}>{v.risk}</span>
                     <span className="text-[10px] font-bold text-slate-400">{v.score}/100</span>
                   </div>
-                </div>
+                </motion.div>
               ))}
             </div>
           </div>
@@ -951,7 +988,10 @@ export default function ASHADashboard() {
         {/* Health Summary Cards (Grid of 4) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {/* Card 1: SOS Alerts */}
-          <div 
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.05 }}
             onClick={() => setActiveKPIModal('sos')}
             className="bg-[#FEF2F2] border border-[#FEE2E2] rounded-2xl p-4 sm:p-5 shadow-sm flex flex-col gap-3 sm:gap-3.5 text-left hover:shadow-md cursor-pointer transition-all active:scale-[0.98] group"
           >
@@ -968,10 +1008,13 @@ export default function ASHADashboard() {
             <button onClick={(e) => { e.stopPropagation(); showToast('SOS Alerts – demo view', 'info'); }} className="text-[10px] font-black text-red-600 hover:text-red-700 flex items-center gap-0.5 mt-2">
               View All <ChevronRight className="w-3.5 h-3.5" />
             </button>
-          </div>
+          </motion.div>
 
           {/* Card 2: High Risk Pregnancy */}
-          <div 
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
             onClick={() => setActiveKPIModal('pregnancy')}
             className="bg-[#FFF7ED] border border-[#FFEDD5] rounded-2xl p-4 sm:p-5 shadow-sm flex flex-col gap-3 sm:gap-3.5 text-left hover:shadow-md cursor-pointer transition-all active:scale-[0.98] group"
           >
@@ -988,10 +1031,13 @@ export default function ASHADashboard() {
             <button onClick={(e) => { e.stopPropagation(); showToast('High Risk Pregnancy – demo view', 'info'); }} className="text-[10px] font-black text-orange-600 hover:text-orange-700 flex items-center gap-0.5 mt-2">
               View All <ChevronRight className="w-3.5 h-3.5" />
             </button>
-          </div>
+          </motion.div>
 
           {/* Card 3: Malnutrition Cases */}
-          <div 
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
             onClick={() => setActiveKPIModal('malnutrition')}
             className="bg-[#F5F3FF] border border-[#DDD6FE] rounded-2xl p-4 sm:p-5 shadow-sm flex flex-col gap-3 sm:gap-3.5 text-left hover:shadow-md cursor-pointer transition-all active:scale-[0.98] group"
           >
@@ -1008,10 +1054,13 @@ export default function ASHADashboard() {
             <button onClick={(e) => { e.stopPropagation(); showToast('Malnutrition Cases – demo view', 'info'); }} className="text-[10px] font-black text-purple-600 hover:text-purple-700 flex items-center gap-0.5 mt-2">
               View All <ChevronRight className="w-3.5 h-3.5" />
             </button>
-          </div>
+          </motion.div>
 
           {/* Card 4: Pad Requests */}
-          <div 
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
             onClick={() => setActiveKPIModal('pads')}
             className="bg-[#ECFDF5] border border-[#D1FAE5] rounded-2xl p-4 sm:p-5 shadow-sm flex flex-col gap-3 sm:gap-3.5 text-left hover:shadow-md cursor-pointer transition-all active:scale-[0.98] group"
           >
@@ -1028,7 +1077,7 @@ export default function ASHADashboard() {
             <button onClick={(e) => { e.stopPropagation(); showToast('Pad Requests – demo view', 'info'); }} className="text-[10px] font-black text-emerald-600 hover:text-emerald-700 flex items-center gap-0.5 mt-2">
               View All <ChevronRight className="w-3.5 h-3.5" />
             </button>
-          </div>
+          </motion.div>
         </div>
 
         {/* Sync Status Bottom Strip */}
@@ -1069,10 +1118,15 @@ export default function ASHADashboard() {
             { label: 'Active Patients', value: '847', icon: Users, color: '#2563EB', change: '+12% vs last month' },
             { label: 'Health Workers', value: '24', icon: UserPlus, color: '#8B5CF6', change: '3 on field now' },
             { label: 'Monthly Checkups', value: '1,204', icon: Calendar, color: '#F97316', change: '+8% this month' },
-          ].map((stat) => {
+          ].map((stat, idx) => {
             const Icon = stat.icon;
             return (
-              <div key={stat.label} className="bg-white border border-slate-100 rounded-xl p-3.5 sm:p-4 shadow-sm flex items-center gap-3 hover:shadow-md transition-all group">
+              <motion.div
+                key={stat.label}
+                initial={{ opacity: 0, y: 14 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.05 + idx * 0.06 }}
+                className="bg-white border border-slate-100 rounded-xl p-3.5 sm:p-4 shadow-sm flex items-center gap-3 hover:shadow-md transition-all group">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors group-hover:brightness-95" style={{ backgroundColor: stat.color + '15' }}>
                   <Icon className="w-5 h-5" style={{ color: stat.color }} />
                 </div>
@@ -1081,7 +1135,7 @@ export default function ASHADashboard() {
                   <p className="text-[10px] font-semibold text-slate-500 leading-tight mt-0.5 truncate">{stat.label}</p>
                   <p className="text-[8px] font-bold mt-0.5" style={{ color: stat.color }}>{stat.change}</p>
                 </div>
-              </div>
+              </motion.div>
             );
           })}
         </div>
@@ -1094,18 +1148,23 @@ export default function ASHADashboard() {
             </h3>
             <button onClick={() => showToast('Full report opened', 'info')} className="text-[10px] font-black text-[#059669] hover:underline">View Full Report</button>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {[
-              { label: 'Maternal Care', value: '87%', color: '#059669', desc: 'Target: 85%' },
-              { label: 'Child Nutrition', value: '74%', color: '#8B5CF6', desc: 'Target: 80%' },
-              { label: 'Vaccination Drive', value: '91%', color: '#2563EB', desc: 'Target: 95%' },
-              { label: 'Emergency Response', value: '94%', color: '#F97316', desc: 'Target: 90%' },
-            ].map((prog) => (
-              <div key={prog.label} className="text-center p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {[
+                { label: 'Maternal Care', value: '87%', color: '#059669', desc: 'Target: 85%' },
+                { label: 'Child Nutrition', value: '74%', color: '#8B5CF6', desc: 'Target: 80%' },
+                { label: 'Vaccination Drive', value: '91%', color: '#2563EB', desc: 'Target: 95%' },
+                { label: 'Emergency Response', value: '94%', color: '#F97316', desc: 'Target: 90%' },
+              ].map((prog, idx) => (
+                <motion.div
+                  key={prog.label}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 + idx * 0.06 }}
+                  className="text-center p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors">
                 <p className="text-lg sm:text-xl font-black" style={{ color: prog.color }}>{prog.value}</p>
                 <p className="text-[10px] font-bold text-slate-600">{prog.label}</p>
                 <p className="text-[8px] text-slate-400 font-semibold mt-0.5">{prog.desc}</p>
-              </div>
+              </motion.div>
               ))}
             </div>
           </div>
@@ -1299,7 +1358,7 @@ export default function ASHADashboard() {
                   <AnimatePresence>
                     {showNotifs && (
                       <>
-                        <div className="fixed inset-0 z-35" onClick={() => setShowNotifs(false)} />
+                        <div className="fixed inset-0 z-[35]" onClick={() => setShowNotifs(false)} />
                         <motion.div
                           initial={{ opacity: 0, y: 8, scale: 0.95 }}
                           animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -1400,7 +1459,7 @@ export default function ASHADashboard() {
                   <AnimatePresence>
                     {showProfileDropdown && (
                       <>
-                        <div className="fixed inset-0 z-35" onClick={() => setShowProfileDropdown(false)} />
+                        <div className="fixed inset-0 z-[35]" onClick={() => setShowProfileDropdown(false)} />
                         <motion.div
                           initial={{ opacity: 0, y: 8, scale: 0.95 }}
                           animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -1583,7 +1642,7 @@ export default function ASHADashboard() {
           <AnimatePresence>
             {showProfileDropdown && !isDesktop && (
               <>
-                <div className="fixed inset-0 z-45 bg-black/20" onClick={() => setShowProfileDropdown(false)} />
+                <div className="fixed inset-0 z-[45] bg-black/20" onClick={() => setShowProfileDropdown(false)} />
                 <motion.div
                   initial={{ opacity: 0, y: -8, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -1775,10 +1834,13 @@ export default function ASHADashboard() {
       <AnimatePresence>
         {activeKPIModal && (
           <>
-            <div className="fixed inset-0 bg-black/40 z-55 backdrop-blur-xs" onClick={() => setActiveKPIModal(null)} />
+            <div className="fixed inset-0 bg-black/40 z-[55] backdrop-blur-xs" onClick={() => setActiveKPIModal(null)} />
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
-              className="fixed inset-x-3 sm:inset-x-4 top-[5%] sm:top-[10%] mx-auto max-w-md bg-white border border-slate-100 rounded-3xl z-55 p-4 sm:p-6 shadow-2xl text-left overflow-y-auto max-h-[90vh]"
+              className="fixed inset-x-3 sm:inset-x-4 top-[5%] sm:top-[10%] mx-auto max-w-md bg-white border border-slate-100 rounded-3xl z-[55] p-4 sm:p-6 shadow-2xl text-left overflow-y-auto max-h-[90vh]"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Details"
             >
               <div className="flex items-center justify-between pb-3.5 border-b border-slate-50 mb-4">
                 <h4 className="text-sm font-black uppercase text-slate-800 tracking-wider flex items-center gap-1.5">
@@ -1977,10 +2039,13 @@ export default function ASHADashboard() {
       <AnimatePresence>
         {activeTaskModal && (
           <>
-            <div className="fixed inset-0 bg-black/40 z-55 backdrop-blur-xs" onClick={() => setActiveTaskModal(null)} />
+            <div className="fixed inset-0 bg-black/40 z-[55] backdrop-blur-xs" onClick={() => setActiveTaskModal(null)} />
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
-              className="fixed inset-x-3 sm:inset-x-4 top-[5%] sm:top-[15%] mx-auto max-w-md bg-white border border-slate-100 rounded-3xl z-55 p-4 sm:p-6 shadow-2xl text-left overflow-y-auto max-h-[90vh]"
+              className="fixed inset-x-3 sm:inset-x-4 top-[5%] sm:top-[15%] mx-auto max-w-md bg-white border border-slate-100 rounded-3xl z-[55] p-4 sm:p-6 shadow-2xl text-left overflow-y-auto max-h-[90vh]"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Patient task details"
             >
               <div className="flex items-center justify-between pb-3 border-b border-slate-50 mb-4">
                 <h4 className="text-sm font-black uppercase text-slate-800 tracking-wider">Patient Task Details</h4>
@@ -2003,10 +2068,13 @@ export default function ASHADashboard() {
       <AnimatePresence>
         {showQuickForm && (
           <>
-            <div className="fixed inset-0 bg-black/45 z-55 backdrop-blur-xs" onClick={() => setShowQuickForm(null)} />
+            <div className="fixed inset-0 bg-black/45 z-[55] backdrop-blur-xs" onClick={() => setShowQuickForm(null)} />
             <motion.div
               initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
-              className="fixed bottom-0 left-0 right-0 bg-white rounded-t-[2.5rem] border-t border-slate-100 z-55 p-4 sm:p-6 max-h-[90vh] sm:max-h-[85vh] overflow-y-auto text-left"
+              className="fixed bottom-0 left-0 right-0 bg-white rounded-t-[2.5rem] border-t border-slate-100 z-[55] p-4 sm:p-6 max-h-[90vh] sm:max-h-[85vh] overflow-y-auto text-left"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Create record"
             >
               <div className="flex items-center justify-between pb-3 sm:pb-3.5 border-b border-slate-55 mb-4 max-w-lg mx-auto bg-white sticky top-0 z-10">
                 <h4 className="text-sm font-black uppercase text-slate-900 tracking-wider">
@@ -2357,13 +2425,14 @@ export default function ASHADashboard() {
       <AnimatePresence>
         {showLogoutConfirm && (
           <>
-            <div className="fixed inset-0 bg-black/40 z-55 backdrop-blur-xs" onClick={() => setShowLogoutConfirm(false)} />
+            <div className="fixed inset-0 bg-black/40 z-[55] backdrop-blur-xs" onClick={() => setShowLogoutConfirm(false)} />
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="fixed inset-x-3 sm:inset-x-4 top-[30%] mx-auto max-w-sm bg-white border border-slate-100 rounded-3xl z-55 p-5 sm:p-6 shadow-2xl text-left"
+              className="fixed inset-x-3 sm:inset-x-4 top-[30%] mx-auto max-w-sm bg-white border border-slate-100 rounded-3xl z-[55] p-5 sm:p-6 shadow-2xl text-left"
               role="alertdialog"
+              aria-modal="true"
               aria-label="Confirm logout"
             >
               <div className="flex items-center gap-3 mb-4">

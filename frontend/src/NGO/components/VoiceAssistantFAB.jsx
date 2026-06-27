@@ -120,7 +120,7 @@ export default function VoiceAssistantFAB({ onVoiceResult }) {
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-24 sm:bottom-28 right-4 sm:right-5 z-50 w-12 h-12 sm:w-14 sm:h-14 bg-[#059669] hover:bg-[#047857] rounded-full flex items-center justify-center shadow-2xl shadow-emerald-500/30 active:scale-90 transition-all border-2 border-white"
+          className="fixed bottom-28 sm:bottom-32 right-4 sm:right-5 z-50 w-12 h-12 sm:w-14 sm:h-14 bg-[#059669] hover:bg-[#047857] rounded-full flex items-center justify-center shadow-2xl shadow-emerald-500/30 active:scale-90 transition-all border-2 border-white"
           aria-label="Voice Assistant"
         >
           <Mic className="w-6 h-6 text-white" />
