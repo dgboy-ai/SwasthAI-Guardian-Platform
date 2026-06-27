@@ -160,6 +160,104 @@ export default function ASHADashboard() {
     return () => clearTimeout(timer);
   }, []);
 
+  // ─── Fetch real data from Aurora PostgreSQL + DynamoDB ─────────────────────
+  useEffect(() => {
+    const fetchLiveData = async () => {
+      try {
+        const [maternalRes, malnutritionRes, ambulancesRes, outbreaksRes] = await Promise.allSettled([
+          ngoService.getStats(),
+          api.get('/ngo/malnutrition'),
+          api.get('/ngo/ambulances'),
+          ngoService.getOutbreaks(user?.villageId || 'V101'),
+        ]);
+
+        // KPI counts from /ngo/stats
+        if (maternalRes.status === 'fulfilled' && maternalRes.value) {
+          const s = maternalRes.value;
+          setKpiCounts({
+            sos: s.ambulances ?? 0,
+            pregnancy: s.pregnancies ?? 0,
+            malnutrition: s.malnutrition_alerts ?? s.malnutrition ?? 0,
+            pads: s.pad_requests ?? s.pads ?? 0,
+          });
+          if (s.totalVillagers) {
+            setSyncHealth(98);
+          }
+        }
+
+        // Pregnancy patients from Aurora
+        if (maternalRes.status === 'fulfilled' && Array.isArray(maternalRes.value)) {
+          // stats endpoint returned array — unlikely, but handle
+        }
+        // Try fetching maternal records separately for patient list
+        try {
+          const maternalList = await api.get('/ngo/maternal');
+          if (Array.isArray(maternalList.data) && maternalList.data.length > 0) {
+            setPregnancyPatients(maternalList.data.map((r, i) => ({
+              id: `M${String(i + 1).padStart(3, '0')}`,
+              name: r.name || r.patientName || 'Unknown',
+              months: r.trimester ? r.trimester * 3 : r.age || 5,
+              bp: r.systolic_bp && r.diastolic_bp ? `${r.systolic_bp}/${r.diastolic_bp}` : '120/80',
+              hb: r.hb || r.heart_rate || '11.5',
+              weight: r.weight || '55',
+              risk: r.riskLevel || r.risk || 'Low',
+              status: r.status || 'Monitored',
+              visits: r.dueDate ? [`${r.dueDate} (Upcoming)`] : [],
+            })));
+          }
+        } catch (_) { /* maternal list unavailable — keep mock */ }
+
+        // Malnutrition children from Aurora
+        if (malnutritionRes.status === 'fulfilled' && Array.isArray(malnutritionRes.value) && malnutritionRes.value.length > 0) {
+          setMalnutritionChildren(malnutritionRes.value.map((r, i) => ({
+            id: `C${String(i + 1).padStart(3, '0')}`,
+            name: r.childName || r.name || 'Unknown',
+            age: r.ageMonths ? `${(r.ageMonths / 12).toFixed(1)} Years` : 'Unknown',
+            weight: `${r.weight || 10}kg`,
+            height: `${r.height || 85}cm`,
+            muac: r.muac || '12.0',
+            status: r.status === 'Severe' ? 'Severe (SAM)' : r.status === 'Moderate' ? 'Moderate (MAM)' : 'Normal',
+            trend: 'stable',
+            action: 'Regular check',
+          })));
+        }
+
+        // Emergency requests from Aurora
+        if (ambulancesRes.status === 'fulfilled' && Array.isArray(ambulancesRes.value) && ambulancesRes.value.length > 0) {
+          setEmergencyRequests(ambulancesRes.value.map(r => ({
+            id: `E${r.id || Date.now()}`,
+            name: r.name || 'Unknown',
+            location: r.location || 'Unknown',
+            time: r.created_at ? new Date(r.created_at).toLocaleTimeString() : 'Unknown',
+            condition: r.symptoms || r.type || 'Emergency',
+            status: r.status || 'pending',
+          })));
+        }
+
+        // Outbreak from DynamoDB
+        if (outbreaksRes.status === 'fulfilled' && outbreaksRes.value?.outbreaks?.length > 0) {
+          const primary = outbreaksRes.value.outbreaks[0];
+          setActiveOutbreak({
+            disease: primary.disease || primary.classification || 'Malaria',
+            message: `${primary.disease || 'Disease'} cases detected — ${primary.cases || 0} reports`,
+            reports: primary.cases || primary.caseCount || 0,
+            nearby: primary.affectedVillages || 1,
+            trend: primary.trend || 'Increasing',
+            trendDirection: primary.trend === 'increasing' || primary.trend === 'Increasing' ? 'up' : 'down',
+            riskScore: primary.riskScore || 50,
+            affectedVillages: primary.affectedVillages || 1,
+          });
+        }
+      } catch (err) {
+        // All APIs failed — keep hardcoded fallback data
+        console.debug('NGO dashboard live fetch failed, using fallback data');
+      }
+    };
+    fetchLiveData();
+    const iv = setInterval(fetchLiveData, 60000);
+    return () => clearInterval(iv);
+  }, [user]);
+
   // ─── Handle voice assistant results ─────────────────────────────────────────
   const handleVoiceResult = useCallback((result) => {
     setVoiceResult(result);

@@ -6,6 +6,7 @@ import {
   Brain, TrendingUp
 } from 'lucide-react';
 import NGOSidebarLayout from '../components/NGOSidebarLayout';
+import api from '../services/api';
 
 const DEMO_PATIENTS = [
   { id: 'P001', name: 'Sunita Devi', age: 26, gender: 'F', condition: 'High Risk Pregnancy', village: 'Village V101', status: 'Critical', lastVisit: '2026-06-10', nextVisit: '2026-06-17', risk: 'high', score: 87 },
@@ -24,11 +25,11 @@ const AI_INSIGHTS = {
   'P004': { trend: 'critical', action: 'Breathing pattern deteriorating — emergency escalation recommended', badge: 'Cardiac risk flagged' },
 };
 
-const HERO_STATS = [
-  { label: 'Total Patients', value: DEMO_PATIENTS.length, icon: Users, gradient: 'from-slate-600 to-slate-700', bg: 'bg-slate-50', text: 'text-slate-700', sub: 'Registered in system' },
-  { label: 'High Risk', value: DEMO_PATIENTS.filter(p => p.risk === 'high').length, icon: AlertTriangle, gradient: 'from-red-500 to-rose-600', bg: 'bg-red-50', text: 'text-red-700', sub: 'Needs immediate care' },
-  { label: 'Follow-ups Today', value: DEMO_PATIENTS.filter(p => p.nextVisit === 'Today').length, icon: Calendar, gradient: 'from-orange-500 to-orange-600', bg: 'bg-orange-50', text: 'text-orange-700', sub: 'Due for check-in' },
-  { label: 'AI Priority Cases', value: DEMO_PATIENTS.filter(p => p.risk === 'high').length + 1, icon: Brain, gradient: 'from-violet-500 to-violet-600', bg: 'bg-violet-50', text: 'text-violet-700', sub: 'Flagged by AI engine' },
+const HERO_STATS_DEF = [
+  { label: 'Total Patients', icon: Users, gradient: 'from-slate-600 to-slate-700', bg: 'bg-slate-50', text: 'text-slate-700', sub: 'Registered in system' },
+  { label: 'High Risk', icon: AlertTriangle, gradient: 'from-red-500 to-rose-600', bg: 'bg-red-50', text: 'text-red-700', sub: 'Needs immediate care' },
+  { label: 'Follow-ups Today', icon: Calendar, gradient: 'from-orange-500 to-orange-600', bg: 'bg-orange-50', text: 'text-orange-700', sub: 'Due for check-in' },
+  { label: 'AI Priority Cases', icon: Brain, gradient: 'from-violet-500 to-violet-600', bg: 'bg-violet-50', text: 'text-violet-700', sub: 'Flagged by AI engine' },
 ];
 
 const RISK_CONFIG = {
@@ -70,12 +71,12 @@ const RISK_CONFIG = {
 };
 
 export default function NGOPatientRegistryPage() {
-  console.log("NGOPatientRegistryPage Rendered");
   const [pageLoading, setPageLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filterRisk, setFilterRisk] = useState('all');
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [livePatients, setLivePatients] = useState(null);
   const itemsPerPage = 6;
 
   useEffect(() => {
@@ -84,14 +85,72 @@ export default function NGOPatientRegistryPage() {
   }, []);
 
   useEffect(() => {
+    const fetchLivePatients = async () => {
+      try {
+        const [maternalRes, malnutritionRes] = await Promise.allSettled([
+          api.get('/ngo/maternal'),
+          api.get('/ngo/malnutrition'),
+        ]);
+        const patients = [];
+        if (maternalRes.status === 'fulfilled' && Array.isArray(maternalRes.value) && maternalRes.value.length > 0) {
+          maternalRes.value.forEach(r => {
+            const riskLevel = (r.riskLevel || r.risk || 'Low').toLowerCase();
+            patients.push({
+              id: r.client_request_id || `P${r.id}`,
+              name: r.name || 'Unknown',
+              age: r.age || 25,
+              gender: 'F',
+              condition: `Pregnancy (${r.trimester || 3}mo)`,
+              village: r.villageId || 'V101',
+              status: riskLevel === 'high' ? 'Critical' : riskLevel === 'medium' ? 'Follow-up' : 'Stable',
+              lastVisit: r.created_at ? r.created_at.slice(0, 10) : '2026-06-15',
+              nextVisit: r.dueDate || '2026-07-01',
+              risk: riskLevel,
+              score: riskLevel === 'high' ? 85 : riskLevel === 'medium' ? 55 : 25,
+            });
+          });
+        }
+        if (malnutritionRes.status === 'fulfilled' && Array.isArray(malnutritionRes.value) && malnutritionRes.value.length > 0) {
+          malnutritionRes.value.forEach(r => {
+            const isSevere = (r.status || '').includes('Severe');
+            patients.push({
+              id: r.client_request_id || `C${r.id}`,
+              name: r.childName || 'Unknown',
+              age: r.ageMonths ? Math.round(r.ageMonths / 12) : 2,
+              gender: 'M',
+              condition: isSevere ? 'Severe Acute Malnutrition' : 'Moderate Malnutrition',
+              village: r.villageId || 'V101',
+              status: isSevere ? 'Critical' : 'Follow-up',
+              lastVisit: '2026-06-15',
+              nextVisit: '2026-06-22',
+              risk: isSevere ? 'high' : 'medium',
+              score: isSevere ? 88 : 52,
+            });
+          });
+        }
+        if (patients.length > 0) setLivePatients(patients);
+      } catch (_) { /* keep hardcoded fallback */ }
+    };
+    fetchLivePatients();
+  }, []);
+
+  useEffect(() => {
     setCurrentPage(1);
   }, [search, filterRisk]);
 
-  const highCount = DEMO_PATIENTS.filter(p => p.risk === 'high').length;
-  const mediumCount = DEMO_PATIENTS.filter(p => p.risk === 'medium').length;
-  const lowCount = DEMO_PATIENTS.filter(p => p.risk === 'low').length;
+  const patients = livePatients || DEMO_PATIENTS;
+  const HERO_STATS = HERO_STATS_DEF.map(s => ({
+    ...s,
+    value: s.label === 'Total Patients' ? patients.length
+      : s.label === 'High Risk' ? patients.filter(p => p.risk === 'high').length
+      : s.label === 'Follow-ups Today' ? patients.filter(p => p.nextVisit === 'Today').length
+      : patients.filter(p => p.risk === 'high').length + 1,
+  }));
+  const highCount = patients.filter(p => p.risk === 'high').length;
+  const mediumCount = patients.filter(p => p.risk === 'medium').length;
+  const lowCount = patients.filter(p => p.risk === 'low').length;
 
-  const filtered = DEMO_PATIENTS
+  const filtered = patients
     .filter(p => {
       const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase()) || p.village.toLowerCase().includes(search.toLowerCase());
       const matchesRisk = filterRisk === 'all' || p.risk === filterRisk;
@@ -215,7 +274,7 @@ export default function NGOPatientRegistryPage() {
         {/* ═══════════════════════════════════════════════════════════════════
            SECTION 2: HIGH RISK ZONE — Spotlight Critical Patients
            ═══════════════════════════════════════════════════════════════════ */}
-        {DEMO_PATIENTS.filter(p => p.risk === 'high').length > 0 && (
+        {patients.filter(p => p.risk === 'high').length > 0 && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-7">
             <div className="flex items-center gap-2 mb-3">
               <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
@@ -223,7 +282,7 @@ export default function NGOPatientRegistryPage() {
               <div className="flex-1 h-px bg-gradient-to-r from-red-200 to-transparent ml-2" />
             </div>
             <div className="flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-thin">
-              {DEMO_PATIENTS.filter(p => p.risk === 'high').map((p) => {
+              {patients.filter(p => p.risk === 'high').map((p) => {
                 const ai = AI_INSIGHTS[p.id];
                 const ConditionIcon = getConditionIcon(p.condition);
                 return (
@@ -309,7 +368,7 @@ export default function NGOPatientRegistryPage() {
               { label: 'Medium', value: 'medium' },
               { label: 'Low', value: 'low' },
             ]).map(f => {
-              const count = f.value === 'all' ? DEMO_PATIENTS.length : DEMO_PATIENTS.filter(p => p.risk === f.value).length;
+              const count = f.value === 'all' ? patients.length : patients.filter(p => p.risk === f.value).length;
               return (
                 <button key={f.value} onClick={() => setFilterRisk(f.value)}
                   className={`relative flex items-center gap-2 px-4 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all active:scale-95 ${

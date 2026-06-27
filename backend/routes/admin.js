@@ -232,6 +232,185 @@ router.post('/seed-demo-data', auth, checkRole(['admin']), logAudit('seed', 'dem
   }
 });
 
+// ── Hackathon Demo Seed: populates Aurora + DynamoDB with realistic health data
+router.post('/seed-hackathon', async (req, res) => {
+  const db = req.app.locals.db;
+  const results = { aurora: {}, dynamodb: {} };
+  try {
+    // ── Aurora: Villages ──
+    const villages = [
+      { id: 'V101', name: 'Rampur', pop: 1240, district: 'Varanasi', lat: 25.3176, lng: 82.9739 },
+      { id: 'V102', name: 'Nagwa', pop: 890, district: 'Varanasi', lat: 25.2920, lng: 83.0080 },
+      { id: 'V103', name: 'Sarai', pop: 1100, district: 'Varanasi', lat: 25.3400, lng: 83.0100 },
+      { id: 'V104', name: 'Dariyapur', pop: 760, district: 'Varanasi', lat: 25.2700, lng: 82.9500 },
+      { id: 'V105', name: 'Kashirampur', pop: 950, district: 'Varanasi', lat: 25.3050, lng: 83.0200 },
+    ];
+    for (const v of villages) {
+      await db.run(
+        `INSERT INTO village_health ("villageId", name, population, "districtId", lat, lng, "lastUpdated")
+         VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
+         ON CONFLICT("villageId") DO UPDATE SET name=EXCLUDED.name, population=EXCLUDED.population, "districtId"=EXCLUDED."districtId", lat=EXCLUDED.lat, lng=EXCLUDED.lng, "lastUpdated"=datetime('now')`,
+        [v.id, v.name, v.pop, v.district, v.lat, v.lng]
+      );
+    }
+    results.aurora.villages = villages.length;
+
+    // ── Aurora: Users ──
+    const users = [
+      { phone: '9876543211', name: 'Sunita Devi', role: 'ngo', villageId: 'V101' },
+      { phone: '9876543213', name: 'Priya Sharma', role: 'ngo', villageId: 'V102' },
+      { phone: '9876543214', name: 'Geeta Yadav', role: 'ngo', villageId: 'V103' },
+      { phone: '9876543212', name: 'Dr. Rajesh Kumar (CMO)', role: 'admin', villageId: null },
+    ];
+    for (const u of users) {
+      await db.run(
+        `INSERT INTO users (phone, name, role, "villageId") VALUES (?, ?, ?, ?)
+         ON CONFLICT(phone) DO UPDATE SET name=EXCLUDED.name, role=EXCLUDED.role`,
+        [u.phone, u.name, u.role, u.villageId]
+      );
+    }
+    results.aurora.users = users.length;
+
+    // ── Aurora: Pregnancies ──
+    const pregnancies = [
+      { name: 'Sunita Devi', age: 26, tri: 3, village: 'V101', risk: 'High', sbp: 145, dbp: 95, hb: 10.1, wt: 55 },
+      { name: 'Rani Kumari', age: 22, tri: 2, village: 'V102', risk: 'Medium', sbp: 128, dbp: 82, hb: 11.5, wt: 52 },
+      { name: 'Pooja Gupta', age: 24, tri: 1, village: 'V103', risk: 'Low', sbp: 118, dbp: 75, hb: 12.0, wt: 50 },
+      { name: 'Meena Kumari', age: 28, tri: 3, village: 'V101', risk: 'High', sbp: 152, dbp: 98, hb: 9.8, wt: 58 },
+      { name: 'Lata Devi', age: 20, tri: 2, village: 'V104', risk: 'Low', sbp: 120, dbp: 78, hb: 11.8, wt: 48 },
+      { name: 'Aarti Sen', age: 30, tri: 3, village: 'V105', risk: 'Medium', sbp: 135, dbp: 88, hb: 10.5, wt: 54 },
+    ];
+    for (const p of pregnancies) {
+      const due = new Date(Date.now() + (9 - p.tri) * 30 * 86400000).toISOString().slice(0, 10);
+      await db.run(
+        `INSERT INTO pregnancy_data (name, age, trimester, "dueDate", "riskLevel", "villageId", systolic_bp, diastolic_bp, hb, weight)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [p.name, p.age, p.tri, due, p.risk, p.village, p.sbp, p.dbp, p.hb, p.wt]
+      );
+    }
+    results.aurora.pregnancies = pregnancies.length;
+
+    // ── Aurora: Symptoms ──
+    const symptoms = [
+      { village: 'V101', sym: 'Fever, Headache, Body ache', disease: 'Malaria', conf: 0.82 },
+      { village: 'V101', sym: 'Cough, Breathing difficulty', disease: 'Respiratory Infection', conf: 0.75 },
+      { village: 'V102', sym: 'Fever, Rash, Joint pain', disease: 'Dengue', conf: 0.78 },
+      { village: 'V103', sym: 'Diarrhea, Vomiting, Dehydration', disease: 'Gastroenteritis', conf: 0.85 },
+      { village: 'V101', sym: 'Fever, Cough, Fatigue', disease: 'Malaria', conf: 0.79 },
+      { village: 'V104', sym: 'Skin rash, Itching', disease: 'Dermatitis', conf: 0.71 },
+      { village: 'V105', sym: 'Fever, Body ache, Nausea', disease: 'Viral Fever', conf: 0.68 },
+      { village: 'V102', sym: 'Cough, Sore throat', disease: 'Common Cold', conf: 0.88 },
+    ];
+    for (const s of symptoms) {
+      await db.run(
+        `INSERT INTO symptoms ("villageId", symptoms, disease, confidence, model_used) VALUES (?, ?, ?, ?, ?)`,
+        [s.village, s.sym, s.disease, s.conf, 'SymptomNet-DL']
+      );
+    }
+    results.aurora.symptoms = symptoms.length;
+
+    // ── Aurora: Referrals ──
+    const referrals = [
+      { name: 'Sunita Devi', village: 'V101', reason: 'High BP in 8th month', priority: 'urgent', status: 'pending' },
+      { name: 'Raju Kumar', village: 'V101', reason: 'Severe malnutrition SAM', priority: 'high', status: 'in_progress' },
+      { name: 'Lata Devi', village: 'V104', reason: 'Chest pain cardiac risk', priority: 'urgent', status: 'completed' },
+      { name: 'Karan Singh', village: 'V103', reason: 'Moderate malnutrition', priority: 'routine', status: 'completed' },
+    ];
+    for (const r of referrals) {
+      await db.run(
+        `INSERT INTO referrals (patient_name, "villageId", reason, priority, status) VALUES (?, ?, ?, ?, ?)`,
+        [r.name, r.village, r.reason, r.priority, r.status]
+      );
+    }
+    results.aurora.referrals = referrals.length;
+
+    // ── Aurora: Ambulances ──
+    const ambulances = [
+      { name: 'Ram Singh', loc: 'Rampur Sector 4', priority: 'high', sym: 'Chest pain, Breathing difficulty', status: 'dispatched' },
+      { name: 'Lata Devi', loc: 'Nagwa Village', priority: 'critical', sym: 'Pregnancy labour pain', status: 'assigned' },
+      { name: 'Geeta Devi', loc: 'Sarai Block', priority: 'medium', sym: 'High fever, Dehydration', status: 'pending' },
+    ];
+    for (const a of ambulances) {
+      await db.run(
+        `INSERT INTO ambulance_requests (name, location, priority, symptoms, status, request_type) VALUES (?, ?, ?, ?, ?, 'ambulance')`,
+        [a.name, a.loc, a.priority, a.sym, a.status]
+      );
+    }
+    results.aurora.ambulances = ambulances.length;
+
+    // ── Aurora: Vaccinations ──
+    const vaccs = [
+      { child: 'Raju Kumar', vaccine: 'BCG', village: 'V101', status: 'given', given: '2026-06-15' },
+      { child: 'Raju Kumar', vaccine: 'OPV-0', village: 'V101', status: 'given', given: '2026-06-15' },
+      { child: 'Priya Singh', vaccine: 'DPT-1', village: 'V102', status: 'scheduled', sched: '2026-07-01' },
+      { child: 'Amit Kumar', vaccine: 'Measles', village: 'V103', status: 'scheduled', sched: '2026-07-05' },
+    ];
+    for (const v of vaccs) {
+      await db.run(
+        `INSERT INTO vaccination_records (child_name, vaccine_name, "villageId", status, given_date, scheduled_date) VALUES (?, ?, ?, ?, ?, ?)`,
+        [v.child, v.vaccine, v.village, v.status, v.given || null, v.sched || null]
+      );
+    }
+    results.aurora.vaccinations = vaccs.length;
+
+    // ── DynamoDB: Outbreaks ──
+    const outbreakEvents = [
+      { villageId: 'V101', disease: 'Malaria', cases: 12, trend: 'increasing', riskScore: 87, districtId: 'Varanasi' },
+      { villageId: 'V102', disease: 'Dengue', cases: 5, trend: 'stable', riskScore: 45, districtId: 'Varanasi' },
+      { villageId: 'V103', disease: 'Malaria', cases: 3, trend: 'declining', riskScore: 32, districtId: 'Varanasi' },
+      { villageId: 'V104', disease: 'Typhoid', cases: 7, trend: 'increasing', riskScore: 65, districtId: 'Varanasi' },
+      { villageId: 'V101', disease: 'Cholera', cases: 2, trend: 'stable', riskScore: 28, districtId: 'Varanasi' },
+    ];
+    for (const evt of outbreakEvents) {
+      const ts = new Date(Date.now() - Math.random() * 24 * 3600000).toISOString();
+      const shard = Math.abs(hashStr(evt.villageId)) % 10;
+      await dynamoHelper.put('outbreak_telemetry', {
+        villageId: evt.villageId, districtId: evt.districtId, detectedAt: ts,
+        disease: evt.disease, classification: evt.disease, cases: evt.cases,
+        trend: evt.trend, riskScore: evt.riskScore, source: 'HackathonSeeder',
+        severity: evt.riskScore >= 70 ? 'critical' : evt.riskScore >= 50 ? 'high' : 'medium',
+      });
+    }
+    results.dynamodb.outbreaks = outbreakEvents.length;
+
+    // ── DynamoDB: Emergencies ──
+    const emergencies = [
+      { districtId: 'Varanasi', priority: 'critical', patientName: 'Lata Devi', condition: 'Labour pain', location: 'Nagwa Village' },
+      { districtId: 'Varanasi', priority: 'high', patientName: 'Ram Singh', condition: 'Chest pain', location: 'Rampur Sector 4' },
+      { districtId: 'Varanasi', priority: 'medium', patientName: 'Geeta Devi', condition: 'High fever', location: 'Sarai Block' },
+    ];
+    for (const e of emergencies) {
+      const ts = new Date().toISOString();
+      await dynamoHelper.put('emergency_streams', {
+        ...e, streamId: `SOS-${Date.now()}-${Math.random().toString(36).slice(2,6)}`,
+        timestamp: ts, status: 'pending',
+        districtDateBucket: `${e.districtId}#${ts.slice(0,10)}`,
+      });
+    }
+    results.dynamodb.emergencies = emergencies.length;
+
+    // ── DynamoDB: Village nodes ──
+    for (const v of villages) {
+      await dynamoHelper.put('village_node_state', {
+        villageId: v.id, status: 'online', lastActive: new Date().toISOString(),
+        syncPendingCount: Math.floor(Math.random() * 5),
+      });
+    }
+    results.dynamodb.villageNodes = villages.length;
+
+    res.json({ success: true, message: 'Hackathon demo data seeded successfully!', results });
+  } catch (err) {
+    console.error('[SEED-HACKATHON]', err);
+    res.status(500).json({ success: false, error: err.message, results });
+  }
+});
+
+function hashStr(str) {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) { h = ((h << 5) - h) + str.charCodeAt(i); h |= 0; }
+  return h;
+}
+
 // GET /api/admin/users — registry for district admin (evaluators / demos)
 router.get('/users', auth, checkRole(['admin']), async (req, res) => {
   const db = req.app.locals.db;

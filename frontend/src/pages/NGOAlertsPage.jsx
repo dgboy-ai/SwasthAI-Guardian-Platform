@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import NGOSidebarLayout from '../components/NGOSidebarLayout';
 import { showToast } from '../utils/toast';
+import api from '../services/api';
 
 const DEMO_NOTIFICATIONS = [
   { id: 'N1', type: 'outbreak', text: 'AI Outbreak Radar: Malaria cluster anomaly in block sector.', time: '2m ago', unread: true, severity: 'high', village: 'V103' },
@@ -66,26 +67,67 @@ const SEVERITY_CONFIG = {
 };
 
 export default function NGOAlertsPage() {
-  console.log("NGOAlertsPage Rendered");
   const [pageLoading, setPageLoading] = useState(true);
   const [filter, setFilter] = useState('all');
+  const [liveAlerts, setLiveAlerts] = useState(null);
 
   useEffect(() => {
     const timer = setTimeout(() => setPageLoading(false), 450);
     return () => clearTimeout(timer);
   }, []);
 
-  const totalAlerts = DEMO_NOTIFICATIONS.length;
-  const criticalCount = DEMO_NOTIFICATIONS.filter(n => n.severity === 'critical').length;
-  const highCount = DEMO_NOTIFICATIONS.filter(n => n.severity === 'high').length;
-  const unreadCount = DEMO_NOTIFICATIONS.filter(n => n.unread).length;
-  const villagesAffected = [...new Set(DEMO_NOTIFICATIONS.filter(n => n.village).map(n => n.village))].length;
+  useEffect(() => {
+    const fetchLiveAlerts = async () => {
+      try {
+        const [outbreaksRes, ambulancesRes] = await Promise.allSettled([
+          api.get('/admin/outbreaks?days=7'),
+          api.get('/ngo/ambulances'),
+        ]);
+        const liveItems = [];
+        if (outbreaksRes.status === 'fulfilled' && outbreaksRes.value?.outbreaks) {
+          outbreaksRes.value.outbreaks.forEach((o, i) => {
+            liveItems.push({
+              id: `live-outbreak-${i}`,
+              type: 'outbreak',
+              text: `AI Outbreak Radar: ${o.disease || o.classification} cluster detected in ${o.villageId || 'your area'}.`,
+              time: o.detectedAt ? new Date(o.detectedAt).toLocaleString() : 'Recently',
+              unread: true,
+              severity: (o.riskScore || 0) >= 70 ? 'high' : 'medium',
+              village: o.villageId || '',
+            });
+          });
+        }
+        if (ambulancesRes.status === 'fulfilled' && Array.isArray(ambulancesRes.value)) {
+          ambulancesRes.value.slice(0, 5).forEach((a, i) => {
+            liveItems.push({
+              id: `live-sos-${i}`,
+              type: 'sos',
+              text: `Emergency: ${a.symptoms || a.type} reported from ${a.name || 'Unknown'}, ${a.location || 'Unknown'}.`,
+              time: a.created_at ? new Date(a.created_at).toLocaleString() : 'Recently',
+              unread: a.status === 'pending',
+              severity: a.priority === 'critical' || a.priority === 'high' ? 'critical' : 'high',
+              village: '',
+            });
+          });
+        }
+        if (liveItems.length > 0) setLiveAlerts(liveItems);
+      } catch (_) { /* keep hardcoded fallback */ }
+    };
+    fetchLiveAlerts();
+  }, []);
 
-  const filtered = filter === 'all' ? DEMO_NOTIFICATIONS : DEMO_NOTIFICATIONS.filter(n => n.type === filter);
+  const alerts = liveAlerts || DEMO_NOTIFICATIONS;
+  const totalAlerts = alerts.length;
+  const criticalCount = alerts.filter(n => n.severity === 'critical').length;
+  const highCount = alerts.filter(n => n.severity === 'high').length;
+  const unreadCount = alerts.filter(n => n.unread).length;
+  const villagesAffected = [...new Set(alerts.filter(n => n.village).map(n => n.village))].length;
+
+  const filtered = filter === 'all' ? alerts : alerts.filter(n => n.type === filter);
 
   const getCountForFilter = (val) => {
     if (val === 'all') return totalAlerts;
-    return DEMO_NOTIFICATIONS.filter(n => n.type === val).length;
+    return alerts.filter(n => n.type === val).length;
   };
 
   const getAlertIcon = (type) => {
@@ -667,11 +709,11 @@ export default function NGOAlertsPage() {
                     <h3 className="text-xs font-black uppercase tracking-widest text-white flex items-center gap-2">
                       <AlertTriangle className="w-4 h-4 text-amber-400" /> Escalation Queue
                     </h3>
-                    <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-red-500/20 text-red-300 border border-red-500/30">{DEMO_NOTIFICATIONS.filter(n => n.severity === 'critical' || n.severity === 'high').length} items</span>
+                    <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-red-500/20 text-red-300 border border-red-500/30">{alerts.filter(n => n.severity === 'critical' || n.severity === 'high').length} items</span>
                   </div>
                 </div>
                 <div className="divide-y divide-slate-100">
-                  {DEMO_NOTIFICATIONS.filter(n => n.severity === 'critical' || n.severity === 'high').slice(0, 4).map((n, i) => (
+                  {alerts.filter(n => n.severity === 'critical' || n.severity === 'high').slice(0, 4).map((n, i) => (
                     <div key={n.id} className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 transition-colors">
                       <div className={`w-2 h-2 rounded-full shrink-0 ${n.severity === 'critical' ? 'bg-red-500 animate-pulse' : 'bg-orange-500'}`} />
                       <div className="flex-1 min-w-0">
