@@ -42,6 +42,7 @@ import Footer from './components/Footer';
 import OfflineToast from './components/OfflineToast';
 import ErrorBoundary from './components/ErrorBoundary';
 import DesktopOnlyWrapper from './components/DesktopOnlyWrapper';
+import AccessDenied from './components/AccessDenied';
 
 // Skeleton loader shown while lazy chunks download
 function PageLoader() {
@@ -70,7 +71,9 @@ const ProtectedRoute = ({ children, allowedRole }) => {
   if (!user) return <Navigate to="/login" replace />;
   if (allowedRole) {
     const roles = Array.isArray(allowedRole) ? allowedRole : [allowedRole];
-    if (!roles.includes(user.role) && user.role !== 'admin') return <Navigate to="/" replace />;
+    if (!roles.includes(user.role) && user.role !== 'admin') {
+      return <AccessDenied role={user.role} requiredRole={roles[0]} />;
+    }
   }
   return children;
 };

@@ -1266,6 +1266,101 @@ export default function ASHADashboard() {
             </div>
           </div>
 
+        {/* NGO Overview Section */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100 rounded-xl p-4 shadow-sm">
+            <p className="text-lg font-black text-emerald-800">12</p>
+            <p className="text-[9px] font-bold text-emerald-600 uppercase tracking-wider mt-1">Assigned Villages</p>
+            <p className="text-[8px] text-emerald-400 font-semibold mt-0.5">4 new this quarter</p>
+          </div>
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 rounded-xl p-4 shadow-sm">
+            <p className="text-lg font-black text-blue-800">24</p>
+            <p className="text-[9px] font-bold text-blue-600 uppercase tracking-wider mt-1">Active ASHA Workers</p>
+            <p className="text-[8px] text-blue-400 font-semibold mt-0.5">3 on field now</p>
+          </div>
+          <div className="bg-gradient-to-br from-rose-50 to-red-50 border border-rose-100 rounded-xl p-4 shadow-sm">
+            <p className="text-lg font-black text-rose-800">18</p>
+            <p className="text-[9px] font-bold text-rose-600 uppercase tracking-wider mt-1">High Risk Pregnancies</p>
+            <p className="text-[8px] text-rose-400 font-semibold mt-0.5">+2 this week</p>
+          </div>
+          <div className="bg-gradient-to-br from-purple-50 to-violet-50 border border-purple-100 rounded-xl p-4 shadow-sm">
+            <p className="text-lg font-black text-purple-800">8</p>
+            <p className="text-[9px] font-bold text-purple-600 uppercase tracking-wider mt-1">Malnutrition Cases</p>
+            <p className="text-[8px] text-purple-400 font-semibold mt-0.5">All under treatment</p>
+          </div>
+        </div>
+
+        {/* CSR Impact + Monthly Outreach */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="bg-white border border-slate-100 rounded-xl p-5 shadow-sm">
+            <div className="flex items-center gap-2 mb-3 border-b border-slate-50 pb-2.5">
+              <Heart className="w-4 h-4 text-rose-500" />
+              <h3 className="text-xs font-black uppercase text-slate-800 tracking-wider">CSR Impact Summary</h3>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { label: 'Total Investment', val: '₹2.8Cr' },
+                { label: 'Active Programs', val: '4' },
+                { label: 'Beneficiaries', val: '42,000' },
+                { label: 'Corporate Partners', val: '6' },
+              ].map((c, i) => (
+                <div key={i} className="bg-slate-50 rounded-xl p-3 text-center">
+                  <p className="text-lg font-black text-slate-800">{c.val}</p>
+                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mt-1">{c.label}</p>
+                </div>
+              ))}
+            </div>
+            <p className="text-[9px] text-slate-400 font-semibold mt-3 text-center">YTD: ₹1.6Cr committed</p>
+          </div>
+
+          <div className="bg-white border border-slate-100 rounded-xl p-5 shadow-sm">
+            <div className="flex items-center gap-2 mb-3 border-b border-slate-50 pb-2.5">
+              <Calendar className="w-4 h-4 text-emerald-500" />
+              <h3 className="text-xs font-black uppercase text-slate-800 tracking-wider">Monthly Outreach</h3>
+            </div>
+            <div className="space-y-2.5">
+              {[
+                { label: 'Village Visits', val: '48', pct: '92%', color: '#059669' },
+                { label: 'Patient Consultations', val: '312', pct: '87%', color: '#2563EB' },
+                { label: 'Vaccination Drives', val: '6', pct: '100%', color: '#8B5CF6' },
+                { label: 'Health Camps', val: '4', pct: '80%', color: '#F97316' },
+                { label: 'Home Visits', val: '126', pct: '74%', color: '#EF4444' },
+              ].map((o, i) => (
+                <div key={i}>
+                  <div className="flex items-center justify-between text-[10px] mb-1">
+                    <span className="font-bold text-slate-600">{o.label}</span>
+                    <span className="font-black text-slate-800">{o.val} <span className="text-slate-400 font-medium">({o.pct})</span></span>
+                  </div>
+                  <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                    <div className="h-full rounded-full" style={{ width: o.pct, backgroundColor: o.color }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* NGO Performance KPIs */}
+        <div className="bg-white border border-slate-100 rounded-xl p-5 shadow-sm">
+          <div className="flex items-center gap-2 mb-3 border-b border-slate-50 pb-2.5">
+            <Activity className="w-4 h-4 text-emerald-500" />
+            <h3 className="text-xs font-black uppercase text-slate-800 tracking-wider">NGO Performance KPIs</h3>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[
+              { label: 'Village Coverage', val: '92%', color: '#059669', desc: 'Target: 90%' },
+              { label: 'ASHA Productivity', val: '87%', color: '#8B5CF6', desc: 'Target: 85%' },
+              { label: 'Scheme Penetration', val: '76%', color: '#2563EB', desc: 'Target: 80%' },
+              { label: 'Disease Surveillance', val: '94%', color: '#F97316', desc: 'Target: 90%' },
+            ].map((kpi, i) => (
+              <div key={i} className="text-center p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors">
+                <p className="text-lg sm:text-xl font-black" style={{ color: kpi.color }}>{kpi.val}</p>
+                <p className="text-[10px] font-bold text-slate-600">{kpi.label}</p>
+                <p className="text-[8px] text-slate-400 font-semibold mt-0.5">{kpi.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   };

@@ -975,6 +975,7 @@ export default function AdminDashboard() {
               demoTourMode={demoTourMode}
               liveAmbulanceLocations={liveAmbulanceLocations}
               lastSync={lastSync}
+              demoData={demoData}
             />
           )}
 
