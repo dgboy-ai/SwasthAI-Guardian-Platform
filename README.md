@@ -35,6 +35,7 @@ SwasthAI Guardian is a production-grade, offline-first B2B operations and epidem
 | **Relational Database** | Amazon Aurora PostgreSQL | Relational system of record (ACID), ap-south-1 |
 | **NoSQL Telemetry** | Amazon DynamoDB | Time-series event logging & telemetry, ap-south-1 |
 | **Frontend Platform** | Vercel | Vite-based Progressive Web App (PWA) |
+| **Backend API** | Node.js + Express on Render | REST API, SSE, WebSocket telemetry |
 | **AI Microservices** | FastAPI (Python) + Render | SymptomNet MLP, Sakhi RAG, & Outbreak Agent |
 
 ---
@@ -81,6 +82,33 @@ Most healthcare apps simply call a third-party LLM API and display the output. S
 
 ---
 
+## 🔍 System Verification Panel
+
+A dedicated `/verify` route provides judges with transparent, real-time proof of the AWS database infrastructure:
+
+- **Aurora PostgreSQL**: Connection status, pool health, query latency, item counts per table
+- **DynamoDB**: All 5 tables with GSIs, TTL configuration, item counts, access patterns
+- **AI Service**: Module status, RAG configuration, model availability
+- **Tech Stack**: Full architecture overview with deployment details
+- **Demo Credentials**: Visible on-page for easy judge access
+
+The panel uses localStorage caching — once a successful connection is verified, subsequent visits show cached proof even during Render cold starts.
+
+---
+
+## 🔄 Database Seeding
+
+Demo data is automatically seeded on server startup if the database is empty. For manual re-seeding:
+
+```bash
+# One-click seed via API (runs on Render server, connects to real Aurora + DynamoDB)
+POST https://swasthai-guardian-platform-0jsb.onrender.com/api/admin/seed-hackathon
+```
+
+Seeded data includes: 5 villages, 4 users, 6 pregnancies, 8 symptom records, 4 referrals, 3 ambulances, 4 vaccination records in Aurora. 5 outbreak events, 3 emergency streams, 5 village node states in DynamoDB.
+
+---
+
 ## 🌐 Language Support & Mobile Optimizations
 
 *   **7 Languages**: English, Hindi, Hinglish, Marathi, Tamil, Telugu, and Bengali — switchable on-the-fly without a page reload.
@@ -88,7 +116,7 @@ Most healthcare apps simply call a third-party LLM API and display the output. S
     *   Tap delays eliminated so the UI feels instant, even on older hardware.
     *   Animations auto-disabled for users who have reduced-motion accessibility enabled.
     *   All interactive buttons meet WCAG 2.5.5 minimum touch target size (44×44px).
-    *   All API calls cap at 8 seconds — preventing indefinite loading spinners on slow connections.
+    *   All API calls cap at 15 seconds — handling Render cold starts while preventing indefinite loading on slow connections.
 
 ---
 
@@ -98,11 +126,19 @@ Most healthcare apps simply call a third-party LLM API and display the output. S
 # Full stack status (AWS connections, DynamoDB schema, AI modules)
 GET https://swasthai-guardian-platform-0jsb.onrender.com/api/health/detailed
 
-# Live application URL
+# System Verification Panel (live database proof for judges)
+https://swasth-ai-guardian-platform.vercel.app/verify
+
+# Live application
 https://swasth-ai-guardian-platform.vercel.app
 
-# Demo credentials: OTP mode → Enter any phone → OTP: 1234
-# Roles (selectable on login): Villager (default) | NGO | Admin
+# Demo Login (OTP mode):
+#   ASHA Worker:  phone 9876543211, OTP 1234, role: ASHA
+#   Admin (CMO):  phone 9876543212, OTP 1234, role: Admin
+#   Villager:     phone 9876543210, OTP 1234, role: Patient
+
+# Seed database (one-click, runs from Render server):
+POST https://swasthai-guardian-platform-0jsb.onrender.com/api/admin/seed-hackathon
 ```
 
 ---
