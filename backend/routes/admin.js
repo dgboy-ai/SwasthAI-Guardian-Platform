@@ -49,6 +49,8 @@ async function resolveDistrictId(db, villageId) {
 
 function requestedDistrict(req) {
   const raw = req.query.districtId || process.env.DISTRICT_NAME || 'Varanasi';
+  // If the districtId comes from the query param, use it as-is (don't append _district)
+  if (req.query.districtId) return raw;
   const normalized = raw.toLowerCase().replace(/-/g, '_').replace(/\s+/g, '_');
   if (normalized.endsWith('_district')) return normalized;
   return `${normalized}_district`;
