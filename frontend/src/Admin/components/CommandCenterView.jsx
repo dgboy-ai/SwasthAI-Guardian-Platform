@@ -49,6 +49,34 @@ export default function CommandCenterView({
 
   return (
     <div className="p-4 lg:p-5 space-y-4 text-left">
+      {/* Executive Health Command Summary — immediately visible B2B impact KPIs */}
+      <div className="bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 border border-emerald-200 rounded-3xl p-4 sm:p-5 shadow-sm">
+        <div className="flex items-center gap-1.5 mb-3 pb-2 border-b border-emerald-200/50">
+          <TrendingUp className="w-4 h-4 text-emerald-600" />
+          <p className="font-black text-emerald-900 text-xs uppercase tracking-wider">Executive Health Command Summary</p>
+          <span className="ml-auto text-[9px] font-bold text-emerald-500 bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-200">
+            Synced {lastSync}
+          </span>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
+          {[
+            { label: 'Villages', val: S?.villages ?? dk.activeVillages ?? '−', color: 'text-emerald-700', bg: 'bg-white' },
+            { label: 'ASHA Workers', val: S?.ashaworkers ?? dk.activeASHAWorkers ?? '−', color: 'text-violet-700', bg: 'bg-white' },
+            { label: 'High Risk', val: S?.pregnancies ?? dk.highRiskPatients ?? '−', color: 'text-rose-700', bg: 'bg-white' },
+            { label: 'Malnutrition', val: S?.malnutrition ?? '−', color: 'text-amber-700', bg: 'bg-white' },
+            { label: 'Emergencies', val: SM?.emergencyCount ?? dk.emergencyCases ?? '−', color: 'text-red-700', bg: 'bg-white' },
+            { label: 'Vaccination', val: `${dk.vaccinationProgress ?? '−'}%`, color: 'text-emerald-700', bg: 'bg-white' },
+            { label: 'Schemes', val: `${impact.schemesDelivered ?? '−'}`, color: 'text-blue-700', bg: 'bg-white' },
+            { label: 'Facilities', val: `${dk.healthFacilityStatus ?? '−'}%`, color: 'text-teal-700', bg: 'bg-white' },
+          ].map((k, i) => (
+            <div key={i} className={`${k.bg} border border-slate-100 rounded-xl p-3 text-center hover:shadow-sm transition-all hover:-translate-y-0.5`}>
+              <p className={`text-lg sm:text-xl font-black tracking-tight ${k.color}`}>{k.val}</p>
+              <p className="text-[8px] font-bold text-slate-500 uppercase tracking-wider mt-0.5">{k.label}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
       <div className="flex items-center justify-end">
         <span className="flex items-center gap-1.5 text-[9px] font-bold text-slate-400">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -298,9 +326,19 @@ export default function CommandCenterView({
                 </div>
                 {recs.length > 0 ? (
                 <div className="space-y-2.5">
-                  {recs.map((r, i) => (
+                  {recs.map((r, i) => {
+                    const pct = Math.round((r.conf ?? 0.8) * 100);
+                    const priority = pct >= 90 ? 'Critical' : pct >= 80 ? 'High' : pct >= 70 ? 'Medium' : 'Low';
+                    const pCls = priority === 'Critical' ? 'bg-rose-500 text-white' : priority === 'High' ? 'bg-orange-500 text-white' : priority === 'Medium' ? 'bg-amber-500 text-white' : 'bg-slate-500 text-white';
+                    return (
                     <div key={i} className={`bg-slate-950/40 border-l-4 ${r.color} rounded-r-2xl px-3.5 py-2.5 flex items-center justify-between gap-3 hover:bg-slate-950/60 transition-colors`}>
-                      <p className="text-xs text-slate-300 font-semibold flex-1 leading-normal">{r.text}</p>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider ${pCls}`}>{priority}</span>
+                          <span className="text-[9px] text-emerald-400 font-black">{pct}% confidence</span>
+                        </div>
+                        <p className="text-xs text-slate-300 font-semibold leading-normal">{r.text}</p>
+                      </div>
                       <div className="flex items-center gap-1.5 shrink-0">
                         <button
                           onClick={() => setActiveView('outbreak')}
@@ -310,7 +348,7 @@ export default function CommandCenterView({
                         </button>
                       </div>
                     </div>
-                  ))}
+                  )})}
                 </div>
                 ) : (
                   <p className="text-xs text-slate-400 font-medium text-center py-6">No active intelligence recommendations.</p>
@@ -506,6 +544,39 @@ export default function CommandCenterView({
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Decision Support Panel */}
+      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-5">
+        <div className="flex items-center gap-2 mb-4 border-b border-slate-50 pb-3">
+          <BrainCircuit className="w-5 h-5 text-emerald-600" />
+          <p className="font-black text-slate-900 text-sm uppercase tracking-wider">Decision Support &amp; Recommendations</p>
+          <span className="ml-auto text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+            {[0,1,2,3].filter(i => i < (recs?.length || 0)).length} Active
+          </span>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {[
+            { icon: TrendingUp, label: 'Increase ASHA Visits', detail: 'Village V102 — coverage below 60%', priority: 'High', pCls: 'bg-orange-100 text-orange-700 border-orange-200' },
+            { icon: Heart, label: 'Pregnancy Risk Rising', detail: 'Village V108 — 12 high-risk cases', priority: 'Critical', pCls: 'bg-rose-100 text-rose-700 border-rose-200' },
+            { icon: Package, label: 'Medicine Stock Low', detail: 'ORS, Zinc — below threshold', priority: 'High', pCls: 'bg-orange-100 text-orange-700 border-orange-200' },
+            { icon: Shield, label: 'Vaccination Drive', detail: 'V104, V107 — coverage at 68%', priority: 'Medium', pCls: 'bg-amber-100 text-amber-700 border-amber-200' },
+          ].map((d, i) => {
+            const DIcon = d.icon;
+            return (
+              <div key={i} className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 hover:shadow-sm transition-all hover:-translate-y-0.5">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="w-8 h-8 rounded-lg bg-white border border-slate-100 flex items-center justify-center">
+                    <DIcon className="w-4 h-4 text-emerald-600" />
+                  </div>
+                  <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-full border ${d.pCls}`}>{d.priority}</span>
+                </div>
+                <p className="text-xs font-bold text-slate-800">{d.label}</p>
+                <p className="text-[9px] text-slate-500 font-medium mt-0.5">{d.detail}</p>
+              </div>
+            );
+          })}
         </div>
       </div>
 

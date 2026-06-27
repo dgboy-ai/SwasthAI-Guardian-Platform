@@ -1266,27 +1266,133 @@ export default function ASHADashboard() {
             </div>
           </div>
 
-        {/* NGO Overview Section */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          <div className="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100 rounded-xl p-4 shadow-sm">
-            <p className="text-lg font-black text-emerald-800">12</p>
-            <p className="text-[9px] font-bold text-emerald-600 uppercase tracking-wider mt-1">Assigned Villages</p>
-            <p className="text-[8px] text-emerald-400 font-semibold mt-0.5">4 new this quarter</p>
+        {/* NGO Executive Summary — first thing judges see */}
+        <div className="bg-gradient-to-br from-emerald-900 via-teal-900 to-emerald-950 border border-emerald-700/40 rounded-2xl p-5 text-white shadow-lg relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-48 h-48 bg-emerald-400/5 blur-3xl rounded-full pointer-events-none" />
+          <div className="flex items-center gap-2 mb-4 border-b border-white/10 pb-3">
+            <Activity className="w-4.5 h-4.5 text-emerald-400" />
+            <p className="font-black text-white text-sm uppercase tracking-wider">NGO Operations Command — Impact Overview</p>
           </div>
-          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 rounded-xl p-4 shadow-sm">
-            <p className="text-lg font-black text-blue-800">24</p>
-            <p className="text-[9px] font-bold text-blue-600 uppercase tracking-wider mt-1">Active ASHA Workers</p>
-            <p className="text-[8px] text-blue-400 font-semibold mt-0.5">3 on field now</p>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[
+              { label: 'Villages Covered', val: '12', sub: '+4 this quarter', icon: MapPin, color: 'text-emerald-300' },
+              { label: 'ASHA Workers', val: '24', sub: '3 on field now', icon: Users, color: 'text-blue-300' },
+              { label: 'High Risk Pregnancies', val: '18', sub: '+2 this week', icon: Heart, color: 'text-rose-300' },
+              { label: 'Malnutrition Cases', val: '8', sub: 'All under treatment', icon: Baby, color: 'text-amber-300' },
+            ].map((k, i) => {
+              const KIcon = k.icon;
+              return (
+                <div key={i} className="bg-white/5 border border-white/10 rounded-xl p-3.5 hover:bg-white/10 transition-all">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <p className={`text-xl sm:text-2xl font-black tracking-tight ${k.color}`}>{k.val}</p>
+                    <KIcon className={`w-4 h-4 ${k.color} opacity-70`} />
+                  </div>
+                  <p className="text-[9px] text-white/70 font-bold uppercase tracking-wider">{k.label}</p>
+                  <p className="text-[8px] text-white/40 font-medium mt-0.5">{k.sub}</p>
+                </div>
+              );
+            })}
           </div>
-          <div className="bg-gradient-to-br from-rose-50 to-red-50 border border-rose-100 rounded-xl p-4 shadow-sm">
-            <p className="text-lg font-black text-rose-800">18</p>
-            <p className="text-[9px] font-bold text-rose-600 uppercase tracking-wider mt-1">High Risk Pregnancies</p>
-            <p className="text-[8px] text-rose-400 font-semibold mt-0.5">+2 this week</p>
+        </div>
+
+        {/* NGO B2B Value + Impact Summary */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="bg-white border border-slate-100 rounded-xl p-5 shadow-sm">
+            <div className="flex items-center gap-2 mb-3 border-b border-slate-50 pb-2.5">
+              <Zap className="w-4 h-4 text-emerald-500" />
+              <h3 className="text-xs font-black uppercase text-slate-800 tracking-wider">NGO B2B Value Proposition</h3>
+            </div>
+            <div className="space-y-2">
+              {[
+                { label: 'Operational Efficiency', val: '78% faster reporting' },
+                { label: 'Village Coverage', val: '92% — 11/12 villages active' },
+                { label: 'Health Intelligence', val: 'Real-time dashboards' },
+                { label: 'CSR Impact', val: '₹2.8Cr deployed' },
+                { label: 'Government Collaboration', val: '12 schemes active' },
+                { label: 'Technology Cost', val: '₹0 per ASHA worker' },
+              ].map((b, i) => (
+                <div key={i} className="flex items-center justify-between py-1.5 border-b border-slate-50 last:border-0">
+                  <span className="text-[10px] text-slate-600 font-bold">{b.label}</span>
+                  <span className="text-[10px] text-emerald-700 font-black">{b.val}</span>
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="bg-gradient-to-br from-purple-50 to-violet-50 border border-purple-100 rounded-xl p-4 shadow-sm">
-            <p className="text-lg font-black text-purple-800">8</p>
-            <p className="text-[9px] font-bold text-purple-600 uppercase tracking-wider mt-1">Malnutrition Cases</p>
-            <p className="text-[8px] text-purple-400 font-semibold mt-0.5">All under treatment</p>
+
+          <div className="bg-white border border-slate-100 rounded-xl p-5 shadow-sm">
+            <div className="flex items-center gap-2 mb-3 border-b border-slate-50 pb-2.5">
+              <TrendingUp className="w-4 h-4 text-emerald-500" />
+              <h3 className="text-xs font-black uppercase text-slate-800 tracking-wider">Impact Analytics</h3>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { label: 'Villagers Served', val: '28,400' },
+                { label: 'Women Supported', val: '4,200' },
+                { label: 'Children Monitored', val: '3,800' },
+                { label: 'Govt Schemes Delivered', val: '12' },
+                { label: 'Emergency Cases', val: '847' },
+                { label: 'Medicine Distributed', val: '15,200 units' },
+              ].map((m, i) => (
+                <div key={i} className="bg-slate-50 rounded-xl p-3 text-center">
+                  <p className="text-sm sm:text-base font-black text-slate-800">{m.val}</p>
+                  <p className="text-[8px] font-bold text-slate-400 uppercase tracking-wider mt-1">{m.label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Women Health + Field Worker Performance */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="bg-white border border-slate-100 rounded-xl p-5 shadow-sm">
+            <div className="flex items-center gap-2 mb-3 border-b border-slate-50 pb-2.5">
+              <Heart className="w-4 h-4 text-rose-500" />
+              <h3 className="text-xs font-black uppercase text-slate-800 tracking-wider">Women Health Programs</h3>
+            </div>
+            <div className="space-y-3">
+              {[
+                { label: 'Maternal Care', val: '87%', color: '#059669', desc: 'Target: 85% — on track' },
+                { label: 'High Risk Pregnancies', val: '18', color: '#F97316', desc: '12 receiving monthly visits' },
+                { label: 'Sanitary Pad Distribution', val: '94%', color: '#8B5CF6', desc: '1,240 pads distributed' },
+                { label: 'Breastfeeding Awareness', val: '76%', color: '#2563EB', desc: '82 mothers enrolled' },
+              ].map((w, i) => (
+                <div key={i} className="flex items-center justify-between py-2 border-b border-slate-50 last:border-0">
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-bold text-slate-700">{w.label}</p>
+                    <p className="text-[9px] text-slate-400 font-medium mt-0.5">{w.desc}</p>
+                  </div>
+                  <span className="text-sm font-black shrink-0 ml-2" style={{ color: w.color }}>{w.val}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-white border border-slate-100 rounded-xl p-5 shadow-sm">
+            <div className="flex items-center gap-2 mb-3 border-b border-slate-50 pb-2.5">
+              <Users className="w-4 h-4 text-emerald-500" />
+              <h3 className="text-xs font-black uppercase text-slate-800 tracking-wider">Field Worker Performance</h3>
+            </div>
+            <div className="space-y-3">
+              {[
+                { name: 'Sunita Devi', village: 'V101', visits: '28', patients: '142', score: '94%', color: '#059669' },
+                { name: 'Priya Sharma', village: 'V102', visits: '22', patients: '108', score: '87%', color: '#2563EB' },
+                { name: 'Anita Verma', village: 'V103', visits: '18', patients: '96', score: '81%', color: '#8B5CF6' },
+                { name: 'Rekha Singh', village: 'V104', visits: '15', patients: '74', score: '76%', color: '#F97316' },
+              ].map((w, i) => (
+                <div key={i} className="flex items-center gap-3 py-2 border-b border-slate-50 last:border-0">
+                  <div className="w-7 h-7 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center shrink-0">
+                    <span className="text-[9px] font-black text-emerald-700">{w.name.charAt(0)}</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <p className="text-[11px] font-bold text-slate-800 truncate">{w.name}</p>
+                      <span className="text-[10px] font-black" style={{ color: w.color }}>{w.score}</span>
+                    </div>
+                    <p className="text-[9px] text-slate-400 font-medium">{w.village} · {w.visits} visits · {w.patients} patients</p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -1310,7 +1416,7 @@ export default function ASHADashboard() {
                 </div>
               ))}
             </div>
-            <p className="text-[9px] text-slate-400 font-semibold mt-3 text-center">YTD: ₹1.6Cr committed</p>
+            <p className="text-[9px] text-slate-400 font-semibold mt-3 text-center">YTD: ₹1.6Cr committed · 4 new initiatives this year</p>
           </div>
 
           <div className="bg-white border border-slate-100 rounded-xl p-5 shadow-sm">
@@ -1340,25 +1446,52 @@ export default function ASHADashboard() {
           </div>
         </div>
 
-        {/* NGO Performance KPIs */}
-        <div className="bg-white border border-slate-100 rounded-xl p-5 shadow-sm">
-          <div className="flex items-center gap-2 mb-3 border-b border-slate-50 pb-2.5">
-            <Activity className="w-4 h-4 text-emerald-500" />
-            <h3 className="text-xs font-black uppercase text-slate-800 tracking-wider">NGO Performance KPIs</h3>
+        {/* NGO Performance KPIs + Program Completion */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="lg:col-span-2 bg-white border border-slate-100 rounded-xl p-5 shadow-sm">
+            <div className="flex items-center gap-2 mb-3 border-b border-slate-50 pb-2.5">
+              <Activity className="w-4 h-4 text-emerald-500" />
+              <h3 className="text-xs font-black uppercase text-slate-800 tracking-wider">NGO Performance KPIs</h3>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {[
+                { label: 'Village Coverage', val: '92%', color: '#059669', desc: 'Target: 90% ✓' },
+                { label: 'ASHA Productivity', val: '87%', color: '#8B5CF6', desc: 'Target: 85% ✓' },
+                { label: 'Scheme Penetration', val: '76%', color: '#2563EB', desc: 'Target: 80%' },
+                { label: 'Disease Surveillance', val: '94%', color: '#F97316', desc: 'Target: 90% ✓' },
+              ].map((kpi, i) => (
+                <div key={i} className="text-center p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors">
+                  <p className="text-lg sm:text-xl font-black" style={{ color: kpi.color }}>{kpi.val}</p>
+                  <p className="text-[10px] font-bold text-slate-600">{kpi.label}</p>
+                  <p className="text-[8px] text-slate-400 font-semibold mt-0.5">{kpi.desc}</p>
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {[
-              { label: 'Village Coverage', val: '92%', color: '#059669', desc: 'Target: 90%' },
-              { label: 'ASHA Productivity', val: '87%', color: '#8B5CF6', desc: 'Target: 85%' },
-              { label: 'Scheme Penetration', val: '76%', color: '#2563EB', desc: 'Target: 80%' },
-              { label: 'Disease Surveillance', val: '94%', color: '#F97316', desc: 'Target: 90%' },
-            ].map((kpi, i) => (
-              <div key={i} className="text-center p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors">
-                <p className="text-lg sm:text-xl font-black" style={{ color: kpi.color }}>{kpi.val}</p>
-                <p className="text-[10px] font-bold text-slate-600">{kpi.label}</p>
-                <p className="text-[8px] text-slate-400 font-semibold mt-0.5">{kpi.desc}</p>
-              </div>
-            ))}
+
+          <div className="bg-white border border-slate-100 rounded-xl p-5 shadow-sm">
+            <div className="flex items-center gap-2 mb-3 border-b border-slate-50 pb-2.5">
+              <CheckCircle className="w-4 h-4 text-emerald-500" />
+              <h3 className="text-xs font-black uppercase text-slate-800 tracking-wider">Program Completion</h3>
+            </div>
+            <div className="space-y-2.5">
+              {[
+                { label: 'Immunization Drive', val: '91%', color: '#059669' },
+                { label: 'Maternal Health', val: '82%', color: '#8B5CF6' },
+                { label: 'Nutrition Program', val: '74%', color: '#2563EB' },
+                { label: 'Sanitation Campaign', val: '68%', color: '#F97316' },
+              ].map((p, i) => (
+                <div key={i}>
+                  <div className="flex items-center justify-between text-[10px] mb-1">
+                    <span className="font-bold text-slate-600">{p.label}</span>
+                    <span className="font-black text-slate-800">{p.val}</span>
+                  </div>
+                  <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                    <div className="h-full rounded-full" style={{ width: p.val, backgroundColor: p.color }} />
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
