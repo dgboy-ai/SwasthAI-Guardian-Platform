@@ -13,6 +13,10 @@ let retryCount = 0;
 
 function getWsUrl() {
   const loc = window.location;
+  // On Vercel, connect WebSocket directly to Render (Vercel free plan doesn't proxy WS)
+  if (loc.hostname.endsWith('.vercel.app')) {
+    return 'wss://swasthai-guardian-platform-0jsb.onrender.com/api/telemetry';
+  }
   const protocol = loc.protocol === 'https:' ? 'wss:' : 'ws:';
   const host = loc.port === '5173' || loc.port === '5174' ? `${loc.hostname}:5000` : loc.host;
   return `${protocol}//${host}/api/telemetry`;
