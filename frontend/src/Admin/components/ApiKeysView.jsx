@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Key, Plus, Copy, CheckCircle, XCircle, Trash2,
-  Eye, EyeOff, Shield
+  Eye, EyeOff, Shield, AlertTriangle, X
 } from 'lucide-react';
 import { showToast } from '../../utils/toast';
 import adminService from '../../services/adminService';
@@ -93,7 +93,7 @@ export default function ApiKeysView() {
 
   if (loading) {
     return (
-      <div className="space-y-4 p-4">
+      <div className="p-4 lg:p-6 space-y-4">
         <div className="animate-pulse h-8 w-64 bg-slate-200 rounded-xl" />
         <div className="animate-pulse h-32 bg-white rounded-2xl border border-slate-100" />
         <div className="animate-pulse h-48 bg-white rounded-2xl border border-slate-100" />
@@ -103,7 +103,7 @@ export default function ApiKeysView() {
 
   return (
     <>
-    <div className="space-y-6">
+    <div className="p-4 lg:p-6 space-y-6 text-left">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

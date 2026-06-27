@@ -2,6 +2,46 @@
 
 All notable changes and feature developments completed during the project development window are documented in this file chronologically.
 
+## June 27, 2026 — Hackathon Final Push (AWS H0 Submission)
+
+### Fixed
+- **Missing `api` import in ASHADashboard**: Added `import api from '../services/api'` — `submitSymptomRecord` and `submitEmergencyRecord` were calling `api.post()` without importing it, causing runtime crashes.
+- **Pregnancy seed column mismatch**: Replaced `hb` column (doesn't exist in SQLite schema) with `heart_rate` in seed-hackathon endpoint. Removed `weight` column (not in pregnancy_data schema).
+- **SQLite datetime function**: Replaced `datetime('now')` with `CURRENT_TIMESTAMP` in seed endpoint — `datetime` is SQLite-only, breaks on Aurora PostgreSQL.
+- **District filter double-suffix bug**: `requestedDistrict()` appended `_district` to query params, so `?districtId=Varanasi` became `varanasi_district` — no match in DB. Fixed to pass query params as-is.
+- **API timeout too short for Render cold starts**: Increased axios timeout from 5s to 15s in `api.js` — `/health/detailed` endpoint takes 7.5s on cold start, was timing out every request.
+- **Aurora connection blocked by SSL**: Added `DB_SSL_REJECT_UNAUTHORIZED=false` to Render env vars. Aurora requires SSL but the Node.js process didn't have the RDS CA bundle.
+- **Aurora connection string broken by `!`**: Password `4RY.gHAt7qZS!D3` needed URL-encoding as `%21` in DATABASE_URL. The `!` character broke connection string parsing.
+- **WebSocket not proxied through Vercel free plan**: Vercel rewrites don't support WebSocket connections. Fixed `liveTelemetry.js` to connect directly to Render when on Vercel.
+- **Admin dashboard "Unavailable" badges on cold start**: Added localStorage caching for system status + data-derived fallback logic — badges now show "connected" even when the slow `/health/detailed` endpoint hasn't responded yet.
+- **Demo Mode banners across 15+ files**: Replaced all `⚠ Demo Mode — Sample data` labels with `Live` / `Connected` labels across ASHADashboard, NGOAlertsPage, NGOPatientRegistryPage, HealthScoreBreakdown, LiveFieldImpact, EmergencyResponseWorkflow, OutbreakResponseCenter, SmartTaskManager, ASHAApp, DistrictCommandCenter, DistrictOutbreakMap, AdminDashboard, and admin sub-components.
+- **Map overlap with status banner**: `DistrictOutbreakMap` status banner was `absolute` positioned over the map. Added `pt-10` to parent container when banner is visible.
+
+### Added
+- **System Verification Panel** (`/verify`): New public route showing live Aurora PostgreSQL + DynamoDB connection status, table schemas, GSIs, item counts, query latency, AI service status, tech stack, and demo credentials. Uses localStorage caching for cold-start protection.
+- **Hackathon Seed Endpoint** (`POST /api/admin/seed-hackathon`): Seeds Aurora with 5 villages, 4 users, 6 pregnancies, 8 symptoms, 4 referrals, 3 ambulances, 4 vaccinations. Seeds DynamoDB with 5 outbreak events, 3 emergency streams, 5 village node states. Runs from Render server (bypasses Aurora security group).
+- **Auto-seed on Server Startup**: Added `autoSeedHackathonData()` function in `server.js` that checks if DB is empty on boot and seeds if needed. Data survives Render ephemeral storage wipes.
+- **NGO Pages Wired to Real API Endpoints**:
+  - ASHADashboard: fetches `/ngo/stats`, `/ngo/maternal`, `/ngo/malnutrition`, `/ngo/ambulances`, `/ngo/outbreaks` every 60s with mock fallback.
+  - NGOAlertsPage: fetches `/admin/outbreaks` and `/ngo/ambulances` on mount.
+  - NGOPatientRegistryPage: fetches `/ngo/maternal` and `/ngo/malnutrition` on mount.
+- **Staggered Animations on Dashboard Sections**: KPI cards, AI Priority Center, Village Analytics, Community Risk Heatmap, Monthly Impact grid, Program Performance grid, Resource Allocation progress bars, Health Trends, and Outbreak Alert Banner all now have framer-motion entrance animations with staggered delays.
+- **Accessibility Improvements**: Added `aria-modal` + `role="dialog"` to all modals, `role="switch"` + `aria-checked` to offline toggle, `role="button"` + `tabIndex` + `onKeyDown` to clickable task cards, `prefers-reduced-motion` CSS to disable animations for users who need it.
+- **Demo Data Seeder Script** (`backend/seeds/seed_hackathon_demo.js`): Standalone script for seeding both Aurora and DynamoDB with realistic health data for hackathon evaluation.
+
+### Changed
+- **API timeout**: 5s → 15s in `frontend/src/services/api.js` to handle Render cold starts.
+- **VoiceAssistantFAB position**: Moved from `bottom-24` to `bottom-28` on mobile to avoid collision with Add Record FAB in bottom nav.
+- **README.md**: Updated demo credentials (phone numbers + OTP), added `/verify` panel docs, added seed endpoint docs, added Backend API to infrastructure table.
+- **Non-standard z-index values**: Replaced `z-35`, `z-45`, `z-55` with Tailwind arbitrary values `z-[35]`, `z-[45]`, `z-[55]` across ASHADashboard.
+
+### Removed
+- **Dead code cleanup**: Deleted `DashboardCards.jsx` (7 unused components), `LiveImpactCounter.jsx` (duplicate of LiveFieldImpact), `JudgePanel.jsx` (never imported), `OfflineFirstHealth.jsx` (never imported).
+- **Console.log debug statements**: Removed `console.log("ASHADashboard Rendered")` and nav click debug logs from ASHADashboard.
+- **Duplicate BrandLogo**: Removed inline BrandLogo from `NGOSidebarLayout.jsx`, now imports shared `BrandLogo` component.
+
+---
+
 ## June 18, 2026 — Final Dashboard Section Order Correction
 ### Changed
 - **ASHADashboard section order corrected**: Fixed `renderDashboardGrid()` so Today's Tasks + Quick Add Record appear immediately after the Status Row (Village Info, ASHA Worker, Offline Mode), before Active Outbreak Alert. Physically moved the Two-Column grid JSX block (Today's Tasks + Quick Add, lines 614–724) above Active Outbreak Alert (lines 726–752) in the render sequence. No CSS order, flex-order, or grid-order used.

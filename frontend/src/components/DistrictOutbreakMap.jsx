@@ -339,174 +339,175 @@ export default function DistrictOutbreakMap({ onNodeSelect, activeVillageId = nu
   };
 
   return (
-    <div className={`bg-white rounded-[2.5rem] border border-slate-100 shadow-sm p-6 sm:p-8 relative overflow-hidden flex flex-col lg:flex-row gap-6 ${usingDefaultNodes ? 'pt-10' : ''}`}>
+    <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm p-6 sm:p-8 relative overflow-hidden flex flex-col gap-6">
       {usingDefaultNodes && (
-        <div className="absolute top-0 left-0 right-0 z-50 bg-emerald-600 text-white text-center py-1 text-[8px] font-black uppercase tracking-widest">
+        <div className="w-full bg-emerald-600 text-white text-center py-2 text-[10px] font-black uppercase tracking-widest rounded-2xl shadow-sm">
           Live Village Map · DynamoDB Node State
         </div>
       )}
       
-      {/* MAP CONTAINER */}
-      <div className="flex-1 flex flex-col justify-between relative min-h-[460px] lg:min-h-[520px] bg-slate-950 rounded-[2rem] overflow-hidden border border-slate-900 shadow-[0_0_30px_rgba(16,185,129,0.08)]">
+      <div className="flex flex-col lg:flex-row gap-6 w-full">
+        {/* MAP CONTAINER */}
+        <div className="flex-1 flex flex-col justify-between relative min-h-[460px] lg:min-h-[520px] bg-slate-950 rounded-[2rem] overflow-hidden border border-slate-900 shadow-[0_0_30px_rgba(16,185,129,0.08)]">
 
-        {/* Leaflet DOM attachment */}
-        <div ref={mapContainerRef} className="absolute inset-0 z-10 w-full h-full" style={{ minHeight: '100%', height: '100%' }} />
-        
-        {/* NETWORK & OFFLINE INDICATOR */}
-        <div className="absolute top-4 left-4 z-20 flex items-center gap-2 px-3 py-1.5 bg-slate-900/90 backdrop-blur-md rounded-full border border-emerald-500/20 shadow-lg">
-          {isOnline ? (
-            <Wifi className="w-3.5 h-3.5 text-emerald-400" />
-          ) : (
-            <WifiOff className="w-3.5 h-3.5 text-rose-400" />
-          )}
-          <span className="text-[9px] font-black text-emerald-300 uppercase tracking-widest leading-none">
-            {isOnline ? 'Network Hub Active' : 'Offline Protocol Synced'}
-          </span>
+          {/* Leaflet DOM attachment */}
+          <div ref={mapContainerRef} className="absolute inset-0 z-10 w-full h-full" style={{ minHeight: '100%', height: '100%' }} />
+          
+          {/* NETWORK & OFFLINE INDICATOR */}
+          <div className="absolute top-4 left-4 z-20 flex items-center gap-2 px-3 py-1.5 bg-slate-900/90 backdrop-blur-md rounded-full border border-emerald-500/20 shadow-lg">
+            {isOnline ? (
+              <Wifi className="w-3.5 h-3.5 text-emerald-400" />
+            ) : (
+              <WifiOff className="w-3.5 h-3.5 text-rose-400" />
+            )}
+            <span className="text-[9px] font-black text-emerald-300 uppercase tracking-widest leading-none">
+              {isOnline ? 'Network Hub Active' : 'Offline Protocol Synced'}
+            </span>
+          </div>
+
+          {/* RE-CENTER MAP ACTION */}
+          <button
+            onClick={handleRecenterMap}
+            title="Recenter Map"
+            className="absolute top-4 right-4 z-20 p-2.5 bg-slate-900/90 hover:bg-emerald-600 text-emerald-300 hover:text-white backdrop-blur-md rounded-xl border border-emerald-500/20 hover:border-emerald-500 shadow-lg active:scale-95 transition-all flex items-center justify-center"
+          >
+            <MapPin className="w-4 h-4" />
+          </button>
+
+          {/* MAP TITLE Watermark */}
+          <div className="absolute bottom-4 left-4 z-20 flex flex-col leading-none pointer-events-none bg-slate-950/80 backdrop-blur-sm px-3.5 py-2.5 rounded-2xl border border-slate-900 shadow-md">
+            <span className="text-xl font-black text-slate-100 opacity-90 tracking-tighter uppercase">Varanasi Division</span>
+            <span className="text-[8px] font-black text-emerald-400 opacity-90 uppercase tracking-widest mt-1">SwasthAI Node Network Map</span>
+          </div>
         </div>
 
-        {/* RE-CENTER MAP ACTION */}
-        <button
-          onClick={handleRecenterMap}
-          title="Recenter Map"
-          className="absolute top-4 right-4 z-20 p-2.5 bg-slate-900/90 hover:bg-emerald-600 text-emerald-300 hover:text-white backdrop-blur-md rounded-xl border border-emerald-500/20 hover:border-emerald-500 shadow-lg active:scale-95 transition-all flex items-center justify-center"
-        >
-          <MapPin className="w-4 h-4" />
-        </button>
-
-        {/* MAP TITLE Watermark */}
-        <div className="absolute bottom-4 left-4 z-20 flex flex-col leading-none pointer-events-none bg-slate-950/80 backdrop-blur-sm px-3.5 py-2.5 rounded-2xl border border-slate-900 shadow-md">
-          <span className="text-xl font-black text-slate-100 opacity-90 tracking-tighter uppercase">Varanasi Division</span>
-          <span className="text-[8px] font-black text-emerald-400 opacity-90 uppercase tracking-widest mt-1">SwasthAI Node Network Map</span>
-        </div>
-      </div>
-
-      {/* FLOAT SIDE CARD (REAL-TIME INFORMATION PANEL) */}
-      <div className="w-full lg:w-[260px] flex flex-col justify-between shrink-0 z-20">
-        <AnimatePresence mode="wait">
-          {selectedNode ? (
-            <motion.div
-              key={selectedNode.id}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="bg-slate-50 border border-slate-100 rounded-[2rem] p-6 space-y-5"
-            >
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="text-lg font-black text-slate-900 tracking-tight leading-none uppercase">
-                    {selectedNode.name.split(' / ')[0]}
-                  </h3>
-                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">
-                    {selectedNode.name.split(' / ')[1] || 'Varanasi'}
-                  </p>
-                </div>
-                <span className={`w-3 h-3 rounded-full ${
-                  selectedNode.status === 'outbreak' ? 'bg-rose-500 animate-pulse' :
-                  selectedNode.status === 'emergency' ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500'
-                }`} />
-              </div>
-
-              {/* OUTBREAK ALERT BADGE */}
-              {selectedNode.status !== 'normal' && (
-                <div className={`p-3 rounded-xl border flex items-start gap-2 ${
-                  selectedNode.status === 'outbreak' ? 'bg-rose-50 border-rose-200 text-rose-800' : 'bg-amber-50 border-amber-200 text-amber-800'
-                }`}>
-                  <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
-                  <p className="text-[10px] font-black leading-tight uppercase tracking-wider">
-                    {!selectedNode.latestAlert || selectedNode.latestAlert.toLowerCase().includes('undefined')
-                      ? 'Active telemetry event cluster detected.'
-                      : selectedNode.latestAlert}
-                  </p>
-                </div>
-              )}
-
-              {/* STATISTICS GRID */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm">
-                  <div className="flex items-center gap-1.5 text-slate-400 mb-1">
-                    <Users className="w-3.5 h-3.5" />
-                    <span className="text-[8px] font-black uppercase tracking-widest">Pop</span>
+        {/* FLOAT SIDE CARD (REAL-TIME INFORMATION PANEL) */}
+        <div className="w-full lg:w-[260px] flex flex-col justify-between shrink-0 z-20">
+          <AnimatePresence mode="wait">
+            {selectedNode ? (
+              <motion.div
+                key={selectedNode.id}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="bg-slate-50 border border-slate-100 rounded-[2rem] p-6 space-y-5"
+              >
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="text-lg font-black text-slate-900 tracking-tight leading-none uppercase">
+                      {selectedNode.name.split(' / ')[0]}
+                    </h3>
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">
+                      {selectedNode.name.split(' / ')[1] || 'Varanasi'}
+                    </p>
                   </div>
-                  <p className="text-sm font-black text-slate-800">{selectedNode.population}</p>
+                  <span className={`w-3 h-3 rounded-full ${
+                    selectedNode.status === 'outbreak' ? 'bg-rose-500 animate-pulse' :
+                    selectedNode.status === 'emergency' ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500'
+                  }`} />
                 </div>
-                <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm">
-                  <div className="flex items-center gap-1.5 text-rose-500 mb-1">
-                    <HeartPulse className="w-3.5 h-3.5" />
-                    <span className="text-[8px] font-black uppercase tracking-widest">Preg</span>
+
+                {/* OUTBREAK ALERT BADGE */}
+                {selectedNode.status !== 'normal' && (
+                  <div className={`p-3 rounded-xl border flex items-start gap-2 ${
+                    selectedNode.status === 'outbreak' ? 'bg-rose-50 border-rose-200 text-rose-800' : 'bg-amber-50 border-amber-200 text-amber-800'
+                  }`}>
+                    <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                    <p className="text-[10px] font-black leading-tight uppercase tracking-wider">
+                      {!selectedNode.latestAlert || selectedNode.latestAlert.toLowerCase().includes('undefined')
+                        ? 'Active telemetry event cluster detected.'
+                        : selectedNode.latestAlert}
+                    </p>
                   </div>
-                  <p className="text-sm font-black text-slate-800">{selectedNode.pregnant}</p>
-                </div>
-                <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm col-span-2">
-                  <div className="flex items-center gap-1.5 text-emerald-600 mb-1">
-                    <Activity className="w-3.5 h-3.5" />
-                    <span className="text-[8px] font-black uppercase tracking-widest">Active Cases / सक्रिय मामले</span>
-                  </div>
-                  <p className="text-sm font-black text-slate-800">{selectedNode.cases}</p>
-                </div>
-                <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm col-span-2">
-                  <div className="flex items-center justify-between text-slate-500 mb-1">
-                    <div className="flex items-center gap-1.5 text-rose-500">
-                      <ShieldAlert className="w-3.5 h-3.5" />
-                      <span className="text-[8px] font-black uppercase tracking-widest">Heatmap Risk Score</span>
+                )}
+
+                {/* STATISTICS GRID */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm">
+                    <div className="flex items-center gap-1.5 text-slate-400 mb-1">
+                      <Users className="w-3.5 h-3.5" />
+                      <span className="text-[8px] font-black uppercase tracking-widest">Pop</span>
                     </div>
-                    <span className="text-[10px] font-black text-slate-800">{(selectedNode.outbreakScore || 0)}%</span>
+                    <p className="text-sm font-black text-slate-800">{selectedNode.population}</p>
                   </div>
-                  <div className="w-full bg-slate-100 rounded-full h-2 mt-1 overflow-hidden">
-                    <div 
-                      className={`h-full rounded-full ${
-                        (selectedNode.outbreakScore || 0) >= 80 ? 'bg-rose-500' :
-                        (selectedNode.outbreakScore || 0) >= 50 ? 'bg-amber-500' :
-                        (selectedNode.outbreakScore || 0) >= 20 ? 'bg-yellow-500' : 'bg-emerald-500'
-                      }`}
-                      style={{ width: `${selectedNode.outbreakScore || 0}%` }}
-                    />
+                  <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm">
+                    <div className="flex items-center gap-1.5 text-rose-500 mb-1">
+                      <HeartPulse className="w-3.5 h-3.5" />
+                      <span className="text-[8px] font-black uppercase tracking-widest">Preg</span>
+                    </div>
+                    <p className="text-sm font-black text-slate-800">{selectedNode.pregnant}</p>
+                  </div>
+                  <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm col-span-2">
+                    <div className="flex items-center gap-1.5 text-emerald-600 mb-1">
+                      <Activity className="w-3.5 h-3.5" />
+                      <span className="text-[8px] font-black uppercase tracking-widest">Active Cases / सक्रिय मामले</span>
+                    </div>
+                    <p className="text-sm font-black text-slate-800">{selectedNode.cases}</p>
+                  </div>
+                  <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm col-span-2">
+                    <div className="flex items-center justify-between text-slate-500 mb-1">
+                      <div className="flex items-center gap-1.5 text-rose-500">
+                        <ShieldAlert className="w-3.5 h-3.5" />
+                        <span className="text-[8px] font-black uppercase tracking-widest">Heatmap Risk Score</span>
+                      </div>
+                      <span className="text-[10px] font-black text-slate-800">{(selectedNode.outbreakScore || 0)}%</span>
+                    </div>
+                    <div className="w-full bg-slate-100 rounded-full h-2 mt-1 overflow-hidden">
+                      <div 
+                        className={`h-full rounded-full ${
+                          (selectedNode.outbreakScore || 0) >= 80 ? 'bg-rose-500' :
+                          (selectedNode.outbreakScore || 0) >= 50 ? 'bg-amber-500' :
+                          (selectedNode.outbreakScore || 0) >= 20 ? 'bg-yellow-500' : 'bg-emerald-500'
+                        }`}
+                        style={{ width: `${selectedNode.outbreakScore || 0}%` }}
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* ASHA WORKER CALL WIDGET */}
-              <div className="pt-2 border-t border-slate-200">
-                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1.5">ASHA / आरोग्य दीदी</p>
-                <a
-                  href={`tel:${selectedNode.asha}`}
-                  className="flex items-center justify-between p-3.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-100 rounded-xl text-emerald-800 transition-colors shadow-sm"
-                >
-                  <span className="text-xs font-black tracking-tight">{selectedNode.asha}</span>
-                  <PhoneCall className="w-4 h-4 shrink-0 text-emerald-600" />
-                </a>
+                {/* ASHA WORKER CALL WIDGET */}
+                <div className="pt-2 border-t border-slate-200">
+                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1.5">ASHA / आरोग्य दीदी</p>
+                  <a
+                    href={`tel:${selectedNode.asha}`}
+                    className="flex items-center justify-between p-3.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-100 rounded-xl text-emerald-800 transition-colors shadow-sm"
+                  >
+                    <span className="text-xs font-black tracking-tight">{selectedNode.asha}</span>
+                    <PhoneCall className="w-4 h-4 shrink-0 text-emerald-600" />
+                  </a>
+                </div>
+              </motion.div>
+            ) : (
+              <div className="bg-slate-50 border border-slate-100 rounded-[2rem] p-8 text-center flex flex-col items-center justify-center h-full min-h-[220px]">
+                <MapPin className="w-10 h-10 text-slate-300 animate-bounce mb-3 shrink-0" />
+                <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest">Select a Node</h4>
+                <p className="text-[10px] text-slate-400 font-bold leading-normal mt-2 px-4">
+                  Tap on any village node on the map to review real-time population, active case tracking, and ASHA contact channels.
+                </p>
               </div>
-            </motion.div>
-          ) : (
-            <div className="bg-slate-50 border border-slate-100 rounded-[2rem] p-8 text-center flex flex-col items-center justify-center h-full min-h-[220px]">
-              <MapPin className="w-10 h-10 text-slate-300 animate-bounce mb-3 shrink-0" />
-              <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest">Select a Node</h4>
-              <p className="text-[10px] text-slate-400 font-bold leading-normal mt-2 px-4">
-                Tap on any village node on the map to review real-time population, active case tracking, and ASHA contact channels.
-              </p>
-            </div>
-          )}
-        </AnimatePresence>
+            )}
+          </AnimatePresence>
 
-        {/* RE-POOL ALL DATA ACTION */}
-        <button
-          onClick={handleRePollTelemetry}
-          disabled={!selectedNode || isPolling}
-          className={`mt-4 w-full py-4 rounded-xl font-black uppercase text-[10px] tracking-[0.2em] transition-all flex items-center justify-center gap-2 border ${
-            pollSuccess
-              ? 'bg-emerald-600 text-white border-emerald-600 cursor-default'
-              : isPolling
-              ? 'bg-slate-800 text-slate-400 border-slate-800 cursor-wait'
-              : selectedNode 
-              ? 'bg-slate-900 hover:bg-emerald-600 text-white border-slate-900 hover:border-emerald-600 cursor-pointer' 
-              : 'bg-slate-100 text-slate-400 border-slate-100 cursor-not-allowed'
-          }`}
-          style={{ minHeight: '48px' }}
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${isPolling ? 'animate-spin' : ''}`} />
-          {pollSuccess ? 'Telemetry Synced ✓' : isPolling ? 'Polling Telemetry...' : 'Re-poll Telemetry'}
-        </button>
+          {/* RE-POOL ALL DATA ACTION */}
+          <button
+            onClick={handleRePollTelemetry}
+            disabled={!selectedNode || isPolling}
+            className={`mt-4 w-full py-4 rounded-xl font-black uppercase text-[10px] tracking-[0.2em] transition-all flex items-center justify-center gap-2 border ${
+              pollSuccess
+                ? 'bg-emerald-600 text-white border-emerald-600 cursor-default'
+                : isPolling
+                ? 'bg-slate-800 text-slate-400 border-slate-800 cursor-wait'
+                : selectedNode 
+                ? 'bg-slate-900 hover:bg-emerald-600 text-white border-slate-900 hover:border-emerald-600 cursor-pointer' 
+                : 'bg-slate-100 text-slate-400 border-slate-100 cursor-not-allowed'
+            }`}
+            style={{ minHeight: '48px' }}
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isPolling ? 'animate-spin' : ''}`} />
+            {pollSuccess ? 'Telemetry Synced ✓' : isPolling ? 'Polling Telemetry...' : 'Re-poll Telemetry'}
+          </button>
+        </div>
       </div>
-
     </div>
   );
 }
