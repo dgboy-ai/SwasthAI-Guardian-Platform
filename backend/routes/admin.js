@@ -273,19 +273,19 @@ router.post('/seed-hackathon', async (req, res) => {
 
     // ── Aurora: Pregnancies ──
     const pregnancies = [
-      { name: 'Sunita Devi', age: 26, tri: 3, village: 'V101', risk: 'High', sbp: 145, dbp: 95, hr: 88, wt: 55 },
-      { name: 'Rani Kumari', age: 22, tri: 2, village: 'V102', risk: 'Medium', sbp: 128, dbp: 82, hr: 76, wt: 52 },
-      { name: 'Pooja Gupta', age: 24, tri: 1, village: 'V103', risk: 'Low', sbp: 118, dbp: 75, hr: 72, wt: 50 },
-      { name: 'Meena Kumari', age: 28, tri: 3, village: 'V101', risk: 'High', sbp: 152, dbp: 98, hr: 92, wt: 58 },
-      { name: 'Lata Devi', age: 20, tri: 2, village: 'V104', risk: 'Low', sbp: 120, dbp: 78, hr: 74, wt: 48 },
-      { name: 'Aarti Sen', age: 30, tri: 3, village: 'V105', risk: 'Medium', sbp: 135, dbp: 88, hr: 80, wt: 54 },
+      { name: 'Sunita Devi', age: 26, tri: 3, village: 'V101', risk: 'High', sbp: 145, dbp: 95, hr: 88 },
+      { name: 'Rani Kumari', age: 22, tri: 2, village: 'V102', risk: 'Medium', sbp: 128, dbp: 82, hr: 76 },
+      { name: 'Pooja Gupta', age: 24, tri: 1, village: 'V103', risk: 'Low', sbp: 118, dbp: 75, hr: 72 },
+      { name: 'Meena Kumari', age: 28, tri: 3, village: 'V101', risk: 'High', sbp: 152, dbp: 98, hr: 92 },
+      { name: 'Lata Devi', age: 20, tri: 2, village: 'V104', risk: 'Low', sbp: 120, dbp: 78, hr: 74 },
+      { name: 'Aarti Sen', age: 30, tri: 3, village: 'V105', risk: 'Medium', sbp: 135, dbp: 88, hr: 80 },
     ];
     for (const p of pregnancies) {
       const due = new Date(Date.now() + (9 - p.tri) * 30 * 86400000).toISOString().slice(0, 10);
       await db.run(
-        `INSERT INTO pregnancy_data (name, age, trimester, "dueDate", "riskLevel", "villageId", systolic_bp, diastolic_bp, heart_rate, weight)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [p.name, p.age, p.tri, due, p.risk, p.village, p.sbp, p.dbp, p.hr, p.wt]
+        `INSERT INTO pregnancy_data (name, age, trimester, "dueDate", "riskLevel", "villageId", systolic_bp, diastolic_bp, heart_rate)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [p.name, p.age, p.tri, due, p.risk, p.village, p.sbp, p.dbp, p.hr]
       );
     }
     results.aurora.pregnancies = pregnancies.length;
