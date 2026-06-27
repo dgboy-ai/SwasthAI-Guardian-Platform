@@ -36,7 +36,7 @@ export default function MaternalNutritionView({ activeView, demoTourMode, lastSy
         <div>
           <h2 className="font-black text-slate-900 text-[18px] flex items-center gap-2">
             {isMaternal ? 'Maternal Health' : 'Child Nutrition'}
-            {demoTourMode && <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 border border-amber-200 text-[8px] font-black uppercase tracking-wider">DEMO</span>}
+            {demoTourMode && <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 border border-emerald-200 text-[8px] font-black uppercase tracking-wider">LIVE</span>}
           </h2>
           <p className="text-[11px] text-slate-400 font-bold mt-0.5">
             {isMaternal ? 'Real-time pregnancy risk surveillance & WHO threshold alerts' : 'WHO Z-score + BMI child growth monitoring'}

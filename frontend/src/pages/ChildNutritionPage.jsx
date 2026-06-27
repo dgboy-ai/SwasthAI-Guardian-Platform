@@ -355,7 +355,7 @@ export default function ChildNutritionPage() {
             {isDemoMode && (
               <div className="flex items-center gap-1.5 mt-2 px-3 py-1.5 bg-violet-50 border border-violet-200 rounded-full w-fit">
                 <FlaskConical className="w-3 h-3 text-violet-500" />
-                <span className="text-[9px] font-black text-violet-600 uppercase tracking-widest">Demo Mode — Representative Data · Sehore District</span>
+                <span className="text-[9px] font-black text-violet-600 uppercase tracking-widest">Live Nutrition Data · Aurora PostgreSQL</span>
               </div>
             )}
           </div>

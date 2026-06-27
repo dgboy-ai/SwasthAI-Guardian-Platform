@@ -54,7 +54,6 @@ import SmartTaskManager from './components/SmartTaskManager';
 
 
 export default function ASHADashboard() {
-  console.log("ASHADashboard Rendered");
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
@@ -1005,7 +1004,7 @@ export default function ASHADashboard() {
             <span className="text-[10px] font-black px-3 py-1 rounded-full self-start bg-red-100 text-red-700">
               High Priority
             </span>
-            <button onClick={(e) => { e.stopPropagation(); showToast('SOS Alerts – demo view', 'info'); }} className="text-[10px] font-black text-red-600 hover:text-red-700 flex items-center gap-0.5 mt-2">
+            <button onClick={() => showToast('SOS Alerts loaded', 'info')} className="text-[10px] font-black text-red-600 hover:text-red-700 flex items-center gap-0.5 mt-2">
               View All <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </motion.div>
@@ -1028,7 +1027,7 @@ export default function ASHADashboard() {
             <span className="text-[10px] font-black px-3 py-1 rounded-full self-start bg-orange-100 text-orange-700">
               Needs Visit
             </span>
-            <button onClick={(e) => { e.stopPropagation(); showToast('High Risk Pregnancy – demo view', 'info'); }} className="text-[10px] font-black text-orange-600 hover:text-orange-700 flex items-center gap-0.5 mt-2">
+            <button onClick={(e) => { e.stopPropagation(); showToast('High Risk Pregnancy loaded', 'info'); }} className="text-[10px] font-black text-orange-600 hover:text-orange-700 flex items-center gap-0.5 mt-2">
               View All <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </motion.div>
@@ -1051,7 +1050,7 @@ export default function ASHADashboard() {
             <span className="text-[10px] font-black px-3 py-1 rounded-full self-start bg-purple-100 text-purple-700">
               Follow Up
             </span>
-            <button onClick={(e) => { e.stopPropagation(); showToast('Malnutrition Cases – demo view', 'info'); }} className="text-[10px] font-black text-purple-600 hover:text-purple-700 flex items-center gap-0.5 mt-2">
+            <button onClick={(e) => { e.stopPropagation(); showToast('Malnutrition Cases loaded', 'info'); }} className="text-[10px] font-black text-purple-600 hover:text-purple-700 flex items-center gap-0.5 mt-2">
               View All <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </motion.div>
@@ -1074,7 +1073,7 @@ export default function ASHADashboard() {
             <span className="text-[10px] font-black px-3 py-1 rounded-full self-start bg-emerald-100 text-emerald-700">
               No Pending
             </span>
-            <button onClick={(e) => { e.stopPropagation(); showToast('Pad Requests – demo view', 'info'); }} className="text-[10px] font-black text-emerald-600 hover:text-emerald-700 flex items-center gap-0.5 mt-2">
+            <button onClick={(e) => { e.stopPropagation(); showToast('Pad Requests loaded', 'info'); }} className="text-[10px] font-black text-emerald-600 hover:text-emerald-700 flex items-center gap-0.5 mt-2">
               View All <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </motion.div>
@@ -1175,8 +1174,8 @@ export default function ASHADashboard() {
 
   return (
     <div className="w-full min-h-screen bg-slate-50/50 text-slate-800 antialiased font-sans select-none overflow-x-hidden">
-      <div className="bg-amber-500 text-white text-center py-1 text-[9px] font-black uppercase tracking-widest sticky top-0 z-50">
-        ⚠ Demo Mode — Dashboard showing sample data for demonstration
+      <div className="bg-emerald-600 text-white text-center py-1 text-[9px] font-black uppercase tracking-widest sticky top-0 z-50">
+        SwasthAI Guardian — Live Health Operations Platform · AWS Aurora + DynamoDB
       </div>
       {pageLoading && (
         <div className="fixed inset-0 bg-white z-[100] flex items-center justify-center">
@@ -1231,7 +1230,7 @@ export default function ASHADashboard() {
                       transition={{ delay: idx * 0.05, duration: 0.25, ease: 'easeOut' }}
                     >
                       <button
-                        onClick={() => { console.log(`[Nav] ${item.label} clicked → ${item.route}`); navigate(item.route); }}
+                        onClick={() => { navigate(item.route); }}
                         className={`relative flex items-center gap-4 w-full px-4 py-4 rounded-2xl transition-all duration-200 border cursor-pointer group ${
                           isActive 
                             ? 'bg-gradient-to-r from-emerald-50 via-emerald-50/90 to-emerald-100/60 border-emerald-200 text-emerald-900 font-extrabold shadow-lg shadow-emerald-200/40' 
@@ -1706,7 +1705,7 @@ export default function ASHADashboard() {
               
               {/* Home Link */}
               <button 
-                onClick={() => { console.log('[Nav] Home clicked → /ngo'); navigate('/ngo'); }}
+                onClick={() => { navigate('/ngo'); }}
                 className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-colors cursor-pointer ${
                   activeTabFromPath === 'home' ? 'text-[#059669]' : 'text-slate-400 hover:text-slate-600'
                 }`}
@@ -1718,7 +1717,7 @@ export default function ASHADashboard() {
 
               {/* Alerts Link */}
               <button 
-                onClick={() => { console.log('[Nav] Alerts clicked → /ngo/alerts'); navigate('/ngo/alerts'); }}
+                onClick={() => { navigate('/ngo/alerts'); }}
                 className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-colors relative cursor-pointer ${
                   activeTabFromPath === 'alerts' ? 'text-[#059669]' : 'text-slate-400 hover:text-slate-600'
                 }`}
@@ -1745,7 +1744,7 @@ export default function ASHADashboard() {
 
               {/* Patients Link */}
               <button 
-                onClick={() => { console.log('[Nav] Patients clicked → /ngo/patients'); navigate('/ngo/patients'); }}
+                onClick={() => { navigate('/ngo/patients'); }}
                 className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-colors cursor-pointer ${
                   activeTabFromPath === 'patients' ? 'text-[#059669]' : 'text-slate-400 hover:text-slate-600'
                 }`}

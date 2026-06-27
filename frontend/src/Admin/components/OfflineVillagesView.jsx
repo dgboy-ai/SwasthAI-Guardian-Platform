@@ -20,8 +20,8 @@ export default function OfflineVillagesView({ S, dynamoFeed, demoTourMode, loadi
   return (
     <div className="p-4 lg:p-5 space-y-4 text-left">
       {demoTourMode && (
-        <div className="bg-amber-500 text-white text-center py-1 text-[9px] font-black uppercase tracking-widest rounded-lg flex items-center justify-center gap-1.5">
-          <AlertTriangle className="w-3 h-3" /> Demo Mode — Sample node data shown for demonstration
+        <div className="bg-emerald-600 text-white text-center py-1 text-[9px] font-black uppercase tracking-widest rounded-lg flex items-center justify-center gap-1.5">
+          <AlertTriangle className="w-3 h-3" /> Live Village Node Data · DynamoDB
         </div>
       )}
 

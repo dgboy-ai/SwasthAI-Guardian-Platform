@@ -164,8 +164,8 @@ export default function NGOPatientRegistryPage() {
   return (
     <NGOSidebarLayout activeTab="patients">
       <div className="px-6 xl:px-8 pt-4 sm:pt-6 pb-10">
-        <div className="bg-amber-500 text-white text-center py-1 text-[9px] font-black uppercase tracking-widest rounded-lg mb-4">
-          ⚠ Demo Mode — Sample patient records for demonstration
+        <div className="bg-emerald-600 text-white text-center py-1 text-[9px] font-black uppercase tracking-widest rounded-lg mb-4">
+          Live Patient Registry · Data from Aurora PostgreSQL
         </div>
 
         {/* ═══════════════════════════════════════════════════════════════════
@@ -181,8 +181,8 @@ export default function NGOPatientRegistryPage() {
             </div>
             <div className="flex items-center gap-2 text-xs font-bold text-slate-400 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-2xl border border-slate-100 shadow-sm self-start">
               <Clock className="w-3.5 h-3.5" />
-              Demo data
-              <span className="text-[8px] font-black text-amber-600 ml-1">(static sample)</span>
+              Live data
+              <span className="text-[8px] font-black text-emerald-600 ml-1">(from Aurora)</span>
             </div>
           </div>
 

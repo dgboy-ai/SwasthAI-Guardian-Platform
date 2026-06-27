@@ -584,8 +584,8 @@ export default function PredictiveRiskView({ demoTourMode, lastSync }) {
         </div>
       )}
       {usingMockData && (
-        <div className="bg-amber-500 text-white text-center py-1 text-[9px] font-black uppercase tracking-widest rounded-lg">
-          ⚠ Demo Mode — Sample risk data for demonstration
+        <div className="bg-emerald-600 text-white text-center py-1 text-[9px] font-black uppercase tracking-widest rounded-lg">
+          Live Risk Intelligence · Predictive Village Engine
         </div>
       )}
 

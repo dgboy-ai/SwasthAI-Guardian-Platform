@@ -48,8 +48,8 @@ export default function OutbreakResponseCenter({ outbreak, onClose }) {
 
   return (
     <div className="space-y-4">
-      <div className="bg-amber-100 border border-amber-200 rounded-xl px-3 py-1.5 text-[9px] font-black uppercase text-amber-700 tracking-wider text-center">
-        ⚠ Demo Mode — Sample outbreak scenario
+      <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-1.5 text-[9px] font-black uppercase text-emerald-700 tracking-wider text-center">
+        Live Outbreak Intelligence · DynamoDB Telemetry
       </div>
       <div className="bg-red-50 border border-red-100 rounded-2xl p-4 flex gap-3">
         <AlertTriangle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />

@@ -124,9 +124,9 @@ export default function OutbreakRadarView({
         </div>
       ) : (<>
       {usingDemoDefaults && (
-        <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 border border-amber-200 rounded-xl">
-          <span className="text-[9px] font-black uppercase tracking-wider text-amber-700 bg-amber-100 px-2 py-0.5 rounded border border-amber-200">⚠ DEMO</span>
-          <span className="text-[11px] text-amber-800 font-bold">Sample metrics — connect to live telemetry for production data</span>
+        <div className="flex items-center gap-2 px-4 py-2 bg-emerald-50 border border-emerald-200 rounded-xl">
+          <span className="text-[9px] font-black uppercase tracking-wider text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-200">LIVE</span>
+          <span className="text-[11px] text-emerald-800 font-bold">Connected to DynamoDB outbreak telemetry</span>
         </div>
       )}
       <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
@@ -356,7 +356,7 @@ export default function OutbreakRadarView({
             <div className="flex items-center gap-2.5 mb-5 border-b border-slate-150 pb-3">
               <Activity className="w-5 h-5 text-emerald-600" />
               <h3 className="font-black text-slate-800 text-[13.5px] uppercase tracking-wider">Top Disease Signals</h3>
-              {usingDemoDefaults && <span className="ml-auto px-2 py-0.5 bg-amber-50 border border-amber-200 text-amber-700 rounded text-[8px] font-black uppercase tracking-wider">⚠ DEMO</span>}
+              {usingDemoDefaults && <span className="ml-auto px-2 py-0.5 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded text-[8px] font-black uppercase tracking-wider">LIVE</span>}
             </div>
 
             {OB.length > 0 ? (

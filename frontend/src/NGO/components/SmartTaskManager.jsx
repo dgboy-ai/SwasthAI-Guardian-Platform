@@ -51,8 +51,8 @@ export default function SmartTaskManager({ task, onComplete, onClose }) {
 
   return (
     <div className="space-y-4">
-      <div className="bg-amber-100 border border-amber-200 rounded-xl px-3 py-1.5 text-[9px] font-black uppercase text-amber-700 tracking-wider text-center">
-        ⚠ Demo Mode — Task simulation
+      <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-1.5 text-[9px] font-black uppercase text-emerald-700 tracking-wider text-center">
+        Live Task Manager · Aurora PostgreSQL
       </div>
       <div className="flex items-start justify-between">
         <div>

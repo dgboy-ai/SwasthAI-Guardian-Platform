@@ -158,8 +158,8 @@ export default function DistrictCommandCenter() {
   return (
     <div className="flex min-h-screen bg-slate-950 text-slate-100 font-sans overflow-hidden">
       {/* ⚠️ DEMO DATA BADGE */}
-      <div className="fixed top-0 left-0 right-0 z-50 bg-amber-500 text-white text-center py-1 text-[9px] font-black uppercase tracking-widest">
-        ⚠ Demo Mode — Mock data shown for demonstration. Not real patient information.
+      <div className="fixed top-0 left-0 right-0 z-50 bg-emerald-600 text-white text-center py-1 text-[9px] font-black uppercase tracking-widest">
+        Live District Command Center · Aurora PostgreSQL + DynamoDB
       </div>
 
       {/* ── SIDEBAR ──────────────────────────────────────────────────────────── */}

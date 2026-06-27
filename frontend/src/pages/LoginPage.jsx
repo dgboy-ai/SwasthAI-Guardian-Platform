@@ -487,7 +487,7 @@ export default function LoginPage() {
             <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl space-y-2">
               <div className="flex items-center justify-between flex-wrap gap-1">
                 <p className="text-[9px] font-black uppercase tracking-widest text-emerald-700 flex items-center gap-1.5">
-                  <Zap className="w-3 h-3" /> Demo Mode - Click to Fill
+                  <Zap className="w-3 h-3" /> Quick Fill Credentials
                 </p>
                 <span className="px-1.5 py-0.5 bg-amber-100 border border-amber-200 text-amber-800 text-[7px] font-black uppercase tracking-wider rounded-md">
                   📶 Works Offline!

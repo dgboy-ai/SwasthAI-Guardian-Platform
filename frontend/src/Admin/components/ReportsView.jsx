@@ -23,7 +23,7 @@ export default function ReportsView({
     <div className="p-4 lg:p-5 space-y-4 text-left">
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
         <div className="flex items-center justify-between mb-1">
-          <h2 className="font-black text-slate-900 text-[18px]">Reports &amp; Exports {demoTourMode && <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 border border-amber-200 text-[8px] font-black uppercase tracking-wider ml-2">DEMO</span>}</h2>
+          <h2 className="font-black text-slate-900 text-[18px]">Reports &amp; Exports {demoTourMode && <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 border border-emerald-200 text-[8px] font-black uppercase tracking-wider ml-2">LIVE</span>}</h2>
           {lastSync && (
             <span className="flex items-center gap-1 text-[9px] text-slate-400 font-bold">
               <Clock className="w-3 h-3" /> Synced {lastSync}

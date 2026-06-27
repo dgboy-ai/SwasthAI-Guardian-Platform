@@ -922,8 +922,8 @@ export default function AdminDashboard() {
               transition={{ duration: 0.25 }}
               className="bg-amber-500 text-white px-6 py-2 flex items-center justify-between shrink-0 border-b border-amber-600 shadow-md z-30 overflow-hidden">
             <div className="flex items-center gap-2">
-              <span className="text-[9px] font-black uppercase tracking-widest bg-amber-800 px-2 py-0.5 rounded border border-amber-400">⚠ Demo Mode</span>
-              <span className="text-xs font-bold">Showing sample demo data — not real patient information</span>
+              <span className="text-[9px] font-black uppercase tracking-widest bg-amber-800 px-2 py-0.5 rounded border border-amber-400">DEMO</span>
+              <span className="text-xs font-bold">Seeded sample data — toggle off to view live Aurora data</span>
             </div>
             <button
               onClick={() => setDemoTourMode(false)}

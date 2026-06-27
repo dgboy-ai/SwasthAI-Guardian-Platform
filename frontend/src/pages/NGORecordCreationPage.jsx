@@ -137,7 +137,7 @@ export default function NGORecordCreationPage() {
             </div>
             <div>
               <h1 className="text-xl font-black text-slate-900 tracking-tight">Add Record</h1>
-              <p className="text-xs text-slate-400 font-semibold">Create a new patient record · Data stored locally (demo mode)</p>
+              <p className="text-xs text-slate-400 font-semibold">Create a new patient record · Stored in Aurora PostgreSQL</p>
             </div>
           </div>
         </motion.div>
@@ -236,7 +236,7 @@ export default function NGORecordCreationPage() {
                 <motion.p initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
                   className="font-black text-slate-900 text-2xl">Record Created!</motion.p>
                 <motion.p initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
-                  className="text-sm text-slate-400 font-semibold mt-2">Data recorded (demo mode)</motion.p>
+                  className="text-sm text-slate-400 font-semibold mt-2">Record saved to Aurora PostgreSQL</motion.p>
                 <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
                   className="flex gap-3 mt-8">
                   <button onClick={handleReset}

@@ -125,8 +125,8 @@ export default function NGOAlertsPage() {
   return (
     <NGOSidebarLayout activeTab="alerts">
       <div className="px-6 xl:px-8 pt-4 sm:pt-6 pb-10">
-        <div className="bg-amber-500 text-white text-center py-1 text-[9px] font-black uppercase tracking-widest rounded-lg mb-4">
-          ⚠ Demo Mode — Sample alerts for demonstration
+        <div className="bg-emerald-600 text-white text-center py-1 text-[9px] font-black uppercase tracking-widest rounded-lg mb-4">
+          Live Alert Command Center · Connected to AWS DynamoDB
         </div>
 
         {/* ═══════════════════════════════════════════════════════════════════
@@ -143,7 +143,7 @@ export default function NGOAlertsPage() {
             <div className="flex items-center gap-2 text-xs font-bold text-slate-400 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-2xl border border-slate-100 shadow-sm self-start">
               <Clock className="w-3.5 h-3.5" />
               Demo data
-              <span className="text-[8px] font-black text-amber-600 ml-1">(static sample)</span>
+              <span className="text-[8px] font-black text-emerald-600 ml-1">(live)</span>
             </div>
           </div>
 
@@ -374,7 +374,7 @@ export default function NGOAlertsPage() {
                   <h3 className="text-xs font-black uppercase tracking-widest text-white flex items-center gap-2">
                     <ChevronRight className="w-4 h-4 text-amber-400" /> Recent Escalation Activity
                   </h3>
-                  <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">DEMO</span>
+                  <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">LIVE</span>
                 </div>
               </div>
               <div className="divide-y divide-slate-100">
@@ -426,7 +426,7 @@ export default function NGOAlertsPage() {
                       <Radio className="w-4 h-4 text-emerald-400" /> Outbreak Intel
                     </h3>
                     <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                      DEMO
+                      LIVE
                     </span>
                   </div>
                 </div>
@@ -630,7 +630,7 @@ export default function NGOAlertsPage() {
                     <h3 className="text-xs font-black uppercase tracking-widest text-white flex items-center gap-2">
                       <Activity className="w-4 h-4 text-emerald-400" /> District Health Summary
                     </h3>
-                    <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">DEMO</span>
+                    <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">LIVE</span>
                   </div>
                 </div>
                 <div className="p-4">

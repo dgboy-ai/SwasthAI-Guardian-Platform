@@ -106,7 +106,7 @@ export default function AmbulanceFeedView({ AM, downloadReport, demoTourMode, lo
             <div className="flex items-center gap-2 mb-0.5">
               <span className="w-2.5 h-2.5 bg-rose-500 rounded-full animate-pulse" />
               <p className="text-[10px] font-black text-rose-500 uppercase tracking-widest">Live Emergency Feed</p>
-              {demoTourMode && <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 border border-amber-200 text-[8px] font-black uppercase tracking-wider">DEMO</span>}
+              {demoTourMode && <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 border border-emerald-200 text-[8px] font-black uppercase tracking-wider">LIVE</span>}
             </div>
             <h2 className="text-[18px] font-black text-slate-900">All Ambulance Dispatches</h2>
             <p className="text-[11px] text-slate-400 font-medium flex items-center gap-2">

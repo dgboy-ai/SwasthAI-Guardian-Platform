@@ -140,7 +140,7 @@ export default function VoiceAssistantFAB({ onVoiceResult }) {
                   <Mic className="w-4.5 h-4.5 text-[#059669]" />
                   Voice Assistant
                 </h3>
-                <span className="text-[8px] font-black px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">DEMO</span>
+                <span className="text-[8px] font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">MULTILINGUAL</span>
                 <button onClick={() => { setIsOpen(false); stopListening(); setShowDemo(false); setDemoResponse(''); }} className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-400">
                   <X className="w-4.5 h-4.5" />
                 </button>

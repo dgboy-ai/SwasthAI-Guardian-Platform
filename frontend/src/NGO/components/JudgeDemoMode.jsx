@@ -93,8 +93,8 @@ export default function JudgeDemoMode({ onSimulate, lastScenario, isSimulating }
             <Activity className="w-4.5 h-4.5 text-white" />
           </div>
           <div>
-            <h3 className="text-sm font-black text-white">Evaluation Demo Mode</h3>
-            <p className="text-[10px] text-slate-400 font-semibold">Evaluation and demo simulation — click any scenario</p>
+            <h3 className="text-sm font-black text-white">Evaluation Scenarios</h3>
+            <p className="text-[10px] text-slate-400 font-semibold">Click any scenario to simulate real-world events</p>
           </div>
         </div>
         <div className="flex items-center gap-2">

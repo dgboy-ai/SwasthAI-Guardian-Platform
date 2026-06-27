@@ -35,6 +35,7 @@ const MonitoringDashboard    = lazy(() => import('./pages/MonitoringDashboard'))
 const NGOAlertsPage          = lazy(() => import('./pages/NGOAlertsPage'));
 const NGOPatientRegistryPage = lazy(() => import('./pages/NGOPatientRegistryPage'));
 const NGORecordCreationPage  = lazy(() => import('./pages/NGORecordCreationPage'));
+const SystemVerificationPage = lazy(() => import('./pages/SystemVerificationPage'));
 
 // Components
 import Footer from './components/Footer';
@@ -257,6 +258,11 @@ export default function App() {
                     <LayoutWrapper><ErrorBoundary><MonitoringDashboard /></ErrorBoundary></LayoutWrapper>
                   </DesktopOnlyWrapper>
                 </ProtectedRoute>
+              } />
+              <Route path="/verify" element={
+                <ErrorBoundary>
+                  <SystemVerificationPage />
+                </ErrorBoundary>
               } />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>

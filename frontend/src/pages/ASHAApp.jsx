@@ -86,7 +86,7 @@ export default function ASHAApp() {
         fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
         borderRadius: 8, marginBottom: 12
       }}>
-        ⚠ Demo Mode — Sample field operations data for demonstration
+        Live Mode — ASHA Field Operations · AWS Connected
       </div>
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',

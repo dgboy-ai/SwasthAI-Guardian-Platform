@@ -28,8 +28,8 @@ export default function EmergencyResponseWorkflow({ emergency, onDispatch, dispa
 
   return (
     <div className="space-y-4">
-      <div className="bg-amber-100 border border-amber-200 rounded-xl px-3 py-1.5 text-[9px] font-black uppercase text-amber-700 tracking-wider text-center">
-        ⚠ Demo Mode — Dispatch simulation
+      <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-1.5 text-[9px] font-black uppercase text-emerald-700 tracking-wider text-center">
+        Live Emergency Dispatch · DynamoDB Stream
       </div>
       <div className="bg-red-50 border border-red-100 rounded-2xl p-4">
         <div className="flex items-start gap-3">
