@@ -273,6 +273,13 @@ router.post('/seed-hackathon', async (req, res) => {
     }
     results.aurora.users = users.length;
 
+    // ── Clear old hackathon seed data to prevent duplicates ──
+    await db.run('DELETE FROM pregnancy_data WHERE name IN (?,?,?,?,?,?)', ['Sunita Devi','Rani Kumari','Pooja Gupta','Meena Kumari','Lata Devi','Aarti Sen']);
+    await db.run('DELETE FROM symptoms WHERE model_used = ?', ['SymptomNet-DL']);
+    await db.run('DELETE FROM referrals WHERE patient_name IN (?,?,?,?,?)', ['Sunita Devi','Raju Kumar','Lata Devi','Karan Singh','Geeta Devi']);
+    await db.run("DELETE FROM ambulance_requests WHERE name IN (?,?,?) AND request_type = 'ambulance'", ['Ram Singh','Lata Devi','Geeta Devi']);
+    await db.run('DELETE FROM vaccination_records WHERE child_name IN (?,?,?,?)', ['Raju Kumar','Priya Singh','Amit Kumar','Sita Devi']);
+
     // ── Aurora: Pregnancies ──
     const pregnancies = [
       { name: 'Sunita Devi', age: 26, tri: 3, village: 'V101', risk: 'High', sbp: 145, dbp: 95, hr: 88 },
@@ -767,6 +774,13 @@ router.post('/outbreak-alert', async (req, res) => {
       console.warn(`[OUTBREAK] Aurora sync skipped: ${auroraSyncErr.message}`);
     }
 
+    try {
+      await dynamoHelper.updateNodeState(villageId, 'outbreak', timestamp, 0);
+      console.log(`[OUTBREAK] ✅ Updated DynamoDB node state for village ${villageId} to outbreak`);
+    } catch (nodeStateErr) {
+      console.error(`[OUTBREAK] Failed to update DynamoDB node state: ${nodeStateErr.message}`);
+    }
+
     if (typeof req.app.locals.broadcastToAdmins === 'function') {
       req.app.locals.broadcastToAdmins('outbreak', {
         villageId,
@@ -836,6 +850,13 @@ router.post('/outbreak', auth, checkRole(['admin']), logAudit('simulate', 'outbr
       );
     } catch (auroraSyncErr) {
       console.warn(`[OUTBREAK] Aurora sync skipped: ${auroraSyncErr.message}`);
+    }
+
+    try {
+      await dynamoHelper.updateNodeState(resolvedVillageId, 'outbreak', timestamp, 0);
+      console.log(`[OUTBREAK SIMULATOR] ✅ Updated DynamoDB node state for village ${resolvedVillageId} to outbreak`);
+    } catch (nodeStateErr) {
+      console.error(`[OUTBREAK SIMULATOR] Failed to update DynamoDB node state: ${nodeStateErr.message}`);
     }
 
     if (typeof req.app.locals.broadcastToAdmins === 'function') {

@@ -552,7 +552,7 @@ export default function MaternalHealthPage() {
                   (v.bs >= 11.1 ? 5 : v.bs >= 8.5 ? 3 : v.bs >= 5.1 ? 1 : 0) +
                   ((r.age || 25) < 16 || (r.age || 25) > 40 ? 3 : (r.age || 25) < 18 || (r.age || 25) > 35 ? 2 : 0) +
                   (v.heart_rate > 120 ? 3 : v.heart_rate > 110 ? 2 : v.heart_rate > 100 ? 1 : 0)) * 6.25
-                )) : r.riskLevel === 'High Risk' ? 82 : r.riskLevel === 'Medium Risk' ? 45 : 12;
+                )) : r.riskLevel === 'High' ? 82 : r.riskLevel === 'Medium' ? 45 : 12;
                 const meterColor = riskScore >= 70 ? 'bg-rose-500' : riskScore >= 40 ? 'bg-amber-500' : 'bg-emerald-500';
                 const meterLabel = riskScore >= 70 ? 'Critical' : riskScore >= 40 ? 'Moderate' : 'Safe';
 
