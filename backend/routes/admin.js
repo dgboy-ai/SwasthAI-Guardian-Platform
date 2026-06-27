@@ -248,8 +248,8 @@ router.post('/seed-hackathon', async (req, res) => {
     for (const v of villages) {
       await db.run(
         `INSERT INTO village_health ("villageId", name, population, "districtId", lat, lng, "lastUpdated")
-         VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
-         ON CONFLICT("villageId") DO UPDATE SET name=EXCLUDED.name, population=EXCLUDED.population, "districtId"=EXCLUDED."districtId", lat=EXCLUDED.lat, lng=EXCLUDED.lng, "lastUpdated"=datetime('now')`,
+         VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+         ON CONFLICT("villageId") DO UPDATE SET name=EXCLUDED.name, population=EXCLUDED.population, "districtId"=EXCLUDED."districtId", lat=EXCLUDED.lat, lng=EXCLUDED.lng, "lastUpdated"=CURRENT_TIMESTAMP`,
         [v.id, v.name, v.pop, v.district, v.lat, v.lng]
       );
     }
