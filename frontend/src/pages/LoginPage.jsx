@@ -85,6 +85,7 @@ export default function LoginPage() {
   const [formData, setFormData] = useState({ identifier: '', password: '', otp: '', role: 'villager' });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [submitted, setSubmitted] = useState(false);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [usedOfflineFallback, setUsedOfflineFallback] = useState(false);
 
@@ -108,12 +109,14 @@ export default function LoginPage() {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
     setError('');
+    setSubmitted(false);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
+    setSubmitted(true);
     const credential = loginMethod === 'password' ? formData.password : formData.otp;
     if (!formData.identifier || !credential) {
       setError('Please fill in all required fields.');
@@ -358,9 +361,9 @@ export default function LoginPage() {
             )}
           </AnimatePresence>
  
-          {/* Error */}
+          {/* Error — only show after form submission */}
           <AnimatePresence>
-            {error && (
+            {error && submitted && (
               <motion.div
                 initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
                 className="mb-4 p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl flex items-center gap-2 text-xs font-bold"
@@ -506,6 +509,7 @@ export default function LoginPage() {
                       setFormData({ identifier: d.id, password: d.pass, otp: '', role: d.roleId });
                       setIsLoading(true);
                       setError('');
+                      setSubmitted(true);
                       try {
                         await loginPassword(d.id, d.pass, d.roleId);
                         navigate(`/${d.roleId}`);
