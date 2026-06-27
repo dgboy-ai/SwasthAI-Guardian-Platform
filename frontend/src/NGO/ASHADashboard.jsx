@@ -688,7 +688,7 @@ export default function ASHADashboard() {
             </div>
             <div className="text-left min-w-0">
               <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">ASHA Worker</p>
-              <p className="text-sm font-black text-slate-900 leading-tight mt-0.5 truncate">Sunita Devi</p>
+              <p className="text-sm font-black text-slate-900 leading-tight mt-0.5 truncate">{user?.name || 'Sunita Devi'}</p>
             </div>
           </div>
 
@@ -878,7 +878,7 @@ export default function ASHADashboard() {
               <span className="px-1.5 py-0.5 text-[9px] font-semibold bg-amber-50 text-amber-700 rounded-full">4 Priorities</span>
             </div>
             <button onClick={() => navigate('/asha/priority')} className="text-[10px] font-semibold text-emerald-600 hover:text-emerald-700 transition-colors">
-              Manage Priorities &rarr;
+              Manage Priorities →
             </button>
           </div>
 

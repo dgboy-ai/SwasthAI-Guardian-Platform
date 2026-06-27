@@ -3,9 +3,9 @@ import { motion } from 'framer-motion';
 import {
   Heart, Baby, Radio, Truck, WifiOff, Activity,
   BrainCircuit, AlertTriangle, TrendingUp, Users,
-  Zap, Shield, Database, ArrowRight, ChevronRight,
-  Package, FileText, MapPin, CheckCircle, Clock,
-  Bell, Building2, BarChart3, Home, ClipboardList,
+  Zap, Shield,   ArrowRight, ChevronRight,
+  Package, FileText, MapPin, Clock,
+  Building2, BarChart3, Home, ClipboardList,
   Globe, Timer, Gem, Cloud
 } from 'lucide-react';
 import ProductionEvidencePanel from './ProductionEvidencePanel';
@@ -77,12 +77,6 @@ export default function CommandCenterView({
         </div>
       </div>
 
-      <div className="flex items-center justify-end">
-        <span className="flex items-center gap-1.5 text-[9px] font-bold text-slate-400">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          Synced {lastSync}
-        </span>
-      </div>
       <ProductionEvidencePanel
         systemStatus={systemStatus}
         dynamoFeed={dynamoFeed}
@@ -150,7 +144,7 @@ export default function CommandCenterView({
           </div>
           <div>
             <p className="font-black text-white text-base tracking-wide uppercase leading-tight">Quantified Impact Dashboard</p>
-            <p className="text-[11px] text-emerald-300 font-bold uppercase tracking-wider mt-0.5">Social Return on Investment &amp; Lives Saved</p>
+            <p className="text-[11px] text-emerald-300 font-bold uppercase tracking-wider mt-0.5">Social Return on Investment & Lives Saved</p>
           </div>
           <span className="px-3 py-1 bg-white/10 text-emerald-300 border border-white/15 rounded-full text-[10px] font-black tracking-wider uppercase sm:ml-auto">
             WHO Benchmark Ratios
@@ -455,7 +449,7 @@ export default function CommandCenterView({
           <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-5">
             <div className="flex items-center gap-2 mb-4 border-b border-slate-50 pb-2.5">
               <Users className="w-4.5 h-4.5 text-emerald-600" />
-              <p className="font-black text-slate-900 text-sm sm:text-base uppercase tracking-wider">Platform Scale &amp; Reach</p>
+              <p className="font-black text-slate-900 text-sm sm:text-base uppercase tracking-wider">Platform Scale & Reach</p>
             </div>
             <motion.div
               initial="hidden"
@@ -519,7 +513,7 @@ export default function CommandCenterView({
           <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-5">
             <div className="flex items-center gap-2 mb-4 border-b border-slate-50 pb-2.5">
               <Activity className="w-4.5 h-4.5 text-emerald-600" />
-              <p className="font-black text-slate-900 text-sm sm:text-base uppercase tracking-wider">Core Engines &amp; Demo Toolkit</p>
+              <p className="font-black text-slate-900 text-sm sm:text-base uppercase tracking-wider">Core Engines & Demo Toolkit</p>
             </div>
             <div className="space-y-2.5">
               {[
@@ -551,7 +545,7 @@ export default function CommandCenterView({
       <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-5">
         <div className="flex items-center gap-2 mb-4 border-b border-slate-50 pb-3">
           <BrainCircuit className="w-5 h-5 text-emerald-600" />
-          <p className="font-black text-slate-900 text-sm uppercase tracking-wider">Decision Support &amp; Recommendations</p>
+          <p className="font-black text-slate-900 text-sm uppercase tracking-wider">Decision Support & Recommendations</p>
           <span className="ml-auto text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
             {[0,1,2,3].filter(i => i < (recs?.length || 0)).length} Active
           </span>
