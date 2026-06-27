@@ -12,8 +12,11 @@ import {
 } from 'lucide-react';
 import adminService from '../services/adminService';
 import api from '../services/api';
+import { AnimatePresence, motion } from 'framer-motion';
+import DbBadge from './components/DbBadge';
+import useProvenance from './components/useProvenance';
 import { VERSION, COPYRIGHT_YEAR } from '../constants/version';
-import { Building2 } from 'lucide-react';
+import { Database, Building2, GitCompareArrows } from 'lucide-react';
 
 import CommandCenterView from './components/CommandCenterView';
 import OutbreakRadarView from './components/OutbreakRadarView';
@@ -26,6 +29,10 @@ import MaternalNutritionView from './components/MaternalNutritionView';
 import PredictiveRiskView from './components/PredictiveRiskView';
 import TenantOverview from './components/TenantOverview';
 import ApiKeysView from './components/ApiKeysView';
+import DatabaseArchitectureView from './components/DatabaseArchitectureView';
+import DataPipelineView from './components/DataPipelineView';
+import B2BUsageDashboard from './components/B2BUsageDashboard';
+import ErrorBoundary from './components/ErrorBoundary';
 import { stackStatusMeta, timeAgo } from './components/utils';
 
 /* ─── Sidebar nav ─────────────────────────────────────────────────────────── */
@@ -41,7 +48,10 @@ const NAV_ITEMS = [
   { id: 'reports', label: 'Reports', icon: BarChart3 },
   { id: 'system', label: 'System Status', icon: Settings },
   { id: 'tenants', label: 'Tenants', icon: Building2 },
+  { id: 'b2b-usage', label: 'B2B Usage', icon: BarChart3 },
   { id: 'api-keys', label: 'API Keys', icon: Key },
+  { id: 'database', label: 'DB Architecture', icon: Database },
+  { id: 'pipeline', label: 'Data Pipeline', icon: GitCompareArrows },
 ];
 
 export default function AdminDashboard() {
@@ -58,6 +68,8 @@ export default function AdminDashboard() {
   const [demoTourMode, setDemoTourMode] = useState(false);
   const [demoData, setDemoData] = useState(null);
   const [showNotifications, setShowNotifications] = useState(false);
+  const notificationRef = useRef(null);
+  const [telemetryOnline, setTelemetryOnline] = useState(true);
   const [alertError, setAlertError] = useState(null);
   const [stats, setStats] = useState(null);      // null = not yet loaded
   const [summary, setSummary] = useState(null);
@@ -73,15 +85,28 @@ export default function AdminDashboard() {
   const [ashaPerformance, setAshaPerformance] = useState([]);
   const [districtConfig, setDistrictConfig] = useState(null);
   const [alertSent, setAlertSent] = useState(false);
-  const [lastSync, setLastSync] = useState('Just now');
+  const [lastSync, setLastSync] = useState(null);
   const [auditLogs, setAuditLogs] = useState([]);
   const [simulatingOutbreak, setSimulatingOutbreak] = useState(false);
   const [liveAmbulanceLocations, setLiveAmbulanceLocations] = useState({});
   const [lastAgentScan, setLastAgentScan] = useState(null);
   const [dlqAlerts, setDlqAlerts] = useState([]);
-  const [activeDistrict, setActiveDistrict] = useState(() => localStorage.getItem('admin_district') || 'Sehore');
-  const DISTRICTS = ['Sehore', 'Bhopal', 'Indore', 'Varanasi', 'Pune'];
+  const DISTRICTS = ['Varanasi', 'Lucknow', 'Sehore', 'Bhopal', 'Indore', 'Pune'];
+  const [activeDistrict, setActiveDistrict] = useState(() => localStorage.getItem('admin_district') || 'Varanasi');
   const lastSyncRef = useRef(Date.now());
+  const provenance = useProvenance();
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (notificationRef.current && !notificationRef.current.contains(e.target)) {
+        setShowNotifications(false);
+      }
+    };
+    if (showNotifications) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showNotifications]);
 
   useEffect(() => {
     const unsubscribe = subscribeTelemetry((data) => {
@@ -97,6 +122,13 @@ export default function AdminDashboard() {
             [data.requestId]: data
           };
         });
+      }
+    }, (online) => {
+      setTelemetryOnline(online);
+      if (!online) {
+        showToast('Live connection lost. Retrying...', 'error');
+      } else {
+        showToast('Live connection restored', 'info');
       }
     });
     return () => unsubscribe();
@@ -189,17 +221,18 @@ export default function AdminDashboard() {
         // Recover from demo mode if API succeeds after a previous failure
         setDemoTourMode(false);
       } catch (e) {
-        console.debug('Admin analytics offline — using demo data:', e.message);
-        setDemoTourMode(true);
+        console.debug('Admin analytics offline:', e.message);
       }
     };
+    let ambLoadedOnce = false;
+    let obLoadedOnce = false;
     const loadAmb = async () => {
-      try { const r = await api.get(`/admin/ambulances?districtId=${activeDistrict}`); setAmbulances(r.data || []); }
-      catch { }
+      try { const r = await api.get(`/admin/ambulances?districtId=${activeDistrict}`); setAmbulances(r.data || []); ambLoadedOnce = true; }
+      catch { if (!ambLoadedOnce) setAmbulances([]); ambLoadedOnce = true; }
     };
     const loadOut = async () => {
-      try { const r = await api.get(`/admin/outbreaks?districtId=${activeDistrict}`); setOutbreaks(r.data.outbreaks || []); }
-      catch { }
+      try { const r = await api.get(`/admin/outbreaks?districtId=${activeDistrict}`); setOutbreaks(r.data.outbreaks || []); obLoadedOnce = true; }
+      catch { if (!obLoadedOnce) setOutbreaks([]); obLoadedOnce = true; }
     };
     const loadAgentScan = async () => {
       try {
@@ -221,16 +254,8 @@ export default function AdminDashboard() {
       try {
         const [status, feed, audit] = await Promise.all([
           adminService.getSystemStatus().catch(err => {
-            console.debug('System status API failed — backend unreachable:', err);
-            return {
-              production_ready: false,
-              databases: {
-                aurora_postgresql: { status: 'unreachable', engine: 'N/A', region: 'N/A' },
-                dynamodb: { status: 'unreachable', region: 'N/A', billing: 'N/A' }
-              },
-              ai_service: null,
-              realtime: { sse_clients_connected: 0 }
-            };
+            console.debug('System status API failed:', err);
+            throw err;
           }),
           adminService.getDynamoFeed().catch(() => null),
           adminService.getAuditLogs().catch(() => ({ logs: [] })),
@@ -358,12 +383,14 @@ export default function AdminDashboard() {
     };
   }, []);
 
-  const S = (demoTourMode && demoData ? demoData.DEMO_STATS : stats) || { pregnancies: 0, malnutrition: 0, villages: 0, today_symptoms: 0 };
-  const SM = (demoTourMode && demoData ? demoData.DEMO_SUMMARY : summary) || { totalUsers: 0, totalNgos: 0, emergencyCount: 0, sanitaryCount: 0, totalRequests: 0 };
+  const S = (demoTourMode && demoData ? demoData.DEMO_STATS : stats) || null;
+  const SM = (demoTourMode && demoData ? demoData.DEMO_SUMMARY : summary) || null;
   const OB = (demoTourMode && demoData ? demoData.DEMO_OUTBREAKS : outbreaks) || [];
   const AM = (demoTourMode && demoData ? demoData.DEMO_AMBULANCES : ambulances) || [];
+  const loadingOB = !demoTourMode && outbreaks === null;
+  const loadingAM = !demoTourMode && ambulances === null;
 
-  const isShowingDemoData = demoTourMode || (!stats && !summary);
+  const isShowingDemoData = demoTourMode && demoData;
 
   const getLiveReport = () => {
     if (!districtReport) return null;
@@ -376,6 +403,8 @@ export default function AdminDashboard() {
   };
 
   const getChartData = () => {
+    if (!OB?.length && !AM?.length) return [];
+
     const days = [];
     const symptomCounts = [0, 0, 0, 0, 0, 0, 0];
     const emergencyCounts = [0, 0, 0, 0, 0, 0, 0];
@@ -443,9 +472,9 @@ export default function AdminDashboard() {
     setSimulatingOutbreak(true);
     try {
       const diseases = [
-        { disease: 'Cholera Outbreak Cluster', pattern: '8 cases of severe watery diarrhea and dehydration', villageId: 'VILLAGE_047', action: 'Deploy oral rehydration salts (ORS), chlorinate wells, and dispatch mobile health unit.' },
-        { disease: 'Dengue Outbreak Risk', pattern: '5 cases of high fever with severe joint pain and rashes', villageId: 'VILLAGE_012', action: 'Initiate vector control/fogging, distribute mosquito nets, and alert local clinics.' },
-        { disease: 'Typhoid Signal Detected', pattern: '6 cases of prolonged high fever, abdominal pain, and headache', villageId: 'VILLAGE_009', action: 'Test drinking water sources, distribute antibiotic kits, and isolate active cases.' }
+        { disease: 'Cholera Outbreak Cluster', pattern: '8 cases of severe watery diarrhea and dehydration', villageId: 'v101', action: 'Deploy oral rehydration salts (ORS), chlorinate wells, and dispatch mobile health unit.' },
+        { disease: 'Dengue Outbreak Risk', pattern: '5 cases of high fever with severe joint pain and rashes', villageId: 'v102', action: 'Initiate vector control/fogging, distribute mosquito nets, and alert local clinics.' },
+        { disease: 'Typhoid Signal Detected', pattern: '6 cases of prolonged high fever, abdominal pain, and headache', villageId: 'v101', action: 'Test drinking water sources, distribute antibiotic kits, and isolate active cases.' }
       ];
       const selected = diseases[Math.floor(Math.random() * diseases.length)];
 
@@ -468,7 +497,7 @@ export default function AdminDashboard() {
 
   const downloadReport = async () => {
     try {
-      const response = await api.get('/admin/report', { responseType: 'blob' });
+      const response = await api.get(`/admin/report?districtId=${activeDistrict}`, { responseType: 'blob' });
       const url = window.URL.createObjectURL(new Blob([response.data]));
       triggerBlobDownload(url, 'swasthai_admin_report.csv');
     } catch (e) {
@@ -575,9 +604,10 @@ export default function AdminDashboard() {
               const active = activeView === item.id;
               return (
                 <div key={item.id} className="relative group/navitem">
-                  <button
+                  <motion.button
                     onClick={() => { setActiveView(item.id); setSidebarOpen(false); }}
                     title={sidebarCollapsed ? item.label : ''}
+                    whileTap={{ scale: 0.97 }}
                     className={`
                       w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all duration-200 min-w-0 relative
                       ${active
@@ -606,7 +636,7 @@ export default function AdminDashboard() {
                     {active && !sidebarCollapsed && (
                       <ChevronRight className="w-3.5 h-3.5 ml-auto text-white/60 shrink-0" />
                     )}
-                  </button>
+                  </motion.button>
 
                 </div>
               );
@@ -749,14 +779,14 @@ export default function AdminDashboard() {
                     <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full border-2 border-white animate-pulse" />
                   )}
                 </button>
-                {showNotifications && (
-                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl border border-slate-200 shadow-2xl z-50 p-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                  {showNotifications && (
+                  <div ref={notificationRef} className="absolute right-0 mt-2 w-80 bg-white rounded-2xl border border-slate-200 shadow-2xl z-50 p-4 animate-in fade-in slide-in-from-top-2 duration-200">
                     <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-100">
                       <div className="flex items-center gap-2">
                         <p className="font-black text-slate-900 text-xs uppercase tracking-wider">Notifications</p>
                         {OB.length > 0 && <span className="px-1.5 py-0.5 bg-rose-500 text-white text-[9px] font-black rounded-full">{OB.length}</span>}
                       </div>
-                      <button onClick={() => setShowNotifications(false)} className="text-[10px] font-bold text-slate-400 hover:text-slate-600 transition-colors">✕ Close</button>
+                      <button onClick={() => setShowNotifications(false)} className="text-[10px] font-bold text-slate-400 hover:text-slate-600 transition-colors flex items-center gap-1"><X className="w-3 h-3" /> Close</button>
                     </div>
                     {OB.length === 0 ? (
                       <div className="text-center py-6">
@@ -816,36 +846,81 @@ export default function AdminDashboard() {
               { label: 'DynamoDB', val: dynamoStripMeta.label, dot: dynamoStripMeta.dot, bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-100' },
               { label: 'AI Service', val: aiStripMeta.label, dot: aiStripMeta.dot, bg: 'bg-violet-50', text: 'text-violet-700', border: 'border-violet-100' },
               { label: 'Agent Scan', val: lastAgentScan ? timeAgo(lastAgentScan.timestamp) : 'Awaiting...', dot: lastAgentScan ? 'bg-emerald-500' : 'bg-amber-400', bg: lastAgentScan ? 'bg-emerald-50' : 'bg-amber-50', text: lastAgentScan ? 'text-emerald-700' : 'text-amber-700', border: lastAgentScan ? 'border-emerald-100' : 'border-amber-100' },
-              { label: 'Offline Villages', val: `${S.villages ?? 4}`, dot: 'bg-rose-500', bg: 'bg-rose-50', text: 'text-rose-700', border: 'border-rose-100' },
+              { label: 'Offline Villages', val: `${S?.villages || '−'}`, dot: 'bg-rose-500', bg: 'bg-rose-50', text: 'text-rose-700', border: 'border-rose-100' },
               { label: 'Pending Syncs', val: `${dynamoFeed?.village_node_state?.reduce((s, n) => s + (n.syncPendingCount || 0), 0) || 0}`, dot: 'bg-amber-500', bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-100' },
-              { label: 'Last Sync', val: lastSync, dot: 'bg-slate-400', bg: 'bg-slate-50', text: 'text-slate-600', border: 'border-slate-200' },
+              { label: 'Last Sync', val: lastSync || 'Awaiting data...', dot: lastSync ? 'bg-slate-400' : 'bg-amber-400', bg: lastSync ? 'bg-slate-50' : 'bg-amber-50', text: lastSync ? 'text-slate-600' : 'text-amber-600', border: lastSync ? 'border-slate-200' : 'border-amber-200' },
             ].map(s => (
-              <div key={s.label}
-                className={`flex items-center gap-1.5 shrink-0 px-2.5 py-1 rounded-lg border ${s.bg} ${s.border} whitespace-nowrap`}>
+              <motion.div key={s.label}
+                whileHover={{ y: -1 }}
+                className={`flex items-center gap-1.5 shrink-0 px-2.5 py-1 rounded-lg border ${s.bg} ${s.border} whitespace-nowrap cursor-default transition-shadow hover:shadow-sm`}>
                 <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${s.dot}`} />
                 <span className="text-[10px] font-bold text-slate-700">{s.label}:</span>
                 <span className={`text-[10px] font-black ${s.text}`}>{s.val}</span>
-              </div>
+              </motion.div>
             ))}
+            {/* Data provenance badges — shows which database backs the displayed data */}
+            <div className="flex items-center gap-1.5 shrink-0 px-2.5 py-1 rounded-lg border border-slate-200 bg-white/60 whitespace-nowrap">
+              <span className="text-[10px] font-bold text-slate-700">Data:</span>
+              {provenance.default && <DbBadge db={provenance.default} />}
+              {provenance.outbreak_telemetry && <DbBadge db={provenance.outbreak_telemetry} />}
+              {!provenance.default && !provenance.outbreak_telemetry && (
+                <span className="text-[9px] text-slate-400 font-semibold italic">awaiting API...</span>
+              )}
+            </div>
           </div>
         </header>
 
         {/* ⚠️ SERVICE FAILURE ALERTS */}
-        {Object.entries(serviceAlerts).map(([service, msg]) => (
-          <div key={service} className="bg-rose-500 text-white border-b border-rose-600 px-6 py-2.5 flex items-center justify-between shadow-md relative z-20 shrink-0">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5 text-white shrink-0 animate-bounce" />
-              <span className="text-[11px] font-black uppercase tracking-wider bg-rose-950 px-2 py-0.5 rounded border border-rose-700">Service Alert</span>
-              <span className="text-xs font-black uppercase tracking-widest">{service.replace('-', ' ')} down:</span>
-              <span className="text-xs font-bold">{msg}</span>
-            </div>
-            <span className="text-[10px] font-mono opacity-80">Check server logs or service health dashboard</span>
-          </div>
-        ))}
+        <AnimatePresence>
+          {Object.entries(serviceAlerts).map(([service, msg]) => (
+            <motion.div
+              key={service}
+              initial={{ opacity: 0, height: 0, y: -10 }}
+              animate={{ opacity: 1, height: 'auto', y: 0 }}
+              exit={{ opacity: 0, height: 0, y: -10 }}
+              transition={{ duration: 0.25 }}
+              className="bg-rose-500 text-white border-b border-rose-600 px-6 py-2.5 flex items-center justify-between shadow-md relative z-20 shrink-0 overflow-hidden"
+            >
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-white shrink-0 animate-bounce" />
+                <span className="text-[11px] font-black uppercase tracking-wider bg-rose-950 px-2 py-0.5 rounded border border-rose-700">Service Alert</span>
+                <span className="text-xs font-black uppercase tracking-widest">{service.replace('-', ' ')} down:</span>
+                <span className="text-xs font-bold">{msg}</span>
+              </div>
+              <span className="text-[10px] font-mono opacity-80">Check server logs or service health dashboard</span>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+
+        {/* LIVE TELEMETRY OFFLINE BANNER */}
+        <AnimatePresence>
+          {!telemetryOnline && (
+            <motion.div
+              initial={{ opacity: 0, height: 0, y: -10 }}
+              animate={{ opacity: 1, height: 'auto', y: 0 }}
+              exit={{ opacity: 0, height: 0, y: -10 }}
+              transition={{ duration: 0.25 }}
+              className="bg-amber-600 text-white border-b border-amber-700 px-6 py-2.5 flex items-center justify-between shadow-md relative z-20 shrink-0 overflow-hidden"
+            >
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-white shrink-0 animate-pulse" />
+                <span className="text-[11px] font-black uppercase tracking-wider bg-amber-800 px-2 py-0.5 rounded border border-amber-500">Connection</span>
+                <span className="text-xs font-bold uppercase">Live telemetry disconnected — retrying automatically</span>
+              </div>
+              <span className="text-[10px] font-mono opacity-80">Ambulance positions may be stale</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* DEMO DATA BANNER — shown when demo tour is active or when no real data loaded */}
-        {isShowingDemoData && (
-          <div className="bg-amber-500 text-white px-6 py-2 flex items-center justify-between shrink-0 border-b border-amber-600 shadow-md z-30">
+        <AnimatePresence>
+          {isShowingDemoData && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.25 }}
+              className="bg-amber-500 text-white px-6 py-2 flex items-center justify-between shrink-0 border-b border-amber-600 shadow-md z-30 overflow-hidden">
             <div className="flex items-center gap-2">
               <span className="text-[9px] font-black uppercase tracking-widest bg-amber-800 px-2 py-0.5 rounded border border-amber-400">⚠ Demo Mode</span>
               <span className="text-xs font-bold">Showing sample demo data — not real patient information</span>
@@ -856,11 +931,21 @@ export default function AdminDashboard() {
             >
               Show Live Data
             </button>
-          </div>
-        )}
+          </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Scrollable body */}
         <main className="flex-1 overflow-y-auto">
+          <AnimatePresence mode="wait">
+          <motion.div
+            key={activeView}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+          >
+          <ErrorBoundary key={activeView}>
           {activeView === 'command' && (
             <CommandCenterView
               systemStatus={systemStatus}
@@ -878,6 +963,7 @@ export default function AdminDashboard() {
               downloadReport={downloadReport}
               demoTourMode={demoTourMode}
               liveAmbulanceLocations={liveAmbulanceLocations}
+              lastSync={lastSync}
             />
           )}
 
@@ -892,11 +978,14 @@ export default function AdminDashboard() {
               alertError={alertError}
               downloadReport={downloadReport}
               lastAgentScan={lastAgentScan}
+              demoTourMode={demoTourMode}
+              loading={loadingOB}
+              lastSync={lastSync}
             />
           )}
 
           {activeView === 'risk-intel' && (
-            <PredictiveRiskView demoTourMode={demoTourMode} />
+            <PredictiveRiskView demoTourMode={demoTourMode} lastSync={lastSync} />
           )}
 
           {activeView === 'ambulance' && (
@@ -904,6 +993,9 @@ export default function AdminDashboard() {
               AM={AM}
               downloadReport={downloadReport}
               liveAmbulanceLocations={liveAmbulanceLocations}
+              demoTourMode={demoTourMode}
+              loading={loadingAM}
+              lastSync={lastSync}
             />
           )}
 
@@ -912,6 +1004,8 @@ export default function AdminDashboard() {
               S={S}
               dynamoFeed={dynamoFeed}
               demoTourMode={demoTourMode}
+              loading={systemLoading}
+              error={systemError}
             />
           )}
 
@@ -933,6 +1027,8 @@ export default function AdminDashboard() {
               reportLoading={reportLoading}
               REP={REP}
               PERF={PERF}
+              demoTourMode={demoTourMode}
+              lastSync={lastSync}
             />
           )}
 
@@ -944,6 +1040,8 @@ export default function AdminDashboard() {
               systemError={systemError}
               aiStatus={aiStatus}
               auditLogs={auditLogs}
+              demoTourMode={demoTourMode}
+              lastSync={lastSync}
             />
           )}
 
@@ -951,15 +1049,34 @@ export default function AdminDashboard() {
             <TenantOverview activeDistrict={activeDistrict} />
           )}
 
+          {activeView === 'b2b-usage' && (
+            <B2BUsageDashboard />
+          )}
+
           {activeView === 'api-keys' && (
             <ApiKeysView />
+          )}
+
+          {activeView === 'database' && (
+            <DatabaseArchitectureView />
+          )}
+
+          {activeView === 'pipeline' && (
+            <DataPipelineView />
           )}
 
           {['maternal', 'nutrition'].includes(activeView) && (
             <MaternalNutritionView
               activeView={activeView}
+              demoTourMode={demoTourMode}
+              lastSync={lastSync}
+              S={S}
+              SM={SM}
             />
           )}
+          </ErrorBoundary>
+          </motion.div>
+          </AnimatePresence>
         </main>
 
         {/* Footer */}

@@ -337,7 +337,7 @@ router.post('/maternal', auth, checkRole(['ngo', 'admin', 'villager']), logAudit
       }
     }
     req.log('error', 'Failed to save pregnancy data', { error: err.message });
-    res.status(500).json({ error: 'Failed to save pregnancy risk assessment' });
+    res.status(500).json({ success: false, error: { code: 'PREGNANCY_SAVE_FAILED', message: 'Failed to save pregnancy risk assessment' } });
   }
 });
 
@@ -440,7 +440,7 @@ router.post('/malnutrition', auth, checkRole(['ngo', 'admin', 'villager']), asyn
       }
     }
     req.log('error', 'Failed to save malnutrition data', { error: err.message });
-    res.status(500).json({ error: 'Failed to save malnutrition assessment' });
+    res.status(500).json({ success: false, error: { code: 'MALNUTRITION_SAVE_FAILED', message: 'Failed to save malnutrition assessment' } });
   }
 });
 
@@ -877,7 +877,7 @@ router.get('/workload', auth, checkRole(['ngo', 'admin']), async (req, res) => {
     });
   } catch (err) {
     console.error('[NGO WORKLOAD] Error:', err.message);
-    res.status(500).json({ error: 'Failed to fetch ASHA workload queue.' });
+    res.status(500).json({ success: false, error: { code: 'WORKLOAD_FETCH_FAILED', message: 'Failed to fetch ASHA workload queue.' } });
   }
 });
 
@@ -1148,7 +1148,7 @@ router.get('/impact-report', auth, checkRole(['ngo', 'admin']), logAudit('genera
     });
   } catch (err) {
     console.error('[NGO IMPACT REPORT] Error:', err.message);
-    res.status(500).json({ success: false, error: 'Failed to generate NGO impact report.' });
+    res.status(500).json({ success: false, error: { code: 'IMPACT_REPORT_FAILED', message: 'Failed to generate NGO impact report.' } });
   }
 });
 
@@ -1435,7 +1435,7 @@ router.get('/village-risk', auth, checkRole(['ngo', 'admin']), async (req, res) 
     });
   } catch (err) {
     console.error('[VILLAGE RISK INTEL] Error:', err.message);
-    res.status(500).json({ success: false, error: 'Failed to compute village risk forecast.' });
+    res.status(500).json({ success: false, error: { code: 'VILLAGE_RISK_FAILED', message: 'Failed to compute village risk forecast.' } });
   }
 });
 

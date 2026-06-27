@@ -8,4 +8,23 @@
   .glass {
     @apply bg-white bg-opacity-20 backdrop-blur-md rounded-xl shadow-xl;
   }
+  .progress-bar-shimmer {
+    background-size: 200% 100%;
+    animation: progress-shimmer 3s linear infinite;
+  }
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .animate-spin-slow {
+    animation: spin 2s linear infinite;
+  }
+}
+
+@keyframes progress-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }

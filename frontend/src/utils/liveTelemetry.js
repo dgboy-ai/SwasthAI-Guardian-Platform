@@ -7,14 +7,21 @@
 
 let ws = null;
 const listeners = new Set();
+const statusListeners = new Set();
 let reconnectTimer = null;
+let retryCount = 0;
 
 function getWsUrl() {
   const loc = window.location;
   const protocol = loc.protocol === 'https:' ? 'wss:' : 'ws:';
-  // Fallback for local development if Vite runs on 5173 but backend on 3001
   const host = loc.port === '5173' || loc.port === '5174' ? `${loc.hostname}:5000` : loc.host;
   return `${protocol}//${host}/api/telemetry`;
+}
+
+function broadcastStatus(online) {
+  statusListeners.forEach(cb => {
+    try { cb(online); } catch (e) { console.error('[WS status callback error]', e); }
+  });
 }
 
 export function connectTelemetry() {
@@ -23,11 +30,11 @@ export function connectTelemetry() {
   }
 
   const url = getWsUrl();
-  console.log(`[WS] Connecting to telemetry socket: ${url}`);
   ws = new WebSocket(url);
 
   ws.onopen = () => {
-    console.log('[WS] Connected to live telemetry gateway.');
+    retryCount = 0;
+    broadcastStatus(true);
     if (reconnectTimer) {
       clearTimeout(reconnectTimer);
       reconnectTimer = null;
@@ -50,34 +57,38 @@ export function connectTelemetry() {
   };
 
   ws.onclose = () => {
-    console.debug('[WS] Telemetry socket closed. Reconnecting in 5s...');
+    broadcastStatus(false);
     ws = null;
     if (!reconnectTimer) {
-      reconnectTimer = setTimeout(connectTelemetry, 5000);
+      const delay = Math.min(1000 * 2 ** retryCount, 30000);
+      retryCount++;
+      if (retryCount > 10) {
+        console.warn('[WS] Max reconnect attempts reached. Giving up.');
+        broadcastStatus(false);
+        return;
+      }
+      reconnectTimer = setTimeout(connectTelemetry, delay);
     }
   };
 
-  ws.onerror = (err) => {
-    console.error('[WS] Telemetry socket error:', err);
+  ws.onerror = () => {
     ws.close();
   };
 
   return ws;
 }
 
-/**
- * Subscribe to real-time telemetry updates.
- * @param {Function} callback (data) => void
- * @returns {Function} unsubscribe function
- */
-export function subscribeTelemetry(callback) {
+export function subscribeTelemetry(callback, onStatusChange) {
   listeners.add(callback);
-  
-  // Ensure connection is active
+  if (onStatusChange) {
+    statusListeners.add(onStatusChange);
+  }
   connectTelemetry();
-
   return () => {
     listeners.delete(callback);
+    if (onStatusChange) {
+      statusListeners.delete(onStatusChange);
+    }
   };
 }
 

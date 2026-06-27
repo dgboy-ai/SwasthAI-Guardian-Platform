@@ -48,7 +48,10 @@ async function resolveDistrictId(db, villageId) {
 }
 
 function requestedDistrict(req) {
-  return req.query.districtId || process.env.DISTRICT_NAME || 'district_main';
+  const raw = req.query.districtId || process.env.DISTRICT_NAME || 'Varanasi';
+  const normalized = raw.toLowerCase().replace(/-/g, '_').replace(/\s+/g, '_');
+  if (normalized.endsWith('_district')) return normalized;
+  return `${normalized}_district`;
 }
 
 export function broadcastToAdmins(eventType, data) {
@@ -128,8 +131,12 @@ export async function getAgentScans() {
 }
 
 router.get('/agent-scans', auth, checkRole(['admin', 'ngo']), async (req, res) => {
-  const scans = await getAgentScans();
-  res.json(scans);
+  try {
+    const scans = await getAgentScans();
+    res.json(scans);
+  } catch (err) {
+    sendError(res, 500, 'AGENT_SCANS_FAILED', err.message || 'Failed to fetch agent scans');
+  }
 });
 
 router.post('/agent-scan', async (req, res) => {
@@ -213,7 +220,7 @@ router.get('/rag-traces', auth, checkRole(['admin', 'ngo']), (req, res) => {
   res.send(req.app.locals.ragTraces || []);
 });
 
-router.post('/seed-demo-data', auth, checkRole(['admin']), async (req, res) => {
+router.post('/seed-demo-data', auth, checkRole(['admin']), logAudit('seed', 'demo_data'), async (req, res) => {
   const db = req.app.locals.db;
   const usingSQLite = req.app.locals.usingSQLite;
   try {
@@ -257,18 +264,31 @@ router.put('/users/:id/role', auth, checkRole(['admin']), logAudit('update_role'
 
 router.get('/analytics', auth, checkRole(['admin']), async (req, res) => {
   const db = req.app.locals.db;
+  const districtId = requestedDistrict(req);
   try {
-    const vCount = await db.get('SELECT COUNT(*) as c FROM village_health');
-    const pCount = await db.get('SELECT COUNT(*) as c FROM pregnancy_data');
-    const mCount = await db.get(`SELECT COUNT(*) as c FROM malnutrition_data WHERE status != 'Normal'`);
+    const vCount = await db.get('SELECT COUNT(*) as c FROM village_health WHERE "districtId" = ?', [districtId]);
+    const pCount = await db.get(
+      `SELECT COUNT(*) as c FROM pregnancy_data pd
+       INNER JOIN village_health vh ON pd."villageId" = vh."villageId"
+       WHERE vh."districtId" = ?`, [districtId]
+    );
+    const mCount = await db.get(
+      `SELECT COUNT(*) as c FROM malnutrition_data md
+       INNER JOIN village_health vh ON md."villageId" = vh."villageId"
+       WHERE vh."districtId" = ? AND md.status != 'Normal'`, [districtId]
+    );
     const aCount = await db.get('SELECT COUNT(*) as c FROM ambulance_requests');
     const usingSQLite = req.app.locals.usingSQLite;
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const alertRow = await db.get(
       usingSQLite
-        ? `SELECT COUNT(*) as c FROM symptoms WHERE "createdAt" >= ?`
-        : `SELECT COUNT(*) as c FROM symptoms WHERE "createdAt" >= NOW() - INTERVAL '1 day'`,
-      usingSQLite ? [oneDayAgo] : []
+        ? `SELECT COUNT(*) as c FROM symptoms s
+           INNER JOIN village_health vh ON s."villageId" = vh."villageId"
+           WHERE vh."districtId" = ? AND s."createdAt" >= ?`
+        : `SELECT COUNT(*) as c FROM symptoms s
+           INNER JOIN village_health vh ON s."villageId" = vh."villageId"
+           WHERE vh."districtId" = ? AND s."createdAt" >= NOW() - INTERVAL '1 day'`,
+      usingSQLite ? [districtId, oneDayAgo] : [districtId]
     ).catch(() => ({ c: 0 }));
 
     res.send({
@@ -283,18 +303,20 @@ router.get('/analytics', auth, checkRole(['admin']), async (req, res) => {
   }
 });
 
-// Keyset pagination on ambulance requests
+// Keyset pagination on ambulance requests (scoped by district via user → village join)
 router.get('/ambulances', auth, checkRole(['admin']), async (req, res) => {
   const db = req.app.locals.db;
+  const districtId = requestedDistrict(req);
   try {
     const limit = Math.min(parseInt(req.query.limit) || 50, 100);
     const lastId = parseInt(req.query.lastId) || null;
+    const joinFrom = 'FROM ambulance_requests ar INNER JOIN users u ON ar.user_id = u.id INNER JOIN village_health vh ON u."villageId" = vh."villageId" WHERE vh."districtId" = ?';
     
     let rows;
     if (lastId) {
-      rows = await db.all('SELECT * FROM ambulance_requests WHERE id < ? ORDER BY id DESC LIMIT ?', [lastId, limit]);
+      rows = await db.all(`SELECT ar.* ${joinFrom} AND ar.id < ? ORDER BY ar.id DESC LIMIT ?`, [districtId, lastId, limit]);
     } else {
-      rows = await db.all('SELECT * FROM ambulance_requests ORDER BY id DESC LIMIT ?', [limit]);
+      rows = await db.all(`SELECT ar.* ${joinFrom} ORDER BY ar.id DESC LIMIT ?`, [districtId, limit]);
     }
     
     res.send(rows);
@@ -381,15 +403,24 @@ router.get('/village/:id', auth, checkRole(['admin', 'ngo']), async (req, res) =
 
 router.get('/summary', auth, checkRole(['admin']), async (req, res) => {
   const db = req.app.locals.db;
+  const districtId = requestedDistrict(req);
   try {
-    const totalUsers = await db.get("SELECT COUNT(*) as c FROM users WHERE role = 'villager'");
-    const totalNgos = await db.get("SELECT COUNT(*) as c FROM users WHERE role = 'ngo'");
+    const totalUsers = await db.get(
+      `SELECT COUNT(*) as c FROM users u
+       INNER JOIN village_health vh ON u."villageId" = vh."villageId"
+       WHERE vh."districtId" = ? AND u.role = 'villager'`, [districtId]
+    );
+    const totalNgos = await db.get(
+      `SELECT COUNT(*) as c FROM users u
+       INNER JOIN village_health vh ON u."villageId" = vh."villageId"
+       WHERE vh."districtId" = ? AND u.role = 'ngo'`, [districtId]
+    );
 
     const emergencyReqs = await db.get("SELECT COUNT(*) as c FROM ambulance_requests WHERE request_type = 'ambulance'").catch(() => ({ c: 0 }));
     const padReqs = await db.get("SELECT COUNT(*) as c FROM ambulance_requests WHERE request_type = 'pad_request'").catch(() => ({ c: 0 }));
 
     res.send({
-      districtId: requestedDistrict(req),
+      districtId,
       totalUsers: totalUsers?.c || 0,
       totalNgos: totalNgos?.c || 0,
       totalRequests: (emergencyReqs?.c || 0) + (padReqs?.c || 0),
@@ -416,13 +447,22 @@ const sanitizeCsvCell = (val) => {
 
 router.get('/report', auth, checkRole(['admin']), logAudit('export_report', 'ambulance_and_pad_requests'), async (req, res) => {
   const db = req.app.locals.db;
+  const districtId = requestedDistrict(req);
   try {
-    const ambulances = await db.all('SELECT * FROM ambulance_requests ORDER BY id DESC LIMIT ?', [5000]);
+    let query = `SELECT ar.* FROM ambulance_requests ar`;
+    const params = [];
+    if (districtId) {
+      query += ` INNER JOIN users u ON ar.user_id = u.id INNER JOIN village_health vh ON u."villageId" = vh."villageId" WHERE vh."districtId" = ?`;
+      params.push(districtId);
+    }
+    query += ` ORDER BY ar.id DESC LIMIT ?`;
+    params.push(5000);
+    const ambulances = await db.all(query, params);
 
     let csv = 'Record ID,Type,Patient Name/ID,Location/Priority,Status,Date\n';
 
     ambulances.forEach(a => {
-      csv += `AMB-${sanitizeCsvCell(a.id)},${sanitizeCsvCell(a.type || 'ambulance')},"${sanitizeCsvCell(a.name || 'User ' + a.user_id)}","${sanitizeCsvCell(a.location || '')} (${sanitizeCsvCell(a.priority || '')})",${sanitizeCsvCell(a.status)},${sanitizeCsvCell(a.created_at)}\n`;
+      csv += `AMB-${sanitizeCsvCell(a.id)},${sanitizeCsvCell(a.request_type || a.type || 'ambulance')},"${sanitizeCsvCell(a.name || 'User ' + a.user_id)}","${sanitizeCsvCell(a.location || '')} (${sanitizeCsvCell(a.priority || '')})",${sanitizeCsvCell(a.status)},${sanitizeCsvCell(a.created_at)}\n`;
     });
 
     res.header('Content-Type', 'text/csv');
@@ -565,14 +605,14 @@ router.post('/outbreak-alert', async (req, res) => {
 
     console.log(`[OUTBREAK] ✅ ${disease} in ${villageId} → DynamoDB + SSE broadcast`);
     const storeType = dynamoHelper && dynamoHelper.isMock ? 'mock' : 'dynamodb';
-    res.status(201).json({ status: 'stored', store: storeType, sseClients: 0 });
+    res.status(201).json({ status: 'stored', store: storeType, sseClients: adminSseClients.size });
   } catch (err) {
     console.error('[OUTBREAK] Error:', err.message);
     sendError(res, 500, 'OUTBREAK_STORAGE_FAILED', 'Failed to store outbreak alert', err.message);
   }
 });
 
-router.post('/outbreak', auth, checkRole(['admin']), async (req, res) => {
+router.post('/outbreak', auth, checkRole(['admin']), logAudit('simulate', 'outbreak_telemetry'), async (req, res) => {
   const db = req.app.locals.db;
   const { villageId, disease, action, confidence, caseCount, symptomPattern } = req.body;
 
@@ -699,7 +739,7 @@ router.get('/disease-trends', auth, checkRole(['admin', 'ngo']), async (req, res
   }
 });
 
-router.get('/dynamo-feed', auth, async (req, res) => {
+router.get('/dynamo-feed', auth, checkRole(['admin']), async (req, res) => {
   try {
     const daysBack = parseInt(req.query.days) || 7;
     const districtId = requestedDistrict(req);
@@ -813,7 +853,7 @@ const bulkUploadSchema = z.object({
 });
 
 router.post('/village-bulk-upload',
-  auth, checkRole(['admin']),
+  auth, checkRole(['admin']), logAudit('bulk_upload', 'village_health'),
   express.text({ type: ['text/csv', 'text/plain'], limit: '1mb' }),
   async (req, res) => {
     const db         = req.app.locals.db;
@@ -1156,7 +1196,7 @@ router.get('/asha-performance', auth, checkRole(['admin']), async (req, res) => 
     res.json({ success: true, performance: performanceData });
   } catch (err) {
     console.error('[PERFORMANCE] Fetch error:', err.message);
-    res.status(500).json({ success: false, error: { code: 'PERFORMANCE_FETCH_FAILED', message: err.message } });
+    sendError(res, 500, 'PERFORMANCE_FETCH_FAILED', err.message);
   }
 });
 
@@ -1180,7 +1220,7 @@ router.get('/district-config/:id', auth, checkRole(['admin', 'ngo']), async (req
     config.enable_auto_ambulance = !!config.enable_auto_ambulance;
     res.json({ success: true, config });
   } catch (err) {
-    res.status(500).json({ success: false, error: { code: 'CONFIG_FETCH_FAILED', message: err.message } });
+    sendError(res, 500, 'CONFIG_FETCH_FAILED', err.message);
   }
 });
 
@@ -1204,7 +1244,7 @@ router.put('/district-config/:id', auth, checkRole(['admin']), logAudit('update'
 
     res.json({ success: true, message: `District configurations for ${id} updated.` });
   } catch (err) {
-    res.status(500).json({ success: false, error: { code: 'CONFIG_UPDATE_FAILED', message: err.message } });
+    sendError(res, 500, 'CONFIG_UPDATE_FAILED', err.message);
   }
 });
 
@@ -1215,13 +1255,13 @@ router.get('/audit-logs', auth, checkRole(['admin']), async (req, res) => {
   const offset = (Math.max(parseInt(req.query.page) || 1, 1) - 1) * limit;
 
   try {
-    const logs = await db.all(
-      `SELECT * FROM audit_logs ORDER BY id DESC LIMIT ? OFFSET ?`,
-      [limit, offset]
-    );
-    res.json({ success: true, logs, count: logs.length });
+    const [logs, totalRow] = await Promise.all([
+      db.all(`SELECT * FROM audit_logs ORDER BY id DESC LIMIT ? OFFSET ?`, [limit, offset]),
+      db.get(`SELECT COUNT(*) as total FROM audit_logs`)
+    ]);
+    res.json({ success: true, logs, count: totalRow?.total || 0 });
   } catch (err) {
-    res.status(500).json({ success: false, error: { code: 'AUDIT_LOGS_FETCH_FAILED', message: err.message } });
+    sendError(res, 500, 'AUDIT_LOGS_FETCH_FAILED', err.message);
   }
 });
 
@@ -1255,7 +1295,7 @@ router.get('/dlq', auth, checkRole(['admin']), (req, res) => {
     }
     return res.json({ success: true, dlq: [] });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    sendError(res, 500, 'DLQ_FETCH_FAILED', err.message);
   }
 });
 
@@ -1381,7 +1421,7 @@ router.get('/district-risk-heatmap', auth, checkRole(['admin']), async (req, res
     });
   } catch (err) {
     console.error('[DISTRICT RISK HEATMAP] Error:', err.message);
-    res.status(500).json({ success: false, error: 'Failed to compute district risk heatmap.' });
+    sendError(res, 500, 'HEATMAP_FAILED', 'Failed to compute district risk heatmap.');
   }
 });
 
@@ -1433,7 +1473,7 @@ router.get('/village-risk/:villageId', auth, checkRole(['admin']), async (req, r
     });
   } catch (err) {
     console.error('[VILLAGE RISK DETAIL] Error:', err.message);
-    res.status(500).json({ success: false, error: 'Failed to compute village risk score.' });
+    sendError(res, 500, 'VILLAGE_RISK_FAILED', 'Failed to compute village risk score.');
   }
 });
 

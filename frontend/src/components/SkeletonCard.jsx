@@ -1,5 +1,4 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 
 export default function SkeletonCard({ className = '' }) {
   return (
@@ -12,8 +11,8 @@ export default function SkeletonCard({ className = '' }) {
         <div className="h-4 bg-slate-200 rounded w-2/3" />
         
         {/* Description Placeholders */}
-        <div className="h-3 bg-slate-150 rounded w-full" />
-        <div className="h-3 bg-slate-150 rounded w-5/6" />
+        <div className="h-3 bg-slate-200 rounded w-full" />
+        <div className="h-3 bg-slate-200 rounded w-5/6" />
       </div>
 
       {/* Button / Action Placeholder */}

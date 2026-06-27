@@ -15,6 +15,7 @@ export const outbreakStatusStyle = (s = '') => {
 export const timeAgo = (iso) => {
   if (!iso) return '—';
   const mins = Math.round((Date.now() - new Date(iso)) / 60000);
+  if (Number.isNaN(mins)) return '—';
   if (mins < 1) return 'Just now';
   if (mins < 60) return `${mins} min ago`;
   return `${Math.round(mins / 60)} hr ago`;

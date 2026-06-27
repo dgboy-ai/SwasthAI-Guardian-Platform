@@ -135,7 +135,7 @@ export default function OfflineToast() {
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 80, opacity: 0 }}
           transition={{ type: 'spring', stiffness: 340, damping: 30 }}
-          className="fixed bottom-4 left-0 right-0 z-[9999] flex justify-center px-4 pointer-events-none"
+          className="fixed bottom-4 left-0 right-0 z-[9998] flex justify-center px-4 pointer-events-none"
         >
           <div className={`pointer-events-auto w-full max-w-sm rounded-[1.5rem] shadow-2xl overflow-hidden border ${
             toastType === 'offline'

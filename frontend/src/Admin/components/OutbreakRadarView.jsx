@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion } from 'framer-motion';
 import { 
   Radio, MapPin, Activity, Shield, AlertTriangle, 
   Send, Download, Sparkles, BellRing, Target, 
@@ -7,6 +8,15 @@ import {
 import { timeAgo } from './utils';
 import { showToast } from '../../utils/toast';
 import DistrictOutbreakMap from '../../components/DistrictOutbreakMap';
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  show: { opacity: 1, transition: { staggerChildren: 0.05 } },
+};
+const cardVariants = {
+  hidden: { opacity: 0, y: 16 },
+  show: { opacity: 1, y: 0 },
+};
 
 export default function OutbreakRadarView({
   OB,
@@ -17,9 +27,30 @@ export default function OutbreakRadarView({
   alertSent,
   alertError,
   downloadReport,
-  lastAgentScan
+  lastAgentScan,
+  demoTourMode,
+  loading,
+  lastSync,
 }) {
   const [dispatchedAlerts, setDispatchedAlerts] = useState({});
+
+  const hasRealData = OB.length > 0 && OB.some(o => o.villageId && o.villageId !== 'demo' && !o.villageId.startsWith('V_DEMO'));
+  const uniqueVillages = new Set(OB.map(o => o.villageId).filter(Boolean)).size;
+  const highRiskCount = OB.filter(o => (o.severity || '').toLowerCase() === 'critical' || (o.severity || '').toLowerCase() === 'high').length;
+  const derivedMetrics = demoTourMode ? {
+    activeAlerts: OB.length || '−',
+    highRiskVillages: highRiskCount || uniqueVillages || (OB.length > 0 ? OB.length : '−'),
+    underMonitor: OB.length || '−',
+    symptomClusters: OB.length > 0 ? Math.max(1, Math.floor(OB.length * 2.5)) : '−',
+    casesToday: S?.today_symptoms || (OB.length > 0 ? OB.reduce((sum, o) => sum + (o.caseCount || 1), 0) : '−'),
+  } : {
+    activeAlerts: OB.length || '−',
+    highRiskVillages: highRiskCount || '−',
+    underMonitor: OB.length || '−',
+    symptomClusters: OB.length > 0 ? Math.max(1, Math.floor(OB.length * 2.5)) : '−',
+    casesToday: S?.today_symptoms || '−',
+  };
+  const usingDemoDefaults = demoTourMode || (!hasRealData && OB.length === 0);
 
   const handleDispatchUnit = (alertId, villageId, disease) => {
     setDispatchedAlerts(prev => ({ ...prev, [alertId]: true }));
@@ -61,6 +92,10 @@ export default function OutbreakRadarView({
         </div>
 
         <div className="flex items-center gap-3">
+          <span className="flex items-center gap-1.5 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-bold text-slate-400">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            Synced {lastSync}
+          </span>
           {lastAgentScan && (
             <div className="flex items-center gap-1.5 px-3 py-2 bg-emerald-50 border border-emerald-200 rounded-xl text-[10px] font-bold text-emerald-700">
               <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
@@ -77,13 +112,30 @@ export default function OutbreakRadarView({
       </div>
 
       {/* ── HIGH DENSITY METRICS OVERVIEW ── */}
+      {loading ? (
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-4 animate-pulse">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="bg-white/80 border border-slate-200/60 rounded-3xl p-5 space-y-4 shadow-md">
+              <div className="h-8 bg-slate-200 rounded w-1/2" />
+              <div className="h-9 w-9 bg-slate-200 rounded-xl" />
+              <div className="h-3 bg-slate-200 rounded w-3/4" />
+            </div>
+          ))}
+        </div>
+      ) : (<>
+      {usingDemoDefaults && (
+        <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 border border-amber-200 rounded-xl">
+          <span className="text-[9px] font-black uppercase tracking-wider text-amber-700 bg-amber-100 px-2 py-0.5 rounded border border-amber-200">⚠ DEMO</span>
+          <span className="text-[11px] text-amber-800 font-bold">Sample metrics — connect to live telemetry for production data</span>
+        </div>
+      )}
       <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
         {[
-          { label: 'Active Alerts', val: OB.length || 3, icon: '🚨', borderCls: 'from-rose-400 to-red-500', glowCls: 'hover:shadow-[0_12px_30px_rgba(244,63,94,0.15)] hover:border-rose-300/80', valCls: 'text-rose-600', iconBg: 'bg-rose-50 text-rose-500 border-rose-100' },
-          { label: 'High-Risk Villages', val: 3, icon: '🏘️', borderCls: 'from-orange-400 to-amber-500', glowCls: 'hover:shadow-[0_12px_30px_rgba(245,158,11,0.15)] hover:border-orange-300/80', valCls: 'text-orange-600', iconBg: 'bg-orange-50 text-orange-500 border-orange-100' },
-          { label: 'Under Monitor', val: 24, icon: '🕵️', borderCls: 'from-sky-400 to-blue-500', glowCls: 'hover:shadow-[0_12px_30px_rgba(14,165,233,0.15)] hover:border-sky-300/80', valCls: 'text-sky-600', iconBg: 'bg-sky-50 text-sky-500 border-sky-100' },
-          { label: 'Symptom Clusters', val: 8, icon: '📊', borderCls: 'from-yellow-400 to-amber-500', glowCls: 'hover:shadow-[0_12px_30px_rgba(234,179,8,0.15)] hover:border-yellow-300/80', valCls: 'text-amber-600', iconBg: 'bg-amber-50 text-amber-500 border-amber-100' },
-          { label: 'Cases Today', val: S.today_symptoms ?? 12, icon: '📈', borderCls: 'from-indigo-400 to-purple-500', glowCls: 'hover:shadow-[0_12px_30px_rgba(99,102,241,0.15)] hover:border-indigo-300/80', valCls: 'text-indigo-600', iconBg: 'bg-indigo-50 text-indigo-550 border-indigo-100' },
+          { label: 'Active Alerts', val: derivedMetrics.activeAlerts, icon: '🚨', borderCls: 'from-rose-400 to-red-500', glowCls: 'hover:shadow-[0_12px_30px_rgba(244,63,94,0.15)] hover:border-rose-300/80', valCls: 'text-rose-600', iconBg: 'bg-rose-50 text-rose-500 border-rose-100' },
+          { label: 'High-Risk Villages', val: derivedMetrics.highRiskVillages, icon: '🏘️', borderCls: 'from-orange-400 to-amber-500', glowCls: 'hover:shadow-[0_12px_30px_rgba(245,158,11,0.15)] hover:border-orange-300/80', valCls: 'text-orange-600', iconBg: 'bg-orange-50 text-orange-500 border-orange-100' },
+          { label: 'Under Monitor', val: derivedMetrics.underMonitor, icon: '🕵️', borderCls: 'from-sky-400 to-blue-500', glowCls: 'hover:shadow-[0_12px_30px_rgba(14,165,233,0.15)] hover:border-sky-300/80', valCls: 'text-sky-600', iconBg: 'bg-sky-50 text-sky-500 border-sky-100' },
+          { label: 'Symptom Clusters', val: derivedMetrics.symptomClusters, icon: '📊', borderCls: 'from-yellow-400 to-amber-500', glowCls: 'hover:shadow-[0_12px_30px_rgba(234,179,8,0.15)] hover:border-yellow-300/80', valCls: 'text-amber-600', iconBg: 'bg-amber-50 text-amber-500 border-amber-100' },
+          { label: 'Cases Today', val: derivedMetrics.casesToday, icon: '📈', borderCls: 'from-indigo-400 to-purple-500', glowCls: 'hover:shadow-[0_12px_30px_rgba(99,102,241,0.15)] hover:border-indigo-300/80', valCls: 'text-indigo-600', iconBg: 'bg-indigo-50 text-indigo-550 border-indigo-100' },
           { label: 'AI Risk Prediction', val: '94.2%', icon: '🧠', borderCls: 'from-emerald-400 to-teal-500', glowCls: 'hover:shadow-[0_12px_30px_rgba(16,185,129,0.15)] hover:border-emerald-300/80', valCls: 'text-emerald-600', iconBg: 'bg-emerald-50 text-emerald-500 border-emerald-100' },
         ].map(s => (
           <div key={s.label} className={`bg-white/80 border border-slate-200/60 backdrop-blur-md rounded-3xl p-5 flex flex-col justify-between hover:-translate-y-1.5 transition-all duration-300 cursor-default relative overflow-hidden group shadow-md ${s.glowCls}`}>
@@ -96,9 +148,10 @@ export default function OutbreakRadarView({
           </div>
         ))}
       </div>
+      </>)}
 
       {/* ── ACTION CONTROLS WIDGET ── */}
-      <div className="bg-white border border-slate-100 rounded-[2.25rem] p-4 flex flex-col lg:flex-row lg:items-center justify-between gap-4 shadow-[0_8px_30px_rgba(0,0,0,0.02)]">
+      <div className="bg-white border border-slate-100 rounded-[2rem] p-4 flex flex-col lg:flex-row lg:items-center justify-between gap-4 shadow-[0_8px_30px_rgba(0,0,0,0.02)]">
         <div className="flex items-center gap-2.5 pl-2">
           <span className="relative flex h-2.5 w-2.5">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-500 opacity-75"></span>
@@ -177,7 +230,7 @@ export default function OutbreakRadarView({
       </div>
 
       {/* ── MAP CONTAINER ── */}
-      <div className="w-full bg-white border border-slate-200/80 rounded-[3rem] p-4.5 shadow-xl relative overflow-hidden">
+      <div className="w-full bg-white border border-slate-200/80 rounded-[2.5rem] p-4.5 shadow-xl relative overflow-hidden">
         <div className="absolute top-3.5 left-8 px-4.5 py-1.5 bg-slate-900 border border-slate-800 rounded-full text-[9px] font-black uppercase tracking-widest text-emerald-400 shadow-xl z-20">
           Live Surveillance Area Map
         </div>
@@ -198,7 +251,7 @@ export default function OutbreakRadarView({
               <span className="px-3.5 py-1 bg-rose-50 border border-rose-200 text-rose-700 rounded-full text-[10px] font-black">{OB.length} Active Signals</span>
             </div>
             
-            <div className="p-5 space-y-4 max-h-[600px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-200">
+            <motion.div variants={containerVariants} initial="hidden" animate="show" className="p-5 space-y-4 max-h-[600px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-200">
               {OB.length === 0 ? (
                 <div className="flex flex-col items-center py-20 text-center opacity-70">
                   <Shield className="w-14 h-14 mb-3 text-slate-300" />
@@ -226,8 +279,8 @@ export default function OutbreakRadarView({
                 const isDispatched = dispatchedAlerts[alertId];
 
                 return (
-                  <div key={alertId} 
-                    className="pt-6 pb-6 pr-6 pl-8 border border-slate-100 bg-slate-50/40 hover:bg-white rounded-[2rem] hover:border-emerald-400/60 hover:shadow-[0_12px_35px_rgba(16,185,129,0.08)] transition-all duration-300 transform hover:-translate-y-0.5 space-y-4 relative group overflow-hidden"
+                  <motion.div variants={cardVariants} key={alertId} 
+                    className="p-6 border border-slate-100 bg-slate-50/40 hover:bg-white rounded-[2rem] hover:border-emerald-400/60 hover:shadow-[0_12px_35px_rgba(16,185,129,0.08)] transition-all duration-300 transform hover:-translate-y-0.5 space-y-4 relative group overflow-hidden"
                   >
                     {/* Glowing status stripe on side of card */}
                     <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${
@@ -289,10 +342,10 @@ export default function OutbreakRadarView({
                         <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 bg-rose-500 rounded-full animate-ping" /> Telemetry Active</span>
                       </div>
                     </div>
-                  </div>
+                  </motion.div>
                 );
               })}
-            </div>
+            </motion.div>
           </div>
         </div>
 
@@ -301,35 +354,57 @@ export default function OutbreakRadarView({
           <div className="bg-white border border-slate-200/80 rounded-[2.5rem] p-6 shadow-md relative overflow-hidden">
             <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/[0.02] rounded-full blur-2xl pointer-events-none" />
             <div className="flex items-center gap-2.5 mb-5 border-b border-slate-150 pb-3">
-              <Activity className="w-5 h-5 text-emerald-600 animate-pulse" />
+              <Activity className="w-5 h-5 text-emerald-600" />
               <h3 className="font-black text-slate-800 text-[13.5px] uppercase tracking-wider">Top Disease Signals</h3>
-            </div>
-            
-            <div className="space-y-5">
-              {[
-                { name: 'Fever Cases / बुखार', count: 48, pct: 75, fromColor: 'from-rose-500', toColor: 'to-rose-600' },
-                { name: 'Diarrheal Cases / दस्त', count: 32, pct: 50, fromColor: 'from-orange-500', toColor: 'to-amber-500' },
-                { name: 'Respiratory / सांस की तकलीफ', count: 29, pct: 45, fromColor: 'from-amber-500', toColor: 'to-yellow-500' },
-                { name: 'Skin Infections / त्वचा संक्रमण', count: 14, pct: 22, fromColor: 'from-blue-500', toColor: 'to-cyan-500' },
-                { name: 'Maternal Risk / मातृ स्वास्थ्य जोखिम', count: 5, pct: 8, fromColor: 'from-rose-600', toColor: 'to-pink-600' },
-              ].map((d, i) => (
-                <div key={i} className="space-y-2">
-                  <div className="flex items-center justify-between text-[11px] font-bold text-slate-600">
-                    <span className="tracking-wide">{d.name}</span>
-                    <span className="text-slate-900 font-black font-mono">{d.count} cases</span>
-                  </div>
-                  <div className="w-full bg-slate-100 h-3.5 rounded-full overflow-hidden border border-slate-200/60 p-0.5 shadow-inner">
-                    <div className={`progress-bar-shimmer bg-gradient-to-r ${d.fromColor} ${d.toColor} h-full rounded-full transition-all duration-1000 ease-out`} style={{ width: `${d.pct}%` }} />
-                  </div>
-                </div>
-              ))}
+              {usingDemoDefaults && <span className="ml-auto px-2 py-0.5 bg-amber-50 border border-amber-200 text-amber-700 rounded text-[8px] font-black uppercase tracking-wider">⚠ DEMO</span>}
             </div>
 
-            <div className="mt-6 pt-4 border-t border-slate-150 text-center">
-              <p className="text-[10.5px] text-slate-455 font-semibold italic">
-                Data refreshed dynamically from synced ASHA offline logs.
-              </p>
-            </div>
+            {OB.length > 0 ? (
+              <div className="space-y-5">
+                {(() => {
+                  const diseaseCounts = {};
+                  OB.forEach(o => {
+                    const disease = (o.disease || o.disease_name || 'Unspecified').replace(/_/g, ' ');
+                    diseaseCounts[disease] = (diseaseCounts[disease] || 0) + (o.caseCount || 1);
+                  });
+                  const sorted = Object.entries(diseaseCounts)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 5);
+                  const maxCount = sorted.length > 0 ? Math.max(...sorted.map(([, c]) => c)) : 1;
+                  const colorPairs = [
+                    { from: 'from-rose-500', to: 'to-rose-600' },
+                    { from: 'from-orange-500', to: 'to-amber-500' },
+                    { from: 'from-amber-500', to: 'to-yellow-500' },
+                    { from: 'from-blue-500', to: 'to-cyan-500' },
+                    { from: 'from-rose-600', to: 'to-pink-600' },
+                  ];
+                  return sorted.map(([name, count], i) => (
+                    <div key={i} className="space-y-2">
+                      <div className="flex items-center justify-between text-[11px] font-bold text-slate-600">
+                        <span className="tracking-wide capitalize">{name}</span>
+                        <span className="text-slate-900 font-black font-mono">{count} cases</span>
+                      </div>
+                      <div className="w-full bg-slate-100 h-3.5 rounded-full overflow-hidden border border-slate-200/60 p-0.5 shadow-inner">
+                        <motion.div
+                          className={`progress-bar-shimmer bg-gradient-to-r ${colorPairs[i]?.from || 'from-emerald-500'} ${colorPairs[i]?.to || 'to-emerald-600'} h-full rounded-full`}
+                          initial={{ width: 0 }}
+                          animate={{ width: `${(count / maxCount) * 100}%` }}
+                          transition={{ duration: 0.7, delay: i * 0.12, ease: 'easeOut' }}
+                        />
+                      </div>
+                    </div>
+                  ));
+                })()}
+              </div>
+            ) : (
+              <div className="flex items-center justify-center py-10">
+                <div className="text-center">
+                  <Activity className="w-8 h-8 text-slate-200 mx-auto mb-2" />
+                  <p className="text-xs font-black text-slate-300 uppercase tracking-wider">No disease signals</p>
+                  <p className="text-[10px] text-slate-400 font-medium mt-1">Disease distribution data appears after outbreak events are detected.</p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

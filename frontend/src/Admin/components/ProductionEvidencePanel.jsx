@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Shield, Activity, Database, Cpu, Server, Wifi, Lock, Sparkles, ChevronDown, ChevronUp, Clock, BarChart3 } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Shield, Activity, Database, Cpu, Server, Wifi, Lock, Sparkles, ChevronDown, ChevronUp, Clock, BarChart3, AlertTriangle } from 'lucide-react';
 import { stackStatusMeta, latestDynamoWrite, timeAgo } from './utils';
 
 export default function ProductionEvidencePanel({ systemStatus, dynamoFeed, loading, error }) {
@@ -106,8 +107,16 @@ export default function ProductionEvidencePanel({ systemStatus, dynamoFeed, load
       </div>
 
       {/* ── Blueprint Insights: Why Aurora + DynamoDB? ── */}
+      <AnimatePresence>
       {showBlueprintTour && (
-        <div className="mx-6 mt-5 p-5 rounded-2xl bg-gradient-to-br from-emerald-950/40 to-slate-900 border border-emerald-500/20 text-sm text-slate-300 space-y-3">
+        <motion.div
+          key="blueprint"
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: 'auto' }}
+          exit={{ opacity: 0, height: 0 }}
+          transition={{ duration: 0.3, ease: 'easeInOut' }}
+          className="mx-6 mt-5 p-5 rounded-2xl bg-gradient-to-br from-emerald-950/40 to-slate-900 border border-emerald-500/20 text-sm text-slate-300 space-y-3 overflow-hidden"
+        >
           <div className="flex items-center gap-2 text-emerald-400 font-black uppercase tracking-wider text-xs">
             <Activity className="w-4 h-4" />
             Dual-Database Architecture: Why Aurora PostgreSQL + Amazon DynamoDB?
@@ -146,12 +155,24 @@ export default function ProductionEvidencePanel({ systemStatus, dynamoFeed, load
               <span><strong className="text-sky-300">Cost &amp; Compliance:</strong> Aurora for transactional integrity (medical consent, billing, HIPAA). DynamoDB for high-velocity telemetry (symptoms, outbreaks, sync queues, GPS). Both in <strong className="text-sky-300">ap-south-1 (Mumbai)</strong> — closest AWS region to rural Madhya Pradesh.</span>
             </p>
           </div>
-        </div>
+        </motion.div>
       )}
+      </AnimatePresence>
 
-      {error && (
-        <div className="mx-6 mt-4 p-3 rounded-xl border border-rose-800 bg-rose-950/40 text-xs font-bold text-rose-400">
-          ⚠ Stack proof temporarily unavailable: {error}
+        {error && (
+        <div className="mx-6 mt-4 p-4 rounded-xl border border-rose-800 bg-rose-950/40">
+          <div className="flex items-start justify-between gap-3">
+            <p className="text-xs font-bold text-rose-400 flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+              Stack proof temporarily unavailable: {error}
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-3 py-1.5 bg-rose-900/50 hover:bg-rose-800/50 text-rose-300 rounded-lg text-[9px] font-black uppercase tracking-wider transition-colors shrink-0 border border-rose-700/30"
+            >
+              Retry
+            </button>
+          </div>
         </div>
       )}
 
@@ -160,7 +181,7 @@ export default function ProductionEvidencePanel({ systemStatus, dynamoFeed, load
         {DB_CARDS.map(card => (
           <div
             key={card.label}
-            className={`group rounded-2xl border ${card.border} ${card.bg} p-5 transition-all duration-300 hover:-translate-y-1 cursor-default`}
+            className={`group rounded-2xl border ${card.border} ${card.bg} p-5 transition-all duration-300 hover:-translate-y-1`}
             style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.3)' }}
             onMouseEnter={e => e.currentTarget.style.boxShadow = card.glow}
             onMouseLeave={e => e.currentTarget.style.boxShadow = '0 2px 12px rgba(0,0,0,0.3)'}
@@ -210,7 +231,7 @@ export default function ProductionEvidencePanel({ systemStatus, dynamoFeed, load
             ))}
           </div>
           <span className="shrink-0 text-[10px] font-black px-2.5 py-1.5 rounded-lg bg-emerald-950/60 border border-emerald-700/40 text-emerald-400 uppercase tracking-widest whitespace-nowrap">
-            Active · {aurora.status === 'connected' ? 'Live' : 'Mock'} Mode
+            Live · {aurora.status === 'connected' ? 'Connected' : 'Degraded'}
           </span>
         </div>
       </div>
@@ -241,7 +262,7 @@ export default function ProductionEvidencePanel({ systemStatus, dynamoFeed, load
             )) : (
               <div className="flex items-center gap-2 text-slate-400 text-[11px] italic">
                 <Clock className="w-3 h-3" />
-                Table schemas will appear here when connected to real DynamoDB
+                Waiting for DynamoDB table metadata...
               </div>
             )}
           </div>

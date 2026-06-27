@@ -444,16 +444,23 @@ if (isProduction && cluster.isPrimary && maxWorkers > 1) {
     let dbVillageCount = null;
     let padRequestCount = null;
     let ambulanceCount = null;
+    let auroraQueryLatencies = [];
     try {
-      const userRow = await db.get('SELECT COUNT(*) as cnt FROM users');
-      const villageRow = await db.get('SELECT COUNT(*) as cnt FROM village_health');
-      const padRow = await db.get("SELECT COUNT(*) as cnt FROM ambulance_requests WHERE request_type = 'pad_request'");
-      const ambRow = await db.get("SELECT COUNT(*) as cnt FROM ambulance_requests WHERE request_type = 'ambulance'");
+      let t = Date.now(); const userRow = await db.get('SELECT COUNT(*) as cnt FROM users'); auroraQueryLatencies.push((Date.now() - t));
+      t = Date.now(); const villageRow = await db.get('SELECT COUNT(*) as cnt FROM village_health'); auroraQueryLatencies.push((Date.now() - t));
+      t = Date.now(); const padRow = await db.get("SELECT COUNT(*) as cnt FROM ambulance_requests WHERE request_type = 'pad_request'"); auroraQueryLatencies.push((Date.now() - t));
+      t = Date.now(); const ambRow = await db.get("SELECT COUNT(*) as cnt FROM ambulance_requests WHERE request_type = 'ambulance'"); auroraQueryLatencies.push((Date.now() - t));
       dbUserCount = parseInt(userRow?.cnt || userRow?.count || 0, 10);
       dbVillageCount = parseInt(villageRow?.cnt || villageRow?.count || 0, 10);
       padRequestCount = parseInt(padRow?.cnt || padRow?.count || 0, 10);
       ambulanceCount = parseInt(ambRow?.cnt || ambRow?.count || 0, 10);
     } catch (_) { /* tables may not exist in SQLite dev mode */ }
+    const dbLatencySummary = auroraQueryLatencies.length > 0 ? {
+      avg: Math.round(auroraQueryLatencies.reduce((a, b) => a + b, 0) / auroraQueryLatencies.length),
+      max: Math.max(...auroraQueryLatencies),
+      min: Math.min(...auroraQueryLatencies),
+      unit: 'ms',
+    } : null;
 
     const auroraConnected = connectionHealth.aurora.ok && !usingSQLite;
     const dynamoConnected = connectionHealth.dynamodb.ok && !dynamoHelper.isMock;
@@ -484,19 +491,25 @@ if (isProduction && cluster.isPrimary && maxWorkers > 1) {
     }
 
     let recentRequests = [];
+    let latency = { p50: null, p95: null, p99: null, avg: null, sampleSize: 0, unit: 'ms' };
     try {
       const logs = await dynamoHelper.query('sync_queues', 'deviceId = :dev', { ':dev': 'server-telemetry' });
-      recentRequests = (logs || [])
-        .sort((a, b) => String(b.queuedAt || '').localeCompare(String(a.queuedAt || '')))
-        .slice(0, 8)
-        .map(r => ({
-          traceId: r.traceId,
-          method: r.method,
-          path: r.path,
-          status: r.resStatus,
-          duration: r.duration,
-          timestamp: r.queuedAt
-        }));
+      const sorted = (logs || []).sort((a, b) => String(b.queuedAt || '').localeCompare(String(a.queuedAt || '')));
+      recentRequests = sorted.slice(0, 8).map(r => ({
+        traceId: r.traceId, method: r.method, path: r.path,
+        status: r.resStatus, duration: r.duration, timestamp: r.queuedAt
+      }));
+      const allDurations = (logs || []).map(r => r.duration).filter(d => d !== null && d !== undefined && typeof d === 'number');
+      allDurations.sort((a, b) => a - b);
+      if (allDurations.length >= 3) {
+        const avg = Math.round(allDurations.reduce((s, d) => s + d, 0) / allDurations.length);
+        latency = {
+          p50: allDurations[Math.floor(allDurations.length * 0.5)] || null,
+          p95: allDurations[Math.floor(allDurations.length * 0.95)] || null,
+          p99: allDurations[Math.floor(allDurations.length * 0.99)] || null,
+          avg, sampleSize: allDurations.length, unit: 'ms'
+        };
+      }
     } catch (e) {
       console.error('[Detailed Health Telemetry Fetch Error]', e.message);
     }
@@ -521,6 +534,7 @@ if (isProduction && cluster.isPrimary && maxWorkers > 1) {
           pad_requests:     padRequestCount,
           ambulance_requests: ambulanceCount,
           pool:             pool ? { total: pool.totalCount, idle: pool.idleCount, waiting: pool.waitingCount } : null,
+          query_latency_ms: dbLatencySummary,
           rationale:        'ACID compliance for medical records — a corrupted pregnancy record could cost a life',
           production_setup: pgSetup,
         },
@@ -565,6 +579,7 @@ if (isProduction && cluster.isPrimary && maxWorkers > 1) {
         sse_clients_connected: adminRouter.sseClientsCount || 0,
         endpoint: '/api/admin/live-feed'
       },
+      latency,
       recent_request_traces: recentRequests,
       stack: {
         frontend: 'React 18 + Vite + PWA (offline-first, Vercel)',

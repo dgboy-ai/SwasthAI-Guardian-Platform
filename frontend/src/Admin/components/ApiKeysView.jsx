@@ -13,6 +13,7 @@ export default function ApiKeysView() {
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [newKeyName, setNewKeyName] = useState('');
+  const [confirmDelete, setConfirmDelete] = useState(null);
   const [newKeyTenant, setNewKeyTenant] = useState('');
   const [newKeyPerms, setNewKeyPerms] = useState('read');
   const [createdKey, setCreatedKey] = useState(null);
@@ -70,7 +71,6 @@ export default function ApiKeysView() {
   }
 
   async function handleDelete(id) {
-    if (!window.confirm('Revoke this API key? This cannot be undone.')) return;
     try {
       const data = await adminService.deleteApiKey(id);
       if (data.success) {
@@ -102,6 +102,7 @@ export default function ApiKeysView() {
   }
 
   return (
+    <>
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -269,7 +270,7 @@ export default function ApiKeysView() {
                         className="p-2 hover:bg-slate-100 rounded-lg transition-colors" title={key.isActive ? 'Deactivate' : 'Activate'}>
                         {key.isActive ? <EyeOff className="w-4 h-4 text-slate-400" /> : <Eye className="w-4 h-4 text-slate-400" />}
                       </button>
-                      <button onClick={() => handleDelete(key.id)}
+                      <button onClick={() => setConfirmDelete(key.id)}
                         className="p-2 hover:bg-red-50 rounded-lg transition-colors" title="Revoke">
                         <Trash2 className="w-4 h-4 text-red-400 hover:text-red-600" />
                       </button>
@@ -299,5 +300,58 @@ export default function ApiKeysView() {
         </div>
       </div>
     </div>
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {confirmDelete && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+            onClick={() => setConfirmDelete(null)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ duration: 0.15 }}
+              onClick={e => e.stopPropagation()}
+              className="bg-white rounded-2xl shadow-xl border border-slate-200 p-6 w-full max-w-sm mx-4 text-left"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center border border-red-200">
+                  <AlertTriangle className="w-5 h-5 text-red-500" />
+                </div>
+                <div>
+                  <p className="font-black text-slate-900 text-sm">Revoke API Key</p>
+                  <p className="text-[11px] text-slate-400 font-medium">This action cannot be undone.</p>
+                </div>
+                <button onClick={() => setConfirmDelete(null)} className="ml-auto p-1.5 hover:bg-slate-100 rounded-lg transition-colors">
+                  <X className="w-4 h-4 text-slate-400" />
+                </button>
+              </div>
+              <p className="text-xs text-slate-600 font-medium mb-5 leading-relaxed">
+                Are you sure you want to revoke this API key? All integrations using this key will immediately lose access.
+              </p>
+              <div className="flex items-center gap-2 justify-end">
+                <button
+                  onClick={() => setConfirmDelete(null)}
+                  className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-[11px] font-black text-slate-600 hover:bg-slate-50 transition-colors uppercase tracking-wider"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => { handleDelete(confirmDelete); setConfirmDelete(null); }}
+                  className="px-4 py-2 bg-red-600 border border-red-600 rounded-xl text-[11px] font-black text-white hover:bg-red-700 transition-colors uppercase tracking-wider"
+                >
+                  Revoke
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }

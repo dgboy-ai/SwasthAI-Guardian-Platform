@@ -39,9 +39,10 @@ const adminService = {
   },
 
   // Global Health Analytics & Summary
-  getAnalytics: async () => {
+  getAnalytics: async (districtId) => {
     try {
-      const res = await api.get('/admin/analytics');
+      const params = districtId ? `?districtId=${encodeURIComponent(districtId)}` : '';
+      const res = await api.get(`/admin/analytics${params}`);
       return res.data;
     } catch (error) {
       throw error.response?.data?.error || 'Failed to fetch analytics';
@@ -289,6 +290,15 @@ const adminService = {
       return res.data;
     } catch (error) {
       throw error.response?.data?.error || 'Failed to fetch API key usage';
+    }
+  },
+
+  getB2BUsage: async () => {
+    try {
+      const res = await api.get('/admin/api-keys/b2b/usage');
+      return res.data;
+    } catch (error) {
+      throw error.response?.data?.error || 'Failed to fetch B2B usage';
     }
   }
 };

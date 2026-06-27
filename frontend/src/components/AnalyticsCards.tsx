@@ -13,7 +13,7 @@ const AnalyticsCards: React.FC = () => {
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       {cards.map((c) => (
-        <div key={c.title} className={`flex items-center p-4 rounded-xl shadow glass ${c.bg} text-white`)}>
+        <div key={c.title} className={`flex items-center p-4 rounded-xl shadow glass ${c.bg} text-white`}>
           <div className="mr-4">{c.icon}</div>
           <div>
             <h3 className="text-sm font-medium">{c.title}</h3>

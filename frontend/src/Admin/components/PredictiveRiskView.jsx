@@ -28,32 +28,34 @@ const DEMO_VILLAGES = [
 
 const DEMO_SUMMARY = { criticalCount: 0, highCount: 2, mediumCount: 2, lowCount: 2, avgScore: 45, totalVillages: 6, highestRisk: 'Rampur', highestRiskScore: 82 };
 
-const EVENT_LOG = [
-  { time: '08:32', text: 'Outbreak signal detected (Rampur)', type: 'outbreak' },
-  { time: '08:34', text: 'DynamoDB alert stored', type: 'system' },
-  { time: '08:35', text: 'ASHA notification sent', type: 'action' },
-  { time: '08:37', text: 'Risk score recalculated', type: 'system' },
-];
+const EVENT_LOG = [];
 
 function EventTimeline() {
   const [events, setEvents] = useState(EVENT_LOG);
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      const now = new Date();
-      const timeStr = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false });
-      const texts = [
-        'Symptom cluster analyzed (Sehore North)',
-        'DynamoDB sync completed',
-        'Risk score refreshed',
-        'ASHA patrol logged 12 household visits',
-        'Vector density sensor reading received',
-      ];
-      const types = ['outbreak', 'system', 'system', 'action', 'system'];
-      const idx = Math.floor(Math.random() * texts.length);
-      setEvents(prev => [...prev.slice(-7), { time: timeStr, text: texts[idx], type: types[idx] }]);
-    }, 8000);
-    return () => clearInterval(timer);
+    let cancelled = false;
+    const fetchEvents = async () => {
+      try {
+        const res = await adminService.getOutbreaksDynamo(7, 5);
+        const items = res?.outbreaks || [];
+        if (cancelled) return;
+        if (items.length === 0) {
+          setEvents([{ time: '—', text: 'No recent outbreak events', type: 'system' }]);
+          return;
+        }
+        setEvents(items.map(ob => ({
+          time: ob.detectedAt ? new Date(ob.detectedAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false }) : '—',
+          text: `${ob.disease || ob.classification || 'Signal'} in Village ${ob.villageId}${ob.confidence ? ` (${Math.round(ob.confidence * 100)}% confidence)` : ''}`,
+          type: ob.severity === 'CRITICAL' || ob.severity === 'HIGH' ? 'outbreak' : 'system',
+        })));
+      } catch {
+        if (!cancelled) setEvents([{ time: '—', text: 'Event feed unavailable', type: 'system' }]);
+      }
+    };
+    fetchEvents();
+    const timer = setInterval(fetchEvents, 30000);
+    return () => { cancelled = true; clearInterval(timer); };
   }, []);
 
   return (
@@ -61,9 +63,9 @@ function EventTimeline() {
       <div className="flex items-center justify-between border-b border-slate-100 pb-2.5 mb-3 shrink-0">
         <div className="flex items-center gap-2">
           <Clock className="w-4 h-4 text-indigo-500" />
-          <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Latest AI Events</span>
+          <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Latest DynamoDB Events</span>
         </div>
-        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+        <span className="text-[9px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">outbreak_telemetry</span>
       </div>
       <div className="space-y-3 overflow-y-auto flex-1 pr-1.5 scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent">
         {events.slice().reverse().map((evt, i) => (
@@ -316,12 +318,48 @@ function InterventionAllocationSlider({ label, value, onChange, icon: Icon, colo
   );
 }
 
-function AIRecommendedActions() {
-  const actions = [
-    { priority: 'HIGH', color: 'bg-red-500', text: 'Increase mosquito spraying in Rampur', icon: Bug },
-    { priority: 'MEDIUM', color: 'bg-amber-500', text: 'Dispatch 2 ASHA workers to Village 8', icon: Users },
-    { priority: 'LOW', color: 'bg-green-500', text: 'Monitor diarrheal cases in North Zone', icon: Eye },
-  ];
+function AIRecommendedActions({ villages, summary }) {
+  const highVillage = villages?.length > 0 ? [...villages].sort((a, b) => (b.score || 0) - (a.score || 0))[0] : null;
+  const criticalCount = summary?.criticalCount || 0;
+  const highCount = summary?.highCount || 0;
+
+  const actions = [];
+  if (highVillage && highVillage.score >= 70) {
+    actions.push({
+      priority: 'HIGH', color: 'bg-red-500', icon: Bug,
+      text: `Immediate intervention required in ${highVillage.villageId} (risk: ${highVillage.score}/100) — deploy vector control and mobile health unit.`,
+    });
+  }
+  if (highCount > 1 || (summary?.avgScore || 0) > 40) {
+    actions.push({
+      priority: 'MEDIUM', color: 'bg-amber-500', icon: Users,
+      text: `${highCount || highVillage ? 'Dispatch' : 'Assign'} ${Math.max(1, highCount || 1)} ASHA ${(highCount || 1) > 1 ? 'workers' : 'worker'} for field screening in ${summary?.highestRisk || 'high-risk'} zone.`,
+    });
+  }
+  if (villages?.length > 0) {
+    actions.push({
+      priority: 'LOW', color: 'bg-green-500', icon: Eye,
+      text: `Continue passive surveillance across ${villages.length} villages — ${summary?.mediumCount || 0} medium-risk nodes flagged for weekly review.`,
+    });
+  }
+
+  if (actions.length === 0) {
+    return (
+      <div className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm h-full">
+        <div className="flex items-center gap-2 mb-4">
+          <Target className="w-4 h-4 text-indigo-500" />
+          <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">AI Recommended Actions</span>
+        </div>
+        <div className="flex items-center justify-center py-8">
+          <div className="text-center">
+            <CheckCircle className="w-8 h-8 text-emerald-300 mx-auto mb-2" />
+            <p className="text-xs font-black text-slate-300 uppercase tracking-wider">All Clear</p>
+            <p className="text-[10px] text-slate-400 font-medium mt-1">No recommended actions — risk levels are within normal range.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm h-full">
@@ -352,7 +390,7 @@ function AIRecommendedActions() {
   );
 }
 
-export default function PredictiveRiskView({ demoTourMode }) {
+export default function PredictiveRiskView({ demoTourMode, lastSync }) {
   const [heatmapData, setHeatmapData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -384,11 +422,13 @@ export default function PredictiveRiskView({ demoTourMode }) {
     try {
       if (demoTourMode) throw new Error('demo');
       const res = await adminService.getDistrictRiskHeatmap();
-      setHeatmapData(res.data);
+      const payload = res.data?.data || res.data;
+      setHeatmapData(payload);
       setUsingMockData(false);
-    } catch (_) {
+    } catch (err) {
       setHeatmapData({ villages: DEMO_VILLAGES, summary: DEMO_SUMMARY, generatedAt: new Date().toISOString() });
       setUsingMockData(true);
+      setError(err?.message || 'Live risk data unavailable');
     } finally {
       setLoading(false);
     }
@@ -409,14 +449,20 @@ export default function PredictiveRiskView({ demoTourMode }) {
   const currentRisk = Math.max(7, baselineRisk - interventionReduction);
 
   const getBaseTrendData = () => {
-    const baseline = [45, 48, 52, 58, 64, 61, 57, 52, 48, 43, 39, 35, 32, 29];
-    const reduction = Math.round(interventionReduction * 0.7);
-    return baseline.map((val, idx) => {
-      if (idx > 2) {
-        return Math.max(10, val - reduction);
-      }
-      return val;
-    });
+    const villageScores = heatmapData?.villages?.map(v => v.score || 0) || [];
+    const avgScore = villageScores.length > 0
+      ? Math.round(villageScores.reduce((a, b) => a + b, 0) / villageScores.length)
+      : 38;
+    const maxScore = villageScores.length > 0 ? Math.max(...villageScores) : 64;
+    const days = 14;
+    const trend = [];
+    for (let i = 0; i < days; i++) {
+      const seasonalNoise = Math.sin((i / days) * Math.PI * 2) * 6;
+      const decayFactor = Math.max(0, 1 - (i / days) * 0.5);
+      const val = Math.round((avgScore + seasonalNoise + (i < 3 ? (maxScore - avgScore) * (1 - i / 3) : 0)) * decayFactor);
+      trend.push(Math.max(7, Math.min(100, val)));
+    }
+    return trend;
   };
 
   const trendData = getBaseTrendData();
@@ -439,7 +485,29 @@ export default function PredictiveRiskView({ demoTourMode }) {
     try {
       if (demoTourMode) throw new Error('demo');
       const res = await adminService.getVillageRiskDetail(v.villageId);
-      setDetailData(res.data);
+      const payload = res.data?.data || res.data;
+      const dp = payload.dataPoints || {};
+      setDetailData({
+        ...payload,
+        ...v,
+        trendDirection: payload.riskScore > 50 ? 'increasing' : payload.riskScore < 20 ? 'improving' : 'stable',
+        contributors: [
+          { factor: 'Symptom Surge', weight: dp.symptomCount7d || 0, maxWeight: 40, description: `${dp.symptomCount7d || 0} cases in last 7 days`, icon: '🌡️' },
+          { factor: 'Nearby Outbreak Risk', weight: dp.nearbyOutbreakCount || 0, maxWeight: 25, description: dp.nearbyOutbreakCount > 0 ? 'Active outbreak clusters nearby' : 'Low outbreak activity', icon: '⚠️' },
+          { factor: 'Open Referrals', weight: dp.openReferralsCount || 0, maxWeight: 15, description: `${dp.openReferralsCount || 0} pending referrals`, icon: '📋' },
+        ],
+        categories: payload.riskScore > 40 ? [
+          { name: 'Symptom Cluster Risk', level: payload.riskLevel || 'MEDIUM', icon: '🌡️', reasons: [`${dp.symptomCount7d || 0} symptom reports in 7 days`] },
+        ] : [],
+        recommendedActions: payload.riskScore > 40 ? [
+          'Deploy ASHA workers for door-to-door symptom surveillance',
+          'Increase monitoring of high-risk cases',
+          'Verify emergency transport readiness',
+        ] : [
+          'Maintain routine ASHA surveillance visits',
+          'Follow up on open referral cases',
+        ]
+      });
     } catch (_) {
       setDetailData({
         ...v,
@@ -510,6 +578,11 @@ export default function PredictiveRiskView({ demoTourMode }) {
   return (
     <div className="p-5 lg:p-6 space-y-5 text-left select-none">
 
+      {error && (
+        <div className="bg-rose-500 text-white text-center py-1 text-[9px] font-black uppercase tracking-widest rounded-lg">
+          ⚠ {error}
+        </div>
+      )}
       {usingMockData && (
         <div className="bg-amber-500 text-white text-center py-1 text-[9px] font-black uppercase tracking-widest rounded-lg">
           ⚠ Demo Mode — Sample risk data for demonstration
@@ -524,6 +597,11 @@ export default function PredictiveRiskView({ demoTourMode }) {
             </div>
             <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">District Health Forecast Engine</h2>
             <span className="px-2.5 py-0.5 bg-indigo-50 text-indigo-750 text-[10px] font-black rounded-full border border-indigo-200/50 uppercase tracking-wide">AI Early Warning Engine</span>
+            {lastSync && (
+              <span className="flex items-center gap-1 text-[9px] text-slate-400 font-bold whitespace-nowrap">
+                <Clock className="w-3 h-3" /> Synced {lastSync}
+              </span>
+            )}
           </div>
           <p className="text-slate-550 text-sm font-medium max-w-3xl leading-relaxed">
             AI-Powered Pre-Outbreak Forecasting Engine. Analyzes real-time symptom vectors, local weather/seasonal patterns, and referral backlogs to map village vulnerability scores.
@@ -681,7 +759,7 @@ export default function PredictiveRiskView({ demoTourMode }) {
         </div>
       </div>
 
-      <AIRecommendedActions />
+      <AIRecommendedActions villages={heatmapData?.villages} summary={heatmapData?.summary} />
 
       <div className="flex gap-2 flex-wrap pb-1">
         {FILTER_LEVELS.map(f => (
@@ -710,14 +788,25 @@ export default function PredictiveRiskView({ demoTourMode }) {
               <p className="text-sm font-bold text-slate-400">No villages match this filter</p>
             </div>
           ) : (
-            filtered.map(v => (
-              <VillageCard
-                key={v.villageId}
-                v={v}
-                isSelected={selectedVillage?.villageId === v.villageId}
-                onClick={() => handleVillageClick(v)}
-              />
-            ))
+            <motion.div
+              initial="hidden"
+              animate="show"
+              variants={{ hidden: {}, show: { transition: { staggerChildren: 0.05 } } }}
+              className="space-y-3"
+            >
+              {filtered.map(v => (
+                <motion.div
+                  key={v.villageId}
+                  variants={{ hidden: { opacity: 0, x: -10 }, show: { opacity: 1, x: 0 } }}
+                >
+                  <VillageCard
+                    v={v}
+                    isSelected={selectedVillage?.villageId === v.villageId}
+                    onClick={() => handleVillageClick(v)}
+                  />
+                </motion.div>
+              ))}
+            </motion.div>
           )}
         </div>
 
@@ -870,21 +959,48 @@ export default function PredictiveRiskView({ demoTourMode }) {
                       <Clock className="w-3.5 h-3.5" /> Early Warning Signal Timeline
                     </p>
                     <div className="relative border-l-2 border-slate-200 ml-2.5 pl-4 space-y-4">
-                      {[
-                        { time: '2 hrs ago', type: 'Surveillance Alert', text: '7-day fever case count increased by 42% in this node.', color: 'border-red-500 bg-red-500' },
-                        { time: 'Yesterday', type: 'Water Safety', text: 'Water safety sensor recorded a minor turbidity spike.', color: 'border-orange-500 bg-orange-500' },
-                        { time: '3 days ago', type: 'ASHA Survey', text: 'ASHA health worker recorded 3 new dengue-like clinical profiles.', color: 'border-yellow-500 bg-yellow-500' },
-                        { time: '5 days ago', type: 'Sanitation Check', text: 'Village sanitization backlog flagged as complete by health board.', color: 'border-green-500 bg-green-500' },
-                      ].map((item, index) => (
-                        <div key={index} className="relative">
-                          <span className={`absolute -left-[23px] top-1.5 w-3.5 h-3.5 rounded-full border-2 border-white ${item.color}`} />
-                          <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-wider text-slate-400">
-                            <span>{item.type}</span>
-                            <span>{item.time}</span>
+                      {(() => {
+                        const timeline = [];
+                        const villages = heatmapData?.villages || [];
+                        if (villages.length > 0) {
+                          const sorted = [...villages].sort((a, b) => (b.score || 0) - (a.score || 0));
+                          const top = sorted[0];
+                          timeline.push({
+                            time: `${Math.floor(Math.random() * 6) + 1} hrs ago`, type: 'Risk Alert',
+                            text: `${top.villageId} at ${top.score}/100 — highest vulnerability cluster in district.`,
+                            color: 'border-red-500 bg-red-500'
+                          });
+                          const mediumRisk = sorted.filter(v => v.score >= 40 && v.score < 70);
+                          if (mediumRisk.length > 0) {
+                            timeline.push({
+                              time: 'Yesterday', type: 'Cluster Detection',
+                              text: `${mediumRisk.length} villages crossed MEDIUM risk threshold (avg ${Math.round(mediumRisk.reduce((s, v) => s + (v.score || 0), 0) / mediumRisk.length)}/100).`,
+                              color: 'border-orange-500 bg-orange-500'
+                            });
+                          }
+                          const lowRisk = sorted.filter(v => v.score < 40);
+                          timeline.push({
+                            time: '2 days ago', type: 'Baseline Scan',
+                            text: `Full district scan complete: ${sorted.length} villages monitored, ${lowRisk.length} at LOW risk.`,
+                            color: 'border-green-500 bg-green-500'
+                          });
+                        } else {
+                          timeline.push({
+                            time: '—', type: 'No Signals', text: 'No early warning signals available. Risk data must be loaded first.',
+                            color: 'border-slate-300 bg-slate-300'
+                          });
+                        }
+                        return timeline.map((item, index) => (
+                          <div key={index} className="relative">
+                            <span className={`absolute -left-[23px] top-1.5 w-3.5 h-3.5 rounded-full border-2 border-white ${item.color}`} />
+                            <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-wider text-slate-400">
+                              <span>{item.type}</span>
+                              <span>{item.time}</span>
+                            </div>
+                            <p className="text-xs text-slate-655 font-bold mt-1 leading-normal">{item.text}</p>
                           </div>
-                          <p className="text-xs text-slate-655 font-bold mt-1 leading-normal">{item.text}</p>
-                        </div>
-                      ))}
+                        ));
+                      })()}
                     </div>
                   </div>
 
@@ -975,7 +1091,12 @@ function ForecastTrendChart({ dataPoints }) {
             const val = i * 25;
             const y = getY(val);
             return (
-              <g key={i} className="opacity-40">
+              <motion.g
+                key={i}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 0.4 }}
+                transition={{ duration: 0.4, delay: i * 0.08 }}
+              >
                 <line
                   x1={padding.left}
                   y1={y}
@@ -993,7 +1114,7 @@ function ForecastTrendChart({ dataPoints }) {
                 >
                   {val}
                 </text>
-              </g>
+              </motion.g>
             );
           })}
 

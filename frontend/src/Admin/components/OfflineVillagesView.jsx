@@ -1,36 +1,36 @@
 import React from 'react';
-import { WifiOff, Database, Shield, CheckCircle, MapPin, RefreshCw } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { WifiOff, Database, Shield, CheckCircle, MapPin, RefreshCw, AlertTriangle } from 'lucide-react';
 import { timeAgo } from './utils';
 
-const DEFAULT_NODES = [
-  { villageId: 'VILLAGE_047', status: 'online', lastActive: new Date().toISOString(), syncPendingCount: 0, deviceName: 'ASHA-Tab-47A' },
-  { villageId: 'VILLAGE_012', status: 'online', lastActive: new Date(Date.now() - 300000).toISOString(), syncPendingCount: 0, deviceName: 'ASHA-Phone-12B' },
-  { villageId: 'VILLAGE_009', status: 'offline', lastActive: new Date(Date.now() - 1200000).toISOString(), syncPendingCount: 4, deviceName: 'ASHA-Tab-09A' },
-  { villageId: 'VILLAGE_003', status: 'online', lastActive: new Date(Date.now() - 600000).toISOString(), syncPendingCount: 0, deviceName: 'ASHA-Phone-03A' },
-  { villageId: 'VILLAGE_015', status: 'offline', lastActive: new Date(Date.now() - 3600000).toISOString(), syncPendingCount: 8, deviceName: 'ASHA-Tab-15C' },
-];
-
-export default function OfflineVillagesView({ S, dynamoFeed, demoTourMode }) {
+export default function OfflineVillagesView({ S, dynamoFeed, demoTourMode, loading, error }) {
   const liveNodes = dynamoFeed?.village_node_state || [];
-  const nodes = (demoTourMode || liveNodes.length === 0) 
-    ? DEFAULT_NODES 
-    : liveNodes.map(node => ({
-        villageId: node.villageId,
-        status: node.status || 'online',
-        lastActive: node.lastActive,
-        syncPendingCount: node.syncPendingCount || 0,
-        deviceName: node.deviceName || `Device-${node.villageId}`
-      }));
+  const nodes = liveNodes.map(node => ({
+    villageId: node.villageId,
+    status: node.status || 'online',
+    lastActive: node.lastActive,
+    syncPendingCount: node.syncPendingCount || 0,
+    deviceName: node.deviceName || `Device-${node.villageId}`
+  }));
 
   const totalPending = nodes.reduce((acc, curr) => acc + curr.syncPendingCount, 0);
+  const onlineCount = nodes.filter(n => n.status === 'online').length;
+  const successRate = nodes.length > 0 ? Math.round((onlineCount / nodes.length) * 100) : 0;
 
   return (
     <div className="p-4 lg:p-5 space-y-4 text-left">
-      {(demoTourMode || liveNodes.length === 0) && (
-        <div className="bg-amber-500 text-white text-center py-1 text-[9px] font-black uppercase tracking-widest rounded-lg">
-          ⚠ Demo Mode — Sample node data shown for demonstration
+      {demoTourMode && (
+        <div className="bg-amber-500 text-white text-center py-1 text-[9px] font-black uppercase tracking-widest rounded-lg flex items-center justify-center gap-1.5">
+          <AlertTriangle className="w-3 h-3" /> Demo Mode — Sample node data shown for demonstration
         </div>
       )}
+
+      {error && (
+        <div className="bg-rose-50 border border-rose-200 rounded-xl p-4 text-center">
+          <p className="text-[11px] font-bold text-rose-600">{error}</p>
+        </div>
+      )}
+
       {/* Top Banner */}
       <div className="bg-slate-900 rounded-2xl p-8 text-white relative overflow-hidden">
         <div className="absolute right-6 top-6 opacity-[0.04]"><WifiOff className="w-48 h-48" /></div>
@@ -42,16 +42,16 @@ export default function OfflineVillagesView({ S, dynamoFeed, demoTourMode }) {
         </p>
         <div className="flex items-center gap-2">
           <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-ping" />
-          <p className="text-[11px] font-black uppercase tracking-widest text-emerald-400">📡 Automatic Sync Engine Active &amp; Listening</p>
+          <p className="text-[11px] font-black uppercase tracking-widest text-emerald-400">Automatic Sync Engine Active &amp; Listening</p>
         </div>
       </div>
 
       {/* KPI Row */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[
-          { label: 'Active Village Devices', val: nodes.length, icon: Database, color: 'text-slate-900' },
-          { label: 'Sync Success Rate', val: '100%', icon: Shield, color: 'text-emerald-700' },
-          { label: 'Pending Queue Records', val: totalPending, icon: RefreshCw, color: totalPending > 0 ? 'text-amber-600' : 'text-emerald-700' },
+          { label: 'Active Village Devices', val: loading ? '...' : nodes.length, icon: Database, color: 'text-slate-900' },
+          { label: 'Sync Success Rate', val: loading ? '...' : `${successRate}%`, icon: Shield, color: 'text-emerald-700' },
+          { label: 'Pending Queue Records', val: loading ? '...' : totalPending, icon: RefreshCw, color: totalPending > 0 ? 'text-amber-600' : 'text-emerald-700' },
         ].map(s => {
           const Icon = s.icon;
           return (
@@ -75,10 +75,26 @@ export default function OfflineVillagesView({ S, dynamoFeed, demoTourMode }) {
             <h3 className="font-black text-slate-900 text-[14px] uppercase tracking-wide">Village Node Synchronization</h3>
             <p className="text-[11px] text-slate-500 font-medium">Real-time connectivity &amp; sync queues of registered devices.</p>
           </div>
-          <span className="px-3 py-1 bg-emerald-50 text-emerald-700 rounded-full text-[10px] font-black border border-emerald-100">
-            {nodes.filter(n => n.status === 'online').length} Nodes Online
-          </span>
+          {!loading && nodes.length > 0 && (
+            <span className="px-3 py-1 bg-emerald-50 text-emerald-700 rounded-full text-[10px] font-black border border-emerald-100">
+              {onlineCount} Nodes Online
+            </span>
+          )}
         </div>
+
+        {loading ? (
+          <div className="p-6 space-y-4">
+            {[1,2,3,4].map(i => (
+              <div key={i} className="h-12 bg-slate-100 rounded-xl animate-pulse" />
+            ))}
+          </div>
+        ) : nodes.length === 0 ? (
+          <div className="py-12 text-center">
+            <WifiOff className="w-12 h-12 text-slate-200 mx-auto mb-3" />
+            <p className="text-sm font-bold text-slate-400">No village devices registered</p>
+            <p className="text-xs text-slate-300 font-medium mt-1">Devices appear here once they connect and sync</p>
+          </div>
+        ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead>
@@ -88,11 +104,20 @@ export default function OfflineVillagesView({ S, dynamoFeed, demoTourMode }) {
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-50">
+            <motion.tbody
+              initial="hidden"
+              animate="show"
+              variants={{ hidden: {}, show: { transition: { staggerChildren: 0.06 } } }}
+              className="divide-y divide-slate-50"
+            >
               {nodes.map((node, i) => {
                 const isOnline = node.status === 'online';
                 return (
-                  <tr key={i} className="hover:bg-slate-50/50 transition-colors">
+                  <motion.tr
+                    key={i}
+                    variants={{ hidden: { opacity: 0, x: -8 }, show: { opacity: 1, x: 0 } }}
+                    className="hover:bg-slate-50/50 transition-colors"
+                  >
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-2">
                         <MapPin className="w-4 h-4 text-emerald-600 shrink-0" />
@@ -120,12 +145,13 @@ export default function OfflineVillagesView({ S, dynamoFeed, demoTourMode }) {
                       </span>
                     </td>
                     <td className="px-5 py-3.5 text-[11px] text-slate-450 font-semibold">{timeAgo(node.lastActive)}</td>
-                  </tr>
+                  </motion.tr>
                 );
               })}
-            </tbody>
+            </motion.tbody>
           </table>
         </div>
+        )}
       </div>
     </div>
   );

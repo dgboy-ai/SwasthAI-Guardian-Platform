@@ -17,6 +17,7 @@ export default function AmbulancePage() {
   const [sosLoading, setSosLoading] = useState(false);
   const [dispatched, setDispatched] = useState(false);
   const [eta, setEta] = useState(null);
+  const [etaIsEstimated, setEtaIsEstimated] = useState(false);
   const [requestId, setRequestId] = useState(null);
   const [liveStatus, setLiveStatus] = useState('pending'); // pending|assigned|in_progress|completed
   const [dispatchError, setDispatchError] = useState(false);
@@ -120,6 +121,7 @@ export default function AmbulancePage() {
         });
         setDispatched(true);
         setEta(8);
+        setEtaIsEstimated(true);
         setLiveStatus('pending');
         if (res.data?.requestId) setRequestId(res.data.requestId);
         // Start 60s cooldown
@@ -179,8 +181,10 @@ export default function AmbulancePage() {
         priority: selectedType?.priority || 'High',
         symptoms: `${selectedType?.label || formData.emergencyType}${formData.contactNumber ? ` | Contact: ${formData.contactNumber}` : ''}`,
       });
-      const etaVal = response.data?.eta?.replace(' mins', '') || (12 + Math.floor(Math.random() * 6));
+      const apiEta = response.data?.eta?.replace(' mins', '');
+      const etaVal = apiEta || (12 + Math.floor(Math.random() * 6));
       setEta(etaVal);
+      setEtaIsEstimated(!apiEta);
       setLiveStatus('pending');
       if (response.data?.requestId) setRequestId(response.data.requestId);
       setDispatched(true);
@@ -445,10 +449,11 @@ export default function AmbulancePage() {
                   <div className="inline-flex items-center gap-3 px-6 py-3 bg-emerald-50 border border-emerald-200 rounded-full mb-8 ml-2">
                     <Clock className="w-5 h-5 text-emerald-600" />
                     <span className="text-emerald-700 font-black text-lg">ETA: ~{eta} minutes</span>
+                    {etaIsEstimated && <span className="px-1.5 py-0.5 bg-amber-100 border border-amber-200 text-amber-700 rounded text-[8px] font-black uppercase tracking-wider">EST</span>}
                   </div>
                   <p className="text-xs text-slate-400 font-medium mb-6">Status updates every 10 seconds automatically</p>
                   <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                    <button onClick={() => { setDispatched(false); setLiveStatus('pending'); clearInterval(pollRef.current); setFormData(prev => ({ ...prev, locStatus: 'idle', gpsCoords: null })); }}
+                    <button onClick={() => { setDispatched(false); setEta(null); setEtaIsEstimated(false); setLiveStatus('pending'); clearInterval(pollRef.current); setFormData(prev => ({ ...prev, locStatus: 'idle', gpsCoords: null })); }}
                       className="px-6 py-3 bg-white border border-slate-200 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-50 transition-colors">
                       Submit Another Request
                     </button>

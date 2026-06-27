@@ -133,8 +133,8 @@ export default function Footer() {
             © 2026 SwasthAI Guardian · AI-Powered Rural Healthcare
           </p>
           <div className="flex items-center gap-6">
-            <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest cursor-pointer hover:text-white transition-colors">Privacy</span>
-            <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest cursor-pointer hover:text-white transition-colors">Ethics</span>
+            <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest cursor-default" title="Privacy policy available on request">Privacy</span>
+            <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest cursor-default" title="Ethics compliance documentation available on request">Ethics</span>
           </div>
         </div>
       </div>

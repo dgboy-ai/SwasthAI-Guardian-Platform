@@ -1,9 +1,10 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 import {
   Heart, Baby, Radio, Truck, WifiOff, Activity,
   BrainCircuit, AlertTriangle, TrendingUp, Users,
   Zap, Shield, Database, ArrowRight, ChevronRight,
-  Package, FileText
+  Package, FileText, Globe, Timer, Gem, Home, Cloud
 } from 'lucide-react';
 import ProductionEvidencePanel from './ProductionEvidencePanel';
 import KpiCard from './KpiCard';
@@ -26,13 +27,20 @@ export default function CommandCenterView({
   setActiveView,
   downloadReport,
   demoTourMode,
-  liveAmbulanceLocations = {}
+  liveAmbulanceLocations,
+  lastSync,
 }) {
   const latestWrite = latestDynamoWrite(dynamoFeed);
   const activeDispatches = Object.values(liveAmbulanceLocations);
 
   return (
     <div className="p-4 lg:p-5 space-y-4 text-left">
+      <div className="flex items-center justify-end">
+        <span className="flex items-center gap-1.5 text-[9px] font-bold text-slate-400">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+          Synced {lastSync}
+        </span>
+      </div>
       <ProductionEvidencePanel
         systemStatus={systemStatus}
         dynamoFeed={dynamoFeed}
@@ -67,6 +75,7 @@ export default function CommandCenterView({
             View All Alerts <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>
+        {critAlerts.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {critAlerts.map((a, i) => (
             <div key={i} className="bg-rose-50 hover:bg-rose-100/60 rounded-2xl border border-rose-100 hover:border-rose-200 p-4 flex items-start gap-3.5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
@@ -84,6 +93,9 @@ export default function CommandCenterView({
             </div>
           ))}
         </div>
+        ) : (
+          <p className="text-xs text-slate-400 font-medium text-center py-6">No active critical alerts.</p>
+        )}
       </div>
 
       {/* Quantified Impact Dashboard */}
@@ -119,17 +131,17 @@ export default function CommandCenterView({
             const detectionSub = latestOb ? 'Since last outbreak record' : 'Agent runs every 30 min';
 
             return [
-              { label: 'Lives Impacted', val: livesDisplay, sub: `${villageCount} villages · ${pregCount} pregnancies tracked`, color: 'text-emerald-300', bg: 'from-emerald-500/15 to-emerald-500/5 border-emerald-400/20', icon: '🌍' },
-              { label: 'Maternal Preventable', val: `${S?.pregnancies ?? '—'} at risk`, sub: `${S?.malnutrition ?? 0} malnutrition cases monitored`, color: 'text-rose-300', bg: 'from-rose-500/15 to-rose-500/5 border-rose-400/20', icon: '🤰' },
-              { label: 'Outbreak Detection', val: detectionTime, sub: detectionSub, color: 'text-amber-300', bg: 'from-amber-500/15 to-amber-500/5 border-amber-400/20', icon: '⏱️' },
-              { label: 'ASHA Tech Cost', val: '₹0 / worker / month', sub: 'Offline-first · no connectivity costs', color: 'text-sky-300', bg: 'from-sky-500/15 to-sky-500/5 border-sky-400/20', icon: '💎' },
+              { label: 'Lives Impacted', val: livesDisplay, sub: `${villageCount} villages · ${pregCount} pregnancies tracked`, color: 'text-emerald-300', bg: 'from-emerald-500/15 to-emerald-500/5 border-emerald-400/20', icon: <Globe className="w-5 h-5" /> },
+              { label: 'Maternal Preventable', val: `${S?.pregnancies ?? '—'} at risk`, sub: `${S?.malnutrition ?? 0} malnutrition cases monitored`, color: 'text-rose-300', bg: 'from-rose-500/15 to-rose-500/5 border-rose-400/20', icon: <Baby className="w-5 h-5" /> },
+              { label: 'Outbreak Detection', val: detectionTime, sub: detectionSub, color: 'text-amber-300', bg: 'from-amber-500/15 to-amber-500/5 border-amber-400/20', icon: <Timer className="w-5 h-5" /> },
+              { label: 'ASHA Tech Cost', val: '₹0 / worker / month', sub: 'Offline-first · no connectivity costs', color: 'text-sky-300', bg: 'from-sky-500/15 to-sky-500/5 border-sky-400/20', icon: <Gem className="w-5 h-5" /> },
             ];
           })().map((x, idx) => (
             <div key={idx} className={`bg-gradient-to-br ${x.bg} border rounded-2xl p-4 flex flex-col justify-between hover:scale-[1.03] transition-all duration-200 hover:shadow-lg relative group`}>
               <div>
                 <div className="flex justify-between items-start mb-2">
                   <p className={`text-2xl sm:text-3xl font-black tracking-tight ${x.color}`}>{x.val}</p>
-                  <span className="text-lg opacity-70 group-hover:scale-110 transition-transform">{x.icon}</span>
+                  <span className="text-lg opacity-70 group-hover:scale-110 transition-transform shrink-0">{x.icon}</span>
                 </div>
                 <p className="text-[10px] sm:text-xs font-black text-white/90 uppercase tracking-widest leading-snug mt-1">{x.label}</p>
               </div>
@@ -166,14 +178,28 @@ export default function CommandCenterView({
                 <SkeletonCard className="h-40" />
               </>
             ) : (
-              <>
-                <KpiCard icon={Heart} color="rose" label="High-Risk Pregnancies" value={S.pregnancies ?? 126} trend={18} />
-                <KpiCard icon={Baby} color="amber" label="Severe Malnutrition Cases" value={S.malnutrition ?? 248} trend={12} />
-                <KpiCard icon={Radio} color="red" label="Active Outbreaks" value={OB.length || 3} badge="NEW" />
-                <KpiCard icon={Truck} color="emerald" label="Active Ambulances" value={`${AM.length || 7}/7`} />
-                <KpiCard icon={WifiOff} color="slate" label="Offline Villages" value={S.villages ?? 4} />
-                <KpiCard icon={Activity} color="purple" label="Emergency Cases" value={S.today_symptoms ?? 12} trend={20} />
-              </>
+              <motion.div
+                initial="hidden"
+                animate="show"
+                variants={{ hidden: {}, show: { transition: { staggerChildren: 0.07 } } }}
+                className="contents"
+              >
+                {[ 
+                  { icon: Heart, color: 'rose', label: 'High-Risk Pregnancies', val: S?.pregnancies || '−' },
+                  { icon: Baby, color: 'amber', label: 'Severe Malnutrition Cases', val: S?.malnutrition || '−' },
+                  { icon: Radio, color: 'red', label: 'Active Outbreaks', val: OB?.length || '−' },
+                  { icon: Truck, color: 'emerald', label: 'Active Ambulances', val: AM?.length ? `${AM.length}/7` : '−' },
+                  { icon: WifiOff, color: 'slate', label: 'Offline Villages', val: S?.villages || '−' },
+                  { icon: Activity, color: 'purple', label: 'Emergency Cases', val: S?.today_symptoms || '−' },
+                ].map(kpi => (
+                  <motion.div
+                    key={kpi.label}
+                    variants={{ hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0 } }}
+                  >
+                    <KpiCard icon={kpi.icon} color={kpi.color} label={kpi.label} value={kpi.val} />
+                  </motion.div>
+                ))}
+              </motion.div>
             )}
           </div>
 
@@ -226,7 +252,7 @@ export default function CommandCenterView({
                       </div>
                       <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
                         <div
-                          className="bg-emerald-500 h-full rounded-full transition-all duration-1000"
+                          className="bg-emerald-500 h-full rounded-full transition-all duration-300"
                           style={{ width: `${Math.max(5, Math.min(100, ((14 - loc.eta) / 14) * 100))}%` }}
                         />
                       </div>
@@ -256,6 +282,7 @@ export default function CommandCenterView({
                     </div>
                   </div>
                 </div>
+                {recs.length > 0 ? (
                 <div className="space-y-2.5">
                   {recs.map((r, i) => (
                     <div key={i} className={`bg-slate-950/40 border-l-4 ${r.color} rounded-r-2xl px-3.5 py-2.5 flex items-center justify-between gap-3 hover:bg-slate-950/60 transition-colors`}>
@@ -271,6 +298,9 @@ export default function CommandCenterView({
                     </div>
                   ))}
                 </div>
+                ) : (
+                  <p className="text-xs text-slate-400 font-medium text-center py-6">No active intelligence recommendations.</p>
+                )}
               </div>
             </div>
 
@@ -289,10 +319,10 @@ export default function CommandCenterView({
 
                 <div className="grid grid-cols-2 gap-2.5 mb-2">
                   {[
-                    { label: 'Villages Offline', val: S.villages ?? 4, color: 'text-rose-600', bg: 'bg-rose-50/50 border-rose-100' },
-                    { label: 'Pending Records', val: '12', color: 'text-amber-600', bg: 'bg-amber-50/50 border-amber-100' },
-                    { label: 'Sync Success Rate', val: '98.1%', color: 'text-emerald-700', bg: 'bg-emerald-50/50 border-emerald-100' },
-                    { label: 'Last Recovered', val: 'Village 8', color: 'text-slate-700', bg: 'bg-slate-50 border-slate-100' },
+                    { label: 'Villages Offline', val: S?.villages ?? '−', color: 'text-rose-600', bg: 'bg-rose-50/50 border-rose-100' },
+                    { label: 'Pending Records', val: SM?.pendingRecords ?? '−', color: 'text-amber-600', bg: 'bg-amber-50/50 border-amber-100' },
+                    { label: 'Sync Success Rate', val: SM?.syncRate ?? '−', color: 'text-emerald-700', bg: 'bg-emerald-50/50 border-emerald-100' },
+                    { label: 'Last Recovered', val: SM?.lastRecovered ?? '−', color: 'text-slate-700', bg: 'bg-slate-50 border-slate-100' },
                   ].map((x, idx) => (
                     <div key={idx} className={`p-3 rounded-2xl border ${x.bg} text-center transition-all hover:scale-[1.03]`}>
                       <p className={`text-xl font-black leading-none ${x.color}`}>{x.val}</p>
@@ -329,7 +359,7 @@ export default function CommandCenterView({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
-                  {OB.slice(0, 5).map((ob, i) => {
+                  {OB.length > 0 ? OB.slice(0, 5).map((ob, i) => {
                     const statusLabel = i === 0 ? 'New' : i <= 2 ? 'Investigating' : 'Monitoring';
                     const outbreakStatusStyle = (s = '') => {
                       const l = s.toLowerCase();
@@ -338,10 +368,10 @@ export default function CommandCenterView({
                       return 'bg-blue-50 text-blue-700 border-blue-100';
                     };
                     return (
-                      <tr key={ob.id || i} className="hover:bg-slate-50/70 transition-colors group">
+                      <tr key={ob.id || i} className="hover:bg-emerald-50/30 transition-colors group cursor-pointer" onClick={() => setActiveView && setActiveView('outbreak')}>
                         <td className="px-5 py-3.5">
                           <div className="flex items-center gap-2.5">
-                            <span className="text-base">🏘️</span>
+                            <Home className="w-4 h-4 text-emerald-600 shrink-0" />
                             <span className="text-xs sm:text-sm font-bold text-slate-950">Village {ob.villageId}</span>
                           </div>
                         </td>
@@ -357,7 +387,9 @@ export default function CommandCenterView({
                         </td>
                       </tr>
                     );
-                  })}
+                  }) : (
+                    <tr><td colSpan={5} className="text-xs text-slate-400 font-medium text-center py-6">No outbreak events recorded.</td></tr>
+                  )}
                 </tbody>
               </table>
             </div>
@@ -373,19 +405,28 @@ export default function CommandCenterView({
               <Users className="w-4.5 h-4.5 text-emerald-600" />
               <p className="font-black text-slate-900 text-sm sm:text-base uppercase tracking-wider">Platform Scale &amp; Reach</p>
             </div>
-            <div className="grid grid-cols-2 gap-3.5">
+            <motion.div
+              initial="hidden"
+              animate="show"
+              variants={{ hidden: {}, show: { transition: { staggerChildren: 0.07 } } }}
+              className="grid grid-cols-2 gap-3.5"
+            >
               {[
-                { label: 'Villagers', val: SM.totalUsers, color: 'text-emerald-700', bg: 'bg-emerald-50/50 border border-emerald-100/50' },
-                { label: 'NGO Workers', val: SM.totalNgos, color: 'text-sky-700', bg: 'bg-sky-50/50 border border-sky-100/50' },
-                { label: 'SOS Requests', val: SM.emergencyCount, color: 'text-rose-700', bg: 'bg-rose-50/50 border border-rose-100/50' },
-                { label: 'Pad Requests', val: SM.sanitaryCount, color: 'text-purple-700', bg: 'bg-purple-50/50 border border-purple-100/50' },
+                { label: 'Villagers', val: SM?.totalUsers ?? '−', color: 'text-emerald-700', bg: 'bg-emerald-50/50 border border-emerald-100/50' },
+                { label: 'NGO Workers', val: SM?.totalNgos ?? '−', color: 'text-sky-700', bg: 'bg-sky-50/50 border border-sky-100/50' },
+                { label: 'SOS Requests', val: SM?.emergencyCount ?? '−', color: 'text-rose-700', bg: 'bg-rose-50/50 border border-rose-100/50' },
+                { label: 'Pad Requests', val: SM?.sanitaryCount ?? '−', color: 'text-purple-700', bg: 'bg-purple-50/50 border border-purple-100/50' },
               ].map(s => (
-                <div key={s.label} className={`${s.bg} rounded-2xl p-4 text-center transition-all hover:scale-[1.03] hover:shadow-sm`}>
+                <motion.div
+                  key={s.label}
+                  variants={{ hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0 } }}
+                  className={`${s.bg} rounded-2xl p-4 text-center transition-all hover:scale-[1.03] hover:shadow-sm`}
+                >
                   <p className={`text-2xl sm:text-3xl font-black ${s.color}`}>{s.val ?? 0}</p>
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">{s.label}</p>
-                </div>
+                </motion.div>
               ))}
-            </div>
+            </motion.div>
           </div>
 
           {/* Operational Workflows */}
@@ -399,7 +440,7 @@ export default function CommandCenterView({
                 { icon: Radio, label: 'Launch Outbreak Investigation', color: 'rose', view: 'outbreak' },
                 { icon: Truck, label: 'Ambulance Operations Center', color: 'rose', view: 'ambulance' },
                 { icon: WifiOff, label: 'Monitor Offline Villages', color: 'slate', view: 'offline' },
-                { icon: Package, label: 'Pad Distribution Monitoring', color: 'purple', view: null },
+                { icon: Package, label: 'Pad Distribution Monitoring', color: 'purple', view: 'reports' },
                 { icon: FileText, label: 'Export District Health Report', color: 'emerald', view: null, action: downloadReport },
                 { icon: BrainCircuit, label: 'Review AI Recommendations', color: 'blue', view: 'ai' },
               ].map((w, i) => {
@@ -444,7 +485,7 @@ export default function CommandCenterView({
             </div>
             <div className="mt-4 pt-3.5 border-t border-slate-100">
               <div className="flex flex-wrap items-center gap-1.5">
-                <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider">Built on AWS Cloud ☁️</span>
+                <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider flex items-center gap-1">Built on AWS Cloud <Cloud className="w-3.5 h-3.5 inline" /></span>
                 {['Aurora PostgreSQL', 'DynamoDB', 'AI Service (Groq)'].map(s => (
                   <span key={s} className="text-[10px] text-slate-400 font-bold border-l border-slate-200 pl-1.5">{s}</span>
                 ))}

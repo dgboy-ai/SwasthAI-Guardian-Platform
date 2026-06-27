@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Building2, Users, Activity, MapPin, TrendingUp, Database } from 'lucide-react';
+import { Building2, Users, Activity, MapPin, TrendingUp, Database, RefreshCw } from 'lucide-react';
 import api from '../../services/api';
 
 const DISTRICTS = ['Sehore', 'Bhopal', 'Indore', 'Varanasi', 'Pune'];
@@ -24,9 +24,25 @@ export default function TenantOverview({ activeDistrict }) {
       setLoading(false);
     };
     loadAll();
-  }, []);
+  }, [activeDistrict]);
 
-  if (loading) return <div className="p-6 text-center text-sm text-slate-400 font-bold">Loading tenant data...</div>;
+  if (loading) return (
+    <div className="p-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        {[1,2,3,4,5].map(i => (
+          <div key={i} className="bg-white rounded-2xl border border-slate-100 p-5 animate-pulse">
+            <div className="h-4 bg-slate-200 rounded w-32 mb-4" />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="h-12 bg-slate-100 rounded-xl" />
+              <div className="h-12 bg-slate-100 rounded-xl" />
+              <div className="h-12 bg-slate-100 rounded-xl" />
+              <div className="h-12 bg-slate-100 rounded-xl" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 
   return (
     <div className="p-5 lg:p-6 space-y-5 text-left select-none">

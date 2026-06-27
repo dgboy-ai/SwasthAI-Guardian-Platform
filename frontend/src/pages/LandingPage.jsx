@@ -6,7 +6,7 @@ import { showToast } from '../utils/toast';
 import { 
   HeartPulse, Activity, Shield, Users, ArrowRight, BrainCircuit, 
   Truck, Globe, Zap, CheckCircle, MapPin, PhoneCall, WifiOff, Mic, ShieldCheck, Play,
-  Camera, Database, Server, CloudUpload, Wifi, RefreshCw, Eye, Baby
+  Camera, Database, Server, CloudUpload, Wifi, RefreshCw, Eye, Baby, Leaf
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import { useLanguage } from '../context/LanguageContext';
@@ -275,7 +275,7 @@ export default function LandingPage() {
          
          <div className="max-w-7xl mx-auto flex flex-col items-center text-center">
             
-            {/* OFFLINE BADGE (RULE #6) */}
+            {/* Offline badge */}
             <motion.div 
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -285,7 +285,7 @@ export default function LandingPage() {
                <span className="text-[8px] sm:text-[10px] font-black uppercase tracking-[0.3em]">{t.landing?.offline_badge || 'No Internet Required'}</span>
             </motion.div>
 
-            {/* TITLE & TAGLINE (RULE #1 & #2) */}
+            {/* Title & tagline */}
             <motion.h1 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -303,7 +303,7 @@ export default function LandingPage() {
               className="mb-6 max-w-3xl px-4"
             >
               <p className="text-xs sm:text-sm text-slate-700 font-extrabold tracking-wide uppercase bg-emerald-50 border border-emerald-100 rounded-2xl py-3 px-6 shadow-sm inline-block">
-                🌿 <span className="text-slate-950 font-black">Guardian</span>: B2B SaaS platform for public health command centers and NGOs to coordinate rural ASHA workers, verify schemes, and track outbreaks.
+                <Leaf className="w-4 h-4 inline-block -mt-0.5 text-emerald-600" />{' '}<span className="text-slate-950 font-black">Guardian</span>: B2B SaaS platform for public health command centers and NGOs to coordinate rural ASHA workers, verify schemes, and track outbreaks.
               </p>
             </motion.div>
 
@@ -316,7 +316,7 @@ export default function LandingPage() {
                {t.tagline || 'Works even without internet and provides instant health support.'}
             </motion.p>
 
-            {/* PRIMARY ACTION BUTTONS (RULE #3) */}
+            {/* Primary action buttons */}
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}

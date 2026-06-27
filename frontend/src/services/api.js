@@ -40,9 +40,30 @@ api.interceptors.request.use(async (config) => {
   return config;
 });
 
-// Global response interceptor: surface network errors consistently
+// Track data provenance per endpoint pattern
+export const provenanceCache = {};
+function emitProvenance() {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('provenance-update', { detail: { ...provenanceCache } }));
+  }
+}
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    if (response.data && typeof response.data === 'object' && response.data._db) {
+      const path = response.config.url || '';
+      if (path.includes('/outbreaks') || path.includes('/dynamo') || path.includes('/dynamodb')) {
+        provenanceCache['outbreak_telemetry'] = response.data._db;
+      } else if (path.includes('/vaccination')) {
+        provenanceCache['vaccination'] = response.data._db;
+      } else if (path.includes('/api-keys') || path.includes('/health') || path.includes('/agent-scans')) {
+        // Skip
+      } else {
+        provenanceCache['default'] = response.data._db;
+      }
+      emitProvenance();
+    }
+    return response;
+  },
   (error) => {
     if (error.isSimulatedOffline || error.message?.includes('Simulated Offline')) {
       error.message = 'No internet connection. Offline mode active.';

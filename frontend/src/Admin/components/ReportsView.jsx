@@ -1,5 +1,6 @@
 import React from 'react';
-import { Download, CheckCircle, Settings, Users } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Download, CheckCircle, Settings, Users, Clock } from 'lucide-react';
 
 export default function ReportsView({
   downloadReport,
@@ -10,15 +11,25 @@ export default function ReportsView({
   downloadDistrictReport,
   reportLoading,
   REP,
-  PERF
+  PERF,
+  demoTourMode,
+  lastSync
 }) {
   const chartData = getChartData();
-  const maxVal = Math.max(...chartData.map(d => Math.max(d.symptoms, d.emergencies)), 10);
+  const hasData = chartData.length > 0;
+  const maxVal = hasData ? Math.max(...chartData.map(d => Math.max(d.symptoms, d.emergencies)), 10) : 1;
 
   return (
     <div className="p-4 lg:p-5 space-y-4 text-left">
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-        <h2 className="font-black text-slate-900 text-[18px] mb-1">Reports &amp; Exports</h2>
+        <div className="flex items-center justify-between mb-1">
+          <h2 className="font-black text-slate-900 text-[18px]">Reports &amp; Exports {demoTourMode && <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 border border-amber-200 text-[8px] font-black uppercase tracking-wider ml-2">DEMO</span>}</h2>
+          {lastSync && (
+            <span className="flex items-center gap-1 text-[9px] text-slate-400 font-bold">
+              <Clock className="w-3 h-3" /> Synced {lastSync}
+            </span>
+          )}
+        </div>
         <p className="text-[11px] text-slate-400 font-medium mb-5">Download full district health data as spreadsheets</p>
         <button onClick={downloadReport} className="flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-xl font-black text-[12px] uppercase tracking-wider hover:bg-emerald-700 transition-colors shadow-sm">
           <Download className="w-4 h-4" /> Download District CSV Report
@@ -38,31 +49,44 @@ export default function ReportsView({
             </div>
           </div>
 
-          <div className="h-48 w-full flex items-end justify-between gap-4 pt-4 px-2">
-            {chartData.map((d, i) => {
+          <div className="h-48 w-full flex items-end justify-between gap-4 pt-4 px-2 relative">
+                {!hasData ? (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-center">
+                  <p className="text-sm font-black text-slate-300 uppercase tracking-wider">No trend data yet</p>
+                  <p className="text-[11px] text-slate-400 font-medium mt-1">Outbreak and ambulance data will appear here as records arrive.</p>
+                </div>
+              </div>
+            ) : chartData.map((d, i) => {
               const symHeight = (d.symptoms / maxVal) * 100;
               const emHeight = (d.emergencies / maxVal) * 100;
               return (
                 <div key={i} className="flex-1 flex flex-col items-center gap-2 h-full justify-end">
                   <div className="flex items-end gap-1.5 h-full w-full justify-center">
                     {/* Emergencies bar */}
-                    <div
-                      className="w-3 sm:w-5 bg-rose-500 rounded-t-md hover:bg-rose-600 transition-all duration-300 relative group"
-                      style={{ height: `${Math.max(emHeight, 4)}%` }}
+                    <motion.div
+                      className="w-3 sm:w-5 bg-rose-500 rounded-t-md hover:bg-rose-600 relative group cursor-default"
+                      initial={{ height: 0 }}
+                      animate={{ height: `${Math.max(emHeight, 4)}%` }}
+                      transition={{ duration: 0.5, delay: i * 0.08, ease: 'easeOut' }}
+                      whileHover={{ scale: 1.08 }}
                     >
                       <div className="absolute -top-7 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[9px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity font-bold pointer-events-none whitespace-nowrap z-10 shadow-md">
                         {d.emergencies} SOS
                       </div>
-                    </div>
+                    </motion.div>
                     {/* Symptoms bar */}
-                    <div
-                      className="w-3 sm:w-5 bg-emerald-500 rounded-t-md hover:bg-emerald-600 transition-all duration-300 relative group"
-                      style={{ height: `${Math.max(symHeight, 4)}%` }}
+                    <motion.div
+                      className="w-3 sm:w-5 bg-emerald-500 rounded-t-md hover:bg-emerald-600 relative group cursor-default"
+                      initial={{ height: 0 }}
+                      animate={{ height: `${Math.max(symHeight, 4)}%` }}
+                      transition={{ duration: 0.5, delay: i * 0.08, ease: 'easeOut' }}
+                      whileHover={{ scale: 1.08 }}
                     >
                       <div className="absolute -top-7 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[9px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity font-bold pointer-events-none whitespace-nowrap z-10 shadow-md">
                         {d.symptoms} Clusters
                       </div>
-                    </div>
+                    </motion.div>
                   </div>
                   <span className="text-[9.5px] font-bold text-slate-400 uppercase tracking-wider mt-1">{d.label}</span>
                 </div>
@@ -130,7 +154,14 @@ export default function ReportsView({
             </button>
           </div>
           {reportLoading ? (
-            <p className="text-[12px] text-slate-400 font-bold">Loading report preview...</p>
+            <div className="grid grid-cols-2 gap-3 animate-pulse">
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className="rounded-xl bg-slate-50 border border-slate-100 p-3 space-y-2">
+                  <div className="h-6 bg-slate-200 rounded w-1/2" />
+                  <div className="h-3 bg-slate-200 rounded w-3/4" />
+                </div>
+              ))}
+            </div>
           ) : (
             <div className="grid grid-cols-2 gap-3">
               {[

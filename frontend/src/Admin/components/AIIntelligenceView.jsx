@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { BrainCircuit, Clock, ShieldAlert, CheckCircle2, RefreshCw } from 'lucide-react';
 import ConfBadge from './ConfBadge';
 import AIReasoningTrace from './AIReasoningTrace';
@@ -9,14 +10,16 @@ export default function AIIntelligenceView({ recs, demoTourMode }) {
   const displayedRecs = (recs && recs.length > 0) ? recs : [];
   const [scans, setScans] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const fetchScans = async () => {
     setLoading(true);
+    setError(null);
     try {
       const data = await adminService.getAgentScans();
       setScans(data || []);
     } catch (err) {
-      console.error("Failed to load agent scans:", err);
+      setError(err.message || 'Failed to load agent scans');
     } finally {
       setLoading(false);
     }
@@ -53,13 +56,22 @@ export default function AIIntelligenceView({ recs, demoTourMode }) {
             <div key={s.label} className="bg-white/5 border border-white/10 rounded-xl p-3 hover:bg-white/10 transition-colors">
               <p className="text-[15px] font-black text-white">{s.val}</p>
               <p className="text-[8px] font-black text-white/40 uppercase tracking-widest mt-1">{s.label}</p>
+              <span className="text-[7px] text-white/20 font-medium uppercase tracking-wider mt-0.5 block">Static config</span>
             </div>
           ))}
         </div>
         
-        <div className="space-y-2.5 relative z-10">
+        <motion.div
+          initial="hidden"
+          animate="show"
+          variants={{ hidden: {}, show: { transition: { staggerChildren: 0.07 } } }}
+          className="space-y-2.5 relative z-10"
+        >
           {displayedRecs.length > 0 ? displayedRecs.map((r, i) => (
-            <div key={i} className={`bg-white/5 border-l-4 ${r.color} rounded-r-xl px-4 py-3 flex items-center justify-between gap-3 hover:bg-white/10 transition-all duration-150`}>
+            <motion.div
+              key={i}
+              variants={{ hidden: { opacity: 0, x: -12 }, show: { opacity: 1, x: 0 } }}
+              className={`bg-white/5 border-l-4 ${r.color} rounded-r-xl px-4 py-3 flex items-center justify-between gap-3 hover:bg-white/10 transition-all duration-150`}>
               <p className="text-[11px] text-white/85 font-semibold flex-1 leading-relaxed">{r.text}</p>
               <div className="flex items-center gap-2 shrink-0">
                 <ConfBadge pct={r.conf} />
@@ -70,14 +82,17 @@ export default function AIIntelligenceView({ recs, demoTourMode }) {
                   {r.action}
                 </button>
               </div>
-            </div>
+            </motion.div>
           )) : (
-            <div className="bg-white/5 rounded-xl px-5 py-6 text-center border border-dashed border-white/10">
+            <motion.div
+              variants={{ hidden: { opacity: 0 }, show: { opacity: 1 } }}
+              className="bg-white/5 rounded-xl px-5 py-6 text-center border border-dashed border-white/10"
+            >
               <p className="text-[13px] font-black text-white/40 uppercase tracking-wider">No Active Alerts</p>
               <p className="text-[10px] text-white/30 mt-1">Outbreak agent is monitoring — next scan will populate this panel</p>
-            </div>
+            </motion.div>
           )}
-        </div>
+        </motion.div>
       </div>
 
       {/* AUTONOMOUS OUTBREAK AGENT TIMELINE */}
@@ -101,11 +116,36 @@ export default function AIIntelligenceView({ recs, demoTourMode }) {
           </button>
         </div>
 
-        <div className="relative border-l-2 border-slate-100 pl-6 ml-4 space-y-5">
+        {error && (
+          <div className="bg-rose-50 border border-rose-200 rounded-xl p-4 text-center mx-4">
+            <p className="text-[11px] font-bold text-rose-600">{error}</p>
+            <button onClick={fetchScans} className="mt-2 text-[10px] font-black text-rose-700 underline hover:no-underline">
+              Retry
+            </button>
+          </div>
+        )}
+
+        {loading && scans.length === 0 ? (
+          <div className="space-y-5 ml-4">
+            {[1,2,3].map(i => (
+              <div key={i} className="h-24 bg-slate-100 rounded-xl animate-pulse" />
+            ))}
+          </div>
+        ) : (
+        <motion.div
+          initial="hidden"
+          animate="show"
+          variants={{ hidden: {}, show: { transition: { staggerChildren: 0.07 } } }}
+          className="relative border-l-2 border-slate-100 pl-6 ml-4 space-y-5"
+        >
           {scans.slice(0, 5).map((scan, idx) => {
             const dateStr = new Date(scan.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
             return (
-              <div key={idx} className="relative group">
+              <motion.div
+                key={idx}
+                variants={{ hidden: { opacity: 0, x: -12 }, show: { opacity: 1, x: 0 } }}
+                className="relative group"
+              >
                 {/* Timeline Node Point */}
                 <div className={`absolute -left-[32px] top-1.5 rounded-full border-4 border-white flex items-center justify-center shadow-sm ${
                   scan.outbreakDetected 
@@ -156,15 +196,16 @@ export default function AIIntelligenceView({ recs, demoTourMode }) {
                     )}
                   </div>
                 </div>
-              </div>
+              </motion.div>
             );
           })}
-          {scans.length === 0 && (
+          {!error && scans.length === 0 && (
             <div className="text-center py-6 text-slate-400 text-xs font-bold uppercase">
               No recent scans recorded
             </div>
           )}
-        </div>
+        </motion.div>
+        )}
       </div>
       
       {/* AI Reasoning Trace — live Groq decision log from Sakhi RAG */}
