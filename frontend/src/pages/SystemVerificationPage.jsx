@@ -198,7 +198,7 @@ export default function SystemVerificationPage() {
                       {[
                         { label: 'Users', value: aurora.registered_users ?? '—', color: 'text-blue-400' },
                         { label: 'Villages', value: aurora.monitored_villages ?? '—', color: 'text-emerald-400' },
-                        { label: 'Pregnancies', value: aurora.pad_requests ?? '—', color: 'text-rose-400' },
+                        { label: 'Pad Requests', value: aurora.pad_requests ?? '—', color: 'text-rose-400' },
                         { label: 'Ambulances', value: aurora.ambulance_requests ?? '—', color: 'text-amber-400' },
                       ].map(s => (
                         <div key={s.label} className="bg-white/[0.03] rounded-xl p-3 text-center">
