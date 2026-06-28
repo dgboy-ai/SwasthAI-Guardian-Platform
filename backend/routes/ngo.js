@@ -829,6 +829,7 @@ router.get('/stats', auth, checkRole(['ngo', 'admin']), async (req, res) => {
     let queryVillagers = "SELECT COUNT(*) as c FROM users WHERE role = 'villager'";
 
     const villageId = req.user.role !== 'admin' ? (req.user.villageId || 'unassigned') : null;
+    const vParams = villageId ? [villageId] : [];
 
     if (villageId) {
       queryAmbulances += " AND (location = ? OR \"villageId\" = ?)";
@@ -841,9 +842,9 @@ router.get('/stats', auth, checkRole(['ngo', 'admin']), async (req, res) => {
     const [ambulances, pads, pregnancies, malnutrition, villagers] = await Promise.all([
       db.get(queryAmbulances, villageId ? [villageId, villageId] : []),
       db.get(queryPads, villageId ? [villageId, villageId] : []),
-      db.get(queryPregnancies, villageId ? [villageId] : []),
-      db.get(queryMalnutrition, villageId ? [villageId] : []),
-      db.get(queryVillagers, villageId ? [villageId] : []),
+      db.get(queryPregnancies, vParams),
+      db.get(queryMalnutrition, vParams),
+      db.get(queryVillagers, vParams),
     ]);
     res.json({
       ambulances: count(ambulances),
