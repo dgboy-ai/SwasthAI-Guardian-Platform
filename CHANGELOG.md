@@ -10,7 +10,7 @@ All notable changes and feature developments completed during the project develo
 - **README overhaul**: Added Devpost track banner, Offline-First Capability Matrix, B2B API Key System section, fixed `/verify` admin-only note, added password-mode demo credentials (offline), fixed Render URLs note.
 
 ### Fixed
-- **`architecture.md` inconsistency**: Changed `RandomForest-TFIDF 51.8%` → `Logistic Regression 71.1%` to match README. Removed emoji from all Mermaid node labels. Fixed workers claim from 12 to 2.
+- **`architecture_diagram.md` inconsistency**: Changed `RandomForest-TFIDF 51.8%` → `Logistic Regression 71.1%` to match README. Removed emoji from all Mermaid node labels. Fixed workers claim from 12 to 2.
 - **`docs/repository_map.md`**: Updated with 8+ missing files (`b2b.js`, `apiKeyAuth.js`, `apiKeys.js`, `ApiKeysView.jsx`, `B2BUsageDashboard.jsx`, `IntroFlow.jsx`, `PadRequestForm.jsx`, `LandingPage.jsx`). Converted absolute `file:///` paths to relative references.
 
 ### Changed
@@ -69,7 +69,7 @@ All notable changes and feature developments completed during the project develo
 
 ### Added
 - **System Verification Panel** (`/verify`): New public route showing live Aurora PostgreSQL + DynamoDB connection status, table schemas, GSIs, item counts, query latency, AI service status, tech stack, and demo credentials. Uses localStorage caching for cold-start protection.
-- **Hackathon Seed Endpoint** (`POST /api/admin/seed-hackathon`): Seeds Aurora with 5 villages, 4 users, 6 pregnancies, 8 symptoms, 4 referrals, 3 ambulances, 4 vaccinations. Seeds DynamoDB with 5 outbreak events, 3 emergency streams, 5 village node states. Runs from Render server (bypasses Aurora security group).
+- **Hackathon Seed Endpoint** (`POST /api/admin/seed-hackathon`): Seeds Aurora with 5 villages, 4 users, 6 pregnancies, 8 symptoms, 4 referrals, 3 ambulances, 5 vaccinations. Seeds DynamoDB with 5 outbreak events, 3 emergency streams, 5 village node states. Runs from Render server (bypasses Aurora security group).
 - **Auto-seed on Server Startup**: Added `autoSeedHackathonData()` function in `server.js` that checks if DB is empty on boot and seeds if needed. Data survives Render ephemeral storage wipes.
 - **NGO Pages Wired to Real API Endpoints**:
   - ASHADashboard: fetches `/ngo/stats`, `/ngo/maternal`, `/ngo/malnutrition`, `/ngo/ambulances`, `/ngo/outbreaks` every 60s with mock fallback.

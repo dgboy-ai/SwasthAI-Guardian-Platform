@@ -3,7 +3,7 @@
 
 **🏆 Devpost Submission — Most Impact Track + B2B Track | Deadline: June 30, 2026**
 
-[**Live Demo**](https://swasth-ai-guardian-platform.vercel.app) · [**Deployment Guide**](DEPLOYMENT.md) · [**Architecture Diagram**](architecture.md) · [**Changelog**](CHANGELOG.md)
+[**Live Demo**](https://swasth-ai-guardian-platform.vercel.app) · [**Deployment Guide**](DEPLOYMENT.md) · [**Architecture Diagram**](architecture_diagram.md) · [**Changelog**](CHANGELOG.md)
 
 ---
 
@@ -65,7 +65,7 @@ Jump directly into the detailed architecture logs, code reference maps, and setu
 | Technical Guide | Focus & Key Highlights | Quick Link |
 | :--- | :--- | :--- |
 | **System Architecture & Database Designs** | End-to-end data flows, DB ERDs, DynamoDB composite key schemas, GSIs, access patterns, SQLite fallbacks. | [System Arch](docs/system_architecture.md) |
-| **Mermaid Architecture Diagram** | Topology of Vercel, Aurora, DynamoDB, FastAPI, and data flow between all services. | [Architecture](architecture.md) |
+| **Architecture Diagram** | Topology of Vercel, Aurora, DynamoDB, FastAPI, and data flow between all services. | [SVG](architecture_diagram.svg) · [Mermaid source](architecture_diagram.md) |
 | **AI Architecture & Validation** | SymptomNet 5-Fold Stratified CV, RAG calibration parameters, ISIC skin triage. | [AI Arch](docs/ai_architecture.md) |
 | **Offline Sync Strategy** | IndexedDB queue replay, idempotency keys, Last-Write-Wins (LWW) rules. | [Sync Strategy](docs/offline_sync_strategy.md) |
 | **Complete Repository Map** | Directory-by-directory tree layout, file roles, component descriptions. | [Repo Map](docs/repository_map.md) |
@@ -79,7 +79,7 @@ Jump directly into the detailed architecture logs, code reference maps, and setu
 
 | Architectural Core | Pre-Submission Baseline | Production Upgrades |
 | :--- | :--- | :--- |
-| **Hybrid Diagnostic Engine (DL + ML)** | Simple Random Forest on a 50-class, English-only dataset (~88% accuracy on that simpler task). | **SymptomNet** (Transformer-based Deep Learning) + Logistic Regression fallback — evaluated on **101 disease classes** (model trained in 7 languages). Hold-out accuracy: **64.6%** (SymptomNet) \| **71.1%** (Logistic Regression). For context, random chance across 101 classes = ~1%. *(Note: SymptomNet is disabled by default on the Render Live Demo to fit under the 512MB RAM free-tier limit, using the 71.1% Logistic Regression model. Set `ENABLE_DEEP_MODEL=true` in your `.env` to enable it locally).* |
+| **Hybrid Diagnostic Engine (DL + ML)** | Simple Random Forest on a 50-class, English-only dataset (~88% accuracy on that simpler task). | **SymptomNet** (3-layer MLP on multilingual Transformer embeddings) + Logistic Regression fallback — evaluated on **101 disease classes** (model trained in 7 languages). Hold-out accuracy: **64.6%** (SymptomNet) \| **71.1%** (Logistic Regression). For context, random chance across 101 classes = ~1%. *(Note: SymptomNet is disabled by default on the Render Live Demo to fit under the 512MB RAM free-tier limit, using the 71.1% Logistic Regression model. Set `ENABLE_DEEP_MODEL=true` in your `.env` to enable it locally).* |
 | **Sakhi RAG (Retrieval-Augmented)** | Generic LLM chatbot prone to hallucinations. 35 inline knowledge chunks, no memory across turns. | **Grounded RAG system** with **243 clinical knowledge chunks** (2-sentence sliding-window overlap), calibrated retrieval threshold **0.45** (F1=1.00), and full 6-turn conversation memory. |
 | **Hardened Offline-First Sync** | Basic local storage that required an active internet connection to function. | **Demo Offline Login** via pre-seeded credential hashes (hashed securely using SHA-256 for local storage protection) + **Maternal & Child Assessment** caching inside an IndexedDB transactional sync queue. Production path: encrypted device credential cache or WebAuthn/device-bound refresh token. |
 | **Edge Image Compression** | Standard high-resolution uploads that failed on slow connections. | On-device `browser-image-compression` shrinks images from 5MB+ down to **< 200KB automatically**, making skin scan uploads viable over 2G/EDGE networks. |

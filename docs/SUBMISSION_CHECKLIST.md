@@ -17,14 +17,14 @@
 - [x] Villager login (9876543210 / 1234) — symptom check, ambulance, schemes
 - [x] Offline mode toggle — symptom check works, ambulance queues to IndexedDB
 - [x] Admin login (9876543212 / 1234) — Command Center, /verify panel, B2B dashboard
-- [x] Password mode offline login (admin / Demo@1234)
+- [x] Password mode offline login (admin@swasthai.in / Demo@1234)
 - [x] B2B API key creation, curl test against /api/b2b/me
 - [x] NGO login (9876543211 / 1234) — maternal records, emergency workflow
 - [x] Sakhi chatbot with grounded RAG citations
 
 ### Content Checklist
 - [x] README.md — Devpost track banner, credentials, B2B section, offline matrix
-- [x] architecture.md — Mermaid diagram (accurate, no emoji, correct model numbers)
+- [x] architecture_diagram.svg — Real SVG diagram (accurate, no emoji, correct model numbers)
 - [x] CHANGELOG.md — Latest entries for all June 28 work
 - [x] docs/judge_guide.md — Step-by-step walkthrough
 - [x] docs/system_architecture.md — ERD, DynamoDB schema, B2B section, production hardening

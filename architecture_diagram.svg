@@ -1,0 +1,523 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1080" width="1600" height="1080" font-family="'Inter','Segoe UI',Arial,sans-serif">
+  <defs>
+    <linearGradient id="bg-g" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#f8fafc"/><stop offset="100%" stop-color="#f0fdf4"/></linearGradient>
+    <linearGradient id="fe-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#d1fae5"/><stop offset="100%" stop-color="#a7f3d0"/></linearGradient>
+    <linearGradient id="be-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#dcfce7"/><stop offset="100%" stop-color="#bbf7d0"/></linearGradient>
+    <linearGradient id="ai-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#ede9fe"/><stop offset="100%" stop-color="#ddd6fe"/></linearGradient>
+    <linearGradient id="aw-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#fff7ed"/><stop offset="100%" stop-color="#ffedd5"/></linearGradient>
+    <filter id="cs" x="-5%" y="-5%" width="115%" height="125%"><feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#00000018"/></filter>
+    <filter id="ss" x="-5%" y="-5%" width="115%" height="125%"><feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="#00000010"/></filter>
+    <filter id="cals" x="-10%" y="-10%" width="130%" height="140%"><feDropShadow dx="0" dy="3" stdDeviation="8" flood-color="#00000020"/></filter>
+    <marker id="m-em" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#059669"/></marker>
+    <marker id="m-pu" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#7c3aed"/></marker>
+    <marker id="m-or" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#d97706"/></marker>
+    <marker id="m-bl" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#2563eb"/></marker>
+    <marker id="m-re" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#ea580c"/></marker>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0L0 0 0 40" fill="none" stroke="#e2e8f0" stroke-width="0.5"/></pattern>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1600" height="1080" fill="url(#bg-g)"/>
+  <rect width="1600" height="1080" fill="url(#grid)" opacity="0.45"/>
+
+  <!-- TITLE -->
+  <text x="800" y="36" text-anchor="middle" font-size="23" font-weight="700" fill="#064e3b" letter-spacing="-0.5">SwasthAI Guardian Platform — Production Architecture</text>
+  <text x="800" y="56" text-anchor="middle" font-size="11" fill="#6b7280">4-Tier Cloud-Native Rural Health Intelligence  |  Frontend: Vercel v0  |  Databases: Amazon Aurora PostgreSQL + DynamoDB  |  AI: FastAPI + Groq Llama-3.3-70b</text>
+  <line x1="80" y1="66" x2="1520" y2="66" stroke="#10b981" stroke-width="1.5" opacity="0.4"/>
+
+  <!-- Left axis labels -->
+  <rect x="10" y="75" width="50" height="940" rx="6" fill="#f1f5f9"/>
+  <text x="35" y="547" text-anchor="middle" font-size="9" font-weight="600" fill="#94a3b8" transform="rotate(-90,35,547)" letter-spacing="1.2">TIER 1          TIER 2          TIER 3</text>
+
+  <!-- ================================================================
+       TIER 1 — FRONTEND (Vercel v0 + React 18 PWA)
+  ================================================================ -->
+  <rect x="68" y="75" width="330" height="285" rx="14" fill="url(#fe-g)" stroke="#34d399" stroke-width="1.5" filter="url(#cs)"/>
+  <!-- badge row -->
+  <rect x="76" y="84" width="120" height="17" rx="8" fill="#059669"/>
+  <text x="136" y="96" text-anchor="middle" font-size="8.5" font-weight="700" fill="white" letter-spacing="0.8">TIER 1 — FRONTEND</text>
+  <rect x="204" y="84" width="72" height="17" rx="8" fill="#0ea5e9"/>
+  <text x="240" y="96" text-anchor="middle" font-size="8" font-weight="700" fill="white">Vercel v0</text>
+  <rect x="283" y="84" width="108" height="17" rx="8" fill="#065f46" stroke="#34d399" stroke-width="0.5"/>
+  <text x="337" y="96" text-anchor="middle" font-size="7.5" font-weight="600" fill="#a7f3d0">Scaffolded w/ Vercel v0</text>
+
+  <text x="233" y="126" text-anchor="middle" font-size="14.5" font-weight="700" fill="#065f46">React 18 + Vite PWA</text>
+  <text x="233" y="143" text-anchor="middle" font-size="10" fill="#047857">Offline-First Progressive Web App — deployed on Vercel Edge Network</text>
+
+  <!-- sub-boxes row 1 -->
+  <rect x="78" y="151" width="150" height="52" rx="8" fill="white" fill-opacity="0.85" filter="url(#ss)"/>
+  <text x="153" y="168" text-anchor="middle" font-size="8.5" font-weight="700" fill="#065f46">IndexedDB Sync Queue</text>
+  <text x="153" y="181" text-anchor="middle" font-size="7.5" fill="#374151">Offline event replay engine</text>
+  <text x="153" y="193" text-anchor="middle" font-size="7.5" fill="#374151">Auto-sync on reconnect</text>
+
+  <rect x="236" y="151" width="154" height="52" rx="8" fill="white" fill-opacity="0.85" filter="url(#ss)"/>
+  <text x="313" y="168" text-anchor="middle" font-size="8.5" font-weight="700" fill="#065f46">ONNX Edge Triage</text>
+  <text x="313" y="181" text-anchor="middle" font-size="7.5" fill="#374151">Browser-side inference</text>
+  <text x="313" y="193" text-anchor="middle" font-size="7.5" fill="#374151">Zero network — full PWA</text>
+
+  <!-- sub-boxes row 2 -->
+  <rect x="78" y="209" width="150" height="52" rx="8" fill="white" fill-opacity="0.85" filter="url(#ss)"/>
+  <text x="153" y="226" text-anchor="middle" font-size="8.5" font-weight="700" fill="#065f46">7 Languages + Voice I/O</text>
+  <text x="153" y="239" text-anchor="middle" font-size="7.5" fill="#374151">Hindi, Hinglish, Marathi</text>
+  <text x="153" y="251" text-anchor="middle" font-size="7.5" fill="#374151">Tamil, Telugu, Bengali, EN</text>
+
+  <rect x="236" y="209" width="154" height="52" rx="8" fill="white" fill-opacity="0.85" filter="url(#ss)"/>
+  <text x="313" y="226" text-anchor="middle" font-size="8.5" font-weight="700" fill="#065f46">Edge Optimization</text>
+  <text x="313" y="239" text-anchor="middle" font-size="7.5" fill="#374151">React.lazy() code-split</text>
+  <text x="313" y="251" text-anchor="middle" font-size="7.5" fill="#374151">&lt;200KB image compress (2G)</text>
+
+  <text x="233" y="279" text-anchor="middle" font-size="8" fill="#047857">Tailwind CSS  |  Framer Motion  |  Recharts  |  Leaflet Maps  |  Service Worker</text>
+  <text x="233" y="292" text-anchor="middle" font-size="8" fill="#047857">SHA-256 local auth  |  Demo Offline Login  |  Smart Share QR  |  366 i18n keys</text>
+  <text x="233" y="305" text-anchor="middle" font-size="8" fill="#047857">DISHA 2023 consent modal  |  Aadhaar Verhoeff checksum validation (client-side)</text>
+
+  <!-- ================================================================
+       TIER 2 — BACKEND (Express API Gateway)
+  ================================================================ -->
+  <rect x="68" y="370" width="330" height="295" rx="14" fill="url(#be-g)" stroke="#4ade80" stroke-width="1.5" filter="url(#cs)"/>
+  <rect x="76" y="379" width="130" height="17" rx="8" fill="#16a34a"/>
+  <text x="141" y="391" text-anchor="middle" font-size="8.5" font-weight="700" fill="white" letter-spacing="0.8">TIER 2 — BACKEND</text>
+  <rect x="213" y="379" width="52" height="17" rx="8" fill="#86efac" stroke="#16a34a" stroke-width="1"/>
+  <text x="239" y="391" text-anchor="middle" font-size="8" font-weight="600" fill="#14532d">Render/EC2</text>
+  <rect x="272" y="379" width="118" height="17" rx="8" fill="#15803d"/>
+  <text x="331" y="391" text-anchor="middle" font-size="8" font-weight="600" fill="white">DISHA 2023 Compliant</text>
+
+  <text x="233" y="420" text-anchor="middle" font-size="14.5" font-weight="700" fill="#14532d">Node.js + Express Cluster</text>
+  <text x="233" y="436" text-anchor="middle" font-size="10" fill="#15803d">Unified REST API + WebSocket + SSE  |  2 cluster workers  |  pg.Pool max:20</text>
+
+  <!-- 4 sub-boxes 2x2 -->
+  <rect x="78" y="444" width="148" height="52" rx="8" fill="white" fill-opacity="0.88" filter="url(#ss)"/>
+  <text x="152" y="461" text-anchor="middle" font-size="8.5" font-weight="700" fill="#14532d">JWT + bcrypt Auth</text>
+  <text x="152" y="474" text-anchor="middle" font-size="7.5" fill="#374151">Phone OTP / Passcode</text>
+  <text x="152" y="486" text-anchor="middle" font-size="7.5" fill="#374151">IDOR Policy Engine (middleware)</text>
+
+  <rect x="234" y="444" width="156" height="52" rx="8" fill="white" fill-opacity="0.88" filter="url(#ss)"/>
+  <text x="312" y="461" text-anchor="middle" font-size="8.5" font-weight="700" fill="#14532d">WebSocket + SSE Bus</text>
+  <text x="312" y="474" text-anchor="middle" font-size="7.5" fill="#374151">Ambulance telemetry (WS)</text>
+  <text x="312" y="486" text-anchor="middle" font-size="7.5" fill="#374151">Admin outbreak feed (SSE)</text>
+
+  <rect x="78" y="502" width="148" height="67" rx="8" fill="white" fill-opacity="0.88" filter="url(#ss)"/>
+  <text x="152" y="519" text-anchor="middle" font-size="8.5" font-weight="700" fill="#14532d">Event Dispatcher</text>
+  <text x="152" y="531" text-anchor="middle" font-size="7" fill="#374151">symptom_submitted</text>
+  <text x="152" y="542" text-anchor="middle" font-size="7" fill="#374151">outbreak_detected</text>
+  <text x="152" y="553" text-anchor="middle" font-size="7" fill="#374151">sync_restored  |  emergency_triggered</text>
+  <text x="152" y="564" text-anchor="middle" font-size="7" fill="#374151">maternal_alert  |  3-retry DLQ</text>
+
+  <rect x="234" y="502" width="156" height="67" rx="8" fill="white" fill-opacity="0.88" filter="url(#ss)"/>
+  <text x="312" y="519" text-anchor="middle" font-size="8.5" font-weight="700" fill="#14532d">B2B API Gateway</text>
+  <text x="312" y="531" text-anchor="middle" font-size="7.5" fill="#374151">sk_live_* keys / tenantId</text>
+  <text x="312" y="542" text-anchor="middle" font-size="7.5" fill="#374151">districtId scope isolation</text>
+  <text x="312" y="553" text-anchor="middle" font-size="7.5" fill="#374151">usage_count + last_used_at</text>
+  <text x="312" y="564" text-anchor="middle" font-size="7.5" fill="#374151">x-api-key middleware</text>
+
+  <text x="233" y="586" text-anchor="middle" font-size="8" fill="#15803d">Health Watchdog (30s)  |  Pre-signed S3 URLs  |  Twilio SMS alerts</text>
+  <text x="233" y="598" text-anchor="middle" font-size="8" fill="#15803d">CSV export (govt. reporting)  |  Role-based access control  |  Aadhaar SHA-256 hash</text>
+  <text x="233" y="610" text-anchor="middle" font-size="8" fill="#15803d">Pool health metrics endpoint  |  Failed events DLQ (capped 100 items JSON)</text>
+  <text x="233" y="622" text-anchor="middle" font-size="8" fill="#15803d">Emergency ambulance SOS  |  Sanitary pad request routing  |  Village registry mgmt</text>
+  <text x="233" y="647" text-anchor="middle" font-size="7" fill="#166534">Endpoints: /api/auth  /api/admin  /api/villages  /api/b2b  /api/ambulance  /api/schemes</text>
+  <text x="233" y="658" text-anchor="middle" font-size="7" fill="#166534">Aurora pool: pg.Pool { max: 20, idleTimeoutMillis: 30000, connectionTimeoutMillis: 2000 }</text>
+
+  <!-- ================================================================
+       TIER 3 — AI SERVICE (FastAPI Python)
+  ================================================================ -->
+  <rect x="68" y="677" width="330" height="340" rx="14" fill="url(#ai-g)" stroke="#a78bfa" stroke-width="1.5" filter="url(#cs)"/>
+  <rect x="76" y="686" width="125" height="17" rx="8" fill="#7c3aed"/>
+  <text x="138" y="698" text-anchor="middle" font-size="8.5" font-weight="700" fill="white" letter-spacing="0.8">TIER 3 — AI SERVICE</text>
+  <rect x="208" y="686" width="55" height="17" rx="8" fill="#c4b5fd" stroke="#7c3aed" stroke-width="1"/>
+  <text x="235" y="698" text-anchor="middle" font-size="8" font-weight="600" fill="#4c1d95">FastAPI</text>
+  <rect x="270" y="686" width="120" height="17" rx="8" fill="#4c1d95"/>
+  <text x="330" y="698" text-anchor="middle" font-size="8" font-weight="600" fill="#ddd6fe">Python 3.11 / PyTorch</text>
+
+  <text x="233" y="727" text-anchor="middle" font-size="14" font-weight="700" fill="#4c1d95">Neural AI Microservice</text>
+  <text x="233" y="743" text-anchor="middle" font-size="9.5" fill="#6d28d9">MiniLM-L12-v2 Transformer Embeddings  |  52,900-sample multilingual dataset</text>
+
+  <!-- AI modules row 1 — 3 cols -->
+  <rect x="78" y="751" width="97" height="56" rx="7" fill="white" fill-opacity="0.88" filter="url(#ss)"/>
+  <text x="126" y="768" text-anchor="middle" font-size="8.5" font-weight="700" fill="#4c1d95">SymptomNet-DL</text>
+  <text x="126" y="780" text-anchor="middle" font-size="7.5" fill="#374151">101 diseases</text>
+  <text x="126" y="791" text-anchor="middle" font-size="7.5" fill="#059669" font-weight="600">64.6% acc.</text>
+  <text x="126" y="802" text-anchor="middle" font-size="7" fill="#6b7280">vs ~1% baseline</text>
+
+  <rect x="181" y="751" width="97" height="56" rx="7" fill="white" fill-opacity="0.88" filter="url(#ss)"/>
+  <text x="229" y="768" text-anchor="middle" font-size="8.5" font-weight="700" fill="#4c1d95">LR Fallback Model</text>
+  <text x="229" y="780" text-anchor="middle" font-size="7.5" fill="#374151">Tier 2 safety net</text>
+  <text x="229" y="791" text-anchor="middle" font-size="7.5" fill="#059669" font-weight="600">51.8% acc.</text>
+  <text x="229" y="802" text-anchor="middle" font-size="7" fill="#6b7280">&lt;40% conf. → refusal</text>
+
+  <rect x="284" y="751" width="106" height="56" rx="7" fill="white" fill-opacity="0.88" filter="url(#ss)"/>
+  <text x="337" y="768" text-anchor="middle" font-size="8.5" font-weight="700" fill="#4c1d95">RAG-Sakhi</text>
+  <text x="337" y="780" text-anchor="middle" font-size="7.5" fill="#374151">243 chunks (WHO/MoHFW)</text>
+  <text x="337" y="791" text-anchor="middle" font-size="7.5" fill="#059669" font-weight="600">thresh 0.45 · F1=1.00</text>
+  <text x="337" y="802" text-anchor="middle" font-size="7" fill="#374151">Dual-track mem (LS+session)</text>
+
+  <!-- AI modules row 2 -->
+  <rect x="78" y="813" width="97" height="46" rx="7" fill="white" fill-opacity="0.88" filter="url(#ss)"/>
+  <text x="126" y="829" text-anchor="middle" font-size="8.5" font-weight="700" fill="#4c1d95">SkinAnalyzer</text>
+  <text x="126" y="841" text-anchor="middle" font-size="7.5" fill="#374151">16x16 canvas grid</text>
+  <text x="126" y="853" text-anchor="middle" font-size="7.5" fill="#374151">Blur/blank/tone guard</text>
+
+  <rect x="181" y="813" width="97" height="46" rx="7" fill="white" fill-opacity="0.88" filter="url(#ss)"/>
+  <text x="229" y="829" text-anchor="middle" font-size="8.5" font-weight="700" fill="#4c1d95">PregnancyRisk</text>
+  <text x="229" y="841" text-anchor="middle" font-size="7.5" fill="#374151">MoHFW + WHO BP/glucose</text>
+  <text x="229" y="853" text-anchor="middle" font-size="7.5" fill="#374151">Offline heuristic engine</text>
+
+  <rect x="284" y="813" width="106" height="46" rx="7" fill="white" fill-opacity="0.88" filter="url(#ss)"/>
+  <text x="337" y="829" text-anchor="middle" font-size="8.5" font-weight="700" fill="#4c1d95">MalnutritionDet.</text>
+  <text x="337" y="841" text-anchor="middle" font-size="7.5" fill="#374151">WHO Z-score + BMI</text>
+  <text x="337" y="853" text-anchor="middle" font-size="7.5" fill="#374151">SAM/MAM classification</text>
+
+  <!-- Guardrail bar -->
+  <rect x="78" y="865" width="312" height="30" rx="7" fill="#7c3aed" fill-opacity="0.12" stroke="#7c3aed" stroke-width="1"/>
+  <text x="234" y="881" text-anchor="middle" font-size="8.5" font-weight="700" fill="#4c1d95">Clinical Safety Guardrail — Conservative escalation on ambiguity</text>
+  <text x="234" y="893" text-anchor="middle" font-size="7.5" fill="#4c1d95">Rejects gibberish/spam input  |  Refuses disease guess if conf &lt;40%  |  Routes to ASHA/PHC</text>
+
+  <!-- Outbreak Agent bar -->
+  <rect x="78" y="901" width="312" height="30" rx="7" fill="#ea580c" fill-opacity="0.12" stroke="#ea580c" stroke-width="1"/>
+  <text x="234" y="917" text-anchor="middle" font-size="8.5" font-weight="700" fill="#9a3412">OutbreakAgent — Groq llama-3.3-70b-versatile (JSON mode)</text>
+  <text x="234" y="929" text-anchor="middle" font-size="7.5" fill="#9a3412">30min autonomous loop  |  3-attempt exp backoff  |  conf≥70% trigger  |  24h dedup</text>
+
+  <text x="234" y="951" text-anchor="middle" font-size="8" fill="#6d28d9">Autonomous agent: POST /api/admin/outbreak-alert → DynamoDB write → SSE broadcast</text>
+  <text x="234" y="963" text-anchor="middle" font-size="8" fill="#6d28d9">AGENT_SECRET env guard  |  GSI DescribeTable startup validation  |  Idempotent TTL check</text>
+  <text x="234" y="975" text-anchor="middle" font-size="8" fill="#6d28d9">FastAPI test suite  |  Groq API key (internal — separate from B2B sk_live_* partner keys)</text>
+  <text x="234" y="987" text-anchor="middle" font-size="8" fill="#6d28d9">ASHA deterministic fallback rules engine if models uncertain or offline</text>
+  <text x="234" y="999" text-anchor="middle" font-size="8" fill="#6d28d9">Pillow server-side image validator (secondary pass after browser canvas check)</text>
+
+  <!-- ================================================================
+       USERS PANEL
+  ================================================================ -->
+  <rect x="68" y="1024" width="330" height="44" rx="10" fill="white" stroke="#cbd5e1" stroke-width="1" filter="url(#ss)"/>
+  <text x="233" y="1039" text-anchor="middle" font-size="9.5" font-weight="700" fill="#374151">End Users</text>
+  <rect x="78" y="1046" width="56" height="16" rx="5" fill="#f0fdf4" stroke="#16a34a" stroke-width="1"/>
+  <text x="106" y="1058" text-anchor="middle" font-size="7.5" fill="#14532d">Villager</text>
+  <rect x="140" y="1046" width="64" height="16" rx="5" fill="#f0fdf4" stroke="#16a34a" stroke-width="1"/>
+  <text x="172" y="1058" text-anchor="middle" font-size="7.5" fill="#14532d">ASHA Worker</text>
+  <rect x="210" y="1046" width="56" height="16" rx="5" fill="#f0fdf4" stroke="#16a34a" stroke-width="1"/>
+  <text x="238" y="1058" text-anchor="middle" font-size="7.5" fill="#14532d">NGO Admin</text>
+  <rect x="272" y="1046" width="78" height="16" rx="5" fill="#f0fdf4" stroke="#16a34a" stroke-width="1"/>
+  <text x="311" y="1058" text-anchor="middle" font-size="7.5" fill="#14532d">District Admin</text>
+
+  <!-- ================================================================
+       TIER 4 — AWS AURORA POSTGRESQL (middle column)
+  ================================================================ -->
+  <rect x="415" y="75" width="460" height="460" rx="14" fill="url(#aw-g)" stroke="#fb923c" stroke-width="1.5" filter="url(#cs)"/>
+  <rect x="423" y="84" width="125" height="17" rx="8" fill="#d97706"/>
+  <text x="485" y="96" text-anchor="middle" font-size="8.5" font-weight="700" fill="white" letter-spacing="0.8">TIER 4 — AWS CLOUD</text>
+  <rect x="555" y="84" width="80" height="17" rx="8" fill="#fcd34d" stroke="#d97706" stroke-width="1"/>
+  <text x="595" y="96" text-anchor="middle" font-size="8" font-weight="600" fill="#78350f">ap-south-1  (Mumbai)</text>
+  <rect x="643" y="84" width="225" height="17" rx="8" fill="#78350f"/>
+  <text x="755" y="96" text-anchor="middle" font-size="8" font-weight="600" fill="#fde68a">Dual-DB: Transactional SQL + Event Telemetry NoSQL</text>
+
+  <text x="645" y="128" text-anchor="middle" font-size="15" font-weight="700" fill="#78350f">Amazon Aurora PostgreSQL</text>
+  <text x="645" y="145" text-anchor="middle" font-size="9.5" fill="#92400e">ACID-compliant medical records  |  TIMESTAMPTZ precision  |  SERIAL PKs  |  Aadhaar Verhoeff checksum</text>
+  <text x="645" y="159" text-anchor="middle" font-size="9" fill="#92400e">pg.Pool { max: 20 }  |  Relation chain: users → village_health → pregnancy_data → symptoms</text>
+
+  <!-- Aurora table grid 2x4 -->
+  <rect x="423" y="167" width="220" height="40" rx="7" fill="white" fill-opacity="0.88" filter="url(#ss)"/>
+  <text x="533" y="184" text-anchor="middle" font-size="8.5" font-weight="700" fill="#78350f">users</text>
+  <text x="533" y="198" text-anchor="middle" font-size="7.5" fill="#374151">Phone(UK), role, villageId(FK), Aadhaar SHA-256 hash, Verhoeff CRC</text>
+
+  <rect x="651" y="167" width="216" height="40" rx="7" fill="white" fill-opacity="0.88" filter="url(#ss)"/>
+  <text x="759" y="184" text-anchor="middle" font-size="8.5" font-weight="700" fill="#78350f">village_health</text>
+  <text x="759" y="198" text-anchor="middle" font-size="7.5" fill="#374151">population, outbreakAlert, lat/lng, districtId, TIMESTAMPTZ</text>
+
+  <rect x="423" y="213" width="220" height="40" rx="7" fill="white" fill-opacity="0.88" filter="url(#ss)"/>
+  <text x="533" y="230" text-anchor="middle" font-size="8.5" font-weight="700" fill="#78350f">maternal_health</text>
+  <text x="533" y="244" text-anchor="middle" font-size="7.5" fill="#374151">BP, blood sugar, weight, trimester, WHO risk level (Low/Med/High)</text>
+
+  <rect x="651" y="213" width="216" height="40" rx="7" fill="white" fill-opacity="0.88" filter="url(#ss)"/>
+  <text x="759" y="230" text-anchor="middle" font-size="8.5" font-weight="700" fill="#78350f">symptoms</text>
+  <text x="759" y="244" text-anchor="middle" font-size="7.5" fill="#374151">disease, prediction, confidence, model_used, client_request_id, villageId(FK)</text>
+
+  <rect x="423" y="259" width="220" height="40" rx="7" fill="white" fill-opacity="0.88" filter="url(#ss)"/>
+  <text x="533" y="276" text-anchor="middle" font-size="8.5" font-weight="700" fill="#78350f">ambulance_requests</text>
+  <text x="533" y="290" text-anchor="middle" font-size="7.5" fill="#374151">SOS coords, status, outcome_log, TIMESTAMPTZ, priority</text>
+
+  <rect x="651" y="259" width="216" height="40" rx="7" fill="white" fill-opacity="0.88" filter="url(#ss)"/>
+  <text x="759" y="276" text-anchor="middle" font-size="8.5" font-weight="700" fill="#78350f">government_schemes</text>
+  <text x="759" y="290" text-anchor="middle" font-size="7.5" fill="#374151">JSY, PMMVY, Ayushman Bharat, RBSK, PMSBY eligibility JSON</text>
+
+  <rect x="423" y="305" width="220" height="40" rx="7" fill="white" fill-opacity="0.88" filter="url(#ss)"/>
+  <text x="533" y="322" text-anchor="middle" font-size="8.5" font-weight="700" fill="#78350f">vaccination_records</text>
+  <text x="533" y="336" text-anchor="middle" font-size="7.5" fill="#374151">Mission Indradhanush schedule, child ID, completion status</text>
+
+  <rect x="651" y="305" width="216" height="40" rx="7" fill="white" fill-opacity="0.88" filter="url(#ss)"/>
+  <text x="759" y="322" text-anchor="middle" font-size="8.5" font-weight="700" fill="#78350f">malnutrition_cases</text>
+  <text x="759" y="336" text-anchor="middle" font-size="7.5" fill="#374151">SAM/MAM, WHO Z-score + BMI, child height/weight measurements</text>
+
+  <!-- S3 + extras row -->
+  <rect x="423" y="351" width="444" height="40" rx="7" fill="white" fill-opacity="0.88" filter="url(#ss)"/>
+  <text x="645" y="368" text-anchor="middle" font-size="8.5" font-weight="700" fill="#78350f">Amazon S3 (ap-south-1) + SQLite Dev Fallback</text>
+  <text x="645" y="381" text-anchor="middle" font-size="7.5" fill="#374151">S3: Pre-signed URL clinical photo upload (&lt;200KB) | SQLite: identical schema, zero-config local dev/eval startup</text>
+
+  <!-- Aurora meta -->
+  <rect x="423" y="397" width="444" height="55" rx="7" fill="#d97706" fill-opacity="0.08" stroke="#d97706" stroke-width="1"/>
+  <text x="645" y="413" text-anchor="middle" font-size="8" fill="#78350f" font-weight="600">db.t3.micro — scales to r6g.large  |  Provisioned capacity  |  15+ tables total</text>
+  <text x="645" y="426" text-anchor="middle" font-size="7.5" fill="#92400e">ACID transactions non-negotiable — a corrupted pregnancy record could cost a life</text>
+  <text x="645" y="439" text-anchor="middle" font-size="7.5" fill="#92400e">Writes from: Express direct SQL | Event Dispatcher deferred async | DISHA 2023 audit logs</text>
+  <text x="645" y="452" text-anchor="middle" font-size="7.5" fill="#92400e">B2B endpoints: WHERE "districtId" = ? tenant isolation on all aggregate queries</text>
+  <text x="645" y="465" text-anchor="middle" font-size="7.5" fill="#92400e">Connection: aurora-postgresql://cluster.ap-south-1.rds.amazonaws.com:5432</text>
+  <text x="645" y="478" text-anchor="middle" font-size="7.5" fill="#92400e">Aadhaar: Verhoeff checksum client + SHA-256 server hash — plaintext never stored</text>
+  <text x="645" y="492" text-anchor="middle" font-size="7.5" fill="#92400e">NGO B2B Impact Analytics: referral closure %, vaccination completion %, PDF export</text>
+  <text x="645" y="506" text-anchor="middle" font-size="7.5" fill="#92400e">District config: custom outbreak thresholds, emergency contacts, automation params</text>
+  <text x="645" y="519" text-anchor="middle" font-size="7.5" fill="#92400e">security_audit_logs — actor (PK) + timestamp (SK) | DISHA 2023 compliance trail</text>
+
+  <!-- ================================================================
+       TIER 4 — AMAZON DYNAMODB (middle column, lower)
+  ================================================================ -->
+  <rect x="415" y="546" width="460" height="465" rx="14" fill="#fff7ed" stroke="#fb923c" stroke-width="1.5" filter="url(#cs)"/>
+  <rect x="423" y="555" width="125" height="17" rx="8" fill="#ea580c"/>
+  <text x="485" y="567" text-anchor="middle" font-size="8.5" font-weight="700" fill="white" letter-spacing="0.8">AMAZON DYNAMODB</text>
+  <rect x="555" y="555" width="140" height="17" rx="8" fill="#fed7aa" stroke="#ea580c" stroke-width="1"/>
+  <text x="625" y="567" text-anchor="middle" font-size="8" font-weight="600" fill="#7c2d12">PAY_PER_REQUEST  |  5 Tables  |  7 GSIs</text>
+  <rect x="703" y="555" width="164" height="17" rx="8" fill="#7c2d12"/>
+  <text x="785" y="567" text-anchor="middle" font-size="8" font-weight="600" fill="#fde68a">Millisecond write latency — &lt;10ms cluster alert</text>
+
+  <text x="645" y="600" text-anchor="middle" font-size="14" font-weight="700" fill="#7c2d12">High-velocity telemetry + outbreak event store</text>
+  <text x="645" y="616" text-anchor="middle" font-size="9" fill="#9a3412">Append-only high-throughput streams  |  Time-series queries  |  TTL auto-expiry</text>
+  <text x="645" y="630" text-anchor="middle" font-size="9" fill="#9a3412">Production fix: Scan → Query  |  Atomic UpdateCommand (no race conditions)  |  GSI DescribeTable on startup</text>
+
+  <!-- DynamoDB table 1 -->
+  <rect x="423" y="638" width="220" height="70" rx="8" fill="white" fill-opacity="0.92" filter="url(#ss)"/>
+  <text x="533" y="655" text-anchor="middle" font-size="9" font-weight="700" fill="#7c2d12">outbreak_telemetry</text>
+  <text x="533" y="668" text-anchor="middle" font-size="7.5" fill="#374151">PK: villageId  |  SK: detectedAt</text>
+  <text x="533" y="679" text-anchor="middle" font-size="7.5" fill="#374151">GSI: disease-index (disease+detectedAt)</text>
+  <text x="533" y="690" text-anchor="middle" font-size="7.5" fill="#374151">GSI: district-time-index (districtId+detectedAt)</text>
+  <text x="533" y="701" text-anchor="middle" font-size="7" fill="#9a3412">AI-detected village clusters | getDistrictId() Aurora join before write</text>
+
+  <!-- DynamoDB table 2 -->
+  <rect x="651" y="638" width="216" height="70" rx="8" fill="white" fill-opacity="0.92" filter="url(#ss)"/>
+  <text x="759" y="655" text-anchor="middle" font-size="9" font-weight="700" fill="#7c2d12">village_node_state</text>
+  <text x="759" y="668" text-anchor="middle" font-size="7.5" fill="#374151">PK: villageId  |  TTL: expiresAt (7 days)</text>
+  <text x="759" y="679" text-anchor="middle" font-size="7.5" fill="#374151">GSI: all-nodes-index (cross-village)</text>
+  <text x="759" y="690" text-anchor="middle" font-size="7.5" fill="#374151">States: healthy | warning | outbreak</text>
+  <text x="759" y="701" text-anchor="middle" font-size="7" fill="#9a3412">Drives Live Village Map dashboard · Leaflet real-time overlay</text>
+
+  <!-- DynamoDB table 3 -->
+  <rect x="423" y="714" width="220" height="60" rx="8" fill="white" fill-opacity="0.92" filter="url(#ss)"/>
+  <text x="533" y="731" text-anchor="middle" font-size="9" font-weight="700" fill="#7c2d12">sync_queues</text>
+  <text x="533" y="744" text-anchor="middle" font-size="7.5" fill="#374151">PK: deviceId  |  SK: queuedAt</text>
+  <text x="533" y="755" text-anchor="middle" font-size="7.5" fill="#374151">GSI: status-index (status+queuedAt)</text>
+  <text x="533" y="766" text-anchor="middle" font-size="7" fill="#9a3412">Offline client sync logs during outages</text>
+
+  <!-- DynamoDB table 4 -->
+  <rect x="651" y="714" width="216" height="60" rx="8" fill="white" fill-opacity="0.92" filter="url(#ss)"/>
+  <text x="759" y="731" text-anchor="middle" font-size="9" font-weight="700" fill="#7c2d12">emergency_streams</text>
+  <text x="759" y="744" text-anchor="middle" font-size="7.5" fill="#374151">PK: districtId  |  SK: streamId</text>
+  <text x="759" y="755" text-anchor="middle" font-size="7.5" fill="#374151">GSI: priority-index  |  district-date-index</text>
+  <text x="759" y="766" text-anchor="middle" font-size="7" fill="#9a3412">P1 SOS ambulance audit trail</text>
+
+  <!-- DynamoDB table 5 full-width -->
+  <rect x="423" y="780" width="444" height="40" rx="8" fill="white" fill-opacity="0.92" filter="url(#ss)"/>
+  <text x="645" y="797" text-anchor="middle" font-size="9" font-weight="700" fill="#7c2d12">security_audit_logs — PK: actor  |  SK: timestamp  |  TTL: none (retained indefinitely)</text>
+  <text x="645" y="810" text-anchor="middle" font-size="7.5" fill="#9a3412">Access isolation — cross-actor scanning blocked  |  Admin action audit trail  |  DISHA 2023 compliance</text>
+
+  <!-- DynamoDB hardening block -->
+  <rect x="423" y="826" width="444" height="80" rx="7" fill="#ea580c" fill-opacity="0.07" stroke="#ea580c" stroke-width="1"/>
+  <text x="645" y="843" text-anchor="middle" font-size="8.5" font-weight="700" fill="#7c2d12">Production Hardening Applied</text>
+  <text x="423" y="858" dx="10" font-size="7.5" fill="#92400e">Scan → Query:  outbreak_telemetry.district-time-index + emergency_streams.district-date-index bounded queries</text>
+  <text x="423" y="870" dx="10" font-size="7.5" fill="#92400e">Dynamic districtId:  getDistrictId(db, villageId) — Aurora join resolves real district before every DynamoDB write</text>
+  <text x="423" y="882" dx="10" font-size="7.5" fill="#92400e">Atomic UpdateCommand:  patches only 4 owned fields — safe under concurrent writes; no PutCommand race conditions</text>
+  <text x="423" y="894" dx="10" font-size="7.5" fill="#92400e">GSI Validation:  DescribeTableCommand on startup — compares required vs actual GSI names, fails loudly if missing</text>
+  <text x="423" y="906" dx="10" font-size="7.5" fill="#92400e">Idempotent TTL:  ensureTTL() checks ENABLED|ENABLING state before calling — safe to re-run on every restart</text>
+
+  <!-- DynamoDB billing note -->
+  <text x="645" y="928" text-anchor="middle" font-size="8" fill="#b45309">PAY_PER_REQUEST billing — auto-scales to millions of writes per second with zero provisioning overhead</text>
+  <text x="645" y="940" text-anchor="middle" font-size="8" fill="#b45309">7 GSIs total  |  TTL active on 3 tables (outbreak_telemetry, village_node_state, sync_queues)</text>
+  <text x="645" y="952" text-anchor="middle" font-size="8" fill="#b45309">dynamoDB.endpoint: ap-south-1  |  PAY_PER_REQUEST  |  Multi-AZ managed by AWS</text>
+  <text x="645" y="964" text-anchor="middle" font-size="8" fill="#b45309">DLQ: Failed events → capped 100-item JSON file  |  SSE broadcast to all admin sessions on outbreak</text>
+  <text x="645" y="976" text-anchor="middle" font-size="8" fill="#b45309">B2B /api/b2b/outbreaks endpoint scoped via districtId tenant from API key table</text>
+  <text x="645" y="988" text-anchor="middle" font-size="8" fill="#b45309">Verhoeff checksum validated before user Aadhaar stored in Aurora — no DynamoDB crossover for PII</text>
+
+  <!-- ================================================================
+       RIGHT COLUMN — EXTERNAL SERVICES (top)
+  ================================================================ -->
+  <rect x="894" y="75" width="686" height="160" rx="14" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.5" filter="url(#cs)"/>
+  <rect x="902" y="84" width="125" height="17" rx="8" fill="#2563eb"/>
+  <text x="964" y="96" text-anchor="middle" font-size="8.5" font-weight="700" fill="white" letter-spacing="0.8">EXTERNAL SERVICES</text>
+
+  <rect x="902" y="108" width="174" height="72" rx="9" fill="white" fill-opacity="0.9" filter="url(#ss)"/>
+  <text x="989" y="127" text-anchor="middle" font-size="12" font-weight="700" fill="#1d4ed8">Groq Cloud</text>
+  <text x="989" y="142" text-anchor="middle" font-size="8.5" fill="#374151">llama-3.3-70b-versatile</text>
+  <text x="989" y="154" text-anchor="middle" font-size="8" fill="#374151">RAG-Sakhi clinical queries</text>
+  <text x="989" y="165" text-anchor="middle" font-size="8" fill="#374151">OutbreakAgent reasoning (JSON mode)</text>
+  <text x="989" y="175" text-anchor="middle" font-size="8" fill="#374151">3-attempt exp. backoff  |  Groq key = internal env</text>
+
+  <rect x="1085" y="108" width="174" height="72" rx="9" fill="white" fill-opacity="0.9" filter="url(#ss)"/>
+  <text x="1172" y="127" text-anchor="middle" font-size="12" font-weight="700" fill="#be123c">Twilio SMS</text>
+  <text x="1172" y="142" text-anchor="middle" font-size="8.5" fill="#374151">Phone OTP verification</text>
+  <text x="1172" y="154" text-anchor="middle" font-size="8" fill="#374151">Outbreak targeted alerts</text>
+  <text x="1172" y="165" text-anchor="middle" font-size="8" fill="#374151">Emergency SOS dispatch</text>
+  <text x="1172" y="175" text-anchor="middle" font-size="8" fill="#374151">ASHA/Admin targeted SMS</text>
+
+  <rect x="1268" y="108" width="305" height="72" rx="9" fill="white" fill-opacity="0.9" filter="url(#ss)"/>
+  <text x="1420" y="127" text-anchor="middle" font-size="12" font-weight="700" fill="#7c3aed">paraphrase-multilingual-MiniLM-L12-v2</text>
+  <text x="1420" y="142" text-anchor="middle" font-size="8.5" fill="#374151">Transformer embedding model — powers SymptomNet DL</text>
+  <text x="1420" y="154" text-anchor="middle" font-size="8" fill="#374151">52,900 samples across 7 languages / 101 disease classes</text>
+  <text x="1420" y="165" text-anchor="middle" font-size="8" fill="#374151">sentence-transformers library  |  PyTorch inference</text>
+  <text x="1420" y="175" text-anchor="middle" font-size="8" fill="#374151">Multilingual — handles Hindi, Marathi, Tamil, Telugu, Bengali, EN, Hinglish</text>
+
+  <!-- ================================================================
+       DIFFERENTIATOR 1 — Offline-First ONNX
+  ================================================================ -->
+  <rect x="894" y="248" width="686" height="178" rx="12" fill="white" stroke="#10b981" stroke-width="2.5" filter="url(#cals)"/>
+  <rect x="894" y="248" width="686" height="28" rx="12" fill="#059669"/>
+  <rect x="894" y="262" width="686" height="14" fill="#059669"/>
+  <text x="1237" y="268" text-anchor="middle" font-size="10.5" font-weight="700" fill="white" letter-spacing="0.5">DIFFERENTIATOR 1 — OFFLINE-FIRST ONNX INFERENCE + 7-LANGUAGE VOICE I/O</text>
+
+  <text x="1237" y="296" text-anchor="middle" font-size="10" font-weight="600" fill="#064e3b">Zero-connectivity clinical decision support + universal language accessibility</text>
+
+  <rect x="904" y="304" width="325" height="110" rx="8" fill="#f0fdf4"/>
+  <text x="1066" y="320" text-anchor="middle" font-size="8.5" font-weight="700" fill="#065f46">Offline Inference Pipeline</text>
+  <text x="912" y="335" font-size="8" fill="#374151">- ONNX SymptomNet runs in-browser — zero network needed</text>
+  <text x="912" y="348" font-size="8" fill="#374151">- IndexedDB queues submissions during signal outages</text>
+  <text x="912" y="361" font-size="8" fill="#374151">- Auto-replays on reconnect (online/offline event listener)</text>
+  <text x="912" y="374" font-size="8" fill="#374151">- SHA-256 local auth — works offline without server</text>
+  <text x="912" y="387" font-size="8" fill="#374151">- Demo Offline Login (pre-seeded cred hashes on first load)</text>
+  <text x="912" y="400" font-size="8" fill="#374151">- WHO Z-score + BP risk computed client-side (offline vitals)</text>
+
+  <rect x="1239" y="304" width="333" height="110" rx="8" fill="#f0fdf4"/>
+  <text x="1405" y="320" text-anchor="middle" font-size="8.5" font-weight="700" fill="#065f46">7-Language Voice + Image Pipeline</text>
+  <text x="1247" y="335" font-size="8" fill="#374151">- 7 languages natively: EN, Hindi, Hinglish, Marathi, Tamil, Telugu, Bengali</text>
+  <text x="1247" y="348" font-size="8" fill="#374151">- Voice-to-Text for non-literate rural users (Speech API)</text>
+  <text x="1247" y="361" font-size="8" fill="#374151">- 366 i18n translation keys — 100% synchronization verified</text>
+  <text x="1247" y="374" font-size="8" fill="#374151">- Canvas 16x16 pixel grid: skin tone, blur, blank validation</text>
+  <text x="1247" y="387" font-size="8" fill="#374151">- browser-image-compression: 5MB → &lt;200KB (2G upload)</text>
+  <text x="1247" y="400" font-size="8" fill="#374151">- Pillow server-side second-pass image validator</text>
+
+  <!-- ================================================================
+       DIFFERENTIATOR 2 — B2B Scoped API Keys
+  ================================================================ -->
+  <rect x="894" y="440" width="686" height="175" rx="12" fill="white" stroke="#2563eb" stroke-width="2.5" filter="url(#cals)"/>
+  <rect x="894" y="440" width="686" height="28" rx="12" fill="#2563eb"/>
+  <rect x="894" y="454" width="686" height="14" fill="#2563eb"/>
+  <text x="1237" y="460" text-anchor="middle" font-size="10.5" font-weight="700" fill="white" letter-spacing="0.5">DIFFERENTIATOR 2 — B2B SCOPED API KEYS + NGO IMPACT ANALYTICS</text>
+
+  <text x="1237" y="488" text-anchor="middle" font-size="10" font-weight="600" fill="#1e3a8a">Production-grade partner API tenancy + grant-proof reporting</text>
+
+  <rect x="904" y="496" width="325" height="107" rx="8" fill="#eff6ff"/>
+  <text x="1066" y="512" text-anchor="middle" font-size="8.5" font-weight="700" fill="#1e40af">B2B API Gateway Architecture</text>
+  <text x="912" y="527" font-size="8" fill="#374151">- sk_live_* keys scoped to tenantId = districtId</text>
+  <text x="912" y="540" font-size="8" fill="#374151">- Middleware: x-api-key validated against api_keys table</text>
+  <text x="912" y="553" font-size="8" fill="#374151">- Per-request: usage_count++ + last_used_at update</text>
+  <text x="912" y="566" font-size="8" fill="#374151">- Endpoints: /b2b/me, /villages, /analytics, /ambulances, /outbreaks</text>
+  <text x="912" y="579" font-size="8" fill="#374151">- All queries: WHERE "districtId" = ? (tenant isolation)</text>
+  <text x="912" y="592" font-size="8" fill="#374151">- B2BUsageDashboard: per-tenant API calls + active keys view</text>
+
+  <rect x="1239" y="496" width="333" height="107" rx="8" fill="#eff6ff"/>
+  <text x="1405" y="512" text-anchor="middle" font-size="8.5" font-weight="700" fill="#1e40af">NGO Impact Analytics Dashboard</text>
+  <text x="1247" y="527" font-size="8" fill="#374151">- Referral closure rate (%) — grant-proof metric</text>
+  <text x="1247" y="540" font-size="8" fill="#374151">- Vaccination completion % — Mission Indradhanush KPI</text>
+  <text x="1247" y="553" font-size="8" fill="#374151">- Risk Watchlist: high-risk pregnancies, overdue vaccinations</text>
+  <text x="1247" y="566" font-size="8" fill="#374151">- Top Performers leaderboard (ASHA worker ranking)</text>
+  <text x="1247" y="579" font-size="8" fill="#374151">- Recommended Actions engine (AI-driven)</text>
+  <text x="1247" y="592" font-size="8" fill="#374151">- Clean PDF export — district CMO monthly report</text>
+
+  <!-- ================================================================
+       DIFFERENTIATOR 3 — Autonomous Outbreak Agent (Layer 1)
+  ================================================================ -->
+  <rect x="894" y="629" width="686" height="190" rx="12" fill="white" stroke="#7c3aed" stroke-width="2.5" filter="url(#cals)"/>
+  <rect x="894" y="629" width="686" height="28" rx="12" fill="#7c3aed"/>
+  <rect x="894" y="643" width="686" height="14" fill="#7c3aed"/>
+  <text x="1237" y="649" text-anchor="middle" font-size="10.5" font-weight="700" fill="white" letter-spacing="0.5">DIFFERENTIATOR 3 — AUTONOMOUS OUTBREAK AGENT (LAYER 1 — ACTIVE DETECTION)</text>
+
+  <text x="1237" y="677" text-anchor="middle" font-size="10" font-weight="600" fill="#4c1d95">Closed-loop AI agent — no human trigger — runs every 30 minutes</text>
+
+  <rect x="904" y="685" width="660" height="44" rx="8" fill="#faf5ff"/>
+  <text x="1234" y="703" text-anchor="middle" font-size="8.5" fill="#4c1d95" font-weight="600">Every 30 min: OutbreakAgent queries Aurora symptom clusters → Groq Llama-3.3-70b (JSON mode, 3-attempt exp backoff)</text>
+  <text x="1234" y="718" text-anchor="middle" font-size="8.5" fill="#4c1d95" font-weight="600">If LLM confidence ≥ 70%: check DynamoDB 24h dedup → POST /api/admin/outbreak-alert → DynamoDB write → SSE broadcast → Live Map update</text>
+
+  <rect x="904" y="735" width="325" height="76" rx="8" fill="#faf5ff"/>
+  <text x="1066" y="751" text-anchor="middle" font-size="8.5" font-weight="700" fill="#4c1d95">Agent Architecture</text>
+  <text x="912" y="766" font-size="8" fill="#374151">- AGENT_SECRET env guard — fails loudly at startup if missing</text>
+  <text x="912" y="779" font-size="8" fill="#374151">- Dynamic districtId: getDistrictId() Aurora join pre-write</text>
+  <text x="912" y="792" font-size="8" fill="#374151">- Atomic UpdateCommand (patches 4 fields, no race condition)</text>
+  <text x="912" y="805" font-size="8" fill="#374151">- Idempotent ensureTTL() — safe on every service restart</text>
+
+  <rect x="1239" y="735" width="333" height="76" rx="8" fill="#faf5ff"/>
+  <text x="1405" y="751" text-anchor="middle" font-size="8.5" font-weight="700" fill="#4c1d95">Trigger Threshold + Notifications</text>
+  <text x="1247" y="766" font-size="8" fill="#374151">- Example: 5+ fever cases in one village within 24h</text>
+  <text x="1247" y="779" font-size="8" fill="#374151">- DynamoDB: outbreak_telemetry write (villageId+detectedAt)</text>
+  <text x="1247" y="792" font-size="8" fill="#374151">- village_node_state: state='outbreak' → map red indicator</text>
+  <text x="1247" y="805" font-size="8" fill="#374151">- SSE: Admin dashboard Outbreak Radar live update + reasoning</text>
+
+  <!-- ================================================================
+       DIFFERENTIATOR 4 — Predictive Village Risk Intelligence (Layer 2 EWS)
+  ================================================================ -->
+  <rect x="894" y="833" width="686" height="205" rx="12" fill="white" stroke="#0891b2" stroke-width="2.5" filter="url(#cals)"/>
+  <rect x="894" y="833" width="686" height="28" rx="12" fill="#0891b2"/>
+  <rect x="894" y="847" width="686" height="14" fill="#0891b2"/>
+  <text x="1237" y="853" text-anchor="middle" font-size="10.5" font-weight="700" fill="white" letter-spacing="0.5">DIFFERENTIATOR 4 — PREDICTIVE VILLAGE RISK INTELLIGENCE (LAYER 2 — EARLY WARNING)</text>
+
+  <text x="1237" y="881" text-anchor="middle" font-size="10" font-weight="600" fill="#164e63">Forecasts elevated village risk BEFORE outbreaks begin — proactive, not reactive</text>
+  <text x="1237" y="896" text-anchor="middle" font-size="9" fill="#164e63">Transparent weighted 4-signal engine — XAI contributor bars — Intervention Impact Forecast simulator</text>
+
+  <!-- 4 signal boxes -->
+  <rect x="904" y="904" width="155" height="65" rx="8" fill="#ecfeff" stroke="#0891b2" stroke-width="1"/>
+  <text x="981" y="920" text-anchor="middle" font-size="10" font-weight="700" fill="#0e7490">40%</text>
+  <text x="981" y="934" text-anchor="middle" font-size="8.5" font-weight="700" fill="#0e7490">Symptom Trend Growth</text>
+  <text x="981" y="947" text-anchor="middle" font-size="7.5" fill="#374151">Rate of rise in village</text>
+  <text x="981" y="958" text-anchor="middle" font-size="7.5" fill="#374151">symptom submissions</text>
+
+  <rect x="1067" y="904" width="155" height="65" rx="8" fill="#ecfeff" stroke="#0891b2" stroke-width="1"/>
+  <text x="1144" y="920" text-anchor="middle" font-size="10" font-weight="700" fill="#0e7490">25%</text>
+  <text x="1144" y="934" text-anchor="middle" font-size="8.5" font-weight="700" fill="#0e7490">Outbreak Proximity</text>
+  <text x="1144" y="947" text-anchor="middle" font-size="7.5" fill="#374151">Nearby village active</text>
+  <text x="1144" y="958" text-anchor="middle" font-size="7.5" fill="#374151">outbreak cluster distance</text>
+
+  <rect x="1230" y="904" width="155" height="65" rx="8" fill="#ecfeff" stroke="#0891b2" stroke-width="1"/>
+  <text x="1307" y="920" text-anchor="middle" font-size="10" font-weight="700" fill="#0e7490">20%</text>
+  <text x="1307" y="934" text-anchor="middle" font-size="8.5" font-weight="700" fill="#0e7490">NVBDCP Seasonal Calendar</text>
+  <text x="1307" y="947" text-anchor="middle" font-size="7.5" fill="#374151">India-specific disease</text>
+  <text x="1307" y="958" text-anchor="middle" font-size="7.5" fill="#374151">seasonal risk calendar</text>
+
+  <rect x="1393" y="904" width="179" height="65" rx="8" fill="#ecfeff" stroke="#0891b2" stroke-width="1"/>
+  <text x="1482" y="920" text-anchor="middle" font-size="10" font-weight="700" fill="#0e7490">15%</text>
+  <text x="1482" y="934" text-anchor="middle" font-size="8.5" font-weight="700" fill="#0e7490">Referral Backlog</text>
+  <text x="1482" y="947" text-anchor="middle" font-size="7.5" fill="#374151">Unresolved referral</text>
+  <text x="1482" y="958" text-anchor="middle" font-size="7.5" fill="#374151">queue depth per village</text>
+
+  <rect x="904" y="976" width="660" height="54" rx="8" fill="#ecfeff" fill-opacity="0.5"/>
+  <text x="1234" y="993" text-anchor="middle" font-size="8.5" font-weight="700" fill="#0e7490">Output: Village Risk Score 0–100  |  District-wide heatmap (GREEN → AMBER → RED)</text>
+  <text x="1234" y="1007" text-anchor="middle" font-size="8" fill="#374151">Admin drilldown: XAI contributor bars + recommended prevention actions + intervention impact forecast simulator</text>
+  <text x="1234" y="1020" text-anchor="middle" font-size="8" fill="#374151">ASHA/NGO Risk Forecast Tab: village score + health category flags + offline graceful fallback</text>
+
+  <!-- ================================================================
+       DATA FLOW ARROWS
+  ================================================================ -->
+  <!-- Users → Frontend (vertical up) -->
+  <line x1="233" y1="1024" x2="233" y2="360" stroke="#059669" stroke-width="2" marker-end="url(#m-em)"/>
+  <!-- Frontend → Backend -->
+  <line x1="233" y1="360" x2="233" y2="370" stroke="#059669" stroke-width="2" marker-end="url(#m-em)"/>
+  <!-- Backend → AI -->
+  <line x1="233" y1="665" x2="233" y2="677" stroke="#7c3aed" stroke-width="2" marker-end="url(#m-pu)"/>
+  <!-- Backend → Aurora (right) -->
+  <path d="M398 460 Q408 460 415 320" stroke="#d97706" stroke-width="2" fill="none" stroke-dasharray="7,3" marker-end="url(#m-or)"/>
+  <!-- Backend → DynamoDB (right) -->
+  <path d="M398 520 Q408 520 415 620" stroke="#d97706" stroke-width="2" fill="none" stroke-dasharray="7,3" marker-end="url(#m-or)"/>
+  <!-- AI → Aurora (query clusters) -->
+  <path d="M398 780 Q406 780 415 750" stroke="#7c3aed" stroke-width="1.5" fill="none" stroke-dasharray="5,4" marker-end="url(#m-pu)"/>
+  <!-- OutbreakAgent loop back to Backend -->
+  <path d="M398 900 Q440 975 440 600 Q440 530 398 520" stroke="#ea580c" stroke-width="2" fill="none" stroke-dasharray="7,3" marker-end="url(#m-re)"/>
+  <!-- AI → Groq (right) -->
+  <line x1="398" y1="800" x2="894" y2="150" stroke="#7c3aed" stroke-width="1.5" fill="none" stroke-dasharray="5,4" marker-end="url(#m-pu)"/>
+  <!-- Backend → Twilio -->
+  <line x1="398" y1="490" x2="1085" y2="165" stroke="#2563eb" stroke-width="1.5" stroke-dasharray="4,4" marker-end="url(#m-bl)"/>
+
+  <!-- Flow labels -->
+  <rect x="246" y="690" width="142" height="13" rx="4" fill="#7c3aed" fill-opacity="0.1"/>
+  <text x="317" y="701" text-anchor="middle" font-size="7.5" fill="#4c1d95" font-weight="600">HTTP /api/ai/* triage calls</text>
+
+  <rect x="246" y="714" width="142" height="13" rx="4" fill="#059669" fill-opacity="0.1"/>
+  <text x="317" y="725" text-anchor="middle" font-size="7.5" fill="#065f46" font-weight="600">REST + WebSocket + SSE</text>
+
+  <text x="458" y="398" text-anchor="middle" font-size="7.5" fill="#d97706" font-weight="600" transform="rotate(-70,458,398)">SQL/Aurora</text>
+  <text x="460" y="580" text-anchor="middle" font-size="7.5" fill="#d97706" font-weight="600" transform="rotate(70,460,580)">DynamoDB</text>
+
+  <!-- OutbreakAgent loop label -->
+  <text x="450" y="775" font-size="7.5" fill="#ea580c" font-weight="600" transform="rotate(-90,450,775)">OutbreakAgent 30min loop</text>
+
+  <!-- ================================================================
+       FOOTER
+  ================================================================ -->
+  <line x1="80" y1="1060" x2="1520" y2="1060" stroke="#10b981" stroke-width="1" opacity="0.3"/>
+  <text x="800" y="1072" text-anchor="middle" font-size="8.5" fill="#9ca3af">SwasthAI Guardian Platform — Built for Bharat's villages, not just its cities — Devpost H0 Hackathon 2026 — Track: Monetizable B2B App</text>
+</svg>

@@ -54,7 +54,7 @@ graph LR
 
 ---
 
-## 📦 Component Roles
+## Component Roles
 
 The SwasthAI architecture is divided into three specialized tiers, built for low-latency execution and zero-connectivity resilience:
 
@@ -110,7 +110,7 @@ To ensure the app remains fully functional with zero initial setup for evaluator
 
 ### Relational Database ERD (Amazon Aurora PostgreSQL)
 
-Aurora acts as the consistent transactional store. The relationship chain is designed as:
+Aurora acts as the consistent transactional store. The ERD below shows the core clinical tables (simplified for readability; 15 additional tables for auth, admin, schemes, and telemetry exist in `backend/db/schema.js`). The relationship chain is designed as:
 `users` → `village_health` → `pregnancy_data` → `symptoms`
 
 ```mermaid
@@ -169,9 +169,9 @@ Every DynamoDB table is designed around specific access patterns to support zero
 
 | Table Name | Partition Key (PK / Hash) | Sort Key (SK / Range) | GSIs / TTL | Access Pattern & Design Purpose |
 |---|---|---|---|---|
-| **`outbreak_telemetry`** | `villageId` | `detectedAt` | • **GSI:** `disease-index` (`disease` + `detectedAt`) <br>• **GSI:** `district-time-index` (`districtId` + `detectedAt`) | Query disease outbreaks by trend; Query district outbreak timeline. Stores AI-detected village clusters. |
+| **`outbreak_telemetry`** | `villageId` | `detectedAt` | • **GSI:** `disease-index` (`disease` + `detectedAt`) <br>• **GSI:** `district-time-index` (`districtId` + `detectedAt`) <br>• **GSI:** `gsikey-time-index` (composite for sharded queries) | Query disease outbreaks by trend; Query district outbreak timeline; High-throughput time-range scans. Stores AI-detected village clusters. |
 | **`sync_queues`** | `deviceId` | `queuedAt` | • **GSI:** `status-index` (`status` + `queuedAt`) | Fetch failed sync logs across the fleet. Stores offline client logs during outages. |
-| **`village_node_state`** | `villageId` | *None* | • **TTL:** `expiresAt` *(Auto-expires after 7 days)* | Monitor node heartbeats. Stale nodes automatically expire from the live dashboard. |
+| **`village_node_state`** | `villageId` | *None* | • **GSI:** `all-nodes-index` (composite for cross-village queries) <br>• **TTL:** `expiresAt` *(Auto-expires after 7 days)* | Monitor node heartbeats. Stale nodes automatically expire from the live dashboard. |
 | **`emergency_streams`** | `districtId` | `streamId` | • **GSI:** `priority-index` (`priority` + `streamId`) <br>• **GSI:** `district-date-index` (`districtDateBucket` + `timestamp`) | Filter critical P1 emergency alerts; Page emergency events chronologically. |
 | **`security_audit_logs`** | `actor` | `timestamp` | • **GSI:** *None (Access Isolation)* <br>• **TTL:** *None (Retained Indefinitely)* | Query security audits by acting admin. Isolated PK lookup blocks cross-actor scanning. |
 

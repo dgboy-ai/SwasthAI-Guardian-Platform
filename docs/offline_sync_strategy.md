@@ -67,7 +67,7 @@ The platform supports two offline authentication modes:
 - **OTP Mode (Online)**: Phone + OTP flow. Works when backend is reachable. OTP `1234` works for demo accounts.
 - **Password Mode (Offline)**: Pre-seeded credentials are SHA-256 hashed and cached in localStorage. On API failure, the client compares the entered password's hash against the cached hash — no backend required.
 
-Offline credential cache is populated on first successful login. The `seedOfflineCache` function in `AuthContext.jsx` stores hashed credentials for admin (`admin`/`Demo@1234`) and ASHA (`asha`/`Demo@1234`) demo accounts.
+Offline credential cache is populated on first successful login. The `seedOfflineCache` function in `AuthContext.jsx` stores hashed credentials for admin (`admin@swasthai.in`/`Demo@1234`) and ASHA (`9876543211`/`Demo@1234`) demo accounts.
 
 ---
 

@@ -75,14 +75,14 @@ const TECH_STACK = [
   { icon: Database,    label: 'Relational',  val: 'Amazon Aurora PostgreSQL',        sub: 'ap-south-1' },
   { icon: Database,    label: 'NoSQL',       val: 'Amazon DynamoDB PAY_PER_REQUEST', sub: '4 tables + GSIs' },
   { icon: BrainCircuit,label: 'LLM',         val: 'Groq Llama-3.3-70b',             sub: 'RAG + Agent' },
-  { icon: Stethoscope, label: 'AI Models',   val: 'PyTorch SymptomNet',              sub: '96.8% accuracy' },
+  { icon: Stethoscope, label: 'AI Models',   val: 'PyTorch SymptomNet',              sub: '71.1% LR · 64.6% DL' },
   { icon: WifiOff,     label: 'Offline',     val: 'IndexedDB Sync Queue',            sub: 'Zero-signal villages' },
 ];
 
 const IMPACT = [
   { val: '600M+', label: 'Rural Indians served' },
   { val: '1.4M',  label: 'ASHA workers supported' },
-  { val: '17',    label: 'Diseases diagnosed' },
+  { val: '101',   label: 'Disease classes' },
   { val: '6',     label: 'Indian languages' },
 ];
 

@@ -33,7 +33,7 @@ flowchart TB
 
     subgraph DATABASES["AWS Databases — ap-south-1"]
         AURORA["Amazon Aurora PostgreSQL<br/>ACID compliance<br/>Patient records, referrals,<br/>vaccinations, ambulances"]
-        DYNAMODB["Amazon DynamoDB<br/>PAY_PER_REQUEST<br/>5 tables, 4 GSIs<br/>256K sync_queue items"]
+        DYNAMODB["Amazon DynamoDB<br/>PAY_PER_REQUEST<br/>5 tables, 7 GSIs<br/>TTL on 3 tables"]
     end
 
     subgraph EXTERNAL["External APIs"]

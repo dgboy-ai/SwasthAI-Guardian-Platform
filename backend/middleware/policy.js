@@ -42,7 +42,7 @@ export const enforceVillageScope = (req, res, next) => {
   const requestedVillageId = req.body?.villageId || req.query?.villageId || req.params?.villageId ||
                              req.body?.village || req.query?.village || req.params?.village;
 
-  if (requestedVillageId && requestedVillageId !== userVillageId) {
+  if (requestedVillageId && requestedVillageId.toLowerCase() !== userVillageId.toLowerCase()) {
     return res.status(403).json({
       success: false,
       error: { code: 'ACCESS_DENIED', message: 'Access Denied.' }

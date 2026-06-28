@@ -88,7 +88,7 @@ SwasthAI-Guardian-Platform/
 │   ├── judge_guide.md            # Step-by-step walkthrough for Devpost judges
 │   └── SUBMISSION_CHECKLIST.md   # Verification procedures & submission logs
 │
-├── architecture.md               # Mermaid architecture topology diagram
+├── architecture_diagram.md        # Mermaid architecture topology diagram
 ├── DEPLOYMENT.md                 # Production deployment steps (AWS + Vercel + Render)
 ├── CHANGELOG.md                  # Chronological features & optimization log
 └── README.md                     # Main landing page for the project

@@ -18,7 +18,7 @@ This document contains step-by-step instructions to configure Amazon Web Service
         /          \
        v            v
 +--------------+   +--------------+
-| RDS Postgres |   |  DynamoDB    | <-- AWS Cloud Database Layer
+| Aurora PostgreSQL |   |  DynamoDB    | <-- AWS Cloud Database Layer
 | (Free Tier)  |   | (Free Tier)  |
 +--------------+   +--------------+
 ```
@@ -77,6 +77,11 @@ postgresql://postgres:<your_password>@<your-aurora-writer-endpoint>:5432/postgre
     - **Sort key**: `detectedAt` (String)
     - **Index name**: `district-time-index`
     - **Attribute projections**: All
+  - **Index 3**:
+    - **Partition key**: `_gsikey` (String)
+    - **Sort key**: `timestamp` (String)
+    - **Index name**: `gsikey-time-index`
+    - **Attribute projections**: All
 
 #### 2. Sync Queues Table
 - **Table name**: `sync_queues`
@@ -91,7 +96,12 @@ postgresql://postgres:<your_password>@<your-aurora-writer-endpoint>:5432/postgre
 #### 3. Village Node State Table
 - **Table name**: `village_node_state`
 - **Partition key**: `villageId` (String)
-- Once created, scroll down to **Additional settings** or the **Indexes/TTL** tab → **Time to Live (TTL)** → Click **Turn on** or **Manage TTL**:
+- Once created, select the table → **Indexes** tab → **Create index**:
+  - **Partition key**: `_gsiPk` (String)
+  - **Sort key**: *(None — composite query-time filter only)*
+  - **Index name**: `all-nodes-index`
+  - **Attribute projections**: All
+- Scroll down to **Additional settings** or the **Indexes/TTL** tab → **Time to Live (TTL)** → Click **Turn on** or **Manage TTL**:
   - **TTL attribute**: `expiresAt`
 
 #### 4. Emergency Streams Table
@@ -173,7 +183,7 @@ We deploy the Node.js backend and Python FastAPI AI services on **Render.com** (
    - `ALLOWED_ORIGINS`: `*` (or your vercel app domain once deployed)
 5. Click **Create Web Service**. Once running, seed the database by sending a POST request to the seed endpoint:
    ```bash
-   curl -X POST https://swasthai-backend.onrender.com/api/admin/seed-hackathon
+   curl -X POST https://swasthai-guardian-platform-0jsb.onrender.com/api/admin/seed-hackathon
    ```
    (This seeds 5 villages, 6 pregnancies, 8 symptoms, 3 ambulances in Aurora + 5 outbreak events, 3 emergency streams in DynamoDB.)
 
@@ -189,7 +199,7 @@ We deploy the Node.js backend and Python FastAPI AI services on **Render.com** (
    - **Root Directory**: `frontend`
 5. Open the **Environment Variables** panel and add:
    - **Key**: `VITE_API_URL`
-   - **Value**: `https://swasthai-backend.onrender.com/api` (from Step 2.2 + `/api` suffix)
+   - **Value**: `https://swasthai-guardian-platform-0jsb.onrender.com/api` (from Step 2.2 + `/api` suffix)
 6. Click **Deploy**.
 
 Vercel will build your static React App, optimize it as a Progressive Web App (PWA), and make it available under a production SSL URL (e.g. `https://swasthai-guardian.vercel.app`).

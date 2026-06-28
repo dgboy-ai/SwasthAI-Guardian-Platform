@@ -489,11 +489,11 @@ async def predict_disease(data: SymptomInput):
             
             # Use Deep Model only if confidence is very high (> 0.70)
             if confidence >= 0.70:
-                return make_prediction_response(prediction, confidence, alternatives, "Deep-Transformer-Neural-Net", "64.6% (101 diseases, 7 languages)")
+                return make_prediction_response(prediction, confidence, alternatives, "SymptomNet-MLP", "64.6% (101 diseases, 7 languages)")
             else:
-                print(f"[HYBRID] Deep Model confidence borderline ({confidence}). Checking Random Forest for keyword confirmation...")
+                print(f"[HYBRID] Deep Model confidence borderline ({confidence}). Checking Logistic Regression for keyword confirmation...")
 
-    # B. Fallback to Random Forest
+    # B. Fallback to Logistic Regression
     if disease_pipeline is None:
         fallback_pred = predict_disease_local(text)
         if fallback_pred:

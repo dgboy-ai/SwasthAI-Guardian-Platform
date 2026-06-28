@@ -48,9 +48,9 @@ This guide walks through the platform's most impressive features in ~15 minutes.
 - **Copy the full key** (shown once: `sk_live_...`)
 - Open a terminal and test:
   ```bash
-  curl -H "x-api-key: sk_live_abc..." https://swasthai-backend.onrender.com/api/b2b/me
+  curl -H "x-api-key: sk_live_abc..." https://swasthai-guardian-platform-0jsb.onrender.com/api/b2b/me
   # Returns key metadata, tenant, permissions
-  curl -H "x-api-key: sk_live_abc..." https://swasthai-backend.onrender.com/api/b2b/villages
+  curl -H "x-api-key: sk_live_abc..." https://swasthai-guardian-platform-0jsb.onrender.com/api/b2b/villages
   # Returns village health data scoped to Varanasi only
   ```
 - **B2B Usage Dashboard** — Refresh to see the `usage_count` increment for the key you just used
@@ -71,7 +71,7 @@ This guide walks through the platform's most impressive features in ~15 minutes.
 
 Review these docs for the full technical picture:
 
-- **[architecture.md](../architecture.md)** — Mermaid topology diagram showing all 4 tiers (Frontend, Backend, AI, AWS)
+- **[architecture_diagram.svg](../architecture_diagram.svg)** — Architecture topology diagram (SVG) showing all 4 tiers (Frontend, Backend, AI, AWS). [Mermaid source](../architecture_diagram.md)
 - **[system_architecture.md](system_architecture.md)** — ERD, DynamoDB access patterns, GSI schema, production hardening table
 - **[ai_architecture.md](ai_architecture.md)** — 5-Fold Stratified CV results, RAG calibration (threshold 0.45, F1=1.00), 101 disease classes
 - **[offline_sync_strategy.md](offline_sync_strategy.md)** — Three conflict resolution rules (Reject-Duplicate, LWW, Accumulate)
@@ -82,7 +82,7 @@ Review these docs for the full technical picture:
 
 | Differentiator | SwasthAI | Typical Submission |
 |:---|---:|:---|
-| **Real AWS infrastructure** | Aurora PostgreSQL + DynamoDB (5 tables, 4 GSIs) | Mock/Fake cloud config |
+| **Real AWS infrastructure** | Aurora PostgreSQL + DynamoDB (5 tables, 7 GSIs) | Mock/Fake cloud config |
 | **Data provenance** | Every response tagged `_db: postgresql` / `_db: dynamodb` | No data source tracking |
 | **Offline-first, not offline-tolerant** | 5 features fully offline (ONNX, IndexedDB, localStorage) | "Sorry, no internet" spinners |
 | **B2B API key system** | Scoped keys, usage tracking, tenant isolation | Single hardcoded key or none |
