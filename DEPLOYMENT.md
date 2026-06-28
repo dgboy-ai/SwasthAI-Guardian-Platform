@@ -1,10 +1,10 @@
-# 🚀 Production Deployment Guide: AWS + Vercel + Render
+# Production Deployment Guide: AWS + Vercel + Render
 
 This document contains step-by-step instructions to configure Amazon Web Services (AWS), Vercel, and Render.com to deploy the complete **SwasthAI Guardian** production infrastructure under the **AWS Free Tier** (zero-cost to evaluate).
 
 ---
 
-## 🏗️ Deployment Architecture Overview
+## Deployment Architecture Overview
 
 ```
 +--------------------------+
@@ -171,10 +171,11 @@ We deploy the Node.js backend and Python FastAPI AI services on **Render.com** (
    - `AADHAAR_SALT`: `<create_a_random_32_char_string>`
    - `NODE_ENV`: `production`
    - `ALLOWED_ORIGINS`: `*` (or your vercel app domain once deployed)
-5. Click **Create Web Service**. Once running, run your DB seed by clicking the **Shell** tab on Render and executing:
+5. Click **Create Web Service**. Once running, seed the database by sending a POST request to the seed endpoint:
    ```bash
-   node seed.js
+   curl -X POST https://swasthai-backend.onrender.com/api/admin/seed-hackathon
    ```
+   (This seeds 5 villages, 6 pregnancies, 8 symptoms, 3 ambulances in Aurora + 5 outbreak events, 3 emergency streams in DynamoDB.)
 
 ---
 

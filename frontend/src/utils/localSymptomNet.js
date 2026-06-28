@@ -45,7 +45,7 @@ export async function predictSymptomsOffline(text) {
       confidence: 0.0,
       alternatives: [],
       model: "LocalSymptomNet-Offline",
-      accuracy: "64.8% (Offline MLP)"
+      accuracy: "64.6% (Offline MLP)"
     };
   }
 
@@ -177,7 +177,7 @@ export async function predictSymptomsOffline(text) {
     doctor_specialty: doctorSpecialty,
     alternatives: alternatives,
     model: "LocalSymptomNet-Offline (ONNX compiled weights)",
-    accuracy: "64.8% (101 diseases, 7 languages)",
+    accuracy: "64.6% (101 classes)",
     offline: true
   };
 }

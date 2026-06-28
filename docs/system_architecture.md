@@ -1,10 +1,10 @@
-# 🏗️ System & Database Architecture — SwasthAI Guardian Platform
+# System & Database Architecture — SwasthAI Guardian Platform
 
 This document describes the high-level system architecture and database design decisions of the SwasthAI Guardian Platform, illustrating how offline-first clients, backend APIs, relational databases, NoSQL event stores, and AI microservices interact.
 
 ---
 
-## 🏗️ High-Level Architectural Flow
+## High-Level Architectural Flow
 
 The diagram below details the end-to-end data lifecycle, displaying how offline inputs sync dynamically and route to AWS cloud:
 
@@ -61,31 +61,31 @@ The SwasthAI architecture is divided into three specialized tiers, built for low
 | Tier | Tech Stack | Core Capability | Offline Resilience | Data Safety & Security |
 |---|---|---|---|---|
 | **Client Edge** | React, Vite, IndexedDB, ONNX | **Interactive Clinician PWA** | IndexedDB Event Replay Engine & Local ONNX Triage | SHA-256 local auth hash; On-device `<200KB` image compression |
-| **Backend Gateway** | Express.js, Node.js | **Unified REST API & SSE Bus** | Handles transaction sync replays dynamically | Centralized IDOR [policy.js](file:///c:/projects/SwasthAI-Guardian-Platform/backend/middleware/policy.js); 3-retry DLQ safeguard |
+| **Backend Gateway** | Express.js, Node.js | **Unified REST API & SSE Bus** | Handles transaction sync replays dynamically | Centralized IDOR policy.js (backend/middleware/policy.js); 3-retry DLQ safeguard |
 | **AI Microservice** | FastAPI, Python, PyTorch | **Autonomous Agents & LLMs** | Rules-based local fallbacks for edge-classification | Tokenized Groq API keys; Closed-loop agent validation |
 
 ---
 
-### 📱 Client Edge (Vercel / React PWA)
+### Client Edge (Vercel / React PWA)
 - **Offline Sync**: Auto-replays queued events from IndexedDB upon reconnection.
 - **Edge Triage**: Runs browser-side ONNX SymptomNet and offline fuzzy RAG.
 - **2G Optimization**: Auto-compresses clinical photo uploads to `<200KB` on-the-fly.
 - **Client Security**: Validates offline sessions via local SHA-256 credential hashes.
 
-### ⚙️ Backend Gateway (Express.js)
-- **Scope Isolation**: Centralized [policy.js](file:///c:/projects/SwasthAI-Guardian-Platform/backend/middleware/policy.js) blocks unauthorized village/role access.
+### Backend Gateway (Express.js)
+- **Scope Isolation**: Centralized `backend/middleware/policy.js` blocks unauthorized village/role access.
 - **Event Dispatcher**: Processes non-blocking event loops out-of-band with a **3-attempt retry loop**.
 - **DLQ Safeguard**: Logs failed event payloads to a capped 100-item DLQ; broadcasts live alerts via SSE.
 - **Watchdog Daemon**: Scans microservice health and Outbreak Agent state every 30s.
 
-### 🤖 AI Service Layer (FastAPI / Python)
+### AI Service Layer (FastAPI / Python)
 - **SymptomNet**: Multi-layered MLP classifier evaluating risks with local fallback rules.
 - **Sakhi Chatbot**: High-speed multilingual clinical RAG powered by Llama-3.3-70B.
 - **Outbreak Agent**: Background crawler analyzing PostgreSQL symptom trends to predict, classify, and publish verified DynamoDB outbreak records.
 
 ---
 
-## 🗄️ Database Strategy & AWS Design Decisions
+## Database Strategy & AWS Design Decisions
 
 Most apps use one database for everything. SwasthAI uses a hybrid approach: a local **SQLite** database as an offline edge node and local development fallback, paired with a dual **AWS Cloud** configuration in production.
 
@@ -108,7 +108,7 @@ To ensure the app remains fully functional with zero initial setup for evaluator
 
 ---
 
-### 📊 Relational Database ERD (Amazon Aurora PostgreSQL)
+### Relational Database ERD (Amazon Aurora PostgreSQL)
 
 Aurora acts as the consistent transactional store. The relationship chain is designed as:
 `users` → `village_health` → `pregnancy_data` → `symptoms`
@@ -161,9 +161,9 @@ erDiagram
 
 ---
 
-## ⚡ DynamoDB Engine Architecture
+## DynamoDB Engine Architecture
 
-### 📊 1. Table Schema Design (GSIs & Access Patterns)
+### 1. Table Schema Design (GSIs & Access Patterns)
 
 Every DynamoDB table is designed around specific access patterns to support zero-signal offline sync and rapid epidemic notifications:
 
@@ -177,7 +177,7 @@ Every DynamoDB table is designed around specific access patterns to support zero
 
 ---
 
-### 🛠️ 2. Production Hardening (Query & Code-Level Fixes)
+### 2. Production Hardening (Query & Code-Level Fixes)
 
 | Fix | Before (naive) | After (production-grade) |
 |---|---|---|
@@ -186,6 +186,23 @@ Every DynamoDB table is designed around specific access patterns to support zero
 | **Atomic UpdateCommand** | Full `PutCommand` on every update — race condition risk under concurrent writes | `UpdateCommand` patches only 4 owned fields — safe to call in parallel, never overwrites concurrent writes |
 | **GSI Validation** | Assumed GSIs existed at runtime (silent failure if missing) | `DescribeTableCommand` on startup — compares actual vs. required GSI names; fails loudly if missing |
 | **Idempotent TTL** | `setTimeout(() => UpdateTimeToLive(), 5000)` — could run multiple times | `ensureTTL()` checks for `ENABLED\|ENABLING` state before calling — idempotent and safe to re-run |
+
+---
+
+## B2B API Key System & Tenant Isolation
+
+SwasthAI provides a production-grade B2B API gateway for partner NGOs and district health departments:
+
+| Component | Description |
+| :--- | :--- |
+| **Key Generation** | Admin panel generates `sk_live_*` keys with tenant scope (`tenantId` = districtId) |
+| **Auth Middleware** | `middleware/apiKeyAuth.js` validates `x-api-key` header against `api_keys` table |
+| **Usage Tracking** | Each request increments `usage_count` and updates `last_used_at` |
+| **Tenant Isolation** | All B2B queries are scoped via `WHERE "districtId" = ?` using the key's tenant |
+| **Endpoints** | `/api/b2b/me`, `/api/b2b/villages`, `/api/b2b/analytics`, `/api/b2b/ambulances`, `/api/b2b/outbreaks` |
+| **Dashboard** | B2BUsageDashboard shows per-tenant API calls, active keys, village stats, record volumes |
+
+The Groq API key used for Sakhi AI and the Outbreak Agent is an internal backend environment variable — separate from this B2B partner key system.
 
 ---
 

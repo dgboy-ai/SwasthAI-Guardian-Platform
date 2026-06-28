@@ -13,7 +13,7 @@ const sendError = (res, statusCode, code, message, details = null) => {
 };
 
 function generateKeyId() {
-  return 'sk_live_' + crypto.randomBytes(24).toString('hex');
+  return 'sk_live_' + crypto.randomBytes(16).toString('hex');
 }
 
 function maskKey(keyId) {

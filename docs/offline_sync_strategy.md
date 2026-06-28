@@ -57,3 +57,27 @@ When offline-queued items are replayed on the server, conflicts may arise if rec
 ### Rule C: Accumulate/Aggregate (Telemetry & Counter Fields)
 - **Applicable to**: Outbreak counts, village activity logs, and ASHA workload queues.
 - **Rule**: Metrics are merged and aggregated. A sync restoration event (`sync_restored`) increments the total metrics rather than overriding past stats.
+
+---
+
+## 4. Offline Login & Credential Handling
+
+The platform supports two offline authentication modes:
+
+- **OTP Mode (Online)**: Phone + OTP flow. Works when backend is reachable. OTP `1234` works for demo accounts.
+- **Password Mode (Offline)**: Pre-seeded credentials are SHA-256 hashed and cached in localStorage. On API failure, the client compares the entered password's hash against the cached hash — no backend required.
+
+Offline credential cache is populated on first successful login. The `seedOfflineCache` function in `AuthContext.jsx` stores hashed credentials for admin (`admin`/`Demo@1234`) and ASHA (`asha`/`Demo@1234`) demo accounts.
+
+---
+
+## 5. Role-Aware Offline Status UI
+
+The `OfflineToast` component (`frontend/src/components/OfflineToast.jsx`) provides real-time visibility into offline status:
+
+- **Role-aware capability maps**: Villager sees symptom check, ambulance, schemes, menstrual health as offline-capable. NGO sees maternal/child records. Admin sees nothing as offline-capable (admin requires live data).
+- **Live queue stats**: Reads pending item count from IndexedDB via `getQueueStats()`.
+- **Manual sync**: "Sync Now" button triggers immediate queue drain on reconnection.
+- **Last sync timestamp**: Shows when the last successful sync occurred.
+
+No feature shows a generic "no internet" error — each degrades according to its offline capability.

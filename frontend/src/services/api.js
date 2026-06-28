@@ -6,9 +6,9 @@ const BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.MODE === 'prod
 
 const api = axios.create({
   baseURL: BASE_URL,
-  // 🌐 Rural India 2G optimization: 5s timeout prevents indefinite hangs on poor networks.
+  // Rural India 2G optimization: 15s timeout prevents indefinite hangs on poor networks.
   // All components have offline fallbacks that trigger immediately on timeout/network errors.
-  // Reduced from 8s → 5s: Render.com cold-starts are handled by the offline LocalSymptomNet fallback.
+  // 15s handles Render cold-starts while still failing fast on truly dead connections.
   timeout: 15000,
   headers: {
     'Content-Type': 'application/json',

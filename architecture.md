@@ -1,28 +1,28 @@
 ```mermaid
 flowchart TB
-    subgraph USERS["👥 Users"]
-        V["📱 Villager<br/>(Phone OTP)"]
-        A["👩‍⚕️ ASHA Worker<br/>(9876543211)"]
-        N["🏢 NGO Admin"]
-        AD["🛡️ District Admin"]
+    subgraph USERS["Users"]
+        V["Villager<br/>(Phone OTP)"]
+        A["ASHA Worker<br/>(9876543211)"]
+        N["NGO Admin"]
+        AD["District Admin"]
     end
 
-    subgraph FRONTEND["🌐 Frontend — Vercel (Free)"]
+    subgraph FRONTEND["Frontend — Vercel (Free)"]
         REACT["React 18 + Vite + PWA<br/>Tailwind + Framer Motion + Recharts"]
         PWA["Service Worker<br/>Offline-first Cache"]
     end
 
-    subgraph BACKEND["⚙️ Backend — Render / EC2"]
-        NODE["Node.js + Express + Cluster<br/>(12 workers)"]
+    subgraph BACKEND["Backend — Render / EC2"]
+        NODE["Node.js + Express + Cluster<br/>(up to 2 workers)"]
         WS["WebSocket Server<br/>Ambulance Telemetry"]
         SSE["SSE Server-Sent Events<br/>Admin Live Feed"]
         AUTH["JWT + bcrypt Auth<br/>Phone OTP / Passcode"]
     end
 
-    subgraph AISERVICE["🧠 AI Service — Render / EC2"]
+    subgraph AISERVICE["AI Service — Render / EC2"]
         FASTAPI["FastAPI (Python 3.11)"]
         SYMPTOMNET["SymptomNet-DL<br/>PyTorch, 101 diseases<br/>64.6% accuracy"]
-        RF["RandomForest-TFIDF<br/>Fallback classifier<br/>51.8% accuracy"]
+        RF["Logistic Regression<br/>Fallback classifier<br/>71.1% accuracy"]
         RAG["RAG-Sakhi<br/>243 chunk KB<br/>Multilingual (6 langs)"]
         OUTBREAK["OutbreakAgent<br/>Groq llama-3.3-70b<br/>30min autonomous loop"]
         SKIN["SkinAnalyzer<br/>On-device pixel analysis"]
@@ -31,17 +31,17 @@ flowchart TB
         GUARDRAIL["Clinical Safety Guardrail<br/>Conservative escalation"]
     end
 
-    subgraph DATABASES["🗄️ AWS Databases — ap-south-1"]
+    subgraph DATABASES["AWS Databases — ap-south-1"]
         AURORA["Amazon Aurora PostgreSQL<br/>ACID compliance<br/>Patient records, referrals,<br/>vaccinations, ambulances"]
         DYNAMODB["Amazon DynamoDB<br/>PAY_PER_REQUEST<br/>5 tables, 4 GSIs<br/>256K sync_queue items"]
     end
 
-    subgraph EXTERNAL["🔗 External APIs"]
+    subgraph EXTERNAL["External APIs"]
         GROQ["Groq Cloud<br/>llama-3.3-70b-versatile<br/>(RAG + Outbreak)"]
         TWILIO["Twilio (SMS)"]
     end
 
-    subgraph STORAGE["💾 Persistent Storage"]
+    subgraph STORAGE["Persistent Storage"]
         SQLITE["SQLite<br/>(Dev fallback)"]
         DLQ["Failed Events DLQ<br/>JSON file"]
     end

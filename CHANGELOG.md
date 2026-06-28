@@ -2,6 +2,23 @@
 
 All notable changes and feature developments completed during the project development window are documented in this file chronologically.
 
+## June 28, 2026 — B2B API Key Wiring + README & Docs Overhaul + Judge Guide
+
+### Added
+- **B2B API endpoints wired end-to-end**: Created `routes/b2b.js` with 5 endpoints (`/me`, `/villages`, `/analytics`, `/ambulances`, `/outbreaks`) all protected by `authenticateApiKey` middleware. Mounted at `/api/b2b` in server.js.
+- **`docs/judge_guide.md`**: Step-by-step walkthrough for Devpost judges covering all 6 sections of the platform.
+- **README overhaul**: Added Devpost track banner, Offline-First Capability Matrix, B2B API Key System section, fixed `/verify` admin-only note, added password-mode demo credentials (offline), fixed Render URLs note.
+
+### Fixed
+- **`architecture.md` inconsistency**: Changed `RandomForest-TFIDF 51.8%` → `Logistic Regression 71.1%` to match README. Removed emoji from all Mermaid node labels. Fixed workers claim from 12 to 2.
+- **`docs/repository_map.md`**: Updated with 8+ missing files (`b2b.js`, `apiKeyAuth.js`, `apiKeys.js`, `ApiKeysView.jsx`, `B2BUsageDashboard.jsx`, `IntroFlow.jsx`, `PadRequestForm.jsx`, `LandingPage.jsx`). Converted absolute `file:///` paths to relative references.
+
+### Changed
+- **All doc files**: Emoji removed from all section headings across `system_architecture.md`, `ai_architecture.md`, `offline_sync_strategy.md`, `setup_guide.md`, `DEPLOYMENT.md`, `repository_map.md`.
+- **`docs/system_architecture.md`**: Added B2B API section with tenant-scoped endpoints table.
+
+---
+
 ## June 28, 2026 — Final Villager Flow Audit + NGO Emoji Sweep & Tailwind Conversion
 
 ### Fixed

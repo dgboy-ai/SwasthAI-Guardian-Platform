@@ -1,4 +1,4 @@
-# 🔬 AI Engine Architecture & Validation Methodology
+# AI Engine Architecture & Validation Methodology
 
 ### 1. Hybrid Diagnostic Engine (DL + ML + Heuristics)
 
@@ -13,7 +13,7 @@ We use a tiered ensemble approach designed for clinical reliability in low-conne
 
 ---
 
-### 🧠 AI Model Technical Specifications
+### AI Model Technical Specifications
 
 | Metric | Specification |
 |---|---|
@@ -28,7 +28,7 @@ We use a tiered ensemble approach designed for clinical reliability in low-conne
 > [!NOTE]
 > **Statistical Significance**: Classifying 101 distinct disease states from free-text multilingual inputs represents a high-cardinality task. Compared to a random chance baseline of ~0.99%, the fallback model's **71.1% hold-out accuracy** represents robust generalization across languages.
 
-#### 📋 Supported Disease Classes (101)
+#### Supported Disease Classes (101)
 *   **Vector-borne**: Malaria, Dengue, Chikungunya, Kala-Azar, Japanese Encephalitis.
 *   **Infectious**: Tuberculosis, Typhoid, Cholera, Dysentery, Shigellosis, Meningitis.
 *   **Emergencies**: Snakebite (P1 Emergency), Scorpion Sting, Heatstroke, Organophosphate Poisoning.
@@ -55,7 +55,7 @@ Both models are validated under a rigorous, two-stage clinical evaluation framew
 
 ---
 
-### 🧠 Sakhi RAG Architecture (Women's Health AI)
+### Sakhi RAG Architecture (Women's Health AI)
 
 Sakhi is a memory-aware, clinical RAG assistant designed to ground responses directly in verified medical guidelines:
 

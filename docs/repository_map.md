@@ -1,10 +1,10 @@
-# 📁 SwasthAI Guardian Repository Directory Map
+# SwasthAI Guardian Repository Directory Map
 
 This document provides a comprehensive map of the SwasthAI Guardian codebase, detailing directory roles, files, and their architectural purpose.
 
 ---
 
-## 🏗️ Folder Tree Overview
+## Folder Tree Overview
 
 ```
 SwasthAI-Guardian-Platform/
@@ -15,22 +15,30 @@ SwasthAI-Guardian-Platform/
 │       ├── index.css             # Unified CSS Design System & mobile touch utilities
 │       ├── Admin/                # District Command Center files
 │       │   ├── AdminDashboard.jsx
-│       │   └── components/       # CommandCenterView, ProductionEvidencePanel, ReportsView
+│       │   └── components/       # CommandCenterView, ProductionEvidencePanel, ReportsView,
+│       │                         # ApiKeysView, B2BUsageDashboard, TenantOverview, ...
 │       ├── NGO/                  # NGO / CSR field operations dashboard
 │       │   └── NGODashboard.jsx
 │       ├── Villager/             # Shared villager portal
 │       │   └── VillagerDashboard.jsx
-│       ├── components/           # Reusable components (e.g. DiSHAConsentModal, OfflineToast)
+│       ├── components/           # Reusable components (DiSHAConsentModal, OfflineToast, SkeletonCard, ...)
 │       ├── context/              # Global states (AuthContext with client-side SHA-256 caching, LanguageContext)
 │       ├── services/             # API services with timeout wrappers and intercepts
-│       └── pages/                # Features & workflows (25+ active files)
+│       └── pages/                # Features & workflows (30+ active files)
 │           ├── dashboards/       # Role-specific analytics wrappers
-│           ├── GuidedHealthcareMode.jsx
+│           ├── LandingPage.jsx   # Public marketing page (new)
+│           ├── LoginPage.jsx     # OTP + password login (offline-capable)
+│           ├── RegisterPage.jsx  # Aadhaar QR-assisted registration
+│           ├── IntroFlow.jsx     # Onboarding flow with role selection
+│           ├── GovernmentSchemesPage.jsx   # Offline-cached scheme eligibility
+│           ├── SchemeDetailPage.jsx        # Per-scheme deep-dive
 │           ├── SakhiChatbot.jsx  # Sakhi RAG with voice features
 │           ├── MaternalHealthPage.jsx
 │           ├── ChildNutritionPage.jsx
-│           ├── SkinDiseaseCheckerPage.jsx # Melanoid-inclusive skin triage
-│           ├── SymptomCheckerPage.jsx     # On-device SymptomNet & RAG fallback
+│           ├── MenstrualHealth.jsx         # Zero-API static clinical content
+│           ├── SkinDiseaseCheckerPage.jsx  # Melanoid-inclusive skin triage
+│           ├── SymptomCheckerPage.jsx      # On-device SymptomNet & RAG fallback
+│           ├── PadRequestForm.jsx          # Offline-queued sanitary pad requests
 │           └── workflows/        # Multi-step medical workflows (Pregnancy, Fever, Child, SOS)
 │
 ├── backend/                      # Express.js REST API
@@ -39,13 +47,22 @@ SwasthAI-Guardian-Platform/
 │   ├── dynamodb.js               # DynamoDB Client connection, GSI validator, & table schemas
 │   ├── eventDispatcher.js        # Decoupled DB write events with 3-attempt retry queue
 │   ├── sanitize.js               # Security sanitation middleware
+│   ├── middleware/
+│   │   ├── auth.js               # JWT verification middleware
+│   │   ├── policy.js             # Role/IDOR scope enforcement
+│   │   ├── audit.js              # Audit logging middleware
+│   │   └── apiKeyAuth.js         # B2B API key authentication (x-api-key header)
 │   ├── db/
 │   │   ├── schema.js             # Dual schemas (Production PostgreSQL + Evaluation SQLite)
 │   │   └── seed.js               # Database seeding coordinates & demographic data
 │   └── routes/
 │       ├── admin.js              # Admin feeds, metrics & SSE live alert endpoints
 │       ├── villager.js           # Vital logs, ambulance requests, & sync health checks
-│       └── ngo.js                # NGO assessment submissions & reporting
+│       ├── ngo.js                # NGO assessment submissions & reporting
+│       ├── apiKeys.js            # B2B API key CRUD + usage dashboard
+│       ├── b2b.js                # B2B partner endpoints (API-key protected)
+│       ├── auth.js               # Login/register/OTP routes
+│       └── webhooks.js           # External webhook integrations
 │
 ├── ai-service/                   # FastAPI Python Microservice
 │   ├── main.py                   # API Server hosting hybrid classification and RAG endpoints
@@ -68,8 +85,10 @@ SwasthAI-Guardian-Platform/
 │   ├── offline_sync_strategy.md  # IndexedDB conflict rules, LWW timestamps, sync flows
 │   ├── setup_guide.md            # Environment vars, Docker-Compose, local startup guides
 │   ├── repository_map.md         # (This file) Complete codebase index
+│   ├── judge_guide.md            # Step-by-step walkthrough for Devpost judges
 │   └── SUBMISSION_CHECKLIST.md   # Verification procedures & submission logs
 │
+├── architecture.md               # Mermaid architecture topology diagram
 ├── DEPLOYMENT.md                 # Production deployment steps (AWS + Vercel + Render)
 ├── CHANGELOG.md                  # Chronological features & optimization log
 └── README.md                     # Main landing page for the project
@@ -77,19 +96,25 @@ SwasthAI-Guardian-Platform/
 
 ---
 
-## 🔍 Core Component Descriptions
+## Core Component Descriptions
 
 ### 1. Frontend Client
-* **[App.jsx](file:///c:/projects/SwasthAI-Guardian-Platform/frontend/src/App.jsx)**: Handles app routing. Wraps the main layout inside the [DiSHAConsentModal](file:///c:/projects/SwasthAI-Guardian-Platform/frontend/src/components/DiSHAConsentModal.jsx) to ensure all clinical assessments comply with the Digital Information Security in Healthcare Act (DISHA) of India.
-* **[index.css](file:///c:/projects/SwasthAI-Guardian-Platform/frontend/src/index.css)**: Implements the system's design tokens (colors, animations, and typography). Contains accessibility classes matching WCAG 2.5.5 touch target sizes and handles page transition optimizations.
-* **[AuthContext.jsx](file:///c:/projects/SwasthAI-Guardian-Platform/frontend/src/context/AuthContext.jsx)**: Handles login sessions. Utilizes client-side SHA-256 password hashing for protecting cached user profiles when operating in offline/low-connectivity environments.
+* **App.jsx**: Handles app routing. Wraps the main layout inside DiSHAConsentModal to ensure all clinical assessments comply with DISHA (India).
+* **index.css**: Implements the system's design tokens (colors, animations, typography). Contains accessibility classes matching WCAG 2.5.5 touch target sizes.
+* **AuthContext.jsx**: Handles login sessions with client-side SHA-256 password hashing for offline credential verification.
+* **ApiKeysView.jsx**: Admin panel for generating and managing B2B API keys (create, list, toggle, delete, copy).
+* **B2BUsageDashboard.jsx**: Per-tenant analytics showing API call volume, active keys, village stats, and record counts.
+* **OfflineToast.jsx**: Role-aware component showing offline capability map, real-time queue stats, and sync controls.
 
 ### 2. Express Backend
-* **[server.js](file:///c:/projects/SwasthAI-Guardian-Platform/backend/server.js)**: Runs the API listener. Integrates a background **Health Watchdog Monitor** that polls the AI service every 30 seconds and verification loops to track Outbreak Agent activity, broadcasting status via SSE.
-* **[dynamodb.js](file:///c:/projects/SwasthAI-Guardian-Platform/backend/dynamodb.js)**: Initializes the AWS SDK DynamoDB Client. Bootstraps 5 tables automatically upon server launch (`outbreak_telemetry`, `sync_queues`, `village_node_state`, `emergency_streams`, and `security_audit_logs`) and checks/validates their GSIs and TTLs.
-* **[eventDispatcher.js](file:///c:/projects/SwasthAI-Guardian-Platform/backend/eventDispatcher.js)**: An in-memory queue dispatcher that handles non-blocking database writes. It decouples high-velocity logs and dispatches events like `emergency_triggered` with a robust 3-attempt auto-retry module.
+* **server.js**: Runs the API listener with Health Watchdog Monitor, SSE bus, WebSocket server.
+* **dynamodb.js**: AWS SDK DynamoDB Client with auto-bootstrap of 5 tables, GSI validation, TTL management.
+* **eventDispatcher.js**: In-memory queue decoupling high-velocity DB writes with 3-attempt retry.
+* **middleware/apiKeyAuth.js**: Validates `x-api-key` header against `api_keys` table, tracks `usage_count`, attaches tenant scope.
+* **routes/b2b.js**: B2B partner endpoints (villages, analytics, ambulances, outbreaks) scoped to API key tenant.
+* **routes/apiKeys.js**: Full CRUD for B2B API keys + multi-tenant usage aggregation.
 
 ### 3. AI Service
-* **[main.py](file:///c:/projects/SwasthAI-Guardian-Platform/ai-service/main.py)**: Serves FastAPI routes. Contains route paths for SymptomNet ML classification, RAG inference, and the manual triggering of the Outbreak Agent.
-* **[rag_service.py](file:///c:/projects/SwasthAI-Guardian-Platform/ai-service/rag_service.py)**: Encodes queries using semantic transformers. Contains retrieval search methods comparing query vectors against precomputed embeddings in `kb_embeddings.npy` with a threshold cutoff of `0.45` to prevent hallucinations.
-* **[outbreak_agent.py](file:///c:/projects/SwasthAI-Guardian-Platform/ai-service/outbreak_agent.py)**: An autonomous worker executing spatial clustering calculations to identify symptoms indicating potential localized health crises.
+* **main.py**: FastAPI routes for SymptomNet ML classification, RAG inference, Outbreak Agent.
+* **rag_service.py**: Semantic query encoder comparing against 243 precomputed KB embeddings with 0.45 threshold.
+* **outbreak_agent.py**: Autonomous 30-min loop scanning PostgreSQL symptom clusters via Groq Llama-3.3-70B.

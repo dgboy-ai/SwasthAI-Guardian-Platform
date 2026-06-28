@@ -450,7 +450,7 @@ export async function initSchema(db, pool, usingSQLite) {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS api_keys (
         id SERIAL PRIMARY KEY,
-        key_id VARCHAR(40) UNIQUE NOT NULL,
+        key_id VARCHAR(80) UNIQUE NOT NULL,
         name VARCHAR(120) NOT NULL,
         tenant_id VARCHAR(80) DEFAULT NULL,
         created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,

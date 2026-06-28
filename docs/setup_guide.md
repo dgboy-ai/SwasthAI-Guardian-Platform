@@ -1,4 +1,4 @@
-# ⚙️ Installation, Setup & Local Development Guide
+# Installation, Setup & Local Development Guide
 
 > **For evaluators who just want to test**: The live app is already deployed.
 > ```
@@ -9,7 +9,7 @@
 
 ---
 
-### 🐳 Docker Deployment (Recommended — One Command)
+### Docker Deployment (Recommended — One Command)
 
 ```bash
 # 1. Copy the env template and fill in your secrets
@@ -36,7 +36,7 @@ Services boot intelligently in sequence (**AI Service → Node.js Backend → Re
 
 ---
 
-### 🛠️ Local Development Setup (No Docker)
+### Local Development Setup (No Docker)
 
 #### Prerequisites
 - Node.js 18+
@@ -114,8 +114,10 @@ NODE_CLUSTER_WORKERS=1
 # Defaults to false on Render free-tier (uses the 71.1%-accurate Logistic Regression instead).
 # ENABLE_DEEP_MODEL=true
 
-# ── Development Only ──────────────────────────────────────────────────────────
-# Enables OTP 1234 for demo/testing. NEVER enable in production.
+# ── Demo Mode ─────────────────────────────────────────────────────────────────
+# Enables OTP 1234 and offline password (Demo@1234) for demo/testing.
+# When set, the AuthContext seeds offline cache with admin/asha credentials.
+# NEVER enable in production.
 # ALLOW_DEMO_OTP=true
 ```
 
