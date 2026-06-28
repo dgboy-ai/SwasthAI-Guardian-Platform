@@ -836,7 +836,6 @@ router.post('/villager/pad-request', auth, checkRole(['villager', 'ngo', 'admin'
     res.status(500).send({ error: 'Failed to process pad request.' });
   }
 });
-    }
 
 router.post('/health-assistant', auth, checkRole(['villager', 'ngo', 'admin']), aiLimiter, async (req, res) => {
   const AI_SERVICE_URL = req.app.locals.AI_SERVICE_URL;
