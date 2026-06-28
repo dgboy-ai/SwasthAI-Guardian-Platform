@@ -16,7 +16,7 @@ import {
   Calendar, Layers, CheckSquare, BookOpen, LogOut,
   Database, HardDrive, Mic, MicOff, Thermometer, Stethoscope,
   ArrowUpCircle, UserPlus, Play, Loader2, HelpCircle,
-  ExternalLink, Info, Trash2, Eye, EyeOff, Sun, Moon
+  ExternalLink, Info, Trash2, Eye, EyeOff, Sun, Moon, Syringe, FlaskConical
 } from 'lucide-react';
 
 import api from '../services/api';
@@ -762,8 +762,8 @@ export default function ASHADashboard() {
                   className={`py-4 flex flex-col xs:flex-row items-start xs:items-center justify-between gap-3 cursor-pointer px-2.5 rounded-2xl transition-colors ${task.done ? 'opacity-50' : 'hover:bg-emerald-50/40 border-l-[3px] border-l-emerald-400/60'}`}
                 >
                   <div className="flex items-center gap-3.5 w-full xs:w-auto">
-                    <div className="w-11 h-11 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-xl shrink-0">
-                      {task.icon === 'pregnancy' ? '🤰' : task.icon === 'child' ? '👶' : '💉'}
+                    <div className="w-11 h-11 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0">
+                      {task.icon === 'pregnancy' ? <Heart className="w-5 h-5 text-rose-500" /> : task.icon === 'child' ? <Baby className="w-5 h-5 text-purple-500" /> : <Syringe className="w-5 h-5 text-blue-500" />}
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
@@ -815,22 +815,25 @@ export default function ASHADashboard() {
             
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-1 gap-2.5">
               {[
-                { id: 'pregnancy', label: 'Pregnancy Record', icon: '🤰', color: 'bg-rose-50 border-rose-100 text-rose-600' },
-                { id: 'nutrition', label: 'Child Nutrition', icon: '👶', color: 'bg-purple-50 border-purple-100 text-purple-600' },
-                { id: 'symptoms', label: 'Symptoms Check', icon: '🩺', color: 'bg-emerald-50 border-emerald-100 text-emerald-600' },
-                { id: 'emergency', label: 'Emergency Record', icon: '🚑', color: 'bg-red-50 border-red-100 text-red-600' },
-              ].map(act => (
+                { id: 'pregnancy', label: 'Pregnancy Record', icon: Heart, color: 'bg-rose-50 border-rose-100 text-rose-600' },
+                { id: 'nutrition', label: 'Child Nutrition', icon: Baby, color: 'bg-purple-50 border-purple-100 text-purple-600' },
+                { id: 'symptoms', label: 'Symptoms Check', icon: Stethoscope, color: 'bg-emerald-50 border-emerald-100 text-emerald-600' },
+                { id: 'emergency', label: 'Emergency Record', icon: Ambulance, color: 'bg-red-50 border-red-100 text-red-600' },
+              ].map(act => {
+                const ActIcon = act.icon;
+                return (
                 <button
                   key={act.id}
                   onClick={() => setShowQuickForm(act.id)}
                   className="bg-white border border-slate-100 rounded-xl p-3.5 sm:p-4.5 shadow-sm flex flex-row items-center gap-3 sm:gap-4 text-left hover:shadow-md active:scale-[0.98] transition-all w-full min-h-[52px] cursor-pointer"
                 >
-                  <div className={`w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center text-lg sm:text-xl shrink-0 ${act.color}`}>
-                    {act.icon}
+                  <div className={`w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center shrink-0 ${act.color}`}>
+                    <ActIcon className="w-5 h-5" />
                   </div>
                   <span className="text-xs font-black text-slate-700 leading-snug">{act.label}</span>
                 </button>
-              ))}
+              );
+            })}
             </div>
           </div>
         </div>
@@ -1455,15 +1458,15 @@ export default function ASHADashboard() {
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {[
-                { label: 'Village Coverage', val: '92%', color: '#059669', desc: 'Target: 90% ✓' },
-                { label: 'ASHA Productivity', val: '87%', color: '#8B5CF6', desc: 'Target: 85% ✓' },
-                { label: 'Scheme Penetration', val: '76%', color: '#2563EB', desc: 'Target: 80%' },
-                { label: 'Disease Surveillance', val: '94%', color: '#F97316', desc: 'Target: 90% ✓' },
+                { label: 'Village Coverage', val: '92%', color: '#059669', desc: 'Target: 90%', met: true },
+                { label: 'ASHA Productivity', val: '87%', color: '#8B5CF6', desc: 'Target: 85%', met: true },
+                { label: 'Scheme Penetration', val: '76%', color: '#2563EB', desc: 'Target: 80%', met: false },
+                { label: 'Disease Surveillance', val: '94%', color: '#F97316', desc: 'Target: 90%', met: true },
               ].map((kpi, i) => (
                 <div key={i} className="text-center p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors">
                   <p className="text-lg sm:text-xl font-black" style={{ color: kpi.color }}>{kpi.val}</p>
                   <p className="text-[10px] font-bold text-slate-600">{kpi.label}</p>
-                  <p className="text-[8px] text-slate-400 font-semibold mt-0.5">{kpi.desc}</p>
+                  <p className="text-[8px] text-slate-400 font-semibold mt-0.5">{kpi.desc}{kpi.met && <CheckCircle className="w-2.5 h-2.5 text-emerald-500 inline ml-0.5" />}</p>
                 </div>
               ))}
             </div>
@@ -2294,7 +2297,7 @@ export default function ASHADashboard() {
                           </span>
                         </div>
                         <p className="text-[10px] text-slate-400 mt-0.5">Growth Vitals: Wt: {child.weight} • Ht: {child.height} • MUAC: {child.muac}</p>
-                        <p className="text-[9px] text-[#059669] font-bold mt-1">📋 Followup: {child.action}</p>
+                        <p className="text-[9px] text-[#059669] font-bold mt-1 flex items-center gap-1"><FileText className="w-3 h-3" /> Followup: {child.action}</p>
                       </div>
                     ))}
                   </div>
@@ -2338,7 +2341,7 @@ export default function ASHADashboard() {
                           )}
                           {req.status === 'completed' && (
                             <span className="text-[9px] font-black text-emerald-600 uppercase bg-emerald-50 border border-emerald-100 px-2 py-1.5 rounded flex items-center gap-0.5">
-                              ✓ Delivered
+                              <CheckCircle className="w-3 h-3" /> Delivered
                             </span>
                           )}
                         </div>
@@ -2716,13 +2719,15 @@ export default function ASHADashboard() {
 
               <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto">
                 {[
-                  { label: 'Field Dashboard', icon: '🏠', route: '/ngo', tab: 'home' },
-                  { label: 'Maternal Tracking', icon: '🤰', route: '/ngo/maternal', tab: 'patients' },
-                  { label: 'Child Malnutrition', icon: '👶', route: '/ngo/child-nutrition' },
-                  { label: 'Symptoms Checker', icon: '🩺', route: '/symptoms' },
-                  { label: 'Emergency Center', icon: '🚑', route: '/ambulance' },
-                  { label: 'AWS Aurora Sync', icon: '🔄', action: handleSync }
-                ].map((m, idx) => (
+                  { label: 'Field Dashboard', icon: Home, route: '/ngo' },
+                  { label: 'Maternal Tracking', icon: Heart, route: '/ngo/maternal' },
+                  { label: 'Child Malnutrition', icon: Baby, route: '/ngo/child-nutrition' },
+                  { label: 'Symptoms Checker', icon: Stethoscope, route: '/symptoms' },
+                  { label: 'Emergency Center', icon: Ambulance, route: '/ambulance' },
+                  { label: 'AWS Aurora Sync', icon: RefreshCw, action: handleSync }
+                ].map((m, idx) => {
+                  const NavIcon = m.icon;
+                  return (
                   <button
                     key={idx}
                     onClick={() => {
@@ -2732,10 +2737,11 @@ export default function ASHADashboard() {
                     }}
                     className="flex items-center gap-3.5 w-full px-4 py-3 rounded-xl hover:bg-slate-50 hover:text-[#059669] font-bold text-slate-700 text-sm text-left transition-colors cursor-pointer"
                   >
-                    <span className="text-lg leading-none">{m.icon}</span>
+                    <NavIcon className="w-[18px] h-[18px] text-slate-500" />
                     <span>{m.label}</span>
                   </button>
-                ))}
+                  );
+                })}
               </nav>
 
               <div className="p-4 border-t border-slate-100 bg-slate-50 text-[10px] font-bold text-slate-400 text-center uppercase tracking-wide">

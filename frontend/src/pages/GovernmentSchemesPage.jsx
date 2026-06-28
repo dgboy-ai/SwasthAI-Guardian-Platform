@@ -1,18 +1,20 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { Stethoscope, Baby, Heart, Shield, Apple, Pill, ClipboardList, AlertTriangle, Landmark, Target, Wifi, Search, X, DollarSign, User, Heart as Venus } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import { useLanguage } from '../context/LanguageContext';
 import api from '../services/api';
 
 // ── Category config ──────────────────────────────────────────────────────────
 const CATEGORY_META = {
-  health_insurance: { icon: '🏥', color: '#10b981', bg: '#d1fae5', border: '#6ee7b7' },
-  maternal_health:  { icon: '🤱', color: '#8b5cf6', bg: '#ede9fe', border: '#c4b5fd' },
-  child_health:     { icon: '👶', color: '#f59e0b', bg: '#fef3c7', border: '#fcd34d' },
-  insurance:        { icon: '🛡️', color: '#3b82f6', bg: '#dbeafe', border: '#93c5fd' },
-  nutrition:        { icon: '🥗', color: '#ef4444', bg: '#fee2e2', border: '#fca5a5' },
-  disease:          { icon: '💊', color: '#06b6d4', bg: '#cffafe', border: '#67e8f9' },
-  other:            { icon: '📋', color: '#6b7280', bg: '#f3f4f6', border: '#d1d5db' },
+  health_insurance: { icon: Stethoscope, color: '#10b981', bg: '#d1fae5', border: '#6ee7b7' },
+  maternal_health:  { icon: Baby, color: '#8b5cf6', bg: '#ede9fe', border: '#c4b5fd' },
+  child_health:     { icon: Heart, color: '#f59e0b', bg: '#fef3c7', border: '#fcd34d' },
+  insurance:        { icon: Shield, color: '#3b82f6', bg: '#dbeafe', border: '#93c5fd' },
+  nutrition:        { icon: Apple, color: '#ef4444', bg: '#fee2e2', border: '#fca5a5' },
+  disease:          { icon: Pill, color: '#06b6d4', bg: '#cffafe', border: '#67e8f9' },
+  other:            { icon: ClipboardList, color: '#6b7280', bg: '#f3f4f6', border: '#d1d5db' },
 };
 
 function getCat(category, t) {
@@ -40,17 +42,18 @@ function loadCache() {
 // ── Skeleton Card ─────────────────────────────────────────────────────────────
 function SkeletonCard() {
   return (
-    <div style={{
-      background: '#fff', borderRadius: 16, border: '1px solid #f1f5f9',
-      overflow: 'hidden', height: 280,
-    }}>
-      <div style={{ height: 4, background: 'linear-gradient(90deg, #f1f5f9, #e2e8f0, #f1f5f9)', backgroundSize: '200% 100%', animation: 'shimmer 1.5s infinite' }} />
-      <div style={{ padding: '18px 20px' }}>
+    <motion.div
+      animate={{ opacity: [1, 0.5, 1] }}
+      transition={{ repeat: Infinity, duration: 1.5, ease: 'easeInOut' }}
+      className="bg-white rounded-2xl border border-slate-100 overflow-hidden h-[280px]"
+    >
+      <div className="h-1 bg-slate-200" />
+      <div className="px-5 py-[18px]">
         {[100, 60, '100%', '80%', '60%'].map((w, i) => (
-          <div key={i} style={{ width: w, height: i < 2 ? 12 : 10, borderRadius: 6, marginBottom: 12, background: 'linear-gradient(90deg, #f1f5f9, #e2e8f0, #f1f5f9)', backgroundSize: '200% 100%', animation: 'shimmer 1.5s infinite' }} />
+          <div key={i} className="rounded-lg mb-3 bg-slate-200" style={{ width: w, height: i < 2 ? 12 : 10 }} />
         ))}
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -104,7 +107,7 @@ export default function GovernmentSchemesPage() {
       if (cached) {
         setSchemes(cached.schemes || []);
         setProfile(cached.profile || null);
-        setError('⚠️ Showing cached data');
+        setError('Showing cached data');
       } else {
         setError(err.response?.data?.error || err.message || 'Failed to load schemes.');
       }
@@ -127,120 +130,119 @@ export default function GovernmentSchemesPage() {
   const categories = [...new Set(schemes.map(sc => sc.category))];
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #f0f9ff 100%)', fontFamily: "'Inter','Segoe UI',sans-serif", paddingBottom: 80, position: 'relative' }}>
-      <style>{`
-        @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
-        @keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:none} }
-        .scheme-card { transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; }
-        .scheme-card:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
-        .know-more-btn { transition: all 0.2s; }
-        .know-more-btn:hover { transform: scale(1.02); }
-      `}</style>
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50/60 via-green-50/40 to-sky-50/60 pb-20 relative font-inter">
       <Navbar />
 
       {/* Fixed gradient orbs */}
-      <div style={{ position: 'fixed', top: -100, right: -100, width: 350, height: 350, borderRadius: '50%', background: 'radial-gradient(circle, rgba(16,185,129,0.1) 0%, transparent 70%)', pointerEvents: 'none', zIndex: 0 }} />
-      <div style={{ position: 'fixed', bottom: -80, left: -80, width: 280, height: 280, borderRadius: '50%', background: 'radial-gradient(circle, rgba(139,92,246,0.08) 0%, transparent 70%)', pointerEvents: 'none', zIndex: 0 }} />
+      <div className="fixed -top-24 -right-24 w-[350px] h-[350px] rounded-full bg-[radial-gradient(circle,rgba(16,185,129,0.1)_0%,transparent_70%)] pointer-events-none z-0" />
+      <div className="fixed -bottom-20 -left-20 w-[280px] h-[280px] rounded-full bg-[radial-gradient(circle,rgba(139,92,246,0.08)_0%,transparent_70%)] pointer-events-none z-0" />
 
       {/* Header */}
-      <div style={{ position: 'relative', zIndex: 1, background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(12px)', borderBottom: '1px solid rgba(0,0,0,0.06)', padding: '16px 20px' }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-          <button onClick={() => navigate(-1)} style={{ background: 'none', border: '1px solid #e5e7eb', borderRadius: 10, padding: '7px 14px', cursor: 'pointer', fontSize: 13, color: '#374151', fontWeight: 600, whiteSpace: 'nowrap' }}>
-            ← {s.back?.replace('← ', '') || 'Back'}
+      <div className="relative z-10 bg-white/90 backdrop-blur-md border-b border-black/5 px-5 py-4">
+        <div className="max-w-[1200px] mx-auto flex items-center gap-3 flex-wrap">
+          <button onClick={() => { try { navigate(-1); } catch { navigate('/villager'); } }} className="bg-transparent border border-slate-200 rounded-xl px-3.5 py-1.5 cursor-pointer text-[13px] text-slate-600 font-semibold whitespace-nowrap hover:bg-slate-50 transition-colors">
+            ← {s.back ? s.back.replace(/^← /, '') : 'Back'}
           </button>
-          <div style={{ flex: 1 }}>
-            <h1 style={{ fontSize: 20, fontWeight: 800, color: '#064e3b', margin: 0, lineHeight: 1.2 }}>
-              🏛️ {s.title || 'Government Health Schemes'}
+          <div className="flex-1">
+            <h1 className="text-xl font-black text-emerald-900 leading-tight m-0">
+              <Landmark className="w-5 h-5 inline" /> {s.title || 'Government Health Schemes'}
             </h1>
-            <p style={{ fontSize: 12, color: '#6b7280', margin: '2px 0 0' }}>{s.subtitle || 'Free benefits your family is entitled to'}</p>
+            <p className="text-xs text-slate-400 mt-0.5 font-medium">{s.subtitle || 'Free benefits your family is entitled to'}</p>
           </div>
           {profile && (
             <button
               onClick={() => setShowAllSchemes(!showAllSchemes)}
-              style={{ padding: '8px 14px', borderRadius: 10, fontSize: 12, background: showAllSchemes ? '#f0fdf4' : '#064e3b', color: showAllSchemes ? '#064e3b' : '#fff', border: `1px solid ${showAllSchemes ? '#10b981' : '#064e3b'}`, cursor: 'pointer', fontWeight: 600, whiteSpace: 'nowrap' }}
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap border transition-colors ${
+                showAllSchemes ? 'bg-emerald-50 text-emerald-800 border-emerald-400' : 'bg-emerald-800 text-white border-emerald-800'
+              }`}
             >
-              {showAllSchemes ? s.show_mine || '🎯 My Schemes' : s.browse_all || '📋 Browse All'}
+              {showAllSchemes ? <><Target className="w-4 h-4 inline" /> {s.show_mine || 'My Schemes'}</> : <><ClipboardList className="w-4 h-4 inline" /> {s.browse_all || 'Browse All'}</>}
             </button>
           )}
         </div>
       </div>
 
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 16px', position: 'relative', zIndex: 1 }}>
+      <div className="max-w-[1200px] mx-auto px-4 relative z-10">
 
         {/* Offline banner */}
         {isOffline && (
-          <div style={{ background: '#fef3c7', color: '#92400e', padding: '10px 16px', fontSize: 13, fontWeight: 500, borderBottom: '1px solid #fde68a', marginBottom: 0 }}>
-            📡 Offline — showing cached data
+          <div className="bg-amber-50 text-amber-800 px-4 py-2.5 text-[13px] font-medium border-b border-amber-200 flex items-center gap-2">
+            <Wifi className="w-4 h-4" /> Offline — showing cached data
           </div>
         )}
 
         {/* Profile eligibility card */}
         {profile && (
-          <div style={{ background: '#fff', borderRadius: 14, padding: '14px 18px', boxShadow: '0 4px 20px rgba(0,0,0,0.06)', border: '1px solid #e5e7eb', margin: '16px 0 0', display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-            <span style={{ fontSize: 13, fontWeight: 700, color: '#111827', whiteSpace: 'nowrap' }}>🎯 Your Profile:</span>
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mt-4 flex gap-2.5 flex-wrap items-center">
+            <span className="text-[13px] font-bold text-slate-900 whitespace-nowrap inline-flex items-center gap-1"><Target className="w-4 h-4" /> Your Profile:</span>
             {profile.age && <Chip label={`${s.eligibility_age || 'Age'}: ${profile.age}`} />}
             {profile.gender && <Chip label={profile.gender} />}
             {profile.economic_status && <Chip label={profile.economic_status} />}
             {profile.area_type && <Chip label={profile.area_type} />}
             {!profile.age && !profile.gender && (
-              <span style={{ fontSize: 12, color: '#9ca3af' }}>Complete your profile to see personalized results →</span>
+              <span className="text-xs text-slate-400">Complete your profile to see personalized results →</span>
             )}
           </div>
         )}
 
         {/* Search + Filter bar */}
-        <div style={{ marginTop: 16 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#fff', borderRadius: 14, padding: '10px 16px', border: '1px solid #e5e7eb', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', marginBottom: 10 }}>
-            <span style={{ fontSize: 16 }}>🔍</span>
+        <div className="mt-4">
+          <div className="flex items-center gap-2.5 bg-white rounded-xl px-4 py-2.5 border border-slate-200 shadow-sm mb-2.5">
+            <Search className="w-4 h-4 text-slate-400 shrink-0" />
             <input
               placeholder={s.search_placeholder || 'Search schemes...'}
               value={search}
               onChange={e => setSearch(e.target.value)}
-              style={{ flex: 1, border: 'none', outline: 'none', fontSize: 14, color: '#111827', background: 'transparent' }}
+              className="flex-1 border-none outline-none text-sm text-slate-900 bg-transparent"
             />
-            {search && <button onClick={() => setSearch('')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', fontSize: 16 }}>✕</button>}
+            {search && <button onClick={() => setSearch('')} className="bg-none border-none cursor-pointer text-slate-400 flex items-center p-0"><X className="w-4 h-4" /></button>}
           </div>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', paddingBottom: 4 }}>
-            <FilterChip label={s.filter_all || '📋 All'} active={filter === 'all'} onClick={() => setFilter('all')} />
+          <div className="flex gap-2 flex-wrap pb-1">
+            <FilterChip icon={<ClipboardList className="w-4 h-4" />} label={s.filter_all || 'All'} active={filter === 'all'} onClick={() => setFilter('all')} />
             {categories.map(cat => {
               const meta = getCat(cat, t);
-              return <FilterChip key={cat} label={`${meta.icon} ${meta.label}`} active={filter === cat} onClick={() => setFilter(cat)} color={meta.color} />;
+              return <FilterChip key={cat} icon={<meta.icon className="w-4 h-4" />} label={meta.label} active={filter === cat} onClick={() => setFilter(cat)} color={meta.color} />;
             })}
           </div>
         </div>
 
         {/* Count */}
         {!loading && !error && (
-          <p style={{ fontSize: 12, color: '#6b7280', margin: '8px 0', fontWeight: 500 }}>
+          <p className="text-xs text-slate-400 my-2 font-medium">
             {s.showing || 'Showing'} <strong>{displayed.length}</strong> {s.of || 'of'} <strong>{schemes.length}</strong> {s.schemes_word || 'schemes'}
-            {!showAllSchemes && profile && <span style={{ color: '#10b981', marginLeft: 4 }}>• {s.my_schemes || 'matching your profile'}</span>}
+            {!showAllSchemes && profile && <span className="text-emerald-600 ml-1">• {s.my_schemes || 'matching your profile'}</span>}
           </p>
         )}
 
         {/* Grid */}
         {loading ? (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))', gap: 16, paddingBottom: 24 }}>
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,300px),1fr))] gap-4 pb-6">
             {[1,2,3,4,5,6].map(i => <SkeletonCard key={i} />)}
           </div>
         ) : error && schemes.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-            <div style={{ fontSize: 48 }}>⚠️</div>
-            <p style={{ color: '#ef4444', marginTop: 12 }}>{error}</p>
-            <button onClick={() => fetchSchemes(showAllSchemes)} style={{ marginTop: 16, padding: '10px 24px', background: '#10b981', color: '#fff', border: 'none', borderRadius: 10, cursor: 'pointer', fontWeight: 700 }}>
+          <div className="text-center py-[60px] px-5">
+            <AlertTriangle className="w-8 h-8 mx-auto text-red-500" />
+            <p className="text-red-500 mt-3">{error}</p>
+            <button onClick={() => fetchSchemes(showAllSchemes)} className="mt-4 px-6 py-2.5 bg-emerald-500 text-white rounded-xl font-bold border-none cursor-pointer hover:bg-emerald-600 transition-colors">
               {s.retry || 'Try Again'}
             </button>
           </div>
         ) : (
           <>
-            {error && <div style={{ background: '#fef3c7', border: '1px solid #fde68a', borderRadius: 10, padding: '10px 14px', fontSize: 13, color: '#92400e', marginBottom: 12 }}>{error}</div>}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))', gap: 16, paddingBottom: 24, animation: 'fadeUp 0.4s ease' }}>
+            {error && <div className="bg-amber-50 border border-amber-200 rounded-xl px-3.5 py-2.5 text-[13px] text-amber-800 mb-3 flex items-center gap-2"><AlertTriangle className="w-4 h-4" />{error}</div>}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.05 } } }}
+              className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,300px),1fr))] gap-4 pb-6"
+            >
               {displayed.map(scheme => <SchemeCard key={scheme.id} scheme={scheme} t={t} lang={lang} />)}
-            </div>
+            </motion.div>
             {displayed.length === 0 && (
-              <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-                <div style={{ fontSize: 48 }}>🔍</div>
-                <p style={{ color: '#9ca3af', marginTop: 12 }}>{s.no_schemes || 'No schemes found.'}</p>
-                <button onClick={() => { setSearch(''); setFilter('all'); }} style={{ marginTop: 12, padding: '9px 20px', background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: 10, cursor: 'pointer', fontWeight: 600 }}>
+              <div className="text-center py-[60px] px-5">
+                <Search className="w-8 h-8 mx-auto text-slate-400" />
+                <p className="text-slate-400 mt-3">{s.no_schemes || 'No schemes found.'}</p>
+                <button onClick={() => { setSearch(''); setFilter('all'); }} className="mt-3 px-5 py-2 bg-slate-100 text-slate-600 rounded-xl font-bold border-none cursor-pointer hover:bg-slate-200 transition-colors">
                   {s.clear_filters || 'Clear Filters'}
                 </button>
               </div>
@@ -266,88 +268,92 @@ function SchemeCard({ scheme, t, lang }) {
     || scheme.why_helps;
 
   return (
-    <div className="scheme-card" style={{ background: '#fff', borderRadius: 16, border: `1px solid ${cat.border}`, boxShadow: '0 4px 16px rgba(0,0,0,0.06)', overflow: 'hidden' }}>
+    <motion.div
+      variants={{ hidden: { opacity: 0, y: 16 }, visible: { opacity: 1, y: 0 } }}
+      whileHover={{ y: -4 }}
+      transition={{ type: 'spring', stiffness: 300 }}
+      className="bg-white rounded-2xl overflow-hidden"
+      style={{ border: `1px solid ${cat.border}`, boxShadow: '0 4px 16px rgba(0,0,0,0.06)' }}
+    >
       {/* Top accent */}
-      <div style={{ height: 5, background: `linear-gradient(90deg, ${cat.color}, ${cat.color}88)` }} />
+      <div className="h-[5px]" style={{ background: `linear-gradient(90deg, ${cat.color}, ${cat.color}88)` }} />
 
-      <div style={{ padding: '16px 18px' }}>
+      <div className="px-[18px] py-4">
         {/* Category + year */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-          <span style={{ fontSize: 11, fontWeight: 800, color: cat.color, background: cat.bg, padding: '3px 10px', borderRadius: 20, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-            {cat.icon} {cat.label}
+        <div className="flex justify-between items-center mb-3">
+          <span className="text-[11px] font-extrabold uppercase inline-flex items-center gap-1" style={{ color: cat.color, background: cat.bg, padding: '3px 10px', borderRadius: 20, letterSpacing: 0.5 }}>
+            <cat.icon className="w-4 h-4" /> {cat.label}
           </span>
           {scheme.start_year && (
-            <span style={{ fontSize: 10, color: '#9ca3af', fontWeight: 600 }}>since {scheme.start_year}</span>
+            <span className="text-[10px] text-slate-400 font-semibold">since {scheme.start_year}</span>
           )}
         </div>
 
         {/* Name */}
-        <h3 style={{ fontSize: 15, fontWeight: 800, color: '#111827', margin: '0 0 3px', lineHeight: 1.35 }}>{displayName}</h3>
+        <h3 className="text-[15px] font-extrabold text-slate-900 m-0 leading-[1.35] mb-[3px]">{displayName}</h3>
         {displayName !== scheme.name && (
-          <p style={{ fontSize: 11, color: '#9ca3af', margin: '0 0 10px', lineHeight: 1.3 }}>{scheme.name}</p>
+          <p className="text-[11px] text-slate-400 m-0 mb-[10px] leading-[1.3]">{scheme.name}</p>
         )}
 
         {/* Benefit callout */}
-        <div style={{ background: cat.bg, borderRadius: 10, padding: '8px 12px', marginBottom: 12, border: `1px solid ${cat.border}` }}>
-          <div style={{ fontSize: 9, fontWeight: 800, color: cat.color, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 2 }}>
-            💰 {s.benefit_label || 'BENEFIT'}
+        <div className="mb-3" style={{ background: cat.bg, borderRadius: 10, padding: '8px 12px', border: `1px solid ${cat.border}` }}>
+          <div className="text-[9px] font-extrabold uppercase mb-[2px] flex items-center gap-1" style={{ color: cat.color, letterSpacing: 0.8 }}>
+            <DollarSign className="w-4 h-4" /> {s.benefit_label || 'BENEFIT'}
           </div>
-          <div style={{ fontSize: 13, color: '#111827', fontWeight: 700, lineHeight: 1.4 }}>{displayBenefit}</div>
+          <div className="text-[13px] text-slate-900 font-bold leading-[1.4]">{displayBenefit}</div>
         </div>
 
         {/* Why helps — simple villager language */}
         {displayWhyHelps && (
-          <p style={{ fontSize: 12, color: '#4b5563', lineHeight: 1.6, margin: '0 0 12px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+          <p className="text-xs text-slate-600 leading-relaxed m-0 mb-3" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
             {displayWhyHelps}
           </p>
         )}
 
         {/* Eligibility chips */}
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 14 }}>
-          <EligChip label={`${scheme.min_age}–${scheme.max_age === 120 ? '∞' : scheme.max_age} ${s.age_range || 'yrs'}`} icon="👤" />
-          {scheme.gender_eligibility === 'female' && <EligChip label={s.female_only || 'Women only'} icon="♀️" color="#8b5cf6" />}
-          {scheme.economic_status_eligibility === 'BPL' && <EligChip label="BPL" icon="📋" color="#ef4444" />}
+        <div className="flex gap-1.5 flex-wrap mb-3.5">
+          <EligChip label={`${scheme.min_age}–${scheme.max_age === 120 ? '∞' : scheme.max_age} ${s.age_range || 'yrs'}`} icon={<User className="w-3 h-3" />} />
+          {scheme.gender_eligibility === 'female' && <EligChip label={s.female_only || 'Women only'} icon={<Venus className="w-3 h-3" />} color="#8b5cf6" />}
+          {scheme.economic_status_eligibility === 'BPL' && <EligChip label="BPL" icon={<ClipboardList className="w-4 h-4" />} color="#ef4444" />}
         </div>
 
         {/* Know More button */}
         <Link
           to={`/schemes/${scheme.id}`}
-          className="know-more-btn"
           onClick={e => e.stopPropagation()}
+          className="flex items-center justify-center gap-1.5 w-full py-[11px] text-[13px] text-white font-extrabold no-underline cursor-pointer box-border border-none rounded-xl"
           style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-            width: '100%', padding: '11px', borderRadius: 10, fontSize: 13,
             background: `linear-gradient(135deg, ${cat.color}, ${cat.color}cc)`,
-            color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 800,
-            textDecoration: 'none', boxSizing: 'border-box',
             boxShadow: `0 4px 12px ${cat.color}33`,
           }}
         >
           {s.know_more || 'Know More →'}
         </Link>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
 function Chip({ label }) {
-  return <span style={{ fontSize: 11, padding: '3px 10px', borderRadius: 20, background: '#f3f4f6', color: '#374151', border: '1px solid #e5e7eb', fontWeight: 600 }}>{label}</span>;
+  return <span className="text-[11px] font-semibold text-slate-700 bg-slate-100 border border-slate-200 rounded-full px-[10px] py-[3px]">{label}</span>;
 }
 
 function EligChip({ label, icon, color = '#374151' }) {
-  return <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 20, background: '#f8fafc', color, border: '1px solid #e5e7eb', fontWeight: 700 }}>{icon} {label}</span>;
+  return <span className="text-[10px] font-bold bg-slate-50 border border-slate-200 rounded-full px-[8px] py-[2px] inline-flex items-center gap-1" style={{ color }}>{icon} {label}</span>;
 }
 
-function FilterChip({ label, active, onClick, color }) {
+function FilterChip({ label, active, onClick, color, icon }) {
   return (
     <button
       onClick={onClick}
+      className="text-xs font-bold cursor-pointer inline-flex items-center gap-1 rounded-full px-[14px] py-[6px] transition-all duration-200"
       style={{
-        fontSize: 12, padding: '6px 14px', borderRadius: 20, border: `1px solid ${active && color ? color : active ? '#064e3b' : '#e5e7eb'}`,
-        background: active ? (color || '#064e3b') : '#fff', cursor: 'pointer', fontWeight: 700,
-        color: active ? '#fff' : '#374151', transition: 'all 0.2s',
+        border: `1px solid ${active && color ? color : active ? '#064e3b' : '#e5e7eb'}`,
+        background: active ? (color || '#064e3b') : '#fff',
+        color: active ? '#fff' : '#374151',
       }}
     >
+      {icon}
       {label}
     </button>
   );

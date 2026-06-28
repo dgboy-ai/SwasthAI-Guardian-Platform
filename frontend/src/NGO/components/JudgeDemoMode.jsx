@@ -1,12 +1,20 @@
 import React, { useState } from 'react';
-import { Play, CheckCircle, Clock, Activity, Loader2, MousePointerClick, Brain } from 'lucide-react';
+import { Play, CheckCircle, Clock, Activity, Loader2, MousePointerClick, Brain, Heart, Baby, Flame, Ambulance, RefreshCw } from 'lucide-react';
 import { showToast } from '../../utils/toast';
+
+const SCENARIO_ICONS = {
+  pregnancy: Heart,
+  malnutrition: Baby,
+  outbreak: Flame,
+  sos: Ambulance,
+  sync: RefreshCw,
+};
 
 const SCENARIOS = [
   {
     id: 'pregnancy',
     label: 'High Risk Pregnancy',
-    emoji: '🤰',
+    icon: Heart,
     desc: 'Register 28yr old with 7mo pregnancy, high BP (150/95), Hb 9.8, urgent visit needed',
     color: 'orange',
     bgFrom: 'from-orange-500/10',
@@ -15,7 +23,7 @@ const SCENARIOS = [
   {
     id: 'malnutrition',
     label: 'Malnutrition Crisis',
-    emoji: '👶',
+    icon: Baby,
     desc: 'Add 3 new SAM children with declining MUAC, trigger nutrition alert',
     color: 'purple',
     bgFrom: 'from-purple-500/10',
@@ -24,7 +32,7 @@ const SCENARIOS = [
   {
     id: 'outbreak',
     label: 'Disease Outbreak',
-    emoji: '🔥',
+    icon: Flame,
     desc: '8 new fever cases detected in Village V103 cluster, risk score rises to 92',
     color: 'red',
     bgFrom: 'from-red-500/10',
@@ -33,7 +41,7 @@ const SCENARIOS = [
   {
     id: 'sos',
     label: 'Emergency SOS',
-    emoji: '🚑',
+    icon: Ambulance,
     desc: 'Trigger ambulance dispatch for chest pain patient, GPS coordination + ETA',
     color: 'red',
     bgFrom: 'from-red-500/10',
@@ -42,7 +50,7 @@ const SCENARIOS = [
   {
     id: 'sync',
     label: 'Offline Sync',
-    emoji: '🔄',
+    icon: RefreshCw,
     desc: 'Simulate network restore with 5 queued records, sync to AWS Aurora',
     color: 'blue',
     bgFrom: 'from-blue-500/10',
@@ -137,7 +145,7 @@ export default function JudgeDemoMode({ onSimulate, lastScenario, isSimulating }
                 </div>
               )}
               <div className="flex items-center gap-2 mb-1.5">
-                <span className="text-lg">{scenario.emoji}</span>
+                <scenario.icon className="w-4.5 h-4.5 text-white/80" />
                 <span className={`text-xs font-black text-white ${isDone ? 'text-emerald-300' : ''}`}>
                   {scenario.label}
                 </span>

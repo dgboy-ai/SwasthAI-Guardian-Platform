@@ -6,8 +6,9 @@ import {
   AlertCircle, ShieldCheck, Mic, Volume2,
   Thermometer, Droplets, Wind, Info,
   Hospital, Stethoscope, BriefcaseMedical,
-  RefreshCw, BrainCircuit, WifiOff, Download, X
+  RefreshCw, BrainCircuit, WifiOff, Download, X, ChevronLeft
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { showToast } from '../utils/toast';
@@ -544,20 +545,25 @@ export default function SymptomCheckerPage() {
 
   return (
     <div className="min-h-screen bg-[#F7F9FB] font-inter antialiased flex flex-col">
-      <Navbar role="villager" />
+      <Navbar />
 
       <main className="max-w-6xl mx-auto px-3 sm:px-6 pt-14 sm:pt-20 pb-20 xl:pb-6 flex-1 flex flex-col w-full">
 
         {/* HEADER AREA */}
         <header className="mb-2.5 sm:mb-3.5 flex flex-row items-center justify-between border-b border-slate-200 pb-2">
-          <div>
-            <h1 className="text-base sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-              <HeartPulse className="w-4 h-4 sm:w-5.5 sm:h-5.5 text-emerald-600 animate-pulse" />
-              {t.symptom?.title || 'AI Symptom Checker'}
-            </h1>
-            <p className="text-slate-500 font-semibold text-[9px] sm:text-xs">
-              {t.symptom?.subtitle || 'Tell us how you feel. We will guide you on what to do next.'}
-            </p>
+          <div className="flex items-center gap-2 sm:gap-3">
+            <button onClick={() => navigate('/villager')} className="flex items-center gap-1 px-2 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors">
+              <ChevronLeft className="w-3 h-3" /> {t.common?.dashboard || 'Back'}
+            </button>
+            <div>
+              <h1 className="text-base sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+                <HeartPulse className="w-4 h-4 sm:w-5.5 sm:h-5.5 text-emerald-600 animate-pulse" />
+                {t.symptom?.title || 'AI Symptom Checker'}
+              </h1>
+              <p className="text-slate-500 font-semibold text-[9px] sm:text-xs">
+                {t.symptom?.subtitle || 'Tell us how you feel. We will guide you on what to do next.'}
+              </p>
+            </div>
           </div>
           <div className="flex items-center gap-1.5">
             <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${isOnline ? 'bg-emerald-500' : 'bg-amber-500'}`} />
@@ -610,13 +616,13 @@ export default function SymptomCheckerPage() {
 
         <div className="flex lg:hidden gap-1 p-1 bg-slate-100/80 rounded-xl border border-slate-200/50 mb-3 shadow-sm select-none shrink-0">
           <button onClick={() => setActiveTab('input')} className={`flex-1 py-1.5 text-center rounded-lg font-black text-[10px] uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 ${ activeTab === 'input' ? 'bg-white text-emerald-800 shadow-sm border border-slate-200/50' : 'text-slate-500 hover:text-slate-700' }`}>
-            🗣️ {sc.describe_tab || 'Describe'}
+            <Mic className="w-3 h-3" /> {sc.describe_tab || 'Describe'}
           </button>
           <button onClick={() => setActiveTab('checklist')} className={`flex-1 py-1.5 text-center rounded-lg font-black text-[10px] uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 ${ activeTab === 'checklist' ? 'bg-white text-emerald-800 shadow-sm border border-slate-200/50' : 'text-slate-500 hover:text-slate-700' }`}>
-            📋 {sc.checklist_tab || 'Checklist'} {selectedSymptoms.length > 0 && (<span className="px-1.5 py-0.2 bg-emerald-100 text-emerald-800 text-[8px] rounded-full font-bold">{selectedSymptoms.length}</span>)}
+            <Activity className="w-3 h-3" /> {sc.checklist_tab || 'Checklist'} {selectedSymptoms.length > 0 && (<span className="px-1.5 py-0.2 bg-emerald-100 text-emerald-800 text-[8px] rounded-full font-bold">{selectedSymptoms.length}</span>)}
           </button>
           <button onClick={() => setActiveTab('result')} className={`flex-1 py-1.5 text-center rounded-lg font-black text-[10px] uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 ${ activeTab === 'result' ? 'bg-white text-emerald-800 shadow-sm border border-slate-200/50' : 'text-slate-500 hover:text-slate-700' }`}>
-            🩺 {sc.diagnosis_tab || 'Diagnosis'} {result && (<span className={`w-1.5 h-1.5 rounded-full ${severityConfig[result.type]?.bg || 'bg-emerald-500'} animate-pulse`} />)}
+            <HeartPulse className="w-3 h-3" /> {sc.diagnosis_tab || 'Diagnosis'} {result && (<span className={`w-1.5 h-1.5 rounded-full ${severityConfig[result.type]?.bg || 'bg-emerald-500'} animate-pulse`} />)}
           </button>
         </div>
 
@@ -633,7 +639,7 @@ export default function SymptomCheckerPage() {
                   {sc.primary_input || 'Primary Input'}
                 </span>
                 <h3 className="text-xs sm:text-sm font-black text-slate-900 tracking-tight flex items-center gap-1">
-                  🗣️ {sc.speak_type || 'Speak or Type Symptoms'}
+                  <Mic className="w-3.5 h-3.5 text-emerald-600" /> {sc.speak_type || 'Speak or Type Symptoms'}
                 </h3>
               </div>
             </div>
@@ -745,8 +751,8 @@ export default function SymptomCheckerPage() {
                   <p className="text-[10px] font-bold text-rose-800 italic max-w-xs truncate px-2">
                     {interimText || '"Listening..."'}
                   </p>
-                  <button onClick={stopVoice} className="mt-3 px-2.5 py-1 bg-rose-600 text-white rounded-full text-[8px] font-black uppercase tracking-widest shadow hover:bg-rose-700">
-                    {sc.cancel || 'Cancel'} ✕
+                  <button onClick={stopVoice} className="mt-3 px-2.5 py-1 bg-rose-600 text-white rounded-full text-[8px] font-black uppercase tracking-widest shadow hover:bg-rose-700 flex items-center gap-1">
+                    <X className="w-3 h-3" /> {sc.cancel || 'Cancel'}
                   </button>
                 </motion.div>
               )}
@@ -760,7 +766,7 @@ export default function SymptomCheckerPage() {
                 {sc.quick_select || 'Quick Select'}
               </span>
               <h3 className="text-xs sm:text-sm font-black text-slate-900 tracking-tight flex items-center gap-1.5">
-                🤒 {sc.predefined_list || 'Predefined Symptoms List'}
+                <Activity className="w-3.5 h-3.5 text-emerald-600" /> {sc.predefined_list || 'Predefined Symptoms List'}
               </h3>
             </div>
 
@@ -832,12 +838,14 @@ export default function SymptomCheckerPage() {
                     
                     <div className="space-y-1.5 flex-1">
                       {[
-                        { num: '1️⃣', text: sc.step1 || 'Select symptoms or speak info' },
-                        { num: '2️⃣', text: sc.step2 || 'Tap Analyze Symptoms button' },
-                        { num: '3️⃣', text: sc.step3 || 'Get immediate AI advice & steps' },
+                        { icon: Mic, text: sc.step1 || 'Select symptoms or speak info' },
+                        { icon: Activity, text: sc.step2 || 'Tap Analyze Symptoms button' },
+                        { icon: ShieldCheck, text: sc.step3 || 'Get immediate AI advice & steps' },
                       ].map((item, i) => (
                         <div key={i} className="flex items-center gap-2.5 p-2 bg-slate-50/50 rounded-lg border border-slate-100">
-                          <span className="text-[10px] shrink-0">{item.num}</span>
+                          <div className="w-6 h-6 bg-slate-200 rounded-lg flex items-center justify-center shrink-0">
+                            <item.icon className="w-3 h-3 text-slate-600" />
+                          </div>
                           <p className="text-[9px] font-black leading-tight text-slate-800 truncate">{item.text}</p>
                         </div>
                       ))}
@@ -981,7 +989,7 @@ export default function SymptomCheckerPage() {
                         <Download className="w-3 h-3" /> {sc.report || 'Report'}
                       </button>
                       <button onClick={() => { setResult(null); setSelectedSymptoms([]); setOtherSymptom(''); setActiveTab('input'); }} className="flex-1 py-2 bg-white/20 hover:bg-white/30 border border-white/30 text-white rounded-lg font-black text-[9px] uppercase tracking-widest transition-all flex items-center justify-center gap-1">
-                        🔄 {sc.check_more || 'Check More'}
+                        <RefreshCw className="w-3 h-3" /> {sc.check_more || 'Check More'}
                       </button>
                     </div>
                   </motion.div>

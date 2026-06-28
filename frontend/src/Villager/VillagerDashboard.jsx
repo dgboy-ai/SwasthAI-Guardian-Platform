@@ -35,6 +35,19 @@ export default function VillagerDashboard() {
     localStorage.getItem('simulated_network_state') === 'offline'
   );
   const [alertModalOpen, setAlertModalOpen] = useState(false);
+  const [healthScore, setHealthScore] = useState(null);
+  const [checkupsDone, setCheckupsDone] = useState(null);
+  const [activeAlerts, setActiveAlerts] = useState(null);
+  const [lastCheckup, setLastCheckup] = useState(null);
+
+  useEffect(() => {
+    if (user) {
+      setHealthScore(user.healthScore ?? (user.isOfflineSession ? null : '—'));
+      setCheckupsDone(user.checkupsDone ?? (user.isOfflineSession ? null : '—'));
+      setActiveAlerts(user.activeAlerts ?? (user.isOfflineSession ? null : '—'));
+      setLastCheckup(user.lastCheckup ?? null);
+    }
+  }, [user]);
 
   // Sync simulated network status
   const toggleDashboardOffline = () => {
@@ -89,34 +102,25 @@ export default function VillagerDashboard() {
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 pb-6 border-b border-slate-200/60">
             <div>
               <h1 className="text-3xl font-black text-slate-900 leading-tight">
-                {lang === 'hi' ? `नमस्ते, ${userName} 🙏` : lang === 'mr' ? `नमस्ते, ${userName} 🙏` : lang === 'ta' ? `வணக்கம், ${userName} 🙏` : lang === 'te' ? `నమస్తే, ${userName} 🙏` : lang === 'bn' ? `নমস্কার, ${userName} 🙏` : `Namaste, ${userName} 🙏`}
+                {lang === 'hi' ? `नमस्ते, ${userName}` : lang === 'mr' ? `नमस्ते, ${userName}` : lang === 'ta' ? `வணக்கம், ${userName}` : lang === 'te' ? `నమస్తే, ${userName}` : lang === 'bn' ? `নমস্কার, ${userName}` : `Namaste, ${userName}`}
               </h1>
               <p className="text-sm text-slate-500 font-bold mt-1">
                 {translations.subtitle}
               </p>
             </div>
             
-            {/* Dynamic Network / Connection Status Indicator */}
-            <div className="flex items-center gap-3">
+            {/* Network Status (Demo Toggle) */}
+            <div className="flex items-center gap-2">
+              <div className={`w-2 h-2 rounded-full ${isOffline ? 'bg-amber-500' : 'bg-emerald-500'}`} />
+              <span className={`text-[10px] font-black uppercase tracking-wider ${isOffline ? 'text-amber-600' : 'text-emerald-600'}`}>
+                {isOffline ? translations.offlineMode : translations.onlineMode}
+              </span>
               <button
                 onClick={toggleDashboardOffline}
-                className={`flex items-center gap-2 px-4 py-2 rounded-full border text-xs font-bold transition-all shadow-sm active:scale-95 ${
-                  isOffline
-                    ? 'bg-rose-50 border-rose-200 text-rose-600 hover:bg-rose-100'
-                    : 'bg-emerald-50 border-emerald-100 text-emerald-700 hover:bg-emerald-100'
-                }`}
+                className="ml-1 p-1 rounded-md hover:bg-slate-100 transition-colors opacity-40 hover:opacity-100"
+                title="Toggle offline mode (demo)"
               >
-                {isOffline ? (
-                  <>
-                    <WifiOff className="w-4 h-4 text-rose-500 animate-pulse" />
-                    <span>{translations.offlineMode}</span>
-                  </>
-                ) : (
-                  <>
-                    <Wifi className="w-4 h-4 text-emerald-600" />
-                    <span>{translations.onlineMode}</span>
-                  </>
-                )}
+                {isOffline ? <WifiOff className="w-3 h-3 text-slate-400" /> : <Wifi className="w-3 h-3 text-slate-400" />}
               </button>
             </div>
           </div>
@@ -295,7 +299,7 @@ export default function VillagerDashboard() {
                 </div>
                 <div>
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{translations.healthScore}</p>
-                  <p className="text-2xl font-black text-slate-800 mt-0.5">85%</p>
+                  <p className="text-2xl font-black text-slate-800 mt-0.5">{healthScore ?? '—'}</p>
                   <p className="text-xs font-black text-emerald-600 mt-0.5">{translations.healthScoreStatus}</p>
                 </div>
               </div>
@@ -307,7 +311,7 @@ export default function VillagerDashboard() {
                 </div>
                 <div>
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{translations.checkupsDone}</p>
-                  <p className="text-2xl font-black text-slate-800 mt-0.5">3</p>
+                  <p className="text-2xl font-black text-slate-800 mt-0.5">{checkupsDone ?? '—'}</p>
                   <p className="text-xs font-bold text-slate-500 mt-0.5">{translations.checkupsDoneSub}</p>
                 </div>
               </div>
@@ -319,7 +323,7 @@ export default function VillagerDashboard() {
                 </div>
                 <div>
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{translations.activeAlerts}</p>
-                  <p className="text-2xl font-black text-slate-800 mt-0.5">2</p>
+                  <p className="text-2xl font-black text-slate-800 mt-0.5">{activeAlerts ?? '—'}</p>
                   <p className="text-xs font-black text-rose-600 mt-0.5">{translations.activeAlertsSub}</p>
                 </div>
               </div>
@@ -331,7 +335,7 @@ export default function VillagerDashboard() {
                 </div>
                 <div>
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{translations.lastCheckup}</p>
-                  <p className="text-2xl font-black text-slate-800 mt-0.5">{translations.daysAgo}</p>
+                  <p className="text-2xl font-black text-slate-800 mt-0.5">{lastCheckup ?? translations.daysAgo}</p>
                   <p className="text-xs font-bold text-slate-500 mt-0.5">{translations.lastCheckupDate}</p>
                 </div>
               </div>
@@ -340,14 +344,19 @@ export default function VillagerDashboard() {
           </section>
 
           {/* Technical Proof Elements */}
-          <section className="grid grid-cols-2 lg:grid-cols-4 gap-6 pt-8 border-t border-slate-200/80">
+          <motion.section
+            variants={containerVariants}
+            initial="hidden"
+            animate="show"
+            className="grid grid-cols-2 lg:grid-cols-4 gap-6 pt-8 border-t border-slate-200/80"
+          >
             {[
               { title: translations.proofTitle1, desc: translations.proofDesc1, icon: Globe, color: 'text-emerald-600', bg: 'bg-emerald-50' },
               { title: translations.proofTitle2, desc: translations.proofDesc2, icon: WifiOff, color: 'text-blue-600', bg: 'bg-blue-50' },
               { title: translations.proofTitle3, desc: translations.proofDesc3, icon: Shield, color: 'text-pink-600', bg: 'bg-pink-50' },
               { title: translations.proofTitle4, desc: translations.proofDesc4, icon: Zap, color: 'text-purple-600', bg: 'bg-purple-50' }
             ].map(item => (
-              <div key={item.title} className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 p-3.5 sm:p-4 bg-white/60 border border-slate-200/80 rounded-2xl shadow-inner hover:bg-white transition-colors duration-200">
+              <motion.div key={item.title} variants={itemVariants} className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 p-3.5 sm:p-4 bg-white/60 border border-slate-200/80 rounded-2xl shadow-inner hover:bg-white transition-colors duration-200">
                 <div className={`p-2.5 sm:p-3 rounded-xl sm:rounded-2xl ${item.bg} ${item.color} shadow-sm shrink-0`}>
                   <item.icon className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
@@ -355,9 +364,9 @@ export default function VillagerDashboard() {
                   <h5 className="text-[10px] sm:text-xs font-black text-slate-800 leading-tight uppercase tracking-wider">{item.title}</h5>
                   <p className="text-[9px] sm:text-[10px] font-bold text-slate-500 mt-1">{item.desc}</p>
                 </div>
-              </div>
+              </motion.div>
             ))}
-          </section>
+          </motion.section>
 
         </main>
       </div>

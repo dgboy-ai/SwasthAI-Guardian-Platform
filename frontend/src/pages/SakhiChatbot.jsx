@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import {
   MessageCircle, HeartPulse, Mic, AlertTriangle, Send,
-  Zap, Bot, User, Loader, WifiOff, BookMarked, CheckCircle2
+  Zap, Bot, User, Loader, WifiOff,   BookMarked, CheckCircle2, Volume2
 } from 'lucide-react';
 import api from '../services/api';
 import { useLanguage } from '../context/LanguageContext';
@@ -422,7 +422,7 @@ export default function SakhiChatbot() {
                   <p className="text-xs text-amber-700 font-medium leading-relaxed">{tip.a}</p>
                   <div className="flex items-center gap-1.5 mt-1.5">
                     <BookMarked className="w-3 h-3 text-amber-400" />
-                    <span className="text-[9px] font-black text-amber-400 uppercase tracking-widest">📚 {tip.src}</span>
+                    <span className="text-[9px] font-black text-amber-400 uppercase tracking-widest">{tip.src}</span>
                   </div>
                 </div>
               ))}
@@ -443,7 +443,7 @@ export default function SakhiChatbot() {
           {isSpeaking && (
             <button onClick={() => window.speechSynthesis.cancel()}
               className="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-amber-100 border border-amber-200 text-amber-700 rounded-md sm:rounded-lg text-[7px] sm:text-[9px] font-black uppercase tracking-widest animate-pulse">
-              🔊 Speaking
+              <Volume2 className="w-3 h-3" /> Speaking
             </button>
           )}
           <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full animate-pulse ${isOnline ? 'bg-emerald-500' : 'bg-amber-400'}`} />
@@ -487,7 +487,7 @@ export default function SakhiChatbot() {
                 <div className="flex flex-wrap gap-1.5 pl-1">
                   {m.grounded === false ? (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 text-amber-700 rounded-full text-[8px] font-black uppercase tracking-tighter border border-amber-100 animate-pulse">
-                      ⚠️ RAG Offline · Fallback Mode
+                      <AlertTriangle className="w-3 h-3" /> RAG Offline · Fallback Mode
                     </span>
                   ) : (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded-full text-[8px] font-black uppercase tracking-tighter border border-emerald-100">
@@ -503,7 +503,7 @@ export default function SakhiChatbot() {
                   )}
                   {(m.sources || []).map((src, si) => (
                     <span key={si} className="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-50 border border-slate-100 rounded-full text-[8px] font-bold text-slate-400">
-                      📚 {src}
+                      <BookMarked className="w-3 h-3" /> {src}
                     </span>
                   ))}
                 </div>
@@ -520,7 +520,7 @@ export default function SakhiChatbot() {
                 title="Listen to this response"
                 className="w-6 h-6 bg-rose-50 border border-rose-100 rounded-full flex items-center justify-center shrink-0 mt-1 hover:bg-rose-100 transition-colors opacity-60 hover:opacity-100"
               >
-                <span className="text-[10px]">🔊</span>
+                <Volume2 className="w-3 h-3 text-rose-400" />
               </button>
             )}
           </motion.div>

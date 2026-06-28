@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { motion } from 'framer-motion';
 import { Mic, MicOff, Volume2, ShieldAlert } from 'lucide-react';
 import api from '../services/api';
 import { useLanguage } from '../context/LanguageContext';
@@ -136,7 +137,12 @@ export default function VoiceAssistant({ onResult }) {
   const lang = language || 'en';
 
   return (
-    <div className="flex flex-col items-center gap-6 p-6 md:p-10 bg-white/40 backdrop-blur-3xl rounded-[40px] border border-white/40 shadow-2xl">
+    <motion.div
+      initial={{ opacity: 0, y: 15 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      className="flex flex-col items-center gap-6 p-6 md:p-10 bg-white/40 backdrop-blur-3xl rounded-[40px] border border-white/40 shadow-2xl"
+    >
       <div className="relative">
         <button
           onClick={isListening ? undefined : startListening}
@@ -179,6 +185,6 @@ export default function VoiceAssistant({ onResult }) {
           <span className="text-sm font-black uppercase tracking-widest">{label.speaking[lang]}</span>
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }

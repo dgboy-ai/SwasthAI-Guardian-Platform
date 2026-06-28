@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 import { TrendingUp, TrendingDown, Minus, Activity, Shield, HeartPulse, Apple, AlertTriangle, Clock } from 'lucide-react';
 
 const DEFAULT_CATEGORIES = [
@@ -92,13 +93,13 @@ export default function HealthScoreBreakdown({ score = 82, categories = DEFAULT_
         </div>
 
         <div className="flex-1 p-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <motion.div initial="hidden" animate="visible" variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.06 } } }} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {categories.map((cat) => {
               const Icon = categoryIcons[cat.label];
               const b = badge(cat.value, cat.inverse);
               const barValue = cat.inverse ? 100 - cat.value : cat.value;
               return (
-                <div key={cat.label}
+                <motion.div key={cat.label} variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }}
                   className="rounded-xl border border-slate-100 p-3.5 bg-white hover:shadow-sm hover:border-slate-200 transition-all duration-200">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
@@ -119,10 +120,10 @@ export default function HealthScoreBreakdown({ score = 82, categories = DEFAULT_
                     <div className="h-full rounded-full transition-all duration-700"
                       style={{ width: `${barValue}%`, backgroundColor: cat.color }} />
                   </div>
-                </div>
+                </motion.div>
               );
             })}
-          </div>
+          </motion.div>
         </div>
       </div>
     </div>

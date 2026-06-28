@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { useAuth } from '../context/AuthContext';
 import {
   Truck, MapPin, PhoneCall, Activity,
   Clock, AlertTriangle, Send, Mic,
-  CheckCircle, AlertCircle, Navigation, Zap, WifiOff
+  CheckCircle, AlertCircle, Navigation, Zap, WifiOff, X
 } from 'lucide-react';
 import api from '../services/api';
 import { useLanguage } from '../context/LanguageContext';
 import { queueAmbulanceRequest } from '../utils/offlineSyncQueue';
 
 export default function AmbulancePage() {
+  const navigate = useNavigate();
   const { t } = useLanguage();
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -21,7 +23,8 @@ export default function AmbulancePage() {
   const [requestId, setRequestId] = useState(null);
   const [liveStatus, setLiveStatus] = useState('pending'); // pending|assigned|in_progress|completed
   const [dispatchError, setDispatchError] = useState(false);
-  const [sosCooldown, setSosCooldown] = useState(0); // seconds remaining in cooldown
+  const [sosCooldown, setSosCooldown] = useState(0);
+  const [pageError, setPageError] = useState('');
   const cooldownRef = React.useRef(null);
   const pollRef    = React.useRef(null);
   const [formData, setFormData] = useState({
@@ -74,7 +77,7 @@ export default function AmbulancePage() {
 
   const captureGPS = (onSuccess) => {
     if (!navigator.geolocation) {
-      alert('GPS is not supported by this device. Please type your location manually.');
+      setPageError('GPS is not supported by this device. Please type your location manually.');
       return;
     }
     setFormData(prev => ({ ...prev, locStatus: 'loading' }));
@@ -94,7 +97,7 @@ export default function AmbulancePage() {
       },
       () => {
         setFormData(prev => ({ ...prev, locStatus: 'error' }));
-        alert('Could not get GPS location. Please enable Location permissions and try again, or type your location manually.');
+        setPageError('Could not get GPS location. Please enable Location permissions and try again, or type your location manually.');
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
@@ -131,11 +134,11 @@ export default function AmbulancePage() {
         }, 1000);
       } catch (err) {
         if (err.response?.status === 429) {
-          alert(err.response.data?.error || 'Please wait before sending another request.');
+          setPageError(err.response.data?.error || 'Please wait a moment before sending another request.');
         } else if (err.response?.status === 401) {
-          alert('Your session has expired. Please log in again.');
+          setPageError('Session expired. Logging you out.');
           localStorage.removeItem('token');
-          window.location.href = '/login';
+          setTimeout(() => window.location.href = '/login', 1500);
         } else if (err.response?.status === 500) {
           console.error('SOS dispatch failed (Server Error):', err);
           const detailMsg = err.response.data?.details ? ` (${err.response.data.details})` : '';
@@ -203,11 +206,11 @@ export default function AmbulancePage() {
       }, 1000);
     } catch (err) {
       if (err.response?.status === 429) {
-        alert(err.response.data?.error || 'Please wait before sending another request.');
+        setPageError(err.response.data?.error || 'Please wait a moment before sending another request.');
       } else if (err.response?.status === 401) {
-        alert('Your session has expired. Please log in again.');
+        setPageError('Session expired. Logging you out.');
         localStorage.removeItem('token');
-        window.location.href = '/login';
+        setTimeout(() => window.location.href = '/login', 1500);
       } else if (err.response?.status === 500) {
         console.error('Ambulance dispatch failed (Server Error):', err);
         const detailMsg = err.response.data?.details ? ` (${err.response.data.details})` : '';
@@ -237,7 +240,7 @@ export default function AmbulancePage() {
 
   const startVoice = () => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) { alert('Voice typing not supported in this browser.'); return; }
+    if (!SpeechRecognition) { setPageError('Voice typing not supported in this browser.'); return; }
     const recognition = new SpeechRecognition();
     recognition.lang = 'hi-IN';
     recognition.start();
@@ -248,7 +251,7 @@ export default function AmbulancePage() {
 
   return (
     <div className="min-h-screen bg-[#F7F9FB] font-inter antialiased">
-      <Navbar role="villager" />
+      <Navbar />
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 pt-28 pb-24">
 
@@ -288,7 +291,7 @@ export default function AmbulancePage() {
                             type="text"
                             placeholder="Full name..."
                             value={formData.patientName}
-                            onChange={(e) => setFormData({ ...formData, patientName: e.target.value })}
+                            onChange={(e) => setFormData(prev => ({ ...prev, patientName: e.target.value }))}
                             className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 font-bold text-slate-800 text-sm focus:border-rose-400 focus:ring-4 focus:ring-rose-500/5 outline-none transition-all"
                           />
                         </div>
@@ -298,7 +301,7 @@ export default function AmbulancePage() {
                             type="tel"
                             placeholder="Phone number..."
                             value={formData.contactNumber}
-                            onChange={(e) => setFormData({ ...formData, contactNumber: e.target.value })}
+                            onChange={(e) => setFormData(prev => ({ ...prev, contactNumber: e.target.value }))}
                             className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 font-bold text-slate-800 text-sm focus:border-rose-400 focus:ring-4 focus:ring-rose-500/5 outline-none transition-all"
                           />
                         </div>
@@ -313,7 +316,7 @@ export default function AmbulancePage() {
                           <button
                             key={type.id}
                             type="button"
-                            onClick={() => setFormData({ ...formData, emergencyType: type.id })}
+                            onClick={() => setFormData(prev => ({ ...prev, emergencyType: type.id }))}
                             style={{ minHeight: '56px' }}
                             className={`p-3 sm:p-4 rounded-xl border-2 text-left transition-all ${
                               formData.emergencyType === type.id
@@ -359,7 +362,7 @@ export default function AmbulancePage() {
                             type="text"
                             placeholder="Or describe landmark..."
                             value={formData.landmark}
-                            onChange={(e) => setFormData({ ...formData, landmark: e.target.value, locStatus: 'idle', gpsCoords: null })}
+                            onChange={(e) => setFormData(prev => ({ ...prev, landmark: e.target.value }))}
                             className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 sm:p-3.5 pr-12 font-medium text-slate-800 text-xs sm:text-sm focus:border-rose-400 focus:ring-4 focus:ring-rose-500/5 outline-none transition-all"
                           />
                           <button type="button" onClick={startVoice} className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1.5 sm:p-2 bg-rose-100 text-rose-600 rounded-lg hover:bg-rose-200 transition-colors">
@@ -383,6 +386,19 @@ export default function AmbulancePage() {
                     </button>
 
                   </form>
+
+                  {/* ── PAGE ERROR (replaces alert()) ── */}
+                  {pageError && (
+                    <div className="mt-4 p-4 rounded-2xl bg-rose-50 border border-rose-200 flex items-start gap-3 animate-in fade-in duration-300">
+                      <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                      <div className="flex-1">
+                        <p className="text-xs font-bold text-rose-800">{pageError}</p>
+                      </div>
+                      <button onClick={() => setPageError('')} className="text-rose-400 hover:text-rose-600 transition-colors">
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )}
 
                   {/* ── ERROR CARD: shows 108 when API fails ── */}
                   {dispatchError && (
@@ -442,7 +458,7 @@ export default function AmbulancePage() {
                       liveStatus === 'assigned'    ? 'bg-amber-500' : 'bg-slate-400'
                     }`} />
                     {liveStatus === 'completed'   ? 'Arrived at location' :
-                     liveStatus === 'in_progress' ? 'Ambulance en route 🚑' :
+                     liveStatus === 'in_progress' ? 'Ambulance en route' :
                      liveStatus === 'assigned'    ? 'Driver assigned' :
                                                     'Request received — assigning driver...'}
                   </div>
@@ -452,8 +468,12 @@ export default function AmbulancePage() {
                     {etaIsEstimated && <span className="px-1.5 py-0.5 bg-amber-100 border border-amber-200 text-amber-700 rounded text-[8px] font-black uppercase tracking-wider">EST</span>}
                   </div>
                   <p className="text-xs text-slate-400 font-medium mb-6">Status updates every 10 seconds automatically</p>
-                  <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                    <button onClick={() => { setDispatched(false); setEta(null); setEtaIsEstimated(false); setLiveStatus('pending'); clearInterval(pollRef.current); setFormData(prev => ({ ...prev, locStatus: 'idle', gpsCoords: null })); }}
+                   <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                    <button onClick={() => navigate('/villager')}
+                      className="px-6 py-3 bg-slate-900 text-white rounded-xl font-bold text-sm hover:bg-slate-800 transition-colors">
+                      Back to Dashboard
+                    </button>
+                    <button onClick={() => { setDispatched(false); setEta(null); setEtaIsEstimated(false); setLiveStatus('pending'); setDispatchError(false); setPageError(''); clearInterval(pollRef.current); clearInterval(cooldownRef.current); setSosCooldown(0); setFormData(prev => ({ ...prev, locStatus: 'idle', gpsCoords: null })); }}
                       className="px-6 py-3 bg-white border border-slate-200 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-50 transition-colors">
                       Submit Another Request
                     </button>
@@ -481,11 +501,13 @@ export default function AmbulancePage() {
                 <button
                   type="button"
                   onClick={handleSOS}
-                  disabled={sosLoading || dispatched}
+                  disabled={sosLoading || dispatched || sosCooldown > 0}
                   className="w-full py-3.5 sm:py-5 bg-white text-rose-600 rounded-xl sm:rounded-2xl text-[11px] sm:text-sm font-black uppercase tracking-widest hover:bg-rose-50 active:scale-95 transition-all shadow-xl flex items-center justify-center gap-2.5 sm:gap-3 disabled:opacity-70"
                 >
                   {sosLoading ? (
                     <><Activity className="w-4 h-4 sm:w-5 sm:h-5 animate-pulse" /> Locating...</>
+                  ) : sosCooldown > 0 ? (
+                    <><Clock className="w-4 h-4 sm:w-5 sm:h-5" /> Wait {sosCooldown}s</>
                   ) : (
                     <><AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5" /> {t.ambulance?.sos_btn || 'SEND HELP NOW'}</>
                   )}

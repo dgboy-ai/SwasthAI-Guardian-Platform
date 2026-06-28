@@ -96,7 +96,7 @@ export default function Navbar() {
 
   const villagerLinks = (t) => [
     { name: t.nav?.home || 'Home', path: '/villager', icon: Home },
-    { name: t.nav?.schemes || 'Schemes 📋', path: '/schemes', icon: BookOpen },
+    { name: t.nav?.schemes || 'Schemes', path: '/schemes', icon: BookOpen },
     { name: t.nav?.check_symptoms || 'Symptom Check', path: '/symptoms', icon: Activity },
     { name: t.nav?.skin_care || 'Skin Scan', path: '/skin-disease', icon: Scan },
     { name: t.nav?.ambulance || 'Ambulance', path: '/ambulance', icon: Truck },
@@ -392,40 +392,32 @@ export default function Navbar() {
 
       {/* 📱 Bottom Navigation Bar — Critical for one-handed rural mobile use */}
       {user && (
-        <div className="xl:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl border-t border-slate-100 px-2 py-2 pb-safe-area flex items-center justify-around z-[150] shadow-[0_-8px_20px_-10px_rgba(0,0,0,0.1)]">
+        <div className="xl:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl border-t border-slate-100 px-1 py-1 pb-safe-area flex items-center justify-around z-[150] shadow-[0_-8px_20px_-10px_rgba(0,0,0,0.1)]">
           {(user.role === 'villager'
             ? [
               { name: t.nav?.home || 'Home', path: '/villager', icon: Home },
               { name: t.nav?.check_symptoms?.split(' ')[0] || 'Symptoms', path: '/symptoms', icon: Activity },
-              { name: t.nav?.skin_care?.split(' ')[0] || 'Skin Scan', path: '/skin-disease', icon: Scan },
+              { name: t.nav?.schemes || 'Schemes', path: '/schemes', icon: BookOpen },
               { name: t.nav?.ambulance || 'Ambulance', path: '/ambulance', icon: Truck },
+              { name: t.nav?.menstrual_health || 'Women', path: '/menstrual-health', icon: Droplets },
+              { name: t.nav?.skin_care?.split(' ')[0] || 'Skin', path: '/skin-disease', icon: Scan },
+              { name: t.nav?.profile || 'Profile', path: '/profile', icon: User },
             ]
             : ngoLinks(t)
           ).map(link => (
             <Link
               key={link.path}
               to={link.path}
-              className={`flex flex-col items-center gap-1 px-3 py-1 rounded-xl transition-all ${isActive(link.path) ? 'text-emerald-600' : 'text-slate-400 hover:text-slate-600'
+              className={`flex flex-col items-center gap-0.5 px-1 py-1 rounded-xl transition-all ${isActive(link.path) ? 'text-emerald-600' : 'text-slate-400 hover:text-slate-600'
                 }`}
             >
-              <div className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all ${isActive(link.path) ? 'bg-emerald-50' : 'bg-transparent'
+              <div className={`w-6 h-6 flex items-center justify-center rounded-lg transition-all ${isActive(link.path) ? 'bg-emerald-50' : 'bg-transparent'
                 }`}>
-                <link.icon className={`w-4.5 h-4.5 ${isActive(link.path) ? 'stroke-[2.5]' : 'stroke-2'}`} />
+                <link.icon className={`w-3.5 h-3.5 ${isActive(link.path) ? 'stroke-[2.5]' : 'stroke-2'}`} />
               </div>
-              <span className="text-[8px] font-black uppercase tracking-tighter">{link.name}</span>
+              <span className="text-[6px] font-black uppercase tracking-tighter leading-none">{link.name}</span>
             </Link>
           ))}
-          {/* Mobile Profile Trigger */}
-          <Link
-            to="/profile"
-            className={`flex flex-col items-center gap-1 px-3 py-1 rounded-xl transition-all ${isActive('/profile') ? 'text-emerald-600' : 'text-slate-400'
-              }`}
-          >
-            <div className={`w-8 h-8 flex items-center justify-center rounded-lg ${isActive('/profile') ? 'bg-emerald-50' : ''}`}>
-              <User className="w-4.5 h-4.5" />
-            </div>
-            <span className="text-[8px] font-black uppercase tracking-tighter">{t.nav?.profile || 'Profile'}</span>
-          </Link>
         </div>
       )}
 

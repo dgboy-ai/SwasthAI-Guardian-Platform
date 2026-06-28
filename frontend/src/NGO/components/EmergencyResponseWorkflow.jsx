@@ -1,17 +1,22 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Ambulance, MapPin, Clock, CheckCircle, Navigation, Loader2, Phone, Hospital } from 'lucide-react';
+import { Ambulance, MapPin, Clock, CheckCircle, Navigation, Loader2, Phone, Hospital, User, Timer, AlertTriangle } from 'lucide-react';
+
+const WORKFLOW_ICONS = {
+  received: AlertTriangle, identified: User, assigned: Ambulance,
+  eta: Timer, alerted: Hospital, closed: CheckCircle,
+};
 
 const WORKFLOW_STEPS = [
-  { key: 'received', label: 'SOS Received', icon: '🚨', time: '0s' },
-  { key: 'identified', label: 'Patient Identified', icon: '👤', time: '15s' },
-  { key: 'assigned', label: 'Ambulance Assigned', icon: '🚑', time: '45s' },
-  { key: 'eta', label: 'ETA Generated', icon: '⏱️', time: '7min' },
-  { key: 'alerted', label: 'Hospital Alerted', icon: '🏥', time: '15min' },
-  { key: 'closed', label: 'Case Closed', icon: '✅', time: '25min' },
+  { key: 'received', label: 'SOS Received', time: '0s' },
+  { key: 'identified', label: 'Patient Identified', time: '15s' },
+  { key: 'assigned', label: 'Ambulance Assigned', time: '45s' },
+  { key: 'eta', label: 'ETA Generated', time: '7min' },
+  { key: 'alerted', label: 'Hospital Alerted', time: '15min' },
+  { key: 'closed', label: 'Case Closed', time: '25min' },
 ];
 
-export default function EmergencyResponseWorkflow({ emergency, onDispatch, dispatching, progress }) {
+export default function EmergencyResponseWorkflow({ emergency, onDispatch, dispatching, progress, dispatchError }) {
   const [showTimeline, setShowTimeline] = useState(false);
 
   const currentStepIndex = progress === 0 ? 1 : Math.min(5, Math.floor((progress / 100) * 6));
@@ -55,12 +60,13 @@ export default function EmergencyResponseWorkflow({ emergency, onDispatch, dispa
           {WORKFLOW_STEPS.map((step, i) => {
             const isCompleted = dispatching && i <= currentStepIndex;
             const isActive = dispatching && i === currentStepIndex;
+            const StepIcon = WORKFLOW_ICONS[step.key] || CheckCircle;
             return (
               <div key={step.key} className="flex flex-col items-center gap-1.5 relative">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm transition-all ${
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
                   isCompleted ? 'bg-emerald-500 text-white shadow-sm' : isActive ? 'bg-amber-500 text-white animate-pulse' : 'bg-slate-200 text-slate-400'
                 }`}>
-                  {isCompleted ? '✓' : step.icon}
+                  {isCompleted ? <CheckCircle className="w-4 h-4" /> : <StepIcon className="w-4 h-4" />}
                 </div>
                 <span className={`text-[7px] font-black uppercase text-center leading-tight max-w-12 ${
                   isCompleted ? 'text-emerald-600' : isActive ? 'text-amber-600' : 'text-slate-400'
@@ -121,6 +127,13 @@ export default function EmergencyResponseWorkflow({ emergency, onDispatch, dispa
           </div>
         </div>
       </div>
+
+      {dispatchError && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-3 flex items-center gap-2">
+          <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />
+          <span className="text-[11px] text-red-700 font-semibold">{dispatchError}</span>
+        </div>
+      )}
 
       <div className="flex gap-2.5">
         <button

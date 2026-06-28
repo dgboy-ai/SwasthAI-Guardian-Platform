@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -30,10 +30,15 @@ export default function IntroFlow() {
     { code: 'te', label: 'తెలుగు', sub: 'Telugu', icon: <MapPin className="w-5 h-5" /> },
   ];
 
+  const skipSplash = () => {
+    clearTimeout(splashTimerRef.current);
+    setStep(1);
+  };
+
+  const splashTimerRef = useRef(null);
   useEffect(() => {
-    let timer;
-    if (step === 0) timer = setTimeout(() => setStep(1), 3500);
-    return () => clearTimeout(timer);
+    if (step === 0) splashTimerRef.current = setTimeout(() => setStep(1), 3500);
+    return () => { if (splashTimerRef.current) clearTimeout(splashTimerRef.current); };
   }, [step]);
 
   const containerVariants = {
@@ -209,7 +214,7 @@ export default function IntroFlow() {
                     {t.intro?.welcome_title || 'Welcome to SwasthAI'}
                   </h1>
                   
-                  <div className="flex items-center justify-center gap-2 text-emerald-700 font-extrabold bg-emerald-50/90 backdrop-blur-md px-5 py-2.5 rounded-full border border-emerald-250/50 shadow-md mx-auto max-w-max relative overflow-hidden group">
+                  <div className="flex items-center justify-center gap-2 text-emerald-700 font-extrabold bg-emerald-50/90 backdrop-blur-md px-5 py-2.5 rounded-full border border-emerald-200/50 shadow-md mx-auto max-w-max relative overflow-hidden group">
                     <span className="absolute inset-0 bg-gradient-to-r from-emerald-500/5 to-teal-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                     <Activity className="w-4 h-4 text-emerald-600 animate-pulse shrink-0" />
                     <span className="text-xs uppercase tracking-widest font-black bg-gradient-to-r from-emerald-700 to-teal-700 bg-clip-text text-transparent">
@@ -222,7 +227,7 @@ export default function IntroFlow() {
                       <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-ping shrink-0" />
                       <span className="text-[10px] sm:text-xs font-black text-slate-700 uppercase tracking-widest">Offline-First</span>
                     </div>
-                    <div className="w-6 sm:w-10 h-[1.5px] bg-slate-250" />
+                    <div className="w-6 sm:w-10 h-[1.5px] bg-slate-200" />
                     <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full border border-slate-200/60 shadow-sm">
                       <span className="w-2.5 h-2.5 bg-blue-500 rounded-full animate-pulse shrink-0" />
                       <span className="text-[10px] sm:text-xs font-black text-slate-700 uppercase tracking-widest">Secure AI</span>
@@ -230,6 +235,15 @@ export default function IntroFlow() {
                   </div>
                 </motion.div>
               </motion.div>
+              <motion.button
+                variants={itemVariants}
+                whileHover={{ scale: 1.04 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={skipSplash}
+                className="mt-6 px-8 py-3 bg-white/90 backdrop-blur-md border border-slate-200 hover:border-emerald-300 text-slate-500 hover:text-emerald-700 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all"
+              >
+                {t.intro?.skip || 'Skip →'}
+              </motion.button>
             </motion.div>
           )}
 
@@ -288,7 +302,7 @@ export default function IntroFlow() {
               <span className="w-5 h-5 sm:w-6 sm:h-6">{l.icon}</span>
             </div>
             <div className="flex-1 overflow-hidden">
-              <h3 className={`text-base sm:text-xl font-black tracking-tighter truncate ${lang === l.code ? 'text-slate-900' : 'text-slate-550'}`}>
+              <h3 className={`text-base sm:text-xl font-black tracking-tighter truncate ${lang === l.code ? 'text-slate-900' : 'text-slate-500'}`}>
                 {l.label}
               </h3>
               <p className={`text-[9px] sm:text-[10px] font-black uppercase tracking-widest truncate ${lang === l.code ? 'text-emerald-600' : 'text-slate-400'}`}>
@@ -308,16 +322,31 @@ export default function IntroFlow() {
         ))}
       </div>
 
-      <motion.button
-        variants={itemVariants}
-        whileHover={{ scale: 1.04, y: -2 }}
-        whileTap={{ scale: 0.97 }}
-        onClick={handleNext}
-        className="group w-full sm:w-auto px-14 py-5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-2xl font-black text-xs sm:text-sm uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-3 shadow-lg shadow-emerald-600/20 hover:shadow-xl hover:shadow-emerald-500/35 mx-4 sm:mx-0 cursor-pointer"
-      >
-        {t.intro?.establish_sync || 'Continue'}
-        <ArrowRight className="w-5 h-5 text-white group-hover:translate-x-1.5 transition-transform duration-300" />
-      </motion.button>
+      <motion.div variants={itemVariants} className="flex items-center gap-3 sm:gap-4">
+        <motion.button
+          whileHover={{ scale: 1.04, y: -2 }}
+          whileTap={{ scale: 0.97 }}
+          onClick={() => setStep(0)}
+          className="px-6 py-5 bg-white border border-slate-200 hover:border-emerald-300 text-slate-500 hover:text-emerald-700 rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-sm"
+        >
+          {t.intro?.back || 'Back'}
+        </motion.button>
+        <motion.button
+          variants={itemVariants}
+          whileHover={{ scale: 1.04, y: -2 }}
+          whileTap={{ scale: 0.97 }}
+          onClick={handleNext}
+          className="group w-full sm:w-auto px-10 py-5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-2xl font-black text-xs sm:text-sm uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-3 shadow-lg shadow-emerald-600/20 hover:shadow-xl hover:shadow-emerald-500/35 cursor-pointer"
+        >
+          {t.intro?.establish_sync || 'Continue'}
+          <ArrowRight className="w-5 h-5 text-white group-hover:translate-x-1.5 transition-transform duration-300" />
+        </motion.button>
+      </motion.div>
+      <motion.p variants={itemVariants} className="mt-6 text-center">
+        <button onClick={() => navigate('/login')} className="text-slate-400 hover:text-emerald-600 text-xs font-bold uppercase tracking-widest transition-colors underline underline-offset-4">
+          Already have an account? Sign in
+        </button>
+      </motion.p>
     </motion.div>
   )}
 
@@ -392,7 +421,7 @@ export default function IntroFlow() {
             key={idx}
             variants={itemVariants}
             whileHover={{ y: -2, boxShadow: "0 10px 20px -5px rgba(16,185,129,0.04)" }}
-            className="group bg-white/95 backdrop-blur-md p-4 sm:p-5 rounded-[1.5rem] border border-slate-100 hover:border-emerald-250 transition-all duration-350 flex flex-col gap-3 relative overflow-hidden shadow-sm"
+            className="group bg-white/95 backdrop-blur-md p-4 sm:p-5 rounded-[1.5rem] border border-slate-100 hover:border-emerald-200 transition-all duration-350 flex flex-col gap-3 relative overflow-hidden shadow-sm"
           >
             <div className="absolute top-0 right-0 p-2 opacity-[0.02] pointer-events-none group-hover:scale-125 transition-transform duration-1000">
               {srv.icon}
@@ -421,16 +450,30 @@ export default function IntroFlow() {
         And many more features including Multi-User Profiles, Offline Synchronization, and Emergency Dispatch routing.
       </motion.p>
 
-      <motion.button
-        variants={itemVariants}
-        whileHover={{ scale: 1.04, y: -2 }}
-        whileTap={{ scale: 0.97 }}
-        onClick={handleNext}
-        className="group w-full sm:w-auto px-14 py-5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-2xl font-black text-xs sm:text-sm uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-4 mx-4 sm:mx-0 shadow-lg shadow-emerald-600/20 hover:shadow-xl hover:shadow-emerald-500/35 mb-12 sm:mb-0 cursor-pointer"
-      >
-        {t.intro?.protocol_awareness || 'Get Started'}
-        <ArrowRight className="w-5 h-5 text-white group-hover:translate-x-1.5 transition-transform duration-300" />
-      </motion.button>
+      <motion.div variants={itemVariants} className="flex items-center gap-3 sm:gap-4 mb-12 sm:mb-0">
+        <motion.button
+          whileHover={{ scale: 1.04, y: -2 }}
+          whileTap={{ scale: 0.97 }}
+          onClick={() => setStep(1)}
+          className="px-6 py-5 bg-white border border-slate-200 hover:border-emerald-300 text-slate-500 hover:text-emerald-700 rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-sm"
+        >
+          {t.intro?.back || 'Back'}
+        </motion.button>
+        <motion.button
+          whileHover={{ scale: 1.04, y: -2 }}
+          whileTap={{ scale: 0.97 }}
+          onClick={handleNext}
+          className="group w-full sm:w-auto px-10 py-5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-2xl font-black text-xs sm:text-sm uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-4 shadow-lg shadow-emerald-600/20 hover:shadow-xl hover:shadow-emerald-500/35 cursor-pointer"
+        >
+          {t.intro?.protocol_awareness || 'Get Started'}
+          <ArrowRight className="w-5 h-5 text-white group-hover:translate-x-1.5 transition-transform duration-300" />
+        </motion.button>
+      </motion.div>
+      <motion.p variants={itemVariants} className="text-center -mt-6 sm:mt-0">
+        <button onClick={() => navigate('/login')} className="text-slate-400 hover:text-emerald-600 text-xs font-bold uppercase tracking-widest transition-colors underline underline-offset-4">
+          Already have an account? Sign in
+        </button>
+      </motion.p>
     </motion.div>
   )}
         </AnimatePresence>

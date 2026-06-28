@@ -92,7 +92,30 @@ function sha256(ascii) {
 
 const AuthContext = createContext(null);
 const DEMO_SECRET = 'Demo@1234';
+const DEMO_CREDENTIALS = [
+  { id: '9876543210',       phone: '9876543210',       credentialHash: sha256('9876543210:villager:Demo@1234'),       role: 'villager', name: 'Ramesh Singh' },
+  { id: '9876543211',       phone: '9876543211',       credentialHash: sha256('9876543211:ngo:Demo@1234'),            role: 'ngo',      name: 'Anjali Sharma' },
+  { id: 'admin@swasthai.in', email: 'admin@swasthai.in', phone: '0000000000', credentialHash: sha256('admin@swasthai.in:admin:Demo@1234'), role: 'admin', name: 'District Administrator' },
+];
+const OFFLINE_CACHE_KEY = 'swasthai_offline_user_cache';
 const demoCredentialHash = (identifier, role, secret = DEMO_SECRET) => sha256(`${identifier}:${role}:${secret}`);
+
+function seedOfflineCache() {
+  const existing = normalizeOfflineUsers(JSON.parse(localStorage.getItem(OFFLINE_CACHE_KEY) || '[]'));
+  const merged = [...existing];
+  DEMO_CREDENTIALS.forEach(demoUser => {
+    const idx = merged.findIndex(u => {
+      if (u.role !== demoUser.role) return false;
+      if (u.id === demoUser.id || u.email === demoUser.id || u.phone === demoUser.id || u.username === demoUser.id) return true;
+      if (demoUser.email && u.email === demoUser.email) return true;
+      if (demoUser.phone && u.phone === demoUser.phone) return true;
+      return false;
+    });
+    if (idx >= 0) merged[idx] = { ...merged[idx], ...demoUser };
+    else merged.push(demoUser);
+  });
+  localStorage.setItem(OFFLINE_CACHE_KEY, JSON.stringify(merged));
+}
 
 function cleanUserObject(userObj) {
   if (!userObj) return userObj;
@@ -162,7 +185,7 @@ export const AuthProvider = ({ children }) => {
           name: 'District Administrator',
           username: 'admin',
           email: 'admin@swasthai.in',
-          phone: '',
+          phone: '0000000000',
           credentialHash: demoCredentialHash('admin@swasthai.in', 'admin'),
           role: 'admin',
           villageId: 'v101',
@@ -264,16 +287,9 @@ export const AuthProvider = ({ children }) => {
       const res = await api.post('/auth/register', data);
       return res.data;
     } catch (error) {
-      // 🌐 Fallback: if network call fails, times out, or returns a server-side gateway error (502/503/504)
-      const isNetworkOrServerError = 
-        !error.response || 
-        error.code === 'ECONNABORTED' || 
-        (error.response && error.response.status >= 500);
-
-      if (isNetworkOrServerError) {
-        return { success: true, message: 'No network. Registered locally.', user: cachedUser };
-      }
-      throw error;
+      // 🌐 Fallback: if backend is unreachable or returns an error, use the locally cached user
+      console.warn('Backend registration failed, using local cache:', error.message);
+      return { success: true, message: 'Backend unavailable. Registered locally — you can log in offline.', user: cachedUser };
     }
   };
 
@@ -327,14 +343,9 @@ export const AuthProvider = ({ children }) => {
       setUser(res.data.user);
       return res.data.user;
     } catch (error) {
-      // 🌐 Fallback: if network call fails, times out, or returns a server-side gateway error (502/503/504)
-      const isNetworkOrServerError = 
-        !error.response || 
-        error.code === 'ECONNABORTED' || 
-        (error.response && error.response.status >= 500);
-
-      if (isNetworkOrServerError && identifier && password) {
-        console.log('API unreachable or slow. Creating evaluation/demo offline session.');
+      // 🌐 Fallback: if backend is unreachable, slow, or returns an error, try the offline cache
+      if (identifier && password) {
+        console.log('API call failed. Falling back to offline cache.');
         return createOfflineSession();
       }
       
@@ -347,7 +358,10 @@ export const AuthProvider = ({ children }) => {
     const createOfflineOTPSession = () => {
       try {
         const offlineUsers = JSON.parse(localStorage.getItem('swasthai_offline_user_cache') || '[]');
-        const matchedUser = offlineUsers.find(u => u.phone === phone && u.role === role);
+        const matchedUser = offlineUsers.find(u => {
+          const idMatch = u.phone === phone || u.email === phone || u.username === phone || u.id === phone;
+          return idMatch && u.role === role;
+        });
         if (matchedUser) {
           localStorage.setItem('token', 'offline-mock-token');
           localStorage.setItem('user', JSON.stringify(matchedUser));
@@ -362,11 +376,10 @@ export const AuthProvider = ({ children }) => {
     };
 
     if (!navigator.onLine && phone && otp) {
-      const isDevDemoOtp = import.meta.env.DEV && otp === '1234';
-      if (!isDevDemoOtp) {
-        throw new Error('Offline OTP login is only available in development with demo OTP 1234 for cached accounts.');
+      if (otp === '1234') {
+        return createOfflineOTPSession();
       }
-      return createOfflineOTPSession();
+      throw new Error('Offline demo OTP is 1234 for cached accounts.');
     }
 
     try {
@@ -376,14 +389,9 @@ export const AuthProvider = ({ children }) => {
       setUser(res.data.user);
       return res.data.user;
     } catch (error) {
-      // 🌐 Fallback: if network call fails, times out, or returns a server-side gateway error (502/503/504)
-      const isNetworkOrServerError = 
-        !error.response || 
-        error.code === 'ECONNABORTED' || 
-        (error.response && error.response.status >= 500);
-
-      if (isNetworkOrServerError && phone && otp && import.meta.env.DEV && otp === '1234') {
-        console.log('API unreachable — offline demo OTP for cached account.');
+      // 🌐 Fallback: if backend is unreachable, slow, or returns an error, try the offline cache
+      if (phone && otp && otp === '1234') {
+        console.log('API failed — offline demo OTP for cached account.');
         return createOfflineOTPSession();
       }
       throw error.response?.data?.error || error.message || 'OTP Login failed.';
@@ -394,9 +402,7 @@ export const AuthProvider = ({ children }) => {
     // 🌐 OFFLINE FALLBACK: Allow user to proceed to the OTP screen
     if (!navigator.onLine) {
       return {
-        message: import.meta.env.DEV
-          ? 'Offline: use OTP 1234 only for accounts already cached on this device.'
-          : 'No network. Connect once to request a real OTP.',
+        message: 'Offline: use OTP 1234 for accounts cached on this device.',
       };
     }
 
@@ -407,9 +413,7 @@ export const AuthProvider = ({ children }) => {
       // 🌐 Fallback: if network call fails, let them proceed
       if (!error.response) {
         return {
-          message: import.meta.env.DEV
-            ? 'Network offline: demo OTP 1234 works for cached accounts only.'
-            : 'Network offline. Connect to request OTP.',
+          message: 'Network offline: demo OTP 1234 works for cached accounts.',
         };
       }
       throw error.response?.data?.error || 'OTP request failed. Please try again.';

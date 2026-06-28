@@ -2,6 +2,39 @@
 
 All notable changes and feature developments completed during the project development window are documented in this file chronologically.
 
+## June 28, 2026 — Final Villager Flow Audit + NGO Emoji Sweep & Tailwind Conversion
+
+### Fixed
+- **Flow audit — 10+ bugs closed**: `/verify` route now `ProtectedRoute allowedRole={["admin"]}` (was exposing DB schemas to anyone). Navbar mobile bottom nav fixed — all 7 items show (Schemes + Menstrual Health were missing). VillagerDashboard health snapshot now dynamic from user context (was hardcoded 85%/3/2). SymptomCheckerPage added "← Back to Dashboard" header button. IntroFlow added "Skip →" on splash + "Back" on steps 1/2 + "Sign in" links for logged-out users. GovernmentSchemesPage back button arrow deduplicated.
+- **AmbulancePage bugs**: SOS cooldown now visible in button ("Wait 60s"). `alert()` calls replaced with inline `pageError` state. Stale closures `setFormData({...formData})` → functional `setFormData(prev => ...)`. Cooldown interval now properly cleared on "Submit Another Request". GPS coords no longer erased when editing landmark.
+- **PadRequestForm rewritten**: Gender validation (female-only), age validation (≥10), minor guardian notice (<18 → ASHA may contact parent), offline queue fallback via `queueAmbulanceRequest()`, all `alert()` removed → `setError` in-page, added "← Back" button + `useNavigate`.
+- **GovernmentSchemesPage inline styles → Tailwind**: SkeletonCard, SchemeCard, Chip, EligChip, FilterChip all converted from `style={{}}` to Tailwind classes. Only truly dynamic values (cat-dependent border/gradient colors) kept inline.
+- **VillagerDashboard dev tools toggle**: Made subtle — 40% opacity small icon, hover to reveal, tooltip "Toggle offline mode (demo)".
+- **Build errors**: Fixed duplicate `FileText` import in ASHADashboard; fixed `motion.div`/`div` tag mismatch in SmartTaskManager; fixed map closure syntax in ASHADashboard Quick Form + mobile nav sections.
+
+### Changed
+- **OfflineToast rewritten**: Role-aware capability maps (villager/NGO/admin/guest), route-aware feature filtering, real-time queue stats from IndexedDB, manual "Sync Now" button, last sync timestamp. NGO/admin no longer see villager skills.
+- **NGO UI/UX overhaul — all files:**
+  - EmergencyResponseWorkflow: `🚨👤🚑⏱️🏥✅` → `AlertTriangle/User/Ambulance/Timer/Hospital/CheckCircle`; added `dispatchError` prop with red error banner.
+  - VoiceAssistantFAB: `🩺🤰👶` → `Stethoscope/Heart/Baby` in VOICE_ACTIONS + demo command list.
+  - OutbreakResponseCenter: `📍📋✅` → `MapPin/ClipboardList/CheckCircle` in tab labels; added `AnimatePresence mode="wait"` + fade/slide tab transitions.
+  - JudgeDemoMode: `🤰👶🔥🚑🔄` → `Heart/Baby/Flame/Ambulance/RefreshCw` in SCENARIOS.
+  - ASHADashboard: 14 emoji instances → lucide SVGs (task icons `🤰👶💉`, quick actions `🤰👶🩺🚑`, KPI `✓`, followup `📋`, delivered `✓`, mobile nav `🏠🤰👶🩺🚑🔄`).
+  - LiveFieldImpact: Added `loading` prop with skeleton grid placeholder.
+  - HealthScoreBreakdown: Added `staggerChildren: 0.06` + fade/slide variants on category cards.
+  - SmartTaskManager: Added stagger entrance animation (`staggerChildren: 0.05`) across all sections; added `error` prop with `AlertTriangle` error banner.
+- **PadRequestForm translation key**: Fixed `t.services.analyzing` → `t.menstrual?.submitting` for loading button text.
+
+### Modified Files
+- `frontend/src/App.jsx`, `frontend/src/pages/AmbulancePage.jsx`, `frontend/src/pages/GovernmentSchemesPage.jsx`, `frontend/src/pages/IntroFlow.jsx`, `frontend/src/pages/LandingPage.jsx`, `frontend/src/pages/LoginPage.jsx`, `frontend/src/pages/MenstrualHealth.jsx`, `frontend/src/pages/PadRequestForm.jsx`, `frontend/src/pages/RegisterPage.jsx`, `frontend/src/pages/SakhiChatbot.jsx`, `frontend/src/pages/SchemeDetailPage.jsx`, `frontend/src/pages/SkinDiseaseCheckerPage.jsx`, `frontend/src/pages/SymptomCheckerPage.jsx`, `frontend/src/pages/UserProfile.jsx`
+- `frontend/src/components/Navbar.jsx`, `frontend/src/components/OfflineToast.jsx`
+- `frontend/src/context/AuthContext.jsx`
+- `frontend/src/Villager/Ambulance.jsx`, `frontend/src/Villager/Awareness.jsx`, `frontend/src/Villager/SymptomChecker.jsx`, `frontend/src/Villager/VillagerDashboard.jsx`, `frontend/src/Villager/VoiceAssistant.jsx`
+- `frontend/src/NGO/ASHADashboard.jsx`
+- `frontend/src/NGO/components/EmergencyResponseWorkflow.jsx`, `frontend/src/NGO/components/HealthScoreBreakdown.jsx`, `frontend/src/NGO/components/JudgeDemoMode.jsx`, `frontend/src/NGO/components/LiveFieldImpact.jsx`, `frontend/src/NGO/components/OutbreakResponseCenter.jsx`, `frontend/src/NGO/components/SmartTaskManager.jsx`, `frontend/src/NGO/components/VoiceAssistantFAB.jsx`
+
+---
+
 ## June 27, 2026 — Hackathon Final Push (AWS H0 Submission)
 
 ### Fixed

@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { Mic, X, Languages, Check, Loader2, Bot, MessageSquare } from 'lucide-react';
+import { Mic, X, Languages, Check, Loader2, Bot, MessageSquare, Stethoscope, Baby, Heart } from 'lucide-react';
 import { showToast } from '../../utils/toast';
 
 const LANGUAGES = [
@@ -8,10 +8,16 @@ const LANGUAGES = [
   { code: 'en-IN', label: 'English', native: 'English' },
 ];
 
+const VOICE_ACTION_ICONS = {
+  symptom: Stethoscope,
+  pregnancy: Heart,
+  nutrition: Baby,
+};
+
 const VOICE_ACTIONS = [
-  { id: 'symptom', label: 'Symptom Entry', emoji: '🩺' },
-  { id: 'pregnancy', label: 'Pregnancy Update', emoji: '🤰' },
-  { id: 'nutrition', label: 'Nutrition Record', emoji: '👶' },
+  { id: 'symptom', label: 'Symptom Entry', icon: Stethoscope },
+  { id: 'pregnancy', label: 'Pregnancy Update', icon: Heart },
+  { id: 'nutrition', label: 'Nutrition Record', icon: Baby },
 ];
 
 const DEMO_COMMANDS = [
@@ -177,7 +183,7 @@ export default function VoiceAssistantFAB({ onVoiceResult }) {
                       selectedAction === act.id ? 'bg-slate-800 text-white' : 'bg-slate-50 text-slate-600 border border-slate-100 hover:bg-slate-100'
                     }`}
                   >
-                    <span>{act.emoji}</span>
+                    <act.icon className="w-4 h-4" />
                     {act.label}
                   </button>
                 ))}
@@ -234,7 +240,7 @@ export default function VoiceAssistantFAB({ onVoiceResult }) {
                         disabled={demoLoading}
                         className="w-full flex items-center gap-2 bg-slate-50 border border-slate-100 hover:bg-slate-100 rounded-xl px-3 py-2 text-left transition-all active:scale-98 disabled:opacity-50"
                       >
-                        <span className="text-xs">{cmd.action === 'pregnancy' ? '🤰' : cmd.action === 'symptom' ? '🩺' : '👶'}</span>
+                                                {(() => { const Ic = VOICE_ACTION_ICONS[cmd.action] || Bot; return <Ic className="w-3.5 h-3.5 text-slate-500" />; })()}
                         <span className="text-[10px] text-slate-700 font-medium truncate">{cmd.text}</span>
                       </button>
                     ))}

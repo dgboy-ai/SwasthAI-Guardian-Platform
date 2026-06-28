@@ -133,7 +133,7 @@ export default function UserProfile() {
 
           <div>
             <h1 className="text-2xl font-black text-slate-900 tracking-tight">
-              {t.villager?.greeting?.split(',')[0] || 'Namaste'}, {userName} 🙏
+              {t.villager?.greeting?.split(',')[0] || 'Namaste'}, {userName}
             </h1>
             <span className={`inline-block mt-2 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${roleBadgeColor}`}>
               {roleLabelMap[userRole] || userRole}

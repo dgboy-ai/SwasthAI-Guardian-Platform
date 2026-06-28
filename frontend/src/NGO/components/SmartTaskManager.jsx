@@ -1,8 +1,17 @@
 import React, { useState } from 'react';
-import { CheckCircle, Calendar, ArrowUpCircle, UserPlus, Loader2, Clock, MapPin, Route, Brain, Navigation } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { CheckCircle, Calendar, ArrowUpCircle, UserPlus, Loader2, Clock, MapPin, Route, Brain, Navigation, AlertTriangle } from 'lucide-react';
 import { showToast } from '../../utils/toast';
 
-export default function SmartTaskManager({ task, onComplete, onClose }) {
+export default function SmartTaskManager({ task, onComplete, onClose, error }) {
+  if (error) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-2xl p-4 flex items-center gap-3">
+        <AlertTriangle className="w-5 h-5 text-red-600 shrink-0" />
+        <p className="text-xs text-red-700 font-semibold">{error}</p>
+      </div>
+    );
+  }
   const [actionLoading, setActionLoading] = useState('');
 
   const taskDetails = {
@@ -50,11 +59,11 @@ export default function SmartTaskManager({ task, onComplete, onClose }) {
   const pc = priorityColors[taskDetails.priority] || priorityColors.NORMAL;
 
   return (
-    <div className="space-y-4">
-      <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-1.5 text-[9px] font-black uppercase text-emerald-700 tracking-wider text-center">
+    <motion.div initial="hidden" animate="visible" variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.05 } } }} className="space-y-4">
+      <motion.div variants={{ hidden: { opacity: 0, y: 8 }, visible: { opacity: 1, y: 0 } }} className="bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-1.5 text-[9px] font-black uppercase text-emerald-700 tracking-wider text-center">
         Live Task Manager · Aurora PostgreSQL
-      </div>
-      <div className="flex items-start justify-between">
+      </motion.div>
+      <motion.div variants={{ hidden: { opacity: 0, y: 8 }, visible: { opacity: 1, y: 0 } }} className="flex items-start justify-between">
         <div>
           <h3 className="text-base font-black text-slate-900">{taskDetails.patientName}</h3>
           <p className="text-xs text-slate-400 mt-0.5">{taskDetails.type}</p>
@@ -63,9 +72,9 @@ export default function SmartTaskManager({ task, onComplete, onClose }) {
           <span className={`w-1.5 h-1.5 rounded-full ${pc.dot}`} />
           {taskDetails.priority}
         </span>
-      </div>
+      </motion.div>
 
-      <div className="bg-slate-50 border border-slate-100 p-4 rounded-2xl space-y-2.5 text-xs text-slate-700">
+      <motion.div variants={{ hidden: { opacity: 0, y: 8 }, visible: { opacity: 1, y: 0 } }} className="bg-slate-50 border border-slate-100 p-4 rounded-2xl space-y-2.5 text-xs text-slate-700">
         <div className="flex items-center gap-2">
           <Clock className="w-3.5 h-3.5 text-slate-400" />
           <strong className="text-slate-800">Due:</strong>
@@ -91,9 +100,9 @@ export default function SmartTaskManager({ task, onComplete, onClose }) {
             <p className="text-slate-600 mt-0.5 leading-relaxed">{taskDetails.aiRecommendation}</p>
           </div>
         </div>
-      </div>
+      </motion.div>
 
-      <div className="grid grid-cols-2 gap-2">
+      <motion.div variants={{ hidden: { opacity: 0, y: 8 }, visible: { opacity: 1, y: 0 } }} className="grid grid-cols-2 gap-2">
         <button
           onClick={() => handleAction('complete')}
           disabled={actionLoading !== ''}
@@ -126,7 +135,7 @@ export default function SmartTaskManager({ task, onComplete, onClose }) {
           {actionLoading === 'escalate' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ArrowUpCircle className="w-3.5 h-3.5" />}
           Escalate
         </button>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }

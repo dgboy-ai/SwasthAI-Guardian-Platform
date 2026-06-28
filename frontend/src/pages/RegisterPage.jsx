@@ -6,7 +6,7 @@ import { useLanguage } from '../context/LanguageContext';
 import {
   HeartPulse, Shield, Phone, Mail, Lock, User,
   ArrowRight, ChevronLeft, MapPin, AlertCircle,
-  CheckCircle, Globe, Heart, Activity, WifiOff
+  CheckCircle, Globe, Heart, Activity, Wifi, WifiOff
 } from 'lucide-react';
 
 export default function RegisterPage() {
@@ -265,7 +265,7 @@ export default function RegisterPage() {
               >
                 <Globe className="w-4 h-4 shrink-0 text-emerald-600 animate-spin-slow" />
                 <span>
-                  <span className="font-black">📶 Offline Registration Mode Active</span> - Your credentials will be cached locally in your browser.
+                  <span className="font-black"><Wifi className="w-3 h-3 inline-block -mt-0.5" /> Offline Registration Mode Active</span> - Your credentials will be cached locally in your browser.
                   <span className="block text-emerald-600 font-medium mt-0.5">You can register and log in now. Your profile will sync automatically when your internet connection is restored.</span>
                 </span>
               </motion.div>

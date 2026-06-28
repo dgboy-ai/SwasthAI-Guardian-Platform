@@ -142,7 +142,7 @@ export default function MenstrualHealth() {
 
   return (
     <div className="min-h-screen bg-[#F7F9FB] font-inter antialiased">
-      <Navbar role="villager" />
+      <Navbar />
 
       <main className="max-w-4xl mx-auto px-4 sm:px-6 pt-28 pb-24">
         {/* Header */}
@@ -261,7 +261,7 @@ function EmergencyModal({ onClose, t }) {
             <div className="w-20 h-20 bg-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-xl shadow-emerald-200">
               <CheckCircle className="w-10 h-10 text-white" />
             </div>
-            <h4 className="font-black text-slate-900 text-xl mb-2">Alert Sent! ✅</h4>
+            <h4 className="font-black text-slate-900 text-xl mb-2">Alert Sent!</h4>
             <p className="text-slate-500 font-medium text-sm leading-relaxed mb-4">
               Your ASHA worker has been notified and will contact you shortly. Stay calm — help is coming.
             </p>

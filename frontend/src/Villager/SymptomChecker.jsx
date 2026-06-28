@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { Mic, Activity, AlertCircle, Volume2, ShieldCheck, HeartPulse, Scan, Upload, Camera, X } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Mic, Activity, AlertCircle, Volume2, ShieldCheck, HeartPulse, Scan, Upload, Camera, X, Leaf } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import api from '../services/api';
 import { predictSymptomsOffline } from '../utils/localSymptomNet';
@@ -339,7 +340,7 @@ export default function SymptomChecker() {
   };
 
   return (
-    <div className="bg-white rounded-[50px] shadow-2xl p-8 lg:p-12 w-full translate-y-[-20px] animate-in fade-in slide-in-from-bottom-10 duration-1000 max-h-[85vh] overflow-y-auto">
+    <div className="bg-white rounded-[50px] shadow-2xl p-8 lg:p-12 w-full translate-y-[-20px] animate-in fade-in slide-in-from-bottom-10 duration-500 max-h-[85vh] overflow-y-auto">
       {/* ── CAMERA MODAL ── */}
       {showCamera && (
         <div className="fixed inset-0 z-50 bg-black flex flex-col items-center justify-center">
@@ -351,8 +352,8 @@ export default function SymptomChecker() {
               <X className="w-4 h-4 inline mr-1" /> Cancel
             </button>
             <button onClick={capturePhoto}
-              className="px-8 py-3 bg-white text-slate-900 rounded-xl font-black text-xs uppercase tracking-widest hover:scale-105 transition-transform shadow-xl">
-              📸 Capture
+              className="px-8 py-3 bg-white text-slate-900 rounded-xl font-black text-xs uppercase tracking-widest hover:scale-105 transition-transform shadow-xl flex items-center gap-2">
+              <Camera className="w-4 h-4" /> Capture
             </button>
           </div>
         </div>
@@ -376,10 +377,20 @@ export default function SymptomChecker() {
               {t.diseaseChecker?.choose_symptoms || 'Select Your Symptoms'}
             </label>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <motion.div
+            variants={{
+              hidden: { opacity: 0 },
+              show: { opacity: 1, transition: { staggerChildren: 0.03 } }
+            }}
+            initial="hidden"
+            animate="show"
+            className="grid grid-cols-1 sm:grid-cols-2 gap-4"
+          >
             {symptomList.map((symp) => (
-              <label
+              <motion.label
                 key={symp.id}
+                variants={{ hidden: { y: 10, opacity: 0 }, show: { y: 0, opacity: 1 } }}
+                whileHover={{ y: -1 }}
                 className={`flex items-start gap-4 p-5 rounded-2xl border-2 cursor-pointer transition-all ${
                   selectedSymptoms.includes(symp.id)
                     ? 'bg-indigo-50 border-indigo-500 shadow-md transform scale-[1.02]'
@@ -394,11 +405,11 @@ export default function SymptomChecker() {
                 />
                 <span className={`font-bold text-lg leading-tight ${selectedSymptoms.includes(symp.id) ? 'text-indigo-900' : 'text-slate-700'}`}>
                   {symp.label}
-                  {symp.severe && <span className="ml-2 text-xs text-red-500 font-black uppercase">⚠ Critical</span>}
+                  {symp.severe && <span className="ml-2 text-xs text-red-500 font-black uppercase flex items-center gap-1"><AlertCircle className="w-3 h-3" /> Critical</span>}
                 </span>
-              </label>
+              </motion.label>
             ))}
-          </div>
+          </motion.div>
         </div>
 
         {/* SKIN DISEASE UPLOAD */}
@@ -463,7 +474,7 @@ export default function SymptomChecker() {
           {/* RESULT OUTPUT */}
           {result && result.type !== 'error' && (
             <div
-              className={`p-8 rounded-[40px] shadow-2xl relative overflow-hidden border-2 animate-in slide-in-from-bottom-8 duration-700 ${
+              className={`p-8 rounded-[40px] shadow-2xl relative overflow-hidden border-2 animate-in slide-in-from-bottom-8 duration-500 ${
                 result.is_uncertain 
                   ? 'bg-slate-100 border-slate-300 shadow-slate-200 text-slate-900'
                   : result.type === 'severe'
@@ -549,7 +560,7 @@ export default function SymptomChecker() {
             <div className="p-6 bg-amber-50 border-2 border-amber-200 rounded-[32px] animate-in slide-in-from-bottom-4 duration-500">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-9 h-9 bg-amber-400 rounded-xl flex items-center justify-center shrink-0">
-                  <span className="text-white text-base">🌿</span>
+                  <Leaf className="w-5 h-5 text-white" />
                 </div>
                 <div>
                   <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest">Post-Diagnosis First Aid</p>

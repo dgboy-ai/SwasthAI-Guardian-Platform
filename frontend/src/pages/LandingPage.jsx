@@ -4,9 +4,9 @@ import { useNavigate } from 'react-router-dom';
 import { VERSION, COPYRIGHT_YEAR } from '../constants/version';
 import { showToast } from '../utils/toast';
 import { 
-  HeartPulse, Activity, Shield, Users, ArrowRight, BrainCircuit, 
+  AlertTriangle, HeartPulse, Activity, Shield, Users, ArrowRight, BrainCircuit, 
   Truck, Globe, Zap, CheckCircle, MapPin, PhoneCall, WifiOff, Mic, ShieldCheck, Play,
-  Camera, Database, Server, CloudUpload, Wifi, RefreshCw, Eye, Baby, Leaf
+  Camera, Database, Server, CloudUpload, Wifi, RefreshCw, Eye, Baby, Leaf, Loader, Rocket
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import { useLanguage } from '../context/LanguageContext';
@@ -331,13 +331,13 @@ export default function LandingPage() {
                   Explore Demo Portal
                   <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-2 transition-transform" />
                </button>
-               <button 
-                 onClick={() => navigate('/ambulance')}
-                 aria-label="Request Emergency Ambulance Help"
-                 className="w-full py-4 sm:py-6 bg-red-600 text-white rounded-full font-black uppercase tracking-widest shadow-2xl hover:bg-red-700 focus-visible:ring-4 focus-visible:ring-red-500 focus-visible:ring-offset-2 outline-none transition-all flex items-center justify-center gap-4 text-[11px] sm:text-sm pulse-button"
+               <a
+                 href="tel:108"
+                 aria-label="Call 108 — Free Emergency Ambulance"
+                 className="w-full py-4 sm:py-6 bg-red-600 text-white rounded-full font-black uppercase tracking-widest shadow-2xl hover:bg-red-700 focus-visible:ring-4 focus-visible:ring-red-500 focus-visible:ring-offset-2 outline-none transition-all flex items-center justify-center gap-4 text-[11px] sm:text-sm pulse-button no-underline"
                >
-                  {t.nav?.ambulance || 'Emergency Help'}
-               </button>
+                  {t.nav?.ambulance || 'Call 108 — Emergency'}
+               </a>
             </motion.div>
 
             {/* 1-CLICK FRICTIONLESS DEMO LOGIN PANEL */}
@@ -348,7 +348,7 @@ export default function LandingPage() {
               className="w-full max-w-xl bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-6 text-center shadow-xl mb-4"
             >
               <p className="text-[10px] font-black uppercase tracking-[0.25em] text-emerald-400 mb-4 flex items-center justify-center gap-1.5">
-                ⚡ 1-Click Frictionless Demo Access
+                <Zap className="w-3 h-3" /> 1-Click Frictionless Demo Access
               </p>
               <div className="grid grid-cols-3 gap-2 sm:gap-3">
                 <button
@@ -356,21 +356,21 @@ export default function LandingPage() {
                   onClick={() => handleOneClickLogin('9876543210', 'Demo@1234', 'villager')}
                   className="px-2 py-3 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-white rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-wider transition-colors border border-slate-700"
                 >
-                  {demoLoading === 'villager' ? '⏳...' : 'Villager Demo'}
+                  {demoLoading === 'villager' ? <><Loader className="w-3 h-3 animate-spin" /> Loading</> : 'Villager Demo'}
                 </button>
                 <button
                   disabled={demoLoading !== null}
                   onClick={() => handleOneClickLogin('9876543211', 'Demo@1234', 'ngo')}
                   className="px-2 py-3 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-wider transition-colors"
                 >
-                  {demoLoading === 'ngo' ? '⏳...' : 'ASHA Worker'}
+                  {demoLoading === 'ngo' ? <><Loader className="w-3 h-3 animate-spin" /> Loading</> : 'ASHA Worker'}
                 </button>
                 <button
                   disabled={demoLoading !== null}
                   onClick={() => handleOneClickLogin('admin@swasthai.in', 'Demo@1234', 'admin')}
                   className="px-2 py-3 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-white rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-wider transition-colors border border-slate-700"
                 >
-                  {demoLoading === 'admin' ? '⏳...' : 'Admin Command'}
+                  {demoLoading === 'admin' ? <><Loader className="w-3 h-3 animate-spin" /> Loading</> : 'Admin Command'}
                 </button>
               </div>
             </motion.div>
@@ -432,7 +432,7 @@ export default function LandingPage() {
           <div className="relative">
             <div className="absolute top-0 left-0 w-64 h-64 bg-red-100/40 rounded-full blur-3xl pointer-events-none -z-10" />
             <span className="text-[10px] font-black uppercase tracking-[0.4em] text-red-600 bg-red-50 border border-red-100 px-3.5 py-1.5 rounded-full inline-block mb-4">
-              🔥 Headline Original Innovation
+              <Zap className="w-3 h-3" /> Headline Original Innovation
             </span>
             <h2 className="text-4xl lg:text-5xl font-black text-slate-900 tracking-tighter leading-tight">
               Autonomous Agentic Outbreak Monitor
@@ -477,7 +477,7 @@ export default function LandingPage() {
               <div className="flex justify-center text-slate-600 text-lg">↓</div>
               <div className="p-4 bg-slate-800/50 rounded-2xl border border-slate-800">
                 <span className="text-slate-500 text-[10px] uppercase font-bold tracking-widest block mb-1">Llama-3.1 Agent Classification</span>
-                <span className="text-red-400 text-xs font-mono font-bold">⚠️ Warning: High Dengue Outbreak Probability (94.2% Confidence)</span>
+                <span className="text-red-400 text-xs font-mono font-bold"><AlertTriangle className="w-3 h-3 inline-block mr-1" /> Warning: High Dengue Outbreak Probability (94.2% Confidence)</span>
               </div>
               <div className="flex justify-center text-slate-600 text-lg">↓</div>
               <div className="p-4 bg-slate-800/50 rounded-2xl border border-slate-800">
@@ -487,7 +487,7 @@ export default function LandingPage() {
               <div className="flex justify-center text-slate-600 text-lg">↓</div>
               <div className="p-4 bg-slate-800/50 rounded-2xl border border-emerald-900/50 bg-emerald-950/20">
                 <span className="text-emerald-500 text-[10px] uppercase font-bold tracking-widest block mb-1">SSE Admin Broadcast Dispatch</span>
-                <span className="text-emerald-400 text-xs font-mono font-bold">🚀 SSE Stream: Alert Broadcasted to District Command Center Terminal</span>
+                <span className="text-emerald-400 text-xs font-mono font-bold"><Rocket className="w-3 h-3 inline-block mr-1" /> SSE Stream: Alert Broadcasted to District Command Center Terminal</span>
               </div>
             </div>
           </div>
@@ -529,10 +529,10 @@ export default function LandingPage() {
                   </div>
                   <p className="text-slate-500 text-xs mt-2 font-medium">Perfect for smaller health networks or localized NGO pilots.</p>
                   <ul className="mt-6 space-y-3 text-xs text-slate-600 font-medium border-t border-slate-100 pt-6">
-                    <li className="flex items-center gap-2">🟢 Up to 50 active villages</li>
-                    <li className="flex items-center gap-2">🟢 Offline-first maternal vital logs</li>
-                    <li className="flex items-center gap-2">🟢 Basic Sakhi RAG support</li>
-                    <li className="flex items-center gap-2">🟢 Weekly CSV / CMO report exports</li>
+                    <li className="flex items-center gap-2"><CheckCircle className="w-3 h-3 text-emerald-500 shrink-0" /> Up to 50 active villages</li>
+                    <li className="flex items-center gap-2"><CheckCircle className="w-3 h-3 text-emerald-500 shrink-0" /> Offline-first maternal vital logs</li>
+                    <li className="flex items-center gap-2"><CheckCircle className="w-3 h-3 text-emerald-500 shrink-0" /> Basic Sakhi RAG support</li>
+                    <li className="flex items-center gap-2"><CheckCircle className="w-3 h-3 text-emerald-500 shrink-0" /> Weekly CSV / CMO report exports</li>
                   </ul>
                 </div>
                 <button onClick={() => navigate('/login')} className="mt-8 w-full py-4 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-full font-black text-[10px] uppercase tracking-wider transition-colors">Start Pilot</button>
@@ -549,10 +549,10 @@ export default function LandingPage() {
                   </div>
                   <p className="text-slate-400 text-xs mt-2 font-medium">Standard choice for active district health departments.</p>
                   <ul className="mt-6 space-y-3 text-xs text-slate-300 font-medium border-t border-slate-800 pt-6">
-                    <li className="flex items-center gap-2">🟢 Up to 250 active villages</li>
-                    <li className="flex items-center gap-2">🟢 Autonomous Outbreak Agent scans</li>
-                    <li className="flex items-center gap-2">🟢 Live SSE real-time dashboards</li>
-                    <li className="flex items-center gap-2">🟢 Unified RDS PostgreSQL backup</li>
+                    <li className="flex items-center gap-2"><CheckCircle className="w-3 h-3 text-emerald-500 shrink-0" /> Up to 250 active villages</li>
+                    <li className="flex items-center gap-2"><CheckCircle className="w-3 h-3 text-emerald-500 shrink-0" /> Autonomous Outbreak Agent scans</li>
+                    <li className="flex items-center gap-2"><CheckCircle className="w-3 h-3 text-emerald-500 shrink-0" /> Live SSE real-time dashboards</li>
+                    <li className="flex items-center gap-2"><CheckCircle className="w-3 h-3 text-emerald-500 shrink-0" /> Unified RDS PostgreSQL backup</li>
                   </ul>
                 </div>
                 <button onClick={() => navigate('/login')} className="mt-8 w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full font-black text-[10px] uppercase tracking-wider transition-colors">Deploy Command</button>
@@ -567,10 +567,10 @@ export default function LandingPage() {
                   </div>
                   <p className="text-slate-500 text-xs mt-2 font-medium">Enterprise scale for state ministries & national healthcare integrations.</p>
                   <ul className="mt-6 space-y-3 text-xs text-slate-600 font-medium border-t border-slate-100 pt-6">
-                    <li className="flex items-center gap-2">🟢 Unlimited villages & workers</li>
-                    <li className="flex items-center gap-2">🟢 Dedicated AWS Aurora PostgreSQL pool</li>
-                    <li className="flex items-center gap-2">🟢 Custom WHO/MoHFW protocol chunks</li>
-                    <li className="flex items-center gap-2">🟢 ABDM (National Health IDs) sync</li>
+                    <li className="flex items-center gap-2"><CheckCircle className="w-3 h-3 text-emerald-500 shrink-0" /> Unlimited villages & workers</li>
+                    <li className="flex items-center gap-2"><CheckCircle className="w-3 h-3 text-emerald-500 shrink-0" /> Dedicated AWS Aurora PostgreSQL pool</li>
+                    <li className="flex items-center gap-2"><CheckCircle className="w-3 h-3 text-emerald-500 shrink-0" /> Custom WHO/MoHFW protocol chunks</li>
+                    <li className="flex items-center gap-2"><CheckCircle className="w-3 h-3 text-emerald-500 shrink-0" /> ABDM (National Health IDs) sync</li>
                   </ul>
                 </div>
                 <button onClick={() => navigate('/login')} className="mt-8 w-full py-4 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-full font-black text-[10px] uppercase tracking-wider transition-colors">Contact Sales</button>

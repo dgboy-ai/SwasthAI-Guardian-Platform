@@ -78,6 +78,17 @@ const ProtectedRoute = ({ children, allowedRole }) => {
   return children;
 };
 
+// Redirect logged-in users to their dashboard on 404, unauthenticated to IntroFlow
+function NotFoundRedirect() {
+  const { user, loading } = useAuth();
+  if (loading) return null;
+  if (user) {
+    const rolePaths = { villager: '/villager', ngo: '/ngo', admin: '/admin' };
+    return <Navigate to={rolePaths[user.role] || '/'} replace />;
+  }
+  return <Navigate to="/" replace />;
+}
+
 // Shows DISHA consent modal once per device after first login (restricted to villagers, tracked per user)
 function ConsentGate({ children }) {
   const { user } = useAuth();
@@ -157,9 +168,7 @@ export default function App() {
 
               {/* CORE DOMAINS - Role Specific Dashboards */}
               <Route path="/home" element={
-                <ProtectedRoute>
-                  <LayoutWrapper><ErrorBoundary><LandingPage /></ErrorBoundary></LayoutWrapper>
-                 </ProtectedRoute>
+                <LayoutWrapper><ErrorBoundary><LandingPage /></ErrorBoundary></LayoutWrapper>
               } />
 
               <Route path="/villager" element={
@@ -263,11 +272,13 @@ export default function App() {
                 </ProtectedRoute>
               } />
               <Route path="/verify" element={
-                <ErrorBoundary>
-                  <SystemVerificationPage />
-                </ErrorBoundary>
+                <ProtectedRoute allowedRole={["admin"]}>
+                  <ErrorBoundary>
+                    <SystemVerificationPage />
+                  </ErrorBoundary>
+                </ProtectedRoute>
               } />
-              <Route path="*" element={<Navigate to="/" replace />} />
+              <Route path="*" element={<NotFoundRedirect />} />
             </Routes>
             </ErrorBoundary>
             </Suspense>

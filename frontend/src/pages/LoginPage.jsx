@@ -15,11 +15,66 @@ import { showToast } from '../utils/toast';
 // Production authentication uses backend-issued tokens and real OTP/password verification.
 const OFFLINE_CACHE_KEY = 'swasthai_offline_user_cache';
 const DEMO_SECRET = 'Demo@1234';
-const demoCredentialHash = (id, role, secret = DEMO_SECRET) => btoa(`${id}:${role}:${secret}`);
+
+function sha256(ascii) {
+  function rightRotate(value, amount) {
+    return (value >>> amount) | (value << (32 - amount));
+  }
+  var mathPow = Math.pow, maxWord = mathPow(2, 32), lengthProperty = 'length', i, j;
+  var result = '', words = [], asciiLength = ascii[lengthProperty] * 8;
+  var hash = [], k = [], primeCounter = 0, isComposite = {};
+  for (var candidate = 2; primeCounter < 64; candidate++) {
+    if (!isComposite[candidate]) {
+      for (i = 0; i < 313; i += candidate) isComposite[i] = 1;
+      if (primeCounter < 8) hash[primeCounter] = (mathPow(candidate, .5) * maxWord) | 0;
+      k[primeCounter] = (mathPow(candidate, 1/3) * maxWord) | 0;
+      primeCounter++;
+    }
+  }
+  ascii += '\x80';
+  while (ascii[lengthProperty] % 64 - 56) ascii += '\x00';
+  for (i = 0; i < ascii[lengthProperty]; i++) {
+    j = ascii.charCodeAt(i);
+    if (j >> 8) return '';
+    words[i >> 2] |= j << ((3 - i % 4) * 8);
+  }
+  words[words[lengthProperty]] = ((asciiLength / maxWord) | 0);
+  words[words[lengthProperty]] = (asciiLength | 0);
+  for (j = 0; j < words[lengthProperty];) {
+    var w = words.slice(j, j += 16), oldHash = hash.slice(0);
+    hash = hash.slice(0, 8);
+    for (i = 0; i < 64; i++) {
+      var wItem = w[i];
+      if (i >= 16) {
+        var s0 = rightRotate(w[i - 15], 7) ^ rightRotate(w[i - 15], 18) ^ (w[i - 15] >>> 3);
+        var s1 = rightRotate(w[i - 2], 17) ^ rightRotate(w[i - 2], 19) ^ (w[i - 2] >>> 10);
+        wItem = w[i] = (w[i - 16] + s0 + w[i - 7] + s1) | 0;
+      }
+      var ch = (hash[4] & hash[5]) ^ (~hash[4] & hash[6]);
+      var maj = (hash[0] & hash[1]) ^ (hash[0] & hash[2]) ^ (hash[1] & hash[2]);
+      var sigma0 = rightRotate(hash[0], 2) ^ rightRotate(hash[0], 13) ^ rightRotate(hash[0], 22);
+      var sigma1 = rightRotate(hash[4], 6) ^ rightRotate(hash[4], 11) ^ rightRotate(hash[4], 25);
+      var temp1 = (hash[7] + sigma1 + ch + k[i] + wItem) | 0;
+      var temp2 = (sigma0 + maj) | 0;
+      hash = [(temp1 + temp2) | 0].concat(hash);
+      hash[4] = (hash[4] + temp1) | 0;
+    }
+    for (i = 0; i < 8; i++) hash[i] = (hash[i] + oldHash[i]) | 0;
+  }
+  for (i = 0; i < 8; i++) {
+    for (j = 3; j + 1; j--) {
+      var b = (hash[i] >> (j * 8)) & 255;
+      result += (b < 16 ? '0' : '') + b.toString(16);
+    }
+  }
+  return result;
+}
+
+const demoCredentialHash = (id, role, secret = DEMO_SECRET) => sha256(`${id}:${role}:${secret}`);
 const DEMO_CREDENTIALS = [
-  { id: '9876543210',       credentialHash: demoCredentialHash('9876543210', 'villager'),       role: 'villager', name: 'Ramesh Singh' },
-  { id: '9876543211',       credentialHash: demoCredentialHash('9876543211', 'ngo'),            role: 'ngo',      name: 'Anjali Sharma' },
-  { id: 'admin@swasthai.in', credentialHash: demoCredentialHash('admin@swasthai.in', 'admin'),   role: 'admin',    name: 'District Administrator' },
+  { id: '9876543210',       phone: '9876543210',       credentialHash: demoCredentialHash('9876543210', 'villager'),       role: 'villager', name: 'Ramesh Singh' },
+  { id: '9876543211',       phone: '9876543211',       credentialHash: demoCredentialHash('9876543211', 'ngo'),            role: 'ngo',      name: 'Anjali Sharma' },
+  { id: 'admin@swasthai.in', email: 'admin@swasthai.in', phone: '0000000000', credentialHash: demoCredentialHash('admin@swasthai.in', 'admin'), role: 'admin', name: 'District Administrator' },
 ];
 
 function normalizeOfflineUsers(users) {
@@ -38,7 +93,13 @@ function seedOfflineCache() {
   const existing = normalizeOfflineUsers(JSON.parse(localStorage.getItem(OFFLINE_CACHE_KEY) || '[]'));
   const merged = [...existing];
   DEMO_CREDENTIALS.forEach(demoUser => {
-    const idx = merged.findIndex(u => u.id === demoUser.id && u.role === demoUser.role);
+    const idx = merged.findIndex(u => {
+      if (u.role !== demoUser.role) return false;
+      if (u.id === demoUser.id || u.email === demoUser.id || u.phone === demoUser.id || u.username === demoUser.id) return true;
+      if (demoUser.email && u.email === demoUser.email) return true;
+      if (demoUser.phone && u.phone === demoUser.phone) return true;
+      return false;
+    });
     if (idx >= 0) merged[idx] = { ...merged[idx], ...demoUser };
     else merged.push(demoUser);
   });
@@ -50,7 +111,7 @@ function tryOfflineLogin(identifier, passwordOrOtp, loginMethod, role) {
     const cached = normalizeOfflineUsers(JSON.parse(localStorage.getItem(OFFLINE_CACHE_KEY) || '[]'));
     localStorage.setItem(OFFLINE_CACHE_KEY, JSON.stringify(cached));
     const user = cached.find(u => {
-      const idMatch = u.id === identifier;
+      const idMatch = u.id === identifier || u.email === identifier || u.phone === identifier || u.username === identifier;
       const roleMatch = !role || u.role === role;
       if (loginMethod === 'otp') {
         // OTP mode: accept '1234' as universal demo OTP offline
@@ -479,7 +540,7 @@ export default function LoginPage() {
                 {isLoading ? (
                   <><div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> {isOffline ? 'Checking offline...' : (t.loginPage?.authenticating || 'Logging in...')}</>
                 ) : usedOfflineFallback ? (
-                  <><Wifi className="w-3.5 h-3.5" /> Offline Session Active ✓</>
+                  <><Wifi className="w-3.5 h-3.5" /> Offline Session Active</>
                 ) : (
                   <>{t.loginPage?.secure_sign_in || 'Log In'} {isOffline ? <WifiOff className="w-3.5 h-3.5" /> : <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />}</>
                 )}
@@ -493,7 +554,7 @@ export default function LoginPage() {
                   <Zap className="w-3 h-3" /> Quick Fill Credentials
                 </p>
                 <span className="px-1.5 py-0.5 bg-amber-100 border border-amber-200 text-amber-800 text-[7px] font-black uppercase tracking-wider rounded-md">
-                  📶 Works Offline!
+                  <Wifi className="w-3 h-3" /> Works Offline!
                 </span>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">

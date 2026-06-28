@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Navbar from '../components/Navbar';
-import { Camera, ShieldCheck, ChevronRight, RotateCcw, HeartPulse, Activity, AlertTriangle } from 'lucide-react';
+import { Camera, ShieldCheck, ChevronRight, RotateCcw, HeartPulse, Activity, AlertTriangle, X, CheckCircle } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import imageCompression from 'browser-image-compression';
 import api from '../services/api';
@@ -260,7 +260,7 @@ const getFinalResult = (photoData, answers, questionsList) => {
 
 const RESULTS = {
   urgent: {
-    icon: '🚨', bg: 'bg-rose-600',
+    icon: AlertTriangle, bg: 'bg-rose-600',
     title: 'Refer to Healthcare Professional Today',
     titleH: 'आज ही योग्य डॉक्टर या अस्पताल से मिलें',
     advice: 'The photo shows signs of significant skin inflammation. Please consult a pediatrician or doctor immediately for clinical diagnosis.',
@@ -268,7 +268,7 @@ const RESULTS = {
     helpline: '108',
   },
   moderate: {
-    icon: '⚠️', bg: 'bg-amber-500',
+    icon: AlertTriangle, bg: 'bg-amber-500',
     title: 'Consult Health Worker Soon',
     titleH: 'जल्द ही आशा कार्यकर्ता या पीएचसी से मिलें',
     advice: 'The photo shows skin changes that warrant screening. Consult your nearby PHC or ASHA worker within 2-3 days.',
@@ -276,7 +276,7 @@ const RESULTS = {
     helpline: '104',
   },
   mild: {
-    icon: '✅', bg: 'bg-emerald-600',
+    icon: CheckCircle, bg: 'bg-emerald-600',
     title: 'Mild Skin Changes',
     titleH: 'सामान्य त्वचा परिवर्तन (गृह सुरक्षा सलाह)',
     advice: 'Keep the area clean and dry. If it does not improve in 3-4 days or if fever develops, consult a healthcare professional.',
@@ -702,13 +702,13 @@ export default function SkinDiseaseCheckerPage() {
                 onClick={closeCamera}
                 className="px-6 sm:px-8 py-3.5 sm:py-4 bg-white/10 border border-white/20 text-white rounded-xl sm:rounded-2xl font-black text-[10px] sm:text-[11px] uppercase tracking-widest hover:bg-white/20 transition-all"
               >
-                ✕ Cancel
+                <X className="w-4 h-4" /> Cancel
               </button>
               <button
                 onClick={capturePhoto}
                 className="px-8 sm:px-10 py-3.5 sm:py-4 bg-white text-slate-900 rounded-xl sm:rounded-2xl font-black text-[10px] sm:text-[11px] uppercase tracking-widest hover:scale-105 transition-transform shadow-2xl"
               >
-                📸 Capture Photo
+                <Camera className="w-5 h-5" /> Capture Photo
               </button>
             </div>
           </motion.div>
@@ -1010,7 +1010,7 @@ export default function SkinDiseaseCheckerPage() {
           {step === 'result' && result && (
             <motion.div key="result" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
               <div className={`p-8 rounded-[2.5rem] shadow-2xl ${result.bg} text-white relative overflow-hidden`}>
-                <div className="absolute top-0 right-0 opacity-10 text-[120px] leading-none p-6">{result.icon}</div>
+                <div className="absolute top-0 right-0 opacity-10 p-6">{result.icon && <result.icon className="w-24 h-24" />}</div>
                 <div className="absolute -bottom-10 -left-10 opacity-5">
                   <HeartPulse className="w-48 h-48" />
                 </div>
