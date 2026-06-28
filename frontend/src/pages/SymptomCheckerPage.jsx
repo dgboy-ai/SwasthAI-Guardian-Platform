@@ -184,8 +184,10 @@ export default function SymptomCheckerPage() {
   };
 
   const handleAnalyze = async (overrideSymptoms = null, overrideOther = null) => {
-    const symptomsToUse = overrideSymptoms !== null ? overrideSymptoms : selectedSymptoms;
-    const otherToUse = overrideOther !== null ? overrideOther : otherSymptom;
+    // Guard: React onClick passes the SyntheticEvent as first arg.
+    // If overrideSymptoms is not an array, fall back to state.
+    const symptomsToUse = Array.isArray(overrideSymptoms) ? overrideSymptoms : selectedSymptoms;
+    const otherToUse = typeof overrideOther === 'string' ? overrideOther : otherSymptom;
 
     if (symptomsToUse.length === 0 && !otherToUse) return;
     setLoading(true);
@@ -226,9 +228,9 @@ export default function SymptomCheckerPage() {
       heat_stroke: 'heatstroke sunstroke',
       itching: 'itching skin infection',
     };
-    const selectedText = symptomsToUse
-      .map(id => symptomIdToText[id] || id)
-      .join(' ');
+    const selectedText = Array.isArray(symptomsToUse)
+      ? symptomsToUse.map(id => symptomIdToText[id] || id).join(' ')
+      : '';
 
     // Preprocess voice/text input: remove filler words, trim extra spaces
     const cleanOther = otherToUse
@@ -359,10 +361,10 @@ export default function SymptomCheckerPage() {
         setTimeout(() => { window.location.href = '/login'; }, 1500);
       } else {
         // Outer safety net: run local SymptomNet in-browser
-        const localPred = await predictSymptomsOffline(fullText).catch(() => null);
+        const now = new Date().toISOString();
+        const tier = getSeverityTier(symptomsToUse, '', otherToUse);
+        const localPred = await predictSymptomsOffline(fullText || otherToUse).catch(() => null);
         if (localPred) {
-          const now = new Date().toISOString();
-          const tier = getSeverityTier(symptomsToUse, localPred.prediction || '', otherToUse);
           setResult({
             ...tier,
             aiResult: localPred.prediction,
@@ -379,6 +381,9 @@ export default function SymptomCheckerPage() {
           queueSymptomCheck({ symptoms: fullText, villageId: user?.villageId || 'v101' })
             .then(() => showToast('Queued offline ✓ (IndexedDB)', 'info'))
             .catch(qErr => console.warn('Could not queue symptom check offline:', qErr.message));
+        } else {
+          // Even if offline model fails, show a basic severity-based result
+          setResult({ ...tier, aiResult: '', offline: true, error: true, dbWriteTimestamp: now, dynamoDbWriteTimestamp: now });
         }
       }
     } finally {
@@ -936,6 +941,90 @@ export default function SymptomCheckerPage() {
                           <p className="text-white/75 mt-0.5">{sc.offline_local || 'Using local fallback algorithms.'}</p>
                         </div>
                       )}
+
+                      {/* Confidence + Severity + Timestamp strip */}
+                      {(result.confidence !== undefined || result.accuracy) && (
+                        <div className="flex flex-wrap items-center gap-2 p-2 bg-black/15 border border-white/10 rounded-lg">
+                          {result.confidence !== undefined && (
+                            <span className="text-[9px] font-bold text-white/90">
+                              Confidence: <span className="text-emerald-300">{Math.round(result.confidence * 100)}%</span>
+                            </span>
+                          )}
+                          {result.accuracy && (
+                            <span className="text-[9px] font-bold text-white/70">• Model: {result.accuracy}</span>
+                          )}
+                          <span className="text-[8px] font-mono text-white/50 ml-auto">
+                            {new Date().toLocaleTimeString()}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Severity level display */}
+                      <div className="flex items-center gap-2 p-2 bg-black/15 border border-white/10 rounded-lg">
+                        <span className="text-[7px] font-black text-white/50 uppercase tracking-widest">Severity</span>
+                        <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
+                          result.type === 'severe' ? 'bg-red-300 text-red-900' :
+                          result.type === 'moderate' ? 'bg-amber-300 text-amber-900' :
+                          'bg-emerald-300 text-emerald-900'
+                        }`}>
+                          {result.type === 'severe' ? 'HIGH' : result.type === 'moderate' ? 'MEDIUM' : 'LOW'}
+                        </span>
+                      </div>
+
+                      {/* Emergency warning for severe cases */}
+                      {result.type === 'severe' && (
+                        <div className="p-2 bg-red-500/30 border border-red-300/30 rounded-lg flex items-start gap-2">
+                          <AlertCircle className="w-4 h-4 text-red-300 shrink-0 mt-0.5" />
+                          <div>
+                            <p className="text-[9px] font-black text-white uppercase tracking-wider">EMERGENCY</p>
+                            <p className="text-[9px] font-semibold text-white/90 mt-0.5">
+                              {result.message}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Home Care Advice */}
+                      <div className="p-2 bg-black/15 border border-white/10 rounded-lg">
+                        <p className="text-[7px] font-black text-white/50 uppercase tracking-widest mb-0.5">
+                          {sc.home_care || 'Home Care Advice'}
+                        </p>
+                        <p className="text-[9.5px] font-bold leading-normal">{result.advice}</p>
+                      </div>
+
+                      {/* Nearby Hospital Suggestion */}
+                      <div className="p-2 bg-black/15 border border-white/10 rounded-lg">
+                        <p className="text-[7px] font-black text-white/50 uppercase tracking-widest mb-0.5">
+                          {sc.nearby_hospital || 'Nearby Health Facility'}
+                        </p>
+                        <p className="text-[9.5px] font-bold leading-normal">
+                          {result.type === 'severe'
+                            ? (sc.nearest_hospital || 'Nearest Government Hospital / Community Health Centre (CHC)')
+                            : (sc.nearest_phc || 'Visit your nearest Primary Health Centre (PHC) or ASHA worker')}
+                        </p>
+                      </div>
+
+                      {/* Error state when both API and offline failed */}
+                      {result.error && !result.aiResult && (
+                        <div className="p-2 bg-amber-500/30 border border-amber-300/30 rounded-lg">
+                          <p className="text-[8px] font-black text-amber-200 uppercase tracking-wider">
+                            Limited assessment
+                          </p>
+                          <p className="text-[9px] font-semibold text-white/85 mt-0.5">
+                            Cloud AI is currently unavailable. Assessment based on symptom count and severity only.
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Medicines Disclaimer */}
+                      <div className="p-2 bg-black/10 border border-white/5 rounded-lg">
+                        <p className="text-[6px] font-black text-white/40 uppercase tracking-widest mb-0.5">
+                          {sc.disclaimer || '⚠ MEDICAL DISCLAIMER'}
+                        </p>
+                        <p className="text-[7.5px] font-semibold text-white/60 leading-relaxed">
+                          {sc.disclaimer_text || 'This assessment is for informational purposes only and does not constitute professional medical advice, diagnosis, or treatment. Always consult a qualified healthcare provider for medical concerns.'}
+                        </p>
+                      </div>
 
                       {/* Real-Time Telemetry Trace */}
                       <div className="p-2 bg-black/20 border border-white/10 rounded-lg space-y-1.5 text-[9px]">
