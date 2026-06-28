@@ -787,7 +787,7 @@ router.get('/outbreaks', auth, checkRole(['ngo', 'admin']), async (req, res) => 
   try {
     const daysBack = parseInt(req.query.days) || 7;
     const MAX_OUTBREAKS = Math.min(parseInt(req.query.limit) || 20, 100);
-    let outbreaks = dynamoHelper.queryRecentAll('outbreak_telemetry', daysBack, MAX_OUTBREAKS);
+    let outbreaks = await dynamoHelper.queryRecentAll('outbreak_telemetry', daysBack, MAX_OUTBREAKS);
     outbreaks.sort((a, b) => (b.detectedAt || '').localeCompare(a.detectedAt || ''));
     // Server-side village filter — never expose other villages' data
     const activeVillage = req.user.role === 'admin' ? villageId : (req.user.villageId || 'unassigned');
