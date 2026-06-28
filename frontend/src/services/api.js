@@ -76,6 +76,10 @@ api.interceptors.response.use(
         ? 'Could not reach server. Check that the backend is running.'
         : 'No internet connection. Offline mode active.';
     }
+    // Ensure error.response.data.error is always a string (prevents React #31 crashes)
+    if (error.response?.data?.error && typeof error.response.data.error !== 'string') {
+      error.response.data.error = error.response.data.error.message || 'Request failed.';
+    }
     return Promise.reject(error);
   }
 );
