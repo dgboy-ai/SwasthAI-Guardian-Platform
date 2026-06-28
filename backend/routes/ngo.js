@@ -452,7 +452,7 @@ router.get('/ambulances', auth, checkRole(['ngo', 'admin']), async (req, res) =>
     let rows;
     if (req.user.role !== 'admin') {
       const villageId = req.user.villageId || 'unassigned';
-      rows = await db.all("SELECT * FROM ambulance_requests WHERE request_type = 'ambulance' AND (location = ? OR \"villageId\" = ?) ORDER BY id DESC LIMIT ? OFFSET ?", [villageId, villageId, limit, offset]);
+      rows = await db.all("SELECT * FROM ambulance_requests WHERE request_type = 'ambulance' ORDER BY id DESC LIMIT ? OFFSET ?", [limit, offset]);
     } else {
       rows = await db.all("SELECT * FROM ambulance_requests WHERE request_type = 'ambulance' ORDER BY id DESC LIMIT ? OFFSET ?", [limit, offset]);
     }

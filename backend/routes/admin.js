@@ -493,13 +493,14 @@ router.get('/ambulances', auth, checkRole(['admin']), async (req, res) => {
   try {
     const limit = Math.min(parseInt(req.query.limit) || 50, 100);
     const lastId = parseInt(req.query.lastId) || null;
-    const joinFrom = 'FROM ambulance_requests ar INNER JOIN users u ON ar.user_id = u.id INNER JOIN village_health vh ON u."villageId" = vh."villageId" WHERE vh."districtId" = ?';
+    const joinFrom = 'FROM ambulance_requests ar LEFT JOIN users u ON ar.user_id = u.id LEFT JOIN village_health vh ON u."villageId" = vh."villageId"';
+    const whereClause = districtId ? ` WHERE vh."districtId" = ? OR vh."districtId" IS NULL` : '';
     
     let rows;
     if (lastId) {
-      rows = await db.all(`SELECT ar.* ${joinFrom} AND ar.id < ? ORDER BY ar.id DESC LIMIT ?`, [districtId, lastId, limit]);
+      rows = await db.all(`SELECT ar.* ${joinFrom}${whereClause} AND ar.id < ? ORDER BY ar.id DESC LIMIT ?`, districtId ? [districtId, lastId, limit] : [lastId, limit]);
     } else {
-      rows = await db.all(`SELECT ar.* ${joinFrom} ORDER BY ar.id DESC LIMIT ?`, [districtId, limit]);
+      rows = await db.all(`SELECT ar.* ${joinFrom}${whereClause} ORDER BY ar.id DESC LIMIT ?`, districtId ? [districtId, limit] : [limit]);
     }
     
     res.send(rows);
