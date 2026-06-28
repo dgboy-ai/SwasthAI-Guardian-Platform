@@ -540,6 +540,9 @@ router.post('/ambulance', auth, checkRole(['villager', 'ngo', 'admin']), logAudi
         if (typeof req.app.locals.broadcastToAdmins === 'function') {
           req.app.locals.broadcastToAdmins('ambulance', requestObj);
         }
+        if (typeof req.app.locals.broadcastToNGOs === 'function') {
+          req.app.locals.broadcastToNGOs('ambulance', requestObj);
+        }
         console.log(`[AMBULANCE] Request #${requestId} from user ${userId} — ${priority} at ${location} → SSE broadcast OK`);
 
         // WebSocket route telemetry simulation
@@ -817,11 +820,23 @@ router.post('/villager/pad-request', auth, checkRole(['villager', 'ngo', 'admin'
       );
     }
     res.send({ success: true });
+    // Broadcast to connected NGO/ASHA workers
+    if (typeof req.app.locals.broadcastToNGOs === 'function') {
+      req.app.locals.broadcastToNGOs('pad_request', {
+        id: Date.now(),
+        name: userName,
+        villageId: userVillageId,
+        location: userVillageId,
+        status: 'pending',
+        timestamp: new Date().toISOString(),
+      });
+    }
   } catch (err) {
     console.error(err);
     res.status(500).send({ error: 'Failed to process pad request.' });
   }
 });
+    }
 
 router.post('/health-assistant', auth, checkRole(['villager', 'ngo', 'admin']), aiLimiter, async (req, res) => {
   const AI_SERVICE_URL = req.app.locals.AI_SERVICE_URL;

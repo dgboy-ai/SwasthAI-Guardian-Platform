@@ -10,6 +10,22 @@ import { PregnancyRiskSchema, MalnutritionSchema, validateAiOutput } from '../ut
 
 const router = express.Router();
 
+// ── NGO SSE Clients for real-time push notifications ──
+const ngoSseClients = new Map();
+const MAX_NGO_SSE_CLIENTS = 50;
+
+export function broadcastToNGOs(eventType, data) {
+  ngoSseClients.forEach((clientObj, clientId) => {
+    const { res, villageId } = clientObj;
+    // Only send events relevant to this ASHA worker's village
+    if (villageId && data.villageId && data.villageId !== villageId) return;
+    const payload = `event: ${eventType}\ndata: ${JSON.stringify(data)}\n\n`;
+    try { res.write(payload); } catch (_) { ngoSseClients.delete(clientId); }
+  });
+}
+
+export function ngoSseCount() { return ngoSseClients.size; }
+
 // ── Data provenance: marks every response with the backing store ──
 const DB_PROVENANCE = { _db: 'postgresql' };
 
@@ -1436,6 +1452,54 @@ router.get('/village-risk', auth, checkRole(['ngo', 'admin']), async (req, res) 
     console.error('[VILLAGE RISK INTEL] Error:', err.message);
     res.status(500).json({ success: false, error: { code: 'VILLAGE_RISK_FAILED', message: 'Failed to compute village risk forecast.' } });
   }
+});
+
+// ── NGO Real-Time SSE Feed ──
+import jwt from 'jsonwebtoken';
+router.get('/live-feed', async (req, res) => {
+  let decoded;
+  try {
+    const token = req.header('Authorization')?.replace('Bearer ', '') || req.query.token;
+    if (!token) return res.status(401).json({ error: 'Auth required' });
+    decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (!['ngo', 'admin'].includes(decoded.role)) return res.status(403).json({ error: 'NGO access only' });
+  } catch (_) { return res.status(401).json({ error: 'Invalid token' }); }
+
+  const db = req.app.locals.db;
+  let userVillageId = null;
+  try {
+    const user = await db.get('SELECT "villageId" FROM users WHERE id = ?', [decoded.id]);
+    userVillageId = user?.villageId || null;
+  } catch (_) {}
+
+  if (ngoSseClients.size >= MAX_NGO_SSE_CLIENTS) {
+    const oldest = ngoSseClients.keys().next().value;
+    try { ngoSseClients.get(oldest).res.end(); } catch (_) {}
+    ngoSseClients.delete(oldest);
+  }
+
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no');
+  res.flushHeaders();
+
+  const clientId = `ngo-${decoded.id}-${Date.now()}`;
+  ngoSseClients.set(clientId, { res, userId: decoded.id, villageId: userVillageId });
+  console.log(`[NGO-SSE] Worker ${decoded.id} connected (${ngoSseClients.size} total)`);
+
+  res.write(`event: connected\ndata: ${JSON.stringify({ clientId, villageId: userVillageId })}\n\n`);
+
+  const heartbeat = setInterval(() => {
+    try { res.write(`event: ping\ndata: ${Date.now()}\n\n`); }
+    catch (_) { clearInterval(heartbeat); ngoSseClients.delete(clientId); }
+  }, 30000);
+
+  req.on('close', () => {
+    clearInterval(heartbeat);
+    ngoSseClients.delete(clientId);
+    console.log(`[NGO-SSE] Worker ${decoded.id} disconnected (${ngoSseClients.size} remaining)`);
+  });
 });
 
 export default router;

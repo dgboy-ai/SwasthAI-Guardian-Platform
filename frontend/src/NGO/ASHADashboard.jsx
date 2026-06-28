@@ -343,6 +343,42 @@ export default function ASHADashboard() {
     }
   }, []);
 
+  // ─── Real-time SSE listener for live pad/ambulance requests ──────────────
+  useEffect(() => {
+    if (isOffline) return;
+    const token = localStorage.getItem('token');
+    if (!token || token === 'offline-mock-token') return;
+
+    const apiBase = import.meta.env.VITE_API_URL || 'https://swasthai-guardian-platform-0jsb.onrender.com/api';
+    const eventSource = new EventSource(`${apiBase.replace('/api', '')}/api/ngo/live-feed?token=${token}`);
+
+    eventSource.addEventListener('pad_request', (e) => {
+      try {
+        const data = JSON.parse(e.data);
+        setPadRequests(prev => [{ id: `P${data.id}`, patientName: data.name, village: data.villageId || data.location, quantity: 1, status: 'pending', timestamp: 'Just now' }, ...prev]);
+        showToast(`New pad request from ${data.name}`, 'info');
+      } catch (_) {}
+    });
+
+    eventSource.addEventListener('ambulance', (e) => {
+      try {
+        const data = JSON.parse(e.data);
+        setEmergencyRequests(prev => [{ id: `E${data.id || Date.now()}`, name: data.name, location: data.location, time: 'Just now', condition: data.symptoms || data.condition || 'Emergency', status: data.status || 'pending' }, ...prev]);
+        showToast(`New emergency: ${data.name} — ${data.symptoms || 'SOS'}`, 'error');
+      } catch (_) {}
+    });
+
+    eventSource.addEventListener('connected', () => {
+      console.log('[NGO-SSE] Connected to live feed');
+    });
+
+    eventSource.onerror = () => {
+      console.debug('[NGO-SSE] Connection lost, will reconnect');
+    };
+
+    return () => eventSource.close();
+  }, [isOffline]);
+
   const handleSync = async () => {
     if (isOffline) {
       showToast('Cannot sync while offline mode is active', 'error');

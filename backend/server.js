@@ -23,6 +23,7 @@ import authRouter from './routes/auth.js';
 import villagerRouter from './routes/villager.js';
 import ngoRouter from './routes/ngo.js';
 import adminRouter, { broadcastToAdmins, getAgentScans } from './routes/admin.js';
+import ngoRouter, { broadcastToNGOs } from './routes/ngo.js';
 import webhookRouter from './routes/webhooks.js';
 import apiKeysRouter from './routes/apiKeys.js';
 import b2bRouter from './routes/b2b.js';
@@ -116,6 +117,7 @@ if (isProduction && cluster.isPrimary && maxWorkers > 1) {
   app.locals.ragTraces = ragTraces;
   app.locals.AI_SERVICE_URL = AI_SERVICE_URL;
   app.locals.broadcastToAdmins = broadcastToAdmins;
+  app.locals.broadcastToNGOs = broadcastToNGOs;
   app.locals.serviceAlerts = {};
 
   const redactSensitiveData = (obj) => {
