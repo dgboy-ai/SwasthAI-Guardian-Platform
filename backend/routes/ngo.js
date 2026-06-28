@@ -1,5 +1,6 @@
 import express from 'express';
 import axios from 'axios';
+import jwt from 'jsonwebtoken';
 import { z } from 'zod';
 import { auth } from '../middleware/auth.js';
 import { checkRole, enforceVillageScope, enforceReferralAccess, enforceAmbulanceAccess } from '../middleware/policy.js';
@@ -1455,7 +1456,6 @@ router.get('/village-risk', auth, checkRole(['ngo', 'admin']), async (req, res) 
 });
 
 // ── NGO Real-Time SSE Feed ──
-import jwt from 'jsonwebtoken';
 router.get('/live-feed', async (req, res) => {
   let decoded;
   try {
