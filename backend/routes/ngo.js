@@ -842,8 +842,8 @@ router.get('/stats', auth, checkRole(['ngo', 'admin']), async (req, res) => {
       registered_villagers: c(villRow),
     });
   } catch (err) {
-    console.error('[NGO STATS]', err.message);
-    res.status(500).send({ error: 'Failed to fetch NGO statistics.' });
+    console.error('[NGO STATS]', err.message, err.stack);
+    res.status(500).send({ error: 'Failed to fetch NGO statistics.', detail: err.message });
   }
 });
 
