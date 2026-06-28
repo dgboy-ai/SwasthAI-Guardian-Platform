@@ -820,41 +820,40 @@ router.get('/outbreaks', auth, checkRole(['ngo', 'admin']), async (req, res) => 
 // GET /api/ngo/stats — dashboard counters for ASHA portal
 router.get('/stats', auth, checkRole(['ngo', 'admin']), async (req, res) => {
   const db = req.app.locals.db;
-  const count = (row) => parseInt(row?.c ?? row?.cnt ?? row?.count ?? 0, 10);
   try {
-    let queryAmbulances = "SELECT COUNT(*) as c FROM ambulance_requests WHERE request_type = 'ambulance'";
-    let queryPads = "SELECT COUNT(*) as c FROM ambulance_requests WHERE request_type = 'pad_request'";
-    let queryPregnancies = 'SELECT COUNT(*) as c FROM pregnancy_data';
-    let queryMalnutrition = "SELECT COUNT(*) as c FROM malnutrition_data WHERE status != 'Normal'";
-    let queryVillagers = "SELECT COUNT(*) as c FROM users WHERE role = 'villager'";
+    const vId = req.user.role !== 'admin' ? req.user.villageId : null;
 
-    const villageId = req.user.role !== 'admin' ? (req.user.villageId || 'unassigned') : null;
-    const vParams = villageId ? [villageId] : [];
-
-    if (villageId) {
-      queryAmbulances += " AND (location = ? OR \"villageId\" = ?)";
-      queryPads += " AND (location = ? OR \"villageId\" = ?)";
-      queryPregnancies += ' WHERE "villageId" = ?';
-      queryMalnutrition += ' AND "villageId" = ?';
-      queryVillagers += ' AND "villageId" = ?';
+    // Single query to avoid param-count mismatches across multiple db.get calls
+    let sql, params;
+    if (vId) {
+      sql = `SELECT
+        (SELECT COUNT(*) FROM ambulance_requests WHERE request_type='ambulance' AND (location=$1 OR "villageId"=$1)) as ambulances,
+        (SELECT COUNT(*) FROM ambulance_requests WHERE request_type='pad_request' AND (location=$1 OR "villageId"=$1)) as pad_requests,
+        (SELECT COUNT(*) FROM pregnancy_data WHERE "villageId"=$1) as pregnancies,
+        (SELECT COUNT(*) FROM malnutrition_data WHERE "villageId"=$1 AND status != 'Normal') as malnutrition,
+        (SELECT COUNT(*) FROM users WHERE role='villager' AND "villageId"=$1) as villagers`;
+      params = [vId];
+    } else {
+      sql = `SELECT
+        (SELECT COUNT(*) FROM ambulance_requests WHERE request_type='ambulance') as ambulances,
+        (SELECT COUNT(*) FROM ambulance_requests WHERE request_type='pad_request') as pad_requests,
+        (SELECT COUNT(*) FROM pregnancy_data) as pregnancies,
+        (SELECT COUNT(*) FROM malnutrition_data WHERE status != 'Normal') as malnutrition,
+        (SELECT COUNT(*) FROM users WHERE role='villager') as villagers`;
+      params = [];
     }
 
-    const [ambulances, pads, pregnancies, malnutrition, villagers] = await Promise.all([
-      db.get(queryAmbulances, villageId ? [villageId, villageId] : []),
-      db.get(queryPads, villageId ? [villageId, villageId] : []),
-      db.get(queryPregnancies, vParams),
-      db.get(queryMalnutrition, vParams),
-      db.get(queryVillagers, vParams),
-    ]);
+    const row = await db.get(sql, params);
+    const c = (v) => parseInt(v ?? 0, 10);
     res.json({
-      ambulances: count(ambulances),
-      pad_requests: count(pads),
-      pregnancies: count(pregnancies),
-      malnutrition_alerts: count(malnutrition),
-      registered_villagers: count(villagers),
+      ambulances: c(row?.ambulances),
+      pad_requests: c(row?.pad_requests),
+      pregnancies: c(row?.pregnancies),
+      malnutrition_alerts: c(row?.malnutrition),
+      registered_villagers: c(row?.villagers),
     });
   } catch (err) {
-    console.error(err);
+    console.error('[NGO STATS]', err.message);
     res.status(500).send({ error: 'Failed to fetch NGO statistics.' });
   }
 });
