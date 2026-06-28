@@ -207,6 +207,7 @@ export default function PricingPage() {
               </div>
             ))}
           </div>
+        </div>
 
         {/* Book a Pilot Demo CTA */}
         <div className="max-w-3xl mx-auto mt-20 bg-gradient-to-br from-emerald-600 to-teal-700 rounded-[2rem] p-8 text-center shadow-lg">
