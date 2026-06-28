@@ -823,35 +823,39 @@ router.get('/stats', auth, checkRole(['ngo', 'admin']), async (req, res) => {
   try {
     const vId = req.user.role !== 'admin' ? req.user.villageId : null;
 
-    // Single query to avoid param-count mismatches across multiple db.get calls
-    let sql, params;
     if (vId) {
-      sql = `SELECT
-        (SELECT COUNT(*) FROM ambulance_requests WHERE request_type='ambulance' AND (location=$1 OR "villageId"=$1)) as ambulances,
-        (SELECT COUNT(*) FROM ambulance_requests WHERE request_type='pad_request' AND (location=$1 OR "villageId"=$1)) as pad_requests,
-        (SELECT COUNT(*) FROM pregnancy_data WHERE "villageId"=$1) as pregnancies,
-        (SELECT COUNT(*) FROM malnutrition_data WHERE "villageId"=$1 AND status != 'Normal') as malnutrition,
-        (SELECT COUNT(*) FROM users WHERE role='villager' AND "villageId"=$1) as villagers`;
-      params = [vId];
+      // PostgreSQL: repeat $1 for each correlated subquery
+      const row = await db.get(
+        `SELECT
+          (SELECT COUNT(*) FROM ambulance_requests WHERE request_type='ambulance' AND (location=$1 OR "villageId"=$1)) as ambulances,
+          (SELECT COUNT(*) FROM ambulance_requests WHERE request_type='pad_request' AND (location=$2 OR "villageId"=$2)) as pad_requests,
+          (SELECT COUNT(*) FROM pregnancy_data WHERE "villageId"=$3) as pregnancies,
+          (SELECT COUNT(*) FROM malnutrition_data WHERE "villageId"=$4 AND status != 'Normal') as malnutrition,
+          (SELECT COUNT(*) FROM users WHERE role='villager' AND "villageId"=$5) as villagers`,
+        [vId, vId, vId, vId, vId]
+      );
+      const c = (v) => parseInt(v ?? 0, 10);
+      res.json({
+        ambulances: c(row?.ambulances), pad_requests: c(row?.pad_requests),
+        pregnancies: c(row?.pregnancies), malnutrition_alerts: c(row?.malnutrition),
+        registered_villagers: c(row?.villagers),
+      });
     } else {
-      sql = `SELECT
-        (SELECT COUNT(*) FROM ambulance_requests WHERE request_type='ambulance') as ambulances,
-        (SELECT COUNT(*) FROM ambulance_requests WHERE request_type='pad_request') as pad_requests,
-        (SELECT COUNT(*) FROM pregnancy_data) as pregnancies,
-        (SELECT COUNT(*) FROM malnutrition_data WHERE status != 'Normal') as malnutrition,
-        (SELECT COUNT(*) FROM users WHERE role='villager') as villagers`;
-      params = [];
+      const row = await db.get(
+        `SELECT
+          (SELECT COUNT(*) FROM ambulance_requests WHERE request_type='ambulance') as ambulances,
+          (SELECT COUNT(*) FROM ambulance_requests WHERE request_type='pad_request') as pad_requests,
+          (SELECT COUNT(*) FROM pregnancy_data) as pregnancies,
+          (SELECT COUNT(*) FROM malnutrition_data WHERE status != 'Normal') as malnutrition,
+          (SELECT COUNT(*) FROM users WHERE role='villager') as villagers`
+      );
+      const c = (v) => parseInt(v ?? 0, 10);
+      res.json({
+        ambulances: c(row?.ambulances), pad_requests: c(row?.pad_requests),
+        pregnancies: c(row?.pregnancies), malnutrition_alerts: c(row?.malnutrition),
+        registered_villagers: c(row?.villagers),
+      });
     }
-
-    const row = await db.get(sql, params);
-    const c = (v) => parseInt(v ?? 0, 10);
-    res.json({
-      ambulances: c(row?.ambulances),
-      pad_requests: c(row?.pad_requests),
-      pregnancies: c(row?.pregnancies),
-      malnutrition_alerts: c(row?.malnutrition),
-      registered_villagers: c(row?.villagers),
-    });
   } catch (err) {
     console.error('[NGO STATS]', err.message);
     res.status(500).send({ error: 'Failed to fetch NGO statistics.' });
