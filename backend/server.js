@@ -21,9 +21,8 @@ import { seedData } from './db/seed.js';
 
 import authRouter from './routes/auth.js';
 import villagerRouter from './routes/villager.js';
-import ngoRouter from './routes/ngo.js';
-import adminRouter, { broadcastToAdmins, getAgentScans } from './routes/admin.js';
 import ngoRouter, { broadcastToNGOs } from './routes/ngo.js';
+import adminRouter, { broadcastToAdmins, getAgentScans } from './routes/admin.js';
 import webhookRouter from './routes/webhooks.js';
 import apiKeysRouter from './routes/apiKeys.js';
 import b2bRouter from './routes/b2b.js';
