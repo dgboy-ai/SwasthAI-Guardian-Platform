@@ -38,10 +38,13 @@ export default function SymptomCheckerPage() {
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [activeTab, setActiveTab] = useState('input');
 
-  // Seed offline emergency cache + purge stale on mount
+  // Seed offline emergency cache + purge stale + pre-warm SymptomNet model on mount
   React.useEffect(() => {
     seedEmergencyCache().catch(() => { });
     purgeExpiredCache().catch(() => { });
+    // Pre-warm the 800KB symptomNetMeta.js dynamic import so it's ready
+    // when the user clicks Analyze — eliminates first-call delay.
+    predictSymptomsOffline('fever').catch(() => {});
   }, []);
 
   // Track connectivity changes in real time
@@ -326,9 +329,9 @@ export default function SymptomCheckerPage() {
           return;
         }
         const localPred = await offlinePromise;
+        const now = new Date().toISOString();
+        const tier = getSeverityTier(symptomsToUse, '', otherToUse);
         if (localPred) {
-          const now = new Date().toISOString();
-          const tier = getSeverityTier(symptomsToUse, localPred.prediction || '', otherToUse);
           setResult({
             ...tier,
             aiResult: localPred.prediction,
@@ -351,6 +354,9 @@ export default function SymptomCheckerPage() {
           apiPromise
             .then(r => setCachedSymptomResult(fullText, { prediction: r.data.prediction || '' }, lang).catch(() => { }))
             .catch(() => { });
+        } else {
+          // Offline model failed too — show a basic severity-based result
+          setResult({ ...tier, aiResult: '', offline: true, error: true, dbWriteTimestamp: now, dynamoDbWriteTimestamp: now });
         }
       }
     } catch (err) {
