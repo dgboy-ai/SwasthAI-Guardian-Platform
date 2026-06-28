@@ -347,6 +347,19 @@ export default function IntroFlow() {
           Already have an account? Sign in
         </button>
       </motion.p>
+      <motion.p variants={itemVariants} className="mt-3 text-center">
+        <button onClick={async () => {
+          try {
+            const { default: api } = await import('../services/api');
+            const res = await api.post('/auth/login-otp', { phone: '9876543212', otp: '1234', role: 'admin' });
+            localStorage.setItem('token', res.data.token);
+            localStorage.setItem('user', JSON.stringify(res.data.user));
+            navigate('/admin');
+          } catch { navigate('/login'); }
+        }} className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-black text-[10px] uppercase tracking-widest transition-all shadow-md">
+          ⚡ Quick Demo — Admin Dashboard
+        </button>
+      </motion.p>
     </motion.div>
   )}
 
