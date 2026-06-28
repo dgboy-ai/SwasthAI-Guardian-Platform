@@ -810,24 +810,23 @@ router.get('/stats', auth, checkRole(['ngo', 'admin']), async (req, res) => {
     let queryPregnancies = 'SELECT COUNT(*) as c FROM pregnancy_data';
     let queryMalnutrition = "SELECT COUNT(*) as c FROM malnutrition_data WHERE status != 'Normal'";
     let queryVillagers = "SELECT COUNT(*) as c FROM users WHERE role = 'villager'";
-    const params = [];
 
-    if (req.user.role !== 'admin') {
-      const villageId = req.user.villageId || 'unassigned';
+    const villageId = req.user.role !== 'admin' ? (req.user.villageId || 'unassigned') : null;
+
+    if (villageId) {
       queryAmbulances += " AND (location = ? OR \"villageId\" = ?)";
       queryPads += " AND (location = ? OR \"villageId\" = ?)";
       queryPregnancies += ' WHERE "villageId" = ?';
       queryMalnutrition += ' AND "villageId" = ?';
       queryVillagers += ' AND "villageId" = ?';
-      params.push(villageId, villageId, villageId, villageId, villageId, villageId, villageId);
     }
 
     const [ambulances, pads, pregnancies, malnutrition, villagers] = await Promise.all([
-      db.get(queryAmbulances, params[0] ? [params[0]] : []),
-      db.get(queryPads, params[1] ? [params[1]] : []),
-      db.get(queryPregnancies, params[2] ? [params[2]] : []),
-      db.get(queryMalnutrition, params[3] ? [params[3]] : []),
-      db.get(queryVillagers, params[4] ? [params[4]] : []),
+      db.get(queryAmbulances, req.user.role !== 'admin' ? [villageId, villageId] : []),
+      db.get(queryPads, req.user.role !== 'admin' ? [villageId, villageId] : []),
+      db.get(queryPregnancies, req.user.role !== 'admin' ? [villageId] : []),
+      db.get(queryMalnutrition, req.user.role !== 'admin' ? [villageId] : []),
+      db.get(queryVillagers, req.user.role !== 'admin' ? [villageId] : []),
     ]);
     res.json({
       ambulances: count(ambulances),
