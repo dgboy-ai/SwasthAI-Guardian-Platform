@@ -267,7 +267,7 @@ router.post('/seed-hackathon', async (req, res) => {
     for (const u of users) {
       await db.run(
         `INSERT INTO users (phone, name, role, "villageId") VALUES (?, ?, ?, ?)
-         ON CONFLICT(phone) DO UPDATE SET name=EXCLUDED.name, role=EXCLUDED.role`,
+         ON CONFLICT(phone) DO UPDATE SET name=EXCLUDED.name, role=EXCLUDED.role, "villageId"=EXCLUDED."villageId"`,
         [u.phone, u.name, u.role, u.villageId]
       );
     }
