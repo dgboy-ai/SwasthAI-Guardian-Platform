@@ -91,7 +91,9 @@ export default function PadRequestForm() {
       setSuccess(true);
     } catch (err) {
       const status = err.response?.status;
-      const serverMsg = err.response?.data?.error;
+      const serverMsg = typeof err.response?.data?.error === 'string'
+        ? err.response.data.error
+        : err.response?.data?.error?.message || 'Request failed. Please try again.';
 
       if (status === 401) {
         setError('Session expired. Please log in again and retry.');
