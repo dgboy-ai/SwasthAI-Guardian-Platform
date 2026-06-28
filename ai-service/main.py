@@ -489,7 +489,7 @@ async def predict_disease(data: SymptomInput):
             
             # Use Deep Model only if confidence is very high (> 0.70)
             if confidence >= 0.70:
-                return make_prediction_response(prediction, confidence, alternatives, "Deep-Transformer-Neural-Net", "64.8% (101 diseases, 7 languages)")
+                return make_prediction_response(prediction, confidence, alternatives, "Deep-Transformer-Neural-Net", "64.6% (101 diseases, 7 languages)")
             else:
                 print(f"[HYBRID] Deep Model confidence borderline ({confidence}). Checking Random Forest for keyword confirmation...")
 
@@ -524,7 +524,7 @@ async def predict_disease(data: SymptomInput):
             "is_uncertain": True
         }
 
-    return make_prediction_response(rf_prediction, rf_confidence, rf_alternatives, "RandomForest-TF-IDF", "49.7% (101 diseases, 7 languages)")
+    return make_prediction_response(rf_prediction, rf_confidence, rf_alternatives, "LogisticRegression", "71.1% (101 diseases, 7 languages)")
 
 # ── ENDPOINT 2: Pregnancy Risk ────────────────────────────────────────────────
 @app.post("/predict/pregnancy_risk")
@@ -843,7 +843,7 @@ def health_check():
         "disease_classes": list(disease_pipeline.classes_) if disease_pipeline else [],
         "model_accuracy": {
             "symptomnet_dl":   "64.6% (101 diseases, 7 languages)",
-            "random_forest":   "51.8% (fallback)",
+            "logistic_regression": "71.1% (primary)",
             "rag_threshold":   0.45,
             "rag_chunks":      243,
             "rag_f1":          1.00,

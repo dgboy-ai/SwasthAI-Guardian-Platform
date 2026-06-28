@@ -23,7 +23,7 @@ export default function AboutPage() {
             SwasthAI Guardian provides a unified AI-powered platform connecting villagers, ASHA workers, NGOs, and district health officials. Key capabilities include:
           </p>
           <ul className="list-disc pl-6 text-slate-600 space-y-2 mt-4">
-            <li><strong>AI Symptom Checker</strong> — Offline-first ML model (101 diseases, 64.8% accuracy, 7 languages)</li>
+            <li><strong>AI Symptom Checker</strong> — Offline-first ML model (101 diseases, 64.6% accuracy, 7 languages)</li>
             <li><strong>Sakhi AI</strong> — Women's health chatbot with RAG over WHO/MoHFW protocols</li>
             <li><strong>Outbreak Monitor</strong> — Autonomous agent scanning for disease clusters and outbreak detection</li>
             <li><strong>Ambulance Dispatch</strong> — Real-time emergency geolocation and routing</li>

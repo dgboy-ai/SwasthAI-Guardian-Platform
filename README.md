@@ -106,7 +106,7 @@ Most healthcare apps simply call a third-party LLM API and display the output. S
 An admin-protected `/verify` route exposes transparent, real-time proof of the AWS database infrastructure. Judges can log in with the admin demo credentials below to access it.
 
 - **Aurora PostgreSQL**: Connection status, pool health, query latency, item counts per table
-- **DynamoDB**: All 5 tables with GSIs, TTL configuration, item counts, access patterns
+- **DynamoDB**: 5 tables (4 with GSIs; security_audit_logs uses scan), TTL configuration, item counts, access patterns
 - **AI Service**: Module status, RAG configuration, model availability
 - **Tech Stack**: Full architecture overview with deployment details
 - **Demo Credentials**: Visible on-page for easy judge access
@@ -123,7 +123,7 @@ Demo data is automatically seeded on server startup if the database is empty. Fo
 POST https://swasthai-guardian-platform-0jsb.onrender.com/api/admin/seed-hackathon
 ```
 
-Seeded data includes: 5 villages, 4 users, 6 pregnancies, 8 symptom records, 4 referrals, 3 ambulances, 4 vaccination records in Aurora. 5 outbreak events, 3 emergency streams, 5 village node states in DynamoDB.
+Seeded data includes: 5 villages, 4 users, 6 pregnancies, 8 symptom records, 4 referrals, 3 ambulances, 5 vaccination records in Aurora. 5 outbreak events, 3 emergency streams, 5 village node states in DynamoDB.
 
 ---
 
@@ -149,15 +149,16 @@ Seeded data includes: 5 villages, 4 users, 6 pregnancies, 8 symptom records, 4 r
 ### Login (Password Mode — works fully offline)
 | Role | Email/Username | Password | Notes |
 | :--- | :--- | :--- | :--- |
-| Admin | `admin` | `Demo@1234` | Works without backend via offline cache |
-| ASHA Worker | `asha` | `Demo@1234` | Offline maternal record access |
+| Admin | `admin@swasthai.in` | `Demo@1234` | Works without backend via offline cache |
+| ASHA Worker | `9876543211` | `Demo@1234` | Offline maternal record access |
+| Villager | `9876543210` | `Demo@1234` | Offline symptom checker |
 
 ### Seed Database
 ```bash
 POST https://swasthai-guardian-platform-0jsb.onrender.com/api/admin/seed-hackathon
 ```
 *(Current Render backend deployment. Replace host if re-deployed to a new URL.)*
-Seeds: 5 villages, 4 users, 6 pregnancies, 8 symptom records, 4 referrals, 3 ambulances, 4 vaccination records (Aurora). 5 outbreak events, 3 emergency streams, 5 village node states (DynamoDB).
+Seeds: 5 villages, 4 users, 6 pregnancies, 8 symptom records, 4 referrals, 3 ambulances, 5 vaccination records (Aurora). 5 outbreak events, 3 emergency streams, 5 village node states (DynamoDB).
 
 ---
 

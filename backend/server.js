@@ -620,7 +620,7 @@ if (isProduction && cluster.isPrimary && maxWorkers > 1) {
         guardrail_status: 'clinical safety guardrails active; advice is conservative and escalation-oriented',
         modules: [
           'SymptomNet-DL (PyTorch, 64.6% accuracy, 101 diseases)',
-          'RandomForest-TFIDF (fallback, 51.8% accuracy)',
+          'LogisticRegression (primary, 71.1% accuracy)',
           'RAG-Sakhi (243 chunks, threshold=0.45, F1=1.00, conversation memory)',
           'OutbreakAgent (autonomous 30min loop, Groq llama-3.3-70b-versatile)',
           'SkinAnalyzer (on-device pixel analysis)',
