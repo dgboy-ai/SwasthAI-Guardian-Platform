@@ -916,7 +916,7 @@ export default function ASHADashboard() {
               <h3 className="text-xs font-bold text-slate-900">AI Priority Center</h3>
               <span className="px-1.5 py-0.5 text-[9px] font-semibold bg-amber-50 text-amber-700 rounded-full">4 Priorities</span>
             </div>
-            <button onClick={() => navigate('/asha/priority')} className="text-[10px] font-semibold text-emerald-600 hover:text-emerald-700 transition-colors">
+            <button onClick={() => navigate('/ngo/alerts')} className="text-[10px] font-semibold text-emerald-600 hover:text-emerald-700 transition-colors">
               Manage Priorities →
             </button>
           </div>
@@ -2251,7 +2251,7 @@ export default function ASHADashboard() {
 
                   <div className="flex gap-2">
                     <button 
-                      onClick={() => { setActiveKPIModal(null); navigate('/ambulance'); }}
+                      onClick={() => { setActiveKPIModal(null); navigate('/monitor'); }}
                       className="flex-1 py-2.5 bg-red-600 text-white rounded-xl text-xs font-black uppercase tracking-wider text-center active:scale-95 transition-transform shadow shadow-red-500/10"
                     >
                       Open Ambulance Fleet Map
@@ -2758,8 +2758,8 @@ export default function ASHADashboard() {
                   { label: 'Field Dashboard', icon: Home, route: '/ngo' },
                   { label: 'Maternal Tracking', icon: Heart, route: '/ngo/maternal' },
                   { label: 'Child Malnutrition', icon: Baby, route: '/ngo/child-nutrition' },
-                  { label: 'Symptoms Checker', icon: Stethoscope, route: '/symptoms' },
-                  { label: 'Emergency Center', icon: Ambulance, route: '/ambulance' },
+                  { label: 'Skin Disease Checker', icon: Stethoscope, route: '/skin-disease' },
+                  { label: 'Monitoring Center', icon: Ambulance, route: '/monitor' },
                   { label: 'AWS Aurora Sync', icon: RefreshCw, action: handleSync }
                 ].map((m, idx) => {
                   const NavIcon = m.icon;

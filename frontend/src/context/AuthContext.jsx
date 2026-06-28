@@ -299,6 +299,7 @@ export const AuthProvider = ({ children }) => {
       try {
         const offlineUsers = JSON.parse(localStorage.getItem('swasthai_offline_user_cache') || '[]');
         const matchedUser = offlineUsers.find(u =>
+          (u.id && u.id === identifier) ||
           (u.email && u.email.toLowerCase() === identifier.toLowerCase()) ||
           (u.phone && u.phone === identifier) ||
           (u.username && u.username.toLowerCase() === identifier.toLowerCase())
@@ -306,7 +307,7 @@ export const AuthProvider = ({ children }) => {
 
         if (matchedUser) {
           // Must match credential hash AND role. This is still evaluation/demo cache, not production authentication.
-          const matchedIdentifier = matchedUser.email || matchedUser.phone || matchedUser.username;
+          const matchedIdentifier = matchedUser.id || matchedUser.email || matchedUser.phone || matchedUser.username;
           if (matchedUser.credentialHash !== demoCredentialHash(matchedIdentifier, matchedUser.role, password)) {
             throw new Error('Incorrect password.');
           }
