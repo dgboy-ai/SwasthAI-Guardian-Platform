@@ -839,11 +839,11 @@ router.get('/stats', auth, checkRole(['ngo', 'admin']), async (req, res) => {
     }
 
     const [ambulances, pads, pregnancies, malnutrition, villagers] = await Promise.all([
-      db.get(queryAmbulances, req.user.role !== 'admin' ? [villageId, villageId] : []),
-      db.get(queryPads, req.user.role !== 'admin' ? [villageId, villageId] : []),
-      db.get(queryPregnancies, req.user.role !== 'admin' ? [villageId] : []),
-      db.get(queryMalnutrition, req.user.role !== 'admin' ? [villageId] : []),
-      db.get(queryVillagers, req.user.role !== 'admin' ? [villageId] : []),
+      db.get(queryAmbulances, villageId ? [villageId, villageId] : []),
+      db.get(queryPads, villageId ? [villageId, villageId] : []),
+      db.get(queryPregnancies, villageId ? [villageId] : []),
+      db.get(queryMalnutrition, villageId ? [villageId] : []),
+      db.get(queryVillagers, villageId ? [villageId] : []),
     ]);
     res.json({
       ambulances: count(ambulances),
