@@ -255,8 +255,8 @@ export default function SymptomCheckerPage() {
         return;
       }
 
-      if (!isOnline) {
-        // Run Local SymptomNet fully offline
+      if (!isOnline || user?.isOfflineSession) {
+        // Run Local SymptomNet fully offline (also used for demo/offline sessions to avoid 401)  
         const localPred = await predictSymptomsOffline(fullText);
         const tier = getSeverityTier(symptomsToUse, localPred.prediction || '', otherToUse);
         const finalRes = {
