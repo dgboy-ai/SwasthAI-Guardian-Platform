@@ -97,7 +97,7 @@ export default function IntroFlow() {
           transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
           className="absolute bottom-[20%] right-[5%] w-[550px] h-[550px] bg-gradient-to-tl from-cyan-400/20 to-emerald-300/15 rounded-full blur-[90px] opacity-65"
         />
-        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/grid-me.png')] opacity-[0.04]" />
+        <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Crect x='0' y='0' width='1' height='20' fill='%23000'/%3E%3Crect x='0' y='0' width='20' height='1' fill='%23000'/%3E%3C/svg%3E")` }} />
       </div>
 
       <AnimatePresence mode="wait">

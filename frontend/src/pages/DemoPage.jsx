@@ -80,7 +80,7 @@ const TECH_STACK = [
 ];
 
 const IMPACT = [
-  { val: '600M+', label: 'Rural Indians served' },
+  { val: '600M+', label: 'Rural Indians addressable' },
   { val: '1.4M',  label: 'ASHA workers supported' },
   { val: '101',   label: 'Disease classes' },
   { val: '6',     label: 'Indian languages' },

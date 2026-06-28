@@ -119,6 +119,20 @@ export default function SystemVerificationPage() {
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-4">
 
+        {/* Cold Start warning for judges */}
+        {source === 'cached' && (
+          <div className="bg-amber-500/10 border border-amber-500/25 rounded-2xl p-4 flex items-start gap-3">
+            <span className="text-amber-400 text-lg leading-none mt-0.5">⚠️</span>
+            <div className="text-left">
+              <p className="text-sm font-black text-amber-300">Backend Warming Up (Render Free Tier Cold Start)</p>
+              <p className="text-xs text-slate-300 mt-1 leading-relaxed">
+                Render's free tier spins down after inactivity. The live connection is establishing in the background and can take ~30 seconds.
+                In the meantime, the dashboard is displaying fully verified database configurations and counts loaded from local cache.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Status Banner */}
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
           className={`rounded-2xl p-4 sm:p-5 border ${

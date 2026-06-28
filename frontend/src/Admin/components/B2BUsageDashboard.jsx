@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Building2, Key, Users, Database, Globe, PhoneCall, Shield } from 'lucide-react';
+import { Building2, Key, Users, Database, Globe, PhoneCall, Shield, FileText, Baby, Truck } from 'lucide-react';
 import adminService from '../../services/adminService';
 
 const TENANT_COLORS = {
@@ -60,10 +60,16 @@ function TenantCard({ tenant }) {
       </div>
       <div className="space-y-1">
         <p className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">Records</p>
-        <div className="flex flex-wrap gap-0.5">
-          <span className="px-1.5 py-0.5 bg-white/70 border border-slate-200 rounded text-[8px] font-mono text-slate-600">📋 {tenant.records.symptoms} symptoms</span>
-          <span className="px-1.5 py-0.5 bg-white/70 border border-slate-200 rounded text-[8px] font-mono text-slate-600">🤰 {tenant.records.pregnancies} preg.</span>
-          <span className="px-1.5 py-0.5 bg-white/70 border border-slate-200 rounded text-[8px] font-mono text-slate-600">🚑 {tenant.records.emergencies} emerg.</span>
+        <div className="flex flex-wrap gap-1">
+          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-white/70 border border-slate-200 rounded text-[8px] font-mono text-slate-600">
+            <FileText className="w-2.5 h-2.5 text-slate-500" /> {tenant.records.symptoms} symptoms
+          </span>
+          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-white/70 border border-slate-200 rounded text-[8px] font-mono text-slate-600">
+            <Baby className="w-2.5 h-2.5 text-slate-500" /> {tenant.records.pregnancies} preg.
+          </span>
+          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-white/70 border border-slate-200 rounded text-[8px] font-mono text-slate-600">
+            <Truck className="w-2.5 h-2.5 text-slate-500" /> {tenant.records.emergencies} emerg.
+          </span>
         </div>
       </div>
       {tenant.villages.population > 0 && (

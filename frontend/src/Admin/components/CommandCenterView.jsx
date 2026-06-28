@@ -517,8 +517,8 @@ export default function CommandCenterView({
             </div>
             <div className="space-y-2.5">
               {[
-                { label: 'Sakhi RAG Status', right: <span className="text-xs font-black text-emerald-600 flex items-center gap-1">Connected <span className="text-[10px] font-normal text-slate-400">(430ms)</span></span> },
-                { label: 'Offline Sync Queue', right: <span className="text-xs font-black text-rose-600">12 pending</span> },
+                { label: 'Sakhi RAG Status', right: <span className="text-xs font-black text-emerald-600 flex items-center gap-1">Active <span className="text-[10px] font-normal text-slate-400">(RAG + LLM)</span></span> },
+                { label: 'Offline Sync Queue', right: <span className={`text-xs font-black ${(SM?.pendingRecords ?? 0) > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>{SM?.pendingRecords ?? 0} pending</span> },
                 { label: 'Demo Evaluation Toolkit', right: <span className={`px-2 py-0.5 rounded text-xs font-black border ${demoTourMode ? 'bg-blue-50 text-blue-700 border-blue-200 animate-pulse' : 'bg-slate-50 text-slate-400 border-slate-200'}`}>{demoTourMode ? 'Active' : 'Inactive'}</span> },
                 { label: 'Network Simulator Status', right: <span className="px-2 py-0.5 rounded text-xs font-black bg-emerald-50 text-emerald-700 border border-emerald-200">Normal</span> },
                 { label: 'Outbreak AI Engine', right: <span className="px-2 py-0.5 rounded text-xs font-black bg-emerald-50 text-emerald-700 border border-emerald-200">Scanning</span> },

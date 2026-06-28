@@ -385,6 +385,7 @@ export default function LandingPage() {
               {[
                 { label: 'Amazon Aurora', color: 'bg-orange-50 text-orange-600 border-orange-100' },
                 { label: 'DynamoDB', color: 'bg-yellow-50 text-yellow-700 border-yellow-100' },
+                { label: 'Vercel v0', color: 'bg-violet-50 text-violet-700 border-violet-100' },
                 { label: 'Offline-First PWA', color: 'bg-emerald-50 text-emerald-700 border-emerald-100' },
                 { label: 'IndexedDB Queue', color: 'bg-blue-50 text-blue-700 border-blue-100' },
                 { label: 'DISHA-Compliant', color: 'bg-purple-50 text-purple-700 border-purple-100' },
