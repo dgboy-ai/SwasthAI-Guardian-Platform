@@ -7,14 +7,15 @@ import {
 } from 'lucide-react';
 import api from '../../services/api';
 
-const DISTRICTS = ['Sehore', 'Bhopal', 'Indore', 'Varanasi', 'Pune'];
+const DISTRICTS = ['Varanasi', 'Lucknow', 'Sehore', 'Bhopal', 'Indore', 'Pune'];
 
 /* ── Per-district color palette ── */
 const PAL = {
+  Varanasi: { accent: '#d97706', light: '#fffbeb', mid: '#fef3c7', border: '#fcd34d', text: '#78350f', bar: '#f59e0b', ring: '#fbbf24' },
+  Lucknow:  { accent: '#0891b2', light: '#ecfeff', mid: '#cffafe', border: '#67e8f9', text: '#155e75', bar: '#06b6d4', ring: '#22d3ee' },
   Sehore:   { accent: '#059669', light: '#ecfdf5', mid: '#d1fae5', border: '#6ee7b7', text: '#065f46', bar: '#10b981', ring: '#34d399' },
   Bhopal:   { accent: '#2563eb', light: '#eff6ff', mid: '#dbeafe', border: '#93c5fd', text: '#1e40af', bar: '#3b82f6', ring: '#60a5fa' },
   Indore:   { accent: '#7c3aed', light: '#f5f3ff', mid: '#ede9fe', border: '#c4b5fd', text: '#5b21b6', bar: '#8b5cf6', ring: '#a78bfa' },
-  Varanasi: { accent: '#d97706', light: '#fffbeb', mid: '#fef3c7', border: '#fcd34d', text: '#78350f', bar: '#f59e0b', ring: '#fbbf24' },
   Pune:     { accent: '#e11d48', light: '#fff1f2', mid: '#ffe4e6', border: '#fca5a5', text: '#881337', bar: '#f43f5e', ring: '#fb7185' },
 };
 const DEFAULT_PAL = PAL.Sehore;
@@ -205,29 +206,57 @@ export default function TenantOverview({ activeDistrict }) {
   const [loading, setLoading] = useState(true);
 
   const DEMO_TENANT_DATA = {
-    Sehore:   { totalUsers: 82000, totalNgos: 24, emergencyCount: 176, sanitaryCount: 420, status: 'connected' },
-    Bhopal:   { totalUsers: 65000, totalNgos: 18, emergencyCount: 142, sanitaryCount: 350, status: 'connected' },
-    Indore:   { totalUsers: 54000, totalNgos: 15, emergencyCount: 118, sanitaryCount: 280, status: 'connected' },
-    Varanasi: { totalUsers: 48000, totalNgos: 12, emergencyCount: 97,  sanitaryCount: 230, status: 'connected' },
-    Pune:     { totalUsers: 35000, totalNgos: 10, emergencyCount: 72,  sanitaryCount: 180, status: 'connected' },
+    Varanasi: { totalUsers: 1, totalNgos: 1, emergencyCount: 1, sanitaryCount: 1, status: 'connected' },
+    Lucknow:  { totalUsers: 0, totalNgos: 0, emergencyCount: 0, sanitaryCount: 0, status: 'connected' },
+    Sehore:   { totalUsers: 0, totalNgos: 0, emergencyCount: 0, sanitaryCount: 0, status: 'connected' },
+    Bhopal:   { totalUsers: 0, totalNgos: 0, emergencyCount: 0, sanitaryCount: 0, status: 'connected' },
+    Indore:   { totalUsers: 0, totalNgos: 0, emergencyCount: 0, sanitaryCount: 0, status: 'connected' },
+    Pune:     { totalUsers: 0, totalNgos: 0, emergencyCount: 0, sanitaryCount: 0, status: 'connected' },
   };
 
   useEffect(() => {
+    let active = true;
     const loadAll = async () => {
       setLoading(true);
       const results = {};
-      await Promise.all(DISTRICTS.map(async d => {
-        try {
-          const res = await api.get(`/admin/summary?districtId=${d}`);
-          results[d] = { ...res.data, status: 'connected' };
-        } catch {
-          results[d] = DEMO_TENANT_DATA[d] || { totalUsers: 0, totalNgos: 0, emergencyCount: 0, sanitaryCount: 0, status: 'unreachable' };
+      const queryDistrictMap = {
+        Varanasi: 'varanasi_district',
+        Lucknow: 'lucknow_district',
+        Sehore: 'sehore_district',
+        Bhopal: 'bhopal_district',
+        Indore: 'indore_district',
+        Pune: 'pune_district',
+      };
+
+      try {
+        const promises = DISTRICTS.map(async d => {
+          const queryId = queryDistrictMap[d] || d;
+          try {
+            const res = await api.get(`/admin/summary?districtId=${queryId}`);
+            if (active) {
+              results[d] = { ...res.data, status: 'connected' };
+            }
+          } catch {
+            if (active) {
+              results[d] = DEMO_TENANT_DATA[d] || { totalUsers: 0, totalNgos: 0, emergencyCount: 0, sanitaryCount: 0, status: 'unreachable' };
+            }
+          }
+        });
+        await Promise.all(promises);
+        if (active) {
+          setTenantData(results);
+          setLoading(false);
         }
-      }));
-      setTenantData(results);
-      setLoading(false);
+      } catch (err) {
+        if (active) {
+          setLoading(false);
+        }
+      }
     };
     loadAll();
+    return () => {
+      active = false;
+    };
   }, [activeDistrict]);
 
   /* ── Aggregate totals ── */
