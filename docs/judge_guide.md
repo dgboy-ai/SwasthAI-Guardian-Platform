@@ -83,7 +83,7 @@ Review these docs for the full technical picture:
 
 | Differentiator | SwasthAI | Typical Submission |
 |:---|---:|:---|
-| **Real AWS infrastructure** | Aurora PostgreSQL + DynamoDB (5 tables, 7 GSIs) | Mock/Fake cloud config |
+| **Real AWS infrastructure** | Aurora PostgreSQL + DynamoDB (5 tables, 8 GSIs) | Mock/Fake cloud config |
 | **Data provenance** | Every response tagged `_db: postgresql` / `_db: dynamodb` | No data source tracking |
 | **Offline-first, not offline-tolerant** | 5 features fully offline (ONNX, IndexedDB, localStorage) | "Sorry, no internet" spinners |
 | **B2B API key system** | Scoped keys, usage tracking, tenant isolation | Single hardcoded key or none |

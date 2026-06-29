@@ -60,7 +60,7 @@ const PILLARS = [
 const TECH_STACK = [
   { cat: 'Frontend',    tech: 'React 18 + Vite PWA · Vercel Edge · React.lazy() code splitting' },
   { cat: 'Relational DB', tech: 'Amazon Aurora PostgreSQL · ap-south-1 · pg.Pool:20 · ACID' },
-  { cat: 'NoSQL DB',    tech: 'Amazon DynamoDB · PAY_PER_REQUEST · 5 tables · 7 GSIs' },
+  { cat: 'NoSQL DB',    tech: 'Amazon DynamoDB · PAY_PER_REQUEST · 5 tables · 8 GSIs' },
   { cat: 'AI/ML',       tech: 'FastAPI + SymptomNet MLP + Groq Llama-3.3-70b + ONNX offline' },
   { cat: 'Backend',     tech: 'Node.js + Express · Render · SSE · WebSocket telemetry' },
   { cat: 'Security',    tech: 'JWT + Bcrypt + DISHA consent · PII redaction · Helmet headers' },

@@ -73,7 +73,7 @@ const ROLES = [
 const TECH_STACK = [
   { icon: Globe,       label: 'Frontend',   val: 'React 18 + Vite + PWA',          sub: 'Vercel Edge' },
   { icon: Database,    label: 'Relational',  val: 'Amazon Aurora PostgreSQL',        sub: 'ap-south-1' },
-  { icon: Database,    label: 'NoSQL',       val: 'Amazon DynamoDB PAY_PER_REQUEST', sub: '4 tables + GSIs' },
+  { icon: Database,    label: 'NoSQL',       val: 'Amazon DynamoDB PAY_PER_REQUEST', sub: '5 tables · 8 GSIs' },
   { icon: BrainCircuit,label: 'LLM',         val: 'Groq Llama-3.3-70b',             sub: 'RAG + Agent' },
   { icon: Stethoscope, label: 'AI Models',   val: 'PyTorch SymptomNet',              sub: '71.1% LR · 64.6% DL' },
   { icon: WifiOff,     label: 'Offline',     val: 'IndexedDB Sync Queue',            sub: 'Zero-signal villages' },
