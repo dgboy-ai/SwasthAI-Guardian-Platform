@@ -2,7 +2,7 @@
 
 Scaffolded with v0 · Amazon Aurora PostgreSQL + DynamoDB · Offline-First Rural Health AI
 
-[Live Demo](https://swasth-ai-guardian-platform.vercel.app) · [Deploy Guide](docs/DEPLOYMENT.md) · [Judge's Guide](docs/judge_guide.md) · [Changelog](docs/CHANGELOG.md)
+[Live Demo](https://swasth-ai-guardian-platform.vercel.app) · [Demo Video](https://youtu.be/VCmt5OPmDGs) · [Deploy Guide](docs/DEPLOYMENT.md) · [Judge's Guide](docs/judge_guide.md) · [Changelog](docs/CHANGELOG.md)
 
 ![Vercel](https://img.shields.io/badge/Vercel-v0-000000?logo=vercel) ![AWS Aurora](https://img.shields.io/badge/AWS-Aurora%20PostgreSQL-FF9900?logo=amazonaws) ![AWS DynamoDB](https://img.shields.io/badge/AWS-DynamoDB-FF9900?logo=amazonaws) ![React 18](https://img.shields.io/badge/React-18-61DAFB?logo=react) ![FastAPI](https://img.shields.io/badge/Python-FastAPI-009688?logo=fastapi) ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker) ![Groq](https://img.shields.io/badge/Groq-Llama--3.3--70b-F55036?logo=groq)
 
