@@ -242,10 +242,10 @@ export default function TenantOverview({ activeDistrict }) {
   /* ── Aggregate totals ── */
   const totals = DISTRICTS.reduce((acc, d) => {
     const td = tenantData[d] || {};
-    acc.users  += td.totalUsers ?? 0;
-    acc.ngos   += td.totalNgos ?? 0;
-    acc.emerg  += td.emergencyCount ?? 0;
-    acc.pads   += td.sanitaryCount ?? 0;
+    acc.users  += parseInt(td.totalUsers ?? 0, 10);
+    acc.ngos   += parseInt(td.totalNgos ?? 0, 10);
+    acc.emerg  += parseInt(td.emergencyCount ?? 0, 10);
+    acc.pads   += parseInt(td.sanitaryCount ?? 0, 10);
     return acc;
   }, { users: 0, ngos: 0, emerg: 0, pads: 0 });
 
