@@ -485,13 +485,7 @@ router.get('/pads', auth, checkRole(['ngo', 'admin']), async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 100;
     const offset = (parseInt(req.query.page || 1) - 1) * limit;
-    let rows;
-    if (req.user.role !== 'admin') {
-      const villageId = req.user.villageId || 'unassigned';
-      rows = await db.all("SELECT * FROM ambulance_requests WHERE request_type = 'pad_request' AND (location = ? OR \"villageId\" = ?) ORDER BY id DESC LIMIT ? OFFSET ?", [villageId, villageId, limit, offset]);
-    } else {
-      rows = await db.all("SELECT * FROM ambulance_requests WHERE request_type = 'pad_request' ORDER BY id DESC LIMIT ? OFFSET ?", [limit, offset]);
-    }
+    const rows = await db.all("SELECT * FROM ambulance_requests WHERE request_type = 'pad_request' ORDER BY id DESC LIMIT ? OFFSET ?", [limit, offset]);
     res.send(rows);
   } catch (err) {
     console.error(err);
