@@ -2,13 +2,14 @@
 
 > *We didn't build AI for doctors. We built it for the 600,000 villages that don't have one.*
 
-[![Live Demo](https://img.shields.io/badge/🌐%20Live%20Demo-swasthai.vercel.app-059669?style=for-the-badge)](https://swasth-ai-guardian-platform.vercel.app) [![Demo Video](https://img.shields.io/badge/▶%20Demo%20Video-YouTube-FF0000?style=for-the-badge&logo=youtube)](https://youtu.be/VCmt5OPmDGs) [![Judge's Guide](https://img.shields.io/badge/📋%20Judge's%20Guide-Read%20Now-6366F1?style=for-the-badge)](docs/judge_guide.md)
+[![Live Demo](https://img.shields.io/badge/🌐%20Live%20Demo-swasthai.vercel.app-059669?style=for-the-badge)](https://swasth-ai-guardian-platform.vercel.app) [![Demo Video](https://img.shields.io/badge/▶%20Demo%20Video-YouTube-FF0000?style=for-the-badge&logo=youtube)](https://youtu.be/VCmt5OPmDGs) [![Judge's Guide](https://img.shields.io/badge/📋%20Judge's%20Guide-Read%20Now-6366F1?style=for-the-badge)](docs/judge_guide.md) [![LinkedIn](https://img.shields.io/badge/💼%20LinkedIn-Post-0A66C2?style=for-the-badge&logo=linkedin)](https://www.linkedin.com/posts/divyansh-professional-profile_swasthaiguardian-h0hackathon-aws-share-7477469300669341696-Skvn/)
 
 ![AWS Aurora](https://img.shields.io/badge/AWS-Aurora%20PostgreSQL-FF9900?logo=amazonaws) ![AWS DynamoDB](https://img.shields.io/badge/AWS-DynamoDB-FF9900?logo=amazonaws) ![Vercel](https://img.shields.io/badge/Vercel-v0-000000?logo=vercel) ![React 18](https://img.shields.io/badge/React-18-61DAFB?logo=react) ![FastAPI](https://img.shields.io/badge/Python-FastAPI-009688?logo=fastapi) ![Groq](https://img.shields.io/badge/Groq-Llama--3.3--70b-F55036?logo=groq)
 
 > **🏆 Tracks:** Monetizable B2B App · Most Impactful · Open Innovation  
 > **👥 Team ID:** `team_ZuoCZ7nsvWVIrutn3eqmYdQD`  
-> **🗓️ Hackathon:** H0: Hack the Zero Stack with Vercel v0 and AWS Databases
+> **🗓️ Hackathon:** H0: Hack the Zero Stack with Vercel v0 and AWS Databases  
+> **🔧 Significantly upgraded during submission period (May 28 – Jun 30):** See [CHANGELOG](docs/CHANGELOG.md) for full list of additions — Aurora PostgreSQL + DynamoDB integration, autonomous Outbreak Agent, Sakhi RAG, camera-verified pad requests, B2B API gateway, SymptomNet DL model, offline-first PWA, 7-language voice I/O, admin/NGO dashboards, and more.
 
 ---
 
