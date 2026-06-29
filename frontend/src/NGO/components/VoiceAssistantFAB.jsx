@@ -5,6 +5,9 @@ import { showToast } from '../../utils/toast';
 const LANGUAGES = [
   { code: 'hi-IN', label: 'Hindi', native: 'हिन्दी' },
   { code: 'mr-IN', label: 'Marathi', native: 'मराठी' },
+  { code: 'bn-IN', label: 'Bengali', native: 'বাংলা' },
+  { code: 'ta-IN', label: 'Tamil', native: 'தமிழ்' },
+  { code: 'te-IN', label: 'Telugu', native: 'తెలుగు' },
   { code: 'en-IN', label: 'English', native: 'English' },
 ];
 
@@ -21,11 +24,13 @@ const VOICE_ACTIONS = [
 ];
 
 const DEMO_COMMANDS = [
-  { text: 'Register pregnancy for Sunita Devi, 7 months, high BP', action: 'pregnancy', lang: 'hi-IN' },
-  { text: 'Log symptoms: cough and fever for Raju Kumar', action: 'symptom', lang: 'hi-IN' },
-  { text: 'Record nutrition: Baby Geeta, weight 8.2kg, MUAC 11.5', action: 'nutrition', lang: 'en-IN' },
+  { text: 'Register pregnancy for Sunita Devi, 7 months, high BP', action: 'pregnancy', lang: 'en-IN' },
+  { text: 'Log symptoms: cough and fever for Raju Kumar', action: 'symptom', lang: 'en-IN' },
   { text: 'गीता देवी के लिए गर्भावस्था पंजीकरण, 8 महीने', action: 'pregnancy', lang: 'hi-IN' },
   { text: 'राजू के लिए लक्षण: खांसी और बुखार, 3 दिन से', action: 'symptom', lang: 'hi-IN' },
+  { text: 'গীতা দেবীর জন্য গর্ভাবস্থা নিবন্ধন, ৭ মাস', action: 'pregnancy', lang: 'bn-IN' },
+  { text: 'கீதா தேவிக்கு கர்ப்பம் பதிவு, 7 மாதம்', action: 'pregnancy', lang: 'ta-IN' },
+  { text: 'గీత దేవి కోసం గర్భం నమోదు, 7 నెలలు', action: 'pregnancy', lang: 'te-IN' },
 ];
 
 const AI_RESPONSES = {

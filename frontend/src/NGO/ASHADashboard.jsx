@@ -105,9 +105,9 @@ export default function ASHADashboard() {
   
   // Real Interactive Data Pools for Modals & Workflows
   const [padRequests, setPadRequests] = useState([
-    { id: 'P001', patientName: 'Geeta Devi', village: 'Village V101', quantity: 1, status: 'pending', timestamp: '10:30 AM' },
-    { id: 'P002', patientName: 'Meena Sharma', village: 'Village V101', quantity: 2, status: 'approved', timestamp: 'Yesterday' },
-    { id: 'P003', patientName: 'Aarti Sen', village: 'Village V102', quantity: 1, status: 'completed', timestamp: '2 days ago' },
+    { id: 'P001', patientName: 'Geeta Devi',    village: 'Village V101, Rampur Sector 4', quantity: 1, status: 'pending',  timestamp: '10:30 AM',   photoBase64: null, gpsCoords: { lat: '26.91840', lng: '83.49732' } },
+    { id: 'P002', patientName: 'Meena Sharma',  village: 'Village V101, Rampur Sector 2', quantity: 2, status: 'approved', timestamp: 'Yesterday',  photoBase64: null, gpsCoords: { lat: '26.91620', lng: '83.49501' } },
+    { id: 'P003', patientName: 'Aarti Sen',     village: 'Village V102, Rampur Sector 1', quantity: 1, status: 'completed',timestamp: '2 days ago', photoBase64: null, gpsCoords: { lat: '26.92010', lng: '83.50120' } },
   ]);
 
   const [emergencyRequests, setEmergencyRequests] = useState([
@@ -986,70 +986,6 @@ export default function ASHADashboard() {
         {/* Live Field Impact Dashboard */}
         <LiveFieldImpact />
 
-        {/* Monthly Impact Summary + Health Trends */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* Monthly Impact Card */}
-          <div className="bg-white border border-slate-100 rounded-xl p-4 sm:p-5 shadow-sm">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-xs font-black uppercase text-slate-800 tracking-wider flex items-center gap-1.5">
-                <BarChart3 className="w-4 h-4 text-[#059669]" /> Monthly Impact
-              </h3>
-              <span className="text-[9px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">June 2026</span>
-            </div>
-            <div className="grid grid-cols-3 gap-3">
-              {[
-                { label: 'Pregnancies', value: '24', sub: '12 high-risk', color: '#F97316' },
-                { label: 'Children', value: '156', sub: '8 SAM cases', color: '#8B5CF6' },
-                { label: 'Vaccinations', value: '312', sub: '91% coverage', color: '#059669' },
-              ].map((item, idx) => (
-                <motion.div
-                  key={item.label}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.1 + idx * 0.08 }}
-                  className="text-center p-2.5 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors">
-                  <p className="text-xl sm:text-2xl font-black text-slate-900">{item.value}</p>
-                  <p className="text-[9px] sm:text-[10px] font-bold text-slate-500">{item.label}</p>
-                  <p className="text-[8px] font-semibold mt-0.5" style={{ color: item.color }}>{item.sub}</p>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-
-          {/* Health Trends Card */}
-          <div className="bg-white border border-slate-100 rounded-xl p-4 sm:p-5 shadow-sm">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-xs font-black uppercase text-slate-800 tracking-wider flex items-center gap-1.5">
-                <TrendingUp className="w-4 h-4 text-[#059669]" /> Health Trends
-              </h3>
-              <span className="text-[9px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">This Week</span>
-            </div>
-            <div className="space-y-2.5">
-              {[
-                { label: 'Maternal Health', value: 78, color: '#059669', trend: 'up', change: '+2%' },
-                { label: 'Child Nutrition', value: 74, color: '#8B5CF6', trend: 'down', change: '-1%' },
-                { label: 'Disease Surveillance', value: 88, color: '#2563EB', trend: 'up', change: '+5%' },
-                { label: 'Emergency Response', value: 92, color: '#F97316', trend: 'up', change: '+3%' },
-              ].map((trend, idx) => (
-                <motion.div
-                  key={trend.label}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.1 + idx * 0.06 }}
-                  className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 min-w-0 flex-1">
-                    <span className="text-[10px] sm:text-xs font-bold text-slate-600 truncate">{trend.label}</span>
-                    <span className={`flex items-center gap-0.5 text-[9px] font-black ${trend.trend === 'up' ? 'text-emerald-600' : 'text-red-500'}`}>
-                      {trend.trend === 'up' ? <TrendingUp className="w-2.5 h-2.5" /> : <TrendingDown className="w-2.5 h-2.5" />}
-                      {trend.change}
-                    </span>
-                  </div>
-                  <span className="text-xs font-black text-slate-700 ml-2">{trend.value}%</span>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </div>
 
         {/* Resource Allocation + Community Risk Heatmap */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -2348,48 +2284,116 @@ export default function ASHADashboard() {
               )}
 
               {activeKPIModal === 'pads' && (
-                <div className="space-y-4">
-                  <p className="text-xs text-slate-600 font-semibold">Sanitary Pad Delivery Logs:</p>
-                  
-                  <div className="space-y-2 max-h-60 overflow-y-auto divide-y divide-slate-50">
-                    {padRequests.map((req, i) => (
-                      <div key={req.id} className="pt-2 flex justify-between items-center text-xs text-left">
-                        <div>
-                          <p className="font-bold text-slate-800">{req.patientName}</p>
-                          <p className="text-[10px] text-slate-500 mt-0.5">{req.village} • qty: {req.quantity} pack</p>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-black text-slate-700 uppercase tracking-wider">Pad Requests — Photo Verified</p>
+                    <span className="text-[9px] font-black px-2 py-1 bg-rose-50 border border-rose-100 text-rose-600 rounded-full uppercase">
+                      {padRequests.filter(r => r.status === 'pending').length} Pending
+                    </span>
+                  </div>
+
+                  <div className="space-y-2.5 max-h-[340px] overflow-y-auto pr-1">
+                    {padRequests.map((req) => (
+                      <div key={req.id} className={`rounded-2xl border p-3 space-y-2.5 transition-colors ${
+                        req.status === 'pending' ? 'bg-rose-50/50 border-rose-100'
+                        : req.status === 'approved' ? 'bg-amber-50/50 border-amber-100'
+                        : 'bg-emerald-50/50 border-emerald-100'
+                      }`}>
+                        {/* Row 1: Photo + Name + Status */}
+                        <div className="flex items-center gap-3">
+                          {/* Selfie thumbnail */}
+                          <div className="relative shrink-0">
+                            {req.photoBase64 ? (
+                              <img
+                                src={req.photoBase64}
+                                alt={req.patientName}
+                                className="w-12 h-12 rounded-xl object-cover border-2 border-white shadow-md"
+                              />
+                            ) : (
+                              <div className="w-12 h-12 rounded-xl bg-slate-100 border-2 border-slate-200 flex items-center justify-center">
+                                <User className="w-6 h-6 text-slate-400" />
+                              </div>
+                            )}
+                            {/* Verified badge */}
+                            <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full border-2 border-white flex items-center justify-center" title="Camera Verified">
+                              <ShieldCheck className="w-2.5 h-2.5 text-white" />
+                            </div>
+                          </div>
+
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-black text-slate-800 leading-tight truncate">{req.patientName}</p>
+                            <p className="text-[10px] font-bold text-slate-500 mt-0.5 truncate">{req.village}</p>
+                            <div className="flex items-center gap-1.5 mt-1">
+                              <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded-full ${
+                                req.status === 'pending'  ? 'bg-rose-100 text-rose-700'
+                                : req.status === 'approved' ? 'bg-amber-100 text-amber-700'
+                                : 'bg-emerald-100 text-emerald-700'
+                              }`}>
+                                {req.status === 'pending' ? '⏳ Pending' : req.status === 'approved' ? '✓ Approved' : '✓ Delivered'}
+                              </span>
+                              <span className="text-[8px] text-slate-400 font-bold">{req.timestamp}</span>
+                            </div>
+                          </div>
                         </div>
-                        <div className="pl-2">
+
+                        {/* Row 2: GPS Location */}
+                        {req.gpsCoords && (
+                          <a
+                            href={`https://maps.google.com/?q=${req.gpsCoords.lat},${req.gpsCoords.lng}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 px-2.5 py-1.5 bg-white/80 border border-slate-100 rounded-xl hover:border-blue-300 hover:bg-blue-50 transition-colors group"
+                          >
+                            <MapPin className="w-3 h-3 text-blue-500 shrink-0" />
+                            <span className="text-[9px] font-black text-blue-600 truncate">
+                              {req.village || `${req.gpsCoords.lat}, ${req.gpsCoords.lng}`}
+                            </span>
+                            <ExternalLink className="w-2.5 h-2.5 text-blue-400 ml-auto shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </a>
+                        )}
+
+                        {/* Row 3: Action buttons */}
+                        <div className="flex gap-1.5">
                           {req.status === 'pending' && (
-                            <button 
+                            <button
                               onClick={() => handleApprovePad(req.id)}
-                              className="bg-[#059669] text-white text-[9px] font-black uppercase px-2 py-1.5 rounded active:scale-95"
+                              className="flex-1 py-2 bg-emerald-600 text-white text-[9px] font-black uppercase tracking-wider rounded-xl active:scale-95 transition-transform hover:bg-emerald-700"
                             >
-                              Approve
+                              ✓ Approve Delivery
                             </button>
                           )}
                           {req.status === 'approved' && (
-                            <button 
+                            <button
                               onClick={() => handleDeliverPad(req.id)}
-                              className="bg-emerald-600 text-white text-[9px] font-black uppercase px-2 py-1.5 rounded active:scale-95"
+                              className="flex-1 py-2 bg-amber-500 text-white text-[9px] font-black uppercase tracking-wider rounded-xl active:scale-95 transition-transform hover:bg-amber-600"
                             >
-                              Deliver
+                              Mark Delivered
                             </button>
                           )}
                           {req.status === 'completed' && (
-                            <span className="text-[9px] font-black text-emerald-600 uppercase bg-emerald-50 border border-emerald-100 px-2 py-1.5 rounded flex items-center gap-0.5">
+                            <div className="flex-1 py-2 bg-emerald-50 border border-emerald-200 text-emerald-700 text-[9px] font-black uppercase tracking-wider rounded-xl flex items-center justify-center gap-1">
                               <CheckCircle className="w-3 h-3" /> Delivered
-                            </span>
+                            </div>
+                          )}
+                          {req.photoBase64 && (
+                            <button
+                              onClick={() => window.open(req.photoBase64, '_blank')}
+                              className="px-3 py-2 bg-white border border-slate-200 text-slate-500 text-[9px] font-black uppercase rounded-xl hover:border-rose-300 hover:text-rose-600 transition-colors"
+                              title="View full photo"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                            </button>
                           )}
                         </div>
                       </div>
                     ))}
                   </div>
-                  
-                  <button 
+
+                  <button
                     onClick={() => setActiveKPIModal(null)}
                     className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-black uppercase tracking-wider text-center active:scale-95 transition-transform"
                   >
-                    Close Pad Request Center
+                    Close
                   </button>
                 </div>
               )}

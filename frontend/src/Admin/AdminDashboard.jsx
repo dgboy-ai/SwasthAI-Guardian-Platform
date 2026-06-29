@@ -48,7 +48,7 @@ const NAV_ITEMS = [
   { id: 'reports', label: 'Reports', icon: BarChart3 },
   { id: 'system', label: 'System Status', icon: Settings },
   { id: 'tenants', label: 'Tenants', icon: Building2 },
-  { id: 'b2b-usage', label: 'B2B Usage', icon: BarChart3 },
+  { id: 'b2b-usage', label: 'District Usage', icon: BarChart3 },
   { id: 'api-keys', label: 'API Keys', icon: Key },
   { id: 'database', label: 'DB Architecture', icon: Database },
   { id: 'pipeline', label: 'Data Pipeline', icon: GitCompareArrows },
@@ -774,7 +774,7 @@ export default function AdminDashboard() {
                   >
                     {DISTRICTS.map(d => <option key={d} value={d}>{d} District</option>)}
                   </select>
-                  <span className="text-[10px] text-slate-400 font-medium">· Multi-Tenant B2B</span>
+                  <span className="text-[10px] text-slate-400 font-medium">· Multi-District Command Platform</span>
                 </div>
               </div>
             </div>

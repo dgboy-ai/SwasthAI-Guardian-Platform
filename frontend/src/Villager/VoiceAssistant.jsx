@@ -4,7 +4,7 @@ import { Mic, MicOff, Volume2, ShieldAlert } from 'lucide-react';
 import api from '../services/api';
 import { useLanguage } from '../context/LanguageContext';
 
-const LANG_MAP = { hi: 'hi-IN', en: 'en-IN', mr: 'mr-IN', ta: 'ta-IN', bn: 'bn-IN' };
+const LANG_MAP = { hi: 'hi-IN', en: 'en-IN', mr: 'mr-IN', ta: 'ta-IN', bn: 'bn-IN', te: 'te-IN' };
 
 const SPEAK_MSG = {
   'hi-IN': (p) => `आपको ${p} का खतरा हो सकता है। कृपया पास के स्वास्थ्य कार्यकर्ता से मिलें।`,
@@ -12,6 +12,7 @@ const SPEAK_MSG = {
   'mr-IN': (p) => `तुम्हाला ${p} ची शक्यता आहे. कृपया जवळच्या आरोग्य कार्यकर्त्याला भेटा.`,
   'ta-IN': (p) => `உங்களுக்கு ${p} இருக்கலாம். அருகிலுள்ள சுகாதார ஊழியரை அணுகவும்.`,
   'bn-IN': (p) => `আপনার ${p} হতে পারে। অনুগ্রহ করে নিকটবর্তী স্বাস্থ্যকর্মীর সাথে যোগাযোগ করুন।`,
+  'te-IN': (p) => `మీకు ${p} సంబంధిత లక్షణాలు ఉండవచ్చు. దయచేసి సమీపంలోని ఆరోగ్య కార్యకర్తను సంప్రదించండి.`,
 };
 
 export default function VoiceAssistant({ onResult }) {
@@ -129,10 +130,10 @@ export default function VoiceAssistant({ onResult }) {
   };
 
   const label = {
-    listening: { hi: 'सुन रहा हूँ...', en: 'Listening...', mr: 'ऐकत आहे...', ta: 'கேட்கிறேன்...', bn: 'শুনছি...' },
-    speak: { hi: 'अपनी समस्या बोलें', en: 'Speak your symptoms', mr: 'तुमची समस्या सांगा', ta: 'உங்கள் அறிகுறிகளை சொல்லுங்கள்', bn: 'আপনার সমস্যা বলুন' },
-    message: { hi: 'आपका संदेश:', en: 'Your message:', mr: 'तुमचा संदेश:', ta: 'உங்கள் செய்தி:', bn: 'আপনার বার্তা:' },
-    speaking: { hi: 'AI बोल रहा है', en: 'AI Speaking', mr: 'AI बोलत आहे', ta: 'AI பேசுகிறது', bn: 'AI বলছে' },
+    listening: { hi: 'सुन रहा हूँ...', en: 'Listening...', mr: 'ऐकत आहे...', ta: 'கேட்கிறேன்...', bn: 'শুনছি...', te: 'వింటున్నాను...' },
+    speak: { hi: 'अपनी समस्या बोलें', en: 'Speak your symptoms', mr: 'तुमची समस्या सांगा', ta: 'உங்கள் அறிகுறிகளை சொல்லுங்கள்', bn: 'আপনার সমস্যা বলুন', te: 'మీ లక్షణాలు చెప్పండి' },
+    message: { hi: 'आपका संदेश:', en: 'Your message:', mr: 'तुमचा संदेश:', ta: 'உங்கள் செய்தி:', bn: 'আপনার বার্তা:', te: 'మీ సందేశం:' },
+    speaking: { hi: 'AI बोल रहा है', en: 'AI Speaking', mr: 'AI बोलत आहे', ta: 'AI பேசுகிறது', bn: 'AI বলছে', te: 'AI మాట్లాడుతోంది' },
   };
   const lang = language || 'en';
 

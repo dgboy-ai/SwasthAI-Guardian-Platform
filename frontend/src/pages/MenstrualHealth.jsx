@@ -4,7 +4,8 @@ import Navbar from '../components/Navbar';
 import {
   MessageCircle, HeartPulse, BookOpen,
   AlertTriangle, CheckCircle, PhoneCall, X,
-  Calendar, Package, Loader, CheckCircle2
+  Calendar, Package, Loader, CheckCircle2,
+  Shield, Apple, Activity, Droplets
 } from 'lucide-react';
 import api from '../services/api';
 import { useLanguage } from '../context/LanguageContext';
@@ -94,10 +95,10 @@ function MenstrualCheckup() {
 function HealthTips() {
   const { t } = useLanguage();
   const tips = [
-    { icon: HeartPulse, color: 'bg-rose-50 text-rose-600', title: 'Change Pads Regularly', desc: 'Change your sanitary pad every 4–6 hours to prevent infections and odor, even if flow is light.' },
-    { icon: HeartPulse, color: 'bg-emerald-50 text-emerald-600', title: 'Eat Iron-Rich Foods', desc: 'Include jaggery (gur), spinach, lentils, and dates in your diet to replenish iron lost during periods.' },
-    { icon: HeartPulse, color: 'bg-amber-50 text-amber-600', title: 'Stay Active & Rest', desc: 'Light walks can ease cramps. Rest is equally important — listen to your body and take breaks.' },
-    { icon: HeartPulse, color: 'bg-blue-50 text-blue-600', title: 'Wash Hands Often', desc: 'Always wash your hands with soap before and after changing pads to prevent bacterial infections.' },
+    { icon: Shield,   color: 'bg-rose-50 text-rose-600',    title: 'Change Pads Regularly',  desc: 'Change your sanitary pad every 4–6 hours to prevent infections and odor, even if flow is light.' },
+    { icon: Apple,    color: 'bg-emerald-50 text-emerald-600', title: 'Eat Iron-Rich Foods',  desc: 'Include jaggery (gur), spinach, lentils, and dates in your diet to replenish iron lost during periods.' },
+    { icon: Activity, color: 'bg-amber-50 text-amber-600',   title: 'Stay Active & Rest',    desc: 'Light walks can ease cramps. Rest is equally important — listen to your body and take breaks.' },
+    { icon: Droplets, color: 'bg-blue-50 text-blue-600',     title: 'Wash Hands Often',      desc: 'Always wash your hands with soap before and after changing pads to prevent bacterial infections.' },
   ];
   return (
     <div className="space-y-6">

@@ -134,7 +134,7 @@ export default function SymptomChecker() {
     if (!SR) return;
     const rec = new SR();
     // Use current app language for recognition — critical for Hindi/Marathi users
-    rec.lang = lang === 'hi' ? 'hi-IN' : lang === 'mr' ? 'mr-IN' : lang === 'ta' ? 'ta-IN' : lang === 'bn' ? 'bn-IN' : 'en-IN';
+    rec.lang = lang === 'hi' ? 'hi-IN' : lang === 'mr' ? 'mr-IN' : lang === 'ta' ? 'ta-IN' : lang === 'bn' ? 'bn-IN' : lang === 'te' ? 'te-IN' : 'en-IN';
     rec.onresult = (e) => {
       const spoken = e.results[0][0].transcript.toLowerCase();
       // Keyword map: spoken words → symptom IDs
@@ -255,7 +255,7 @@ export default function SymptomChecker() {
     if (!window.speechSynthesis) return;
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
-    const speechLang = lang === 'hi' ? 'hi-IN' : lang === 'mr' ? 'mr-IN' : lang === 'ta' ? 'ta-IN' : lang === 'bn' ? 'bn-IN' : 'en-IN';
+    const speechLang = lang === 'hi' ? 'hi-IN' : lang === 'mr' ? 'mr-IN' : lang === 'ta' ? 'ta-IN' : lang === 'bn' ? 'bn-IN' : lang === 'te' ? 'te-IN' : 'en-IN';
     utterance.lang = speechLang;
     utterance.rate = 0.85;
     utterance.pitch = 1.1; // Slightly higher pitch for female voice simulation
