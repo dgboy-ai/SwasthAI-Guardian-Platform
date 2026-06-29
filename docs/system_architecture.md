@@ -1,244 +1,225 @@
-# System & Database Architecture — SwasthAI Guardian Platform
+# System Architecture — SwasthAI Guardian Platform
 
-This document describes the high-level system architecture and database design decisions of the SwasthAI Guardian Platform, illustrating how offline-first clients, backend APIs, relational databases, NoSQL event stores, and AI microservices interact.
+> Cloud-native rural health intelligence built on **Amazon Aurora PostgreSQL**, **Amazon DynamoDB**, and **FastAPI AI agents**. Four-tier architecture designed for zero-connectivity resilience, ACID medical records, and millisecond outbreak alerts.
 
 ---
 
-## High-Level Architectural Flow
-
-The diagram below details the end-to-end data lifecycle, displaying how offline inputs sync dynamically and route to AWS cloud:
+## 30-Second Architecture Overview
 
 ```mermaid
-graph LR
-    subgraph Client [Client PWA & Edge]
-        UI[React UI] --> LS[Local Storage]
-        LS --> SQ[IndexedDB Sync Queue]
+%%{init: { 'theme': 'base', 'themeVariables': { 'primaryColor': '#10b981', 'secondaryColor': '#f59e0b', 'tertiaryColor': '#8b5cf6', 'primaryBorderColor': '#065f46', 'secondaryBorderColor': '#b45309', 'tertiaryBorderColor': '#6d28d9', 'lineColor': '#6b7280', 'fontSize': '13px', 'background': '#f8fafc' }}}%%
+graph TB
+    subgraph Users["👥 End Users"]
+        V["Villager<br/><i>Phone OTP login</i>"]
+        A["ASHA Worker<br/><i>9876543211</i>"]
+        N["NGO Admin"]
+        D["District CMO Admin"]
     end
 
-    subgraph Backend [Express.js API Gateway]
-        Express[Express Router] --> Policy[IDOR Policy Engine]
-        Express --> ED[Event Dispatcher]
-        Express --> WD[Health Watchdog]
+    subgraph Frontend["🌐 FRONTEND — Vercel Edge"]
+        REACT["React 18 + Vite PWA<br/>Tailwind · Framer Motion · Recharts"]
+        PWA["Service Worker<br/>Offline-first cache"]
+        ONNX["ONNX SymptomNet<br/>Browser-side inference"]
     end
 
-    subgraph AI [FastAPI Python AI]
-        SymptomNet[SymptomNet MLP]
-        RAG[Sakhi RAG]
-        OutbreakAgent[Outbreak Agent]
+    subgraph Backend["⚙️ BACKEND — Express.js / Node"]
+        API["REST API + WebSocket + SSE<br/>JWT · bcrypt · IDOR Policy Engine"]
+        DISPATCH["Event Dispatcher<br/>3-retry DLQ safeguard"]
+        WATCH["Health Watchdog<br/>30s Aurora + DynamoDB checks"]
+        B2B["B2B API Gateway<br/><i>sk_live_* keys · tenant isolation</i>"]
     end
 
-    subgraph Cloud [AWS Cloud Datastore]
-        Aurora[(Aurora PostgreSQL)]
-        Dynamo[(Amazon DynamoDB)]
+    subgraph AI["🧠 AI SERVICE — FastAPI / Python 3.11"]
+        SNET["SymptomNet-DL<br/>101 diseases · 64.6% acc"]
+        RAG["RAG-Sakhi<br/>243 chunks · 7 languages"]
+        OA["OutbreakAgent<br/>Groq Llama-3.3-70b · 30min loop"]
+        SKIN["SkinAnalyzer<br/>PregnancyRisk · MalnutritionDet"]
     end
 
-    %% Client to Backend Connections
-    UI -->|Direct HTTPS| Express
-    SQ -->|Replay Sync| Express
+    subgraph AWS["☁️ AWS CLOUD — ap-south-1 (Mumbai)"]
+        AURORA["Amazon Aurora PostgreSQL<br/>ACID · 15+ tables · db.t3.micro"]
+        DYNAMO["Amazon DynamoDB<br/>PAY_PER_REQUEST · 5 tables · 7 GSIs"]
+    end
 
-    %% Backend Database Writes
-    Express -->|Transactional SQL| Aurora
-    Express -->|Telemetry Stream| Dynamo
+    Users -->|HTTPS / WSS| Frontend
+    Frontend -->|REST API| Backend
+    Frontend -->|"Offline → IndexedDB → auto-replay"| Backend
+    Backend -->|"Transactional SQL"| AURORA
+    Backend -->|"Telemetry streams"| DYNAMO
+    Backend -->|"Clinical triage"| AI
+    OA -->|"Poll clusters / POST alert"| Backend
 
-    %% Event Dispatcher Async Writes
-    ED -->|Deferred Writes| Aurora
-    ED -->|Outbreak/SOS Alerts| Dynamo
-
-    %% AI Service Workloads
-    Express -->|Symptom/Vitals Triage| SymptomNet
-    Express -->|Clinical Sakhi query| RAG
-    OutbreakAgent -->|Poll clusters / POST alert| Express
+    classDef user fill:#f0fdf4,stroke:#16a34a,color:#14532d
+    classDef frontend fill:#d1fae5,stroke:#10b981,color:#064e3b
+    classDef backend fill:#fef3c7,stroke:#f59e0b,color:#78350f
+    classDef ai fill:#ede9fe,stroke:#8b5cf6,color:#4c1d95
+    classDef aws fill:#ffedd5,stroke:#f97316,color:#7c2d12
+    class V,A,N,D user
+    class Frontend,PWA,REACT,ONNX frontend
+    class Backend,API,DISPATCH,WATCH,B2B backend
+    class AI,SNET,RAG,OA,SKIN ai
+    class AWS,AURORA,DYNAMO aws
 ```
 
 ---
 
-## Component Roles
+## Tier Breakdown
 
-The SwasthAI architecture is divided into three specialized tiers, built for low-latency execution and zero-connectivity resilience:
-
-| Tier | Tech Stack | Core Capability | Offline Resilience | Data Safety & Security |
-|---|---|---|---|---|
-| **Client Edge** | React, Vite, IndexedDB, ONNX | **Interactive Clinician PWA** | IndexedDB Event Replay Engine & Local ONNX Triage | SHA-256 local auth hash; On-device `<200KB` image compression |
-| **Backend Gateway** | Express.js, Node.js | **Unified REST API & SSE Bus** | Handles transaction sync replays dynamically | Centralized IDOR policy.js (backend/middleware/policy.js); 3-retry DLQ safeguard |
-| **AI Microservice** | FastAPI, Python, PyTorch | **Autonomous Agents & LLMs** | Rules-based local fallbacks for edge-classification | Tokenized Groq API keys; Closed-loop agent validation |
-
----
-
-### Client Edge (Vercel / React PWA)
-- **Offline Sync**: Auto-replays queued events from IndexedDB upon reconnection.
-- **Edge Triage**: Runs browser-side ONNX SymptomNet and offline fuzzy RAG.
-- **2G Optimization**: Auto-compresses clinical photo uploads to `<200KB` on-the-fly.
-- **Client Security**: Validates offline sessions via local SHA-256 credential hashes.
-
-### Backend Gateway (Express.js)
-- **Scope Isolation**: Centralized `backend/middleware/policy.js` blocks unauthorized village/role access.
-- **Event Dispatcher**: Processes non-blocking event loops out-of-band with a **3-attempt retry loop**.
-- **DLQ Safeguard**: Logs failed event payloads to a capped 100-item DLQ; broadcasts live alerts via SSE.
-- **Watchdog Daemon**: Scans microservice health and Outbreak Agent state every 30s.
-
-### AI Service Layer (FastAPI / Python)
-- **SymptomNet**: Multi-layered MLP classifier evaluating risks with local fallback rules.
-- **Sakhi Chatbot**: High-speed multilingual clinical RAG powered by Llama-3.3-70B.
-- **Outbreak Agent**: Background crawler analyzing PostgreSQL symptom trends to predict, classify, and publish verified DynamoDB outbreak records.
+| Tier | Platform | Core Role | AWS Integration |
+|---|---|---|---|
+| **Client Edge** | Vercel · React 18 · Vite PWA | Offline-first clinical UI with ONNX browser inference | S3 pre-signed URLs for photo upload |
+| **API Gateway** | Render · Express.js · Node 20 | REST API, WebSocket telemetry, SSE alerts, B2B gateway | Aurora connection pool + DynamoDB SDK |
+| **AI Service** | Render · FastAPI · Python 3.11 | SymptomNet, RAG-Sakhi, OutbreakAgent, clinical guardrails | Groq Cloud (external LLM) |
+| **Data Layer** | **Amazon Aurora PostgreSQL** + **Amazon DynamoDB** | ACID medical records + NoSQL telemetry event store | AWS ap-south-1 · IAM auth |
 
 ---
 
-## Database Strategy & AWS Design Decisions
+## AWS Data Architecture
 
-Most apps use one database for everything. SwasthAI uses a hybrid approach: a local **SQLite** database as an offline edge node and local development fallback, paired with a dual **AWS Cloud** configuration in production.
+### Why Two Databases?
 
-### The Local/Edge Database Strategy (SQLite Fallback)
-To ensure the app remains fully functional with zero initial setup for evaluators or developers, and to simulate offline client-side sync environments, SwasthAI utilizes an embedded **SQLite** engine. 
-* **Local Dev & Evaluation**: When run locally without AWS credentials, the backend automatically boots with SQLite, using the exact same schema structure as our production Aurora database.
-* **Production**: When deployed to cloud environments, the backend dynamically connects to **Amazon Aurora PostgreSQL** via the `DATABASE_URL` connection pool.
-
----
-
-### The AWS Production Database Strategy (Aurora + DynamoDB)
-
-| | Amazon Aurora PostgreSQL | Amazon DynamoDB |
+| | **Amazon Aurora PostgreSQL** | **Amazon DynamoDB** |
 |---|---|---|
-| **Why chosen** | ACID compliance for permanent medical records | Millisecond write latency for high-velocity telemetry |
-| **The stakes** | A corrupted pregnancy record could cost a life — ACID transactions are non-negotiable | A disease cluster alert must be written in < 10ms regardless of how many villages are reporting simultaneously |
-| **Access pattern** | Transactional reads/writes, relational joins, aggregations | Append-only high-throughput streams, time-series queries |
-| **Data stored** | Users, symptom submissions, pregnancies, ambulance requests, government schemes | Outbreak alerts, offline sync queues, village heartbeats, emergency dispatch logs |
-| **Billing model** | Provisioned capacity (db.t3.micro → scales to r6g.large) | PAY_PER_REQUEST — auto-scales to millions of writes with zero provisioning |
+| **Chosen for** | ACID compliance — a corrupted pregnancy record could cost a life | Millisecond writes — a disease cluster must be recorded instantly |
+| **Access pattern** | Relational joins, aggregations, transactional reads/writes | Append-only streams, time-series queries, key-value lookups |
+| **Data stored** | Users, pregnancies, symptoms, referrals, vaccinations, schemes | Outbreak telemetry, sync queues, village heartbeats, emergency streams |
+| **Scaling** | Vertical — db.t3.micro → r6g.large | Horizontal — PAY_PER_REQUEST, unlimited throughput |
+| **Connection** | `pg.Pool { max: 20 }` · SSL · 30s connection timeout | AWS SDK v3 · IAM keys · `ap-south-1` |
 
----
-
-### Relational Database ERD (Amazon Aurora PostgreSQL)
-
-Aurora acts as the consistent transactional store. The ERD below shows the core clinical tables (simplified for readability; 15 additional tables for auth, admin, schemes, and telemetry exist in `backend/db/schema.js`). The relationship chain is designed as:
-`users` → `village_health` → `pregnancy_data` → `symptoms`
+### Aurora PostgreSQL Schema (Core Clinical Tables)
 
 ```mermaid
+%%{init: { 'theme': 'base', 'themeVariables': { 'primaryColor': '#f97316', 'primaryBorderColor': '#9a3412', 'lineColor': '#9ca3af', 'fontSize': '12px' }}}%%
 erDiagram
     users {
         int id PK
-        string phone UK
-        string role
+        string phone UK "Login identifier"
+        string role "villager | ngo | admin"
         string name
         string villageId FK
-        string aadhaarHash
+        string aadhaarHash "SHA-256, never plaintext"
         boolean verified
     }
     village_health {
-        string villageId PK
+        string villageId PK "V101, V102..."
         string name
         int population
         int pregnant_women
         int malnutrition_cases
+        string districtId
+        float lat
+        float lng
         string outbreakAlert
         timestamp lastUpdated
     }
     pregnancy_data {
         int id PK
-        int userId FK
-        string riskLevel
-        string vitalsJson
+        string name "Patient name"
+        int trimester "1, 2, or 3"
+        string riskLevel "Low | Medium | High"
+        int systolic_bp
+        int diastolic_bp
+        int heart_rate
+        string villageId FK
         timestamp createdAt
     }
     symptoms {
         int id PK
-        int userId FK
         string villageId FK
-        string symptoms
-        string prediction
-        string disease
-        float confidence
-        string model_used
-        string client_request_id
+        string symptoms "Fever, Headache..."
+        string disease "Predicted disease"
+        float confidence "0.0 - 1.0"
+        string model_used "SymptomNet-DL | LR"
+        string client_request_id UK "Idempotency key"
         timestamp createdAt
     }
+    referrals {
+        int id PK
+        string patient_name
+        string villageId FK
+        string reason
+        string priority "routine | urgent | high"
+        string status "pending | in_progress | completed"
+    }
+    ambulance_requests {
+        int id PK
+        string name
+        string location
+        string priority
+        string status "pending | assigned | dispatched"
+        string request_type "ambulance | pad_request"
+        timestamp createdAt
+    }
+    vaccination_records {
+        int id PK
+        string child_name
+        string vaccine_name
+        string villageId FK
+        string status "given | scheduled"
+        date given_date
+        date scheduled_date
+    }
 
-    users }o--|| village_health : "resides in"
-    users ||--o{ pregnancy_data : "has clinical profile"
-    users ||--o{ symptoms : "reports symptom logs"
-    village_health ||--o{ symptoms : "contains symptom records"
+    users ||--o{ pregnancy_data : "has"
+    users ||--o{ symptoms : "reports"
+    village_health ||--o{ symptoms : "contains"
+    village_health ||--o{ referrals : "generates"
+    village_health ||--o{ ambulance_requests : "requests"
+    village_health ||--o{ vaccination_records : "tracks"
 ```
 
----
+> **15+ tables total** — includes `government_schemes` (20 MoHFW schemes), `district_config`, `api_keys`, `audit_logs`, `otps`, `malnutrition_data`, `asha_performance`, and more. Full schema: `backend/db/schema.js`.
 
-## DynamoDB Engine Architecture
+### DynamoDB — 5 Tables, 7 GSIs, PAY_PER_REQUEST
 
-### 1. Table Schema Design (GSIs & Access Patterns)
-
-Every DynamoDB table is designed around specific access patterns to support zero-signal offline sync and rapid epidemic notifications:
-
-| Table Name | Partition Key (PK / Hash) | Sort Key (SK / Range) | GSIs / TTL | Access Pattern & Design Purpose |
+| Table | PK | SK | GSIs / TTL | Purpose |
 |---|---|---|---|---|
-| **`outbreak_telemetry`** | `villageId` | `detectedAt` | • **GSI:** `disease-index` (`disease` + `detectedAt`) <br>• **GSI:** `district-time-index` (`districtId` + `detectedAt`) <br>• **GSI:** `gsikey-time-index` (composite for sharded queries) | Query disease outbreaks by trend; Query district outbreak timeline; High-throughput time-range scans. Stores AI-detected village clusters. |
-| **`sync_queues`** | `deviceId` | `queuedAt` | • **GSI:** `status-index` (`status` + `queuedAt`) | Fetch failed sync logs across the fleet. Stores offline client logs during outages. |
-| **`village_node_state`** | `villageId` | *None* | • **GSI:** `all-nodes-index` (composite for cross-village queries) <br>• **TTL:** `expiresAt` *(Auto-expires after 7 days)* | Monitor node heartbeats. Stale nodes automatically expire from the live dashboard. |
-| **`emergency_streams`** | `districtId` | `streamId` | • **GSI:** `priority-index` (`priority` + `streamId`) <br>• **GSI:** `district-date-index` (`districtDateBucket` + `timestamp`) | Filter critical P1 emergency alerts; Page emergency events chronologically. |
-| **`security_audit_logs`** | `actor` | `timestamp` | • **GSI:** *None (Access Isolation)* <br>• **TTL:** *None (Retained Indefinitely)* | Query security audits by acting admin. Isolated PK lookup blocks cross-actor scanning. |
+| **`outbreak_telemetry`** | `villageId` | `detectedAt` | `disease-index` · `district-time-index` · `gsikey-time-index` | AI-detected outbreak clusters by disease, district, and time range |
+| **`sync_queues`** | `deviceId` | `queuedAt` | `status-index` | Offline client sync logs during signal outages |
+| **`village_node_state`** | `villageId` | — | `all-nodes-index` · TTL: 7 days | Live village heartbeat map — auto-expires stale nodes |
+| **`emergency_streams`** | `districtId` | `streamId` | `priority-index` · `district-date-index` | P1 SOS ambulance audit trail with chronological paging |
+| **`security_audit_logs`** | `actor` | `timestamp` | None (access isolation) · TTL: indefinite | DISHA 2023 compliance — cross-actor scanning blocked |
 
----
+### Production Hardening Applied
 
-### 2. Production Hardening (Query & Code-Level Fixes)
-
-| Fix | Before (naive) | After (production-grade) |
+| Fix | Naive Approach | Production Implementation |
 |---|---|---|
-| **Scan → Query** | Broad table reads for command-center proof | `outbreak_telemetry.district-time-index` and `emergency_streams.district-date-index` provide bounded district/time `Query` access |
-| **Dynamic districtId** | Hardcoded `'district_main'` as partition key for all records | `getDistrictId(db, villageId)` — resolves the real district via PostgreSQL join before every DynamoDB write |
-| **Atomic UpdateCommand** | Full `PutCommand` on every update — race condition risk under concurrent writes | `UpdateCommand` patches only 4 owned fields — safe to call in parallel, never overwrites concurrent writes |
-| **GSI Validation** | Assumed GSIs existed at runtime (silent failure if missing) | `DescribeTableCommand` on startup — compares actual vs. required GSI names; fails loudly if missing |
-| **Idempotent TTL** | `setTimeout(() => UpdateTimeToLive(), 5000)` — could run multiple times | `ensureTTL()` checks for `ENABLED\|ENABLING` state before calling — idempotent and safe to re-run |
+| **Scan → Query** | `Scan` on entire table | `district-time-index` Query — bounded reads at scale |
+| **Dynamic districtId** | Hardcoded `'district_main'` as PK | `getDistrictId(db, villageId)` resolves real district via Aurora join before every DynamoDB write |
+| **Atomic UpdateCommand** | `PutCommand` (race conditions) | `UpdateCommand` — patches only 4 owned fields, safe under concurrent writes |
+| **GSI Validation** | Assumed GSIs exist (silent failures) | `DescribeTableCommand` on startup — fails loudly if GSI missing |
+| **Idempotent TTL** | `setTimeout(() => ...)` (duplicate runs) | `ensureTTL()` checks `ENABLED|ENABLING` — safe to re-run on every restart |
 
 ---
 
-## B2B API Key System & Tenant Isolation
+## Key Differentiators
 
-SwasthAI provides a production-grade B2B API gateway for partner NGOs and district health departments:
+### 1. Offline-First PWA with Browser-Side AI
+ONNX SymptomNet runs in-browser with zero network. IndexedDB queues all submissions during signal outages and auto-replays on reconnect. SHA-256 local auth works offline. 7-language voice I/O for non-literate users. Photos compress to <200KB for 2G uploads.
 
-| Component | Description |
-| :--- | :--- |
-| **Key Generation** | Admin panel generates `sk_live_*` keys with tenant scope (`tenantId` = districtId) |
-| **Auth Middleware** | `middleware/apiKeyAuth.js` validates `x-api-key` header against `api_keys` table |
-| **Usage Tracking** | Each request increments `usage_count` and updates `last_used_at` |
-| **Tenant Isolation** | All B2B queries are scoped via `WHERE "districtId" = ?` using the key's tenant |
-| **Endpoints** | `/api/b2b/me`, `/api/b2b/villages`, `/api/b2b/analytics`, `/api/b2b/ambulances`, `/api/b2b/outbreaks` |
-| **Dashboard** | B2BUsageDashboard shows per-tenant API calls, active keys, village stats, record volumes |
+### 2. Autonomous Outbreak Agent (Closed-Loop)
+Every 30 minutes: OutbreakAgent queries Aurora for village symptom clusters → sends to Groq Llama-3.3-70b (JSON mode, 3-attempt exponential backoff) → if confidence ≥ 70%: checks DynamoDB 24h dedup → POSTs alert → DynamoDB write + SSE broadcast → Admin dashboard shows live Outbreak Radar with AI reasoning trace.
 
-The Groq API key used for Sakhi AI and the Outbreak Agent is an internal backend environment variable — separate from this B2B partner key system.
+### 3. B2B API Gateway with Tenant Isolation
+Admin panel generates `sk_live_*` keys scoped to `tenantId = districtId`. All queries enforce `WHERE "districtId" = ?`. Usage tracking (`usage_count` + `last_used_at`) per request. Endpoints: `/api/b2b/villages`, `/api/b2b/analytics`, `/api/b2b/ambulances`, `/api/b2b/outbreaks`. B2BUsageDashboard for partner NGOs.
+
+### 4. Predictive Village Risk Intelligence
+4-signal weighted engine: Symptom Trend Growth (40%) + Outbreak Proximity (25%) + NVBDCP Seasonal Calendar (20%) + Referral Backlog (15%). Output: Village Risk Score 0-100 with district-wide heatmap (GREEN → AMBER → RED) and XAI contributor bars in the admin dashboard.
 
 ---
 
-### The Agentic Outbreak Loop (What No Other Submission Has)
+## Runtime Resilience (Free Tier Architecture)
 
-> [!TIP]
-> **Autonomous Agent Architecture**: Unlike traditional dashboards requiring manual scans, SwasthAI uses a completely closed-loop background agent coordination model.
+Since both services run on Render free tier (spindown after 15 min idle), the backend automatically falls back to **SQLite** with zero data loss when Aurora is paused:
 
-This is a fully autonomous AI agent running as a background service:
-
-```
-Every 30 minutes →
-  OutbreakAgent queries Aurora PostgreSQL for village symptom clusters
-  → Sends cluster JSON to Groq Llama-3.3-70b with JSON mode + 3-attempt exponential backoff
-  → If LLM confidence ≥ 70%:
-      Checks DynamoDB to ensure no duplicate alert exists for this village in the last 24h
-      → POST to /api/admin/outbreak-alert (fails loudly at startup if AGENT_SECRET is missing)
-      → Backend writes to DynamoDB outbreak_telemetry (villageId + detectedAt, with districtId for district-time GSI)
-      → SSE broadcast to all connected admin dashboard sessions
-      → Admin sees live Outbreak Radar update with AI reasoning trace and disease name
+```text
+Cold start:
+  Aurora 30s timeout → SQLite fallback → full schema + demo data seeded
+  Aurora resumes → transparent reconnect → db swapped back at runtime
 ```
 
----
-
-### PostgreSQL Schema Reference
-
-The relational database models the full lifecycle of a rural patient's health journey:
-
-* **`users`** — Demographic records with Aadhaar hashes (never plaintext), caste/BPL status for automatic government scheme eligibility matching.
-* **`village_health`** — Patient symptom submissions linked to district geography (lat/lng + districtId) for outbreak detection.
-* **`maternal_health`** — Clinical pregnancy metrics (blood pressure, blood sugar, weight, trimester) with dynamic risk-level classification (Low / Medium / High).
-* **`malnutrition_cases`** — Child height/weight measurements mapped to SAM (Severe Acute Malnutrition) and MAM (Moderate Acute Malnutrition) WHO classifications.
-* **`government_schemes`** — Structured JSON metadata for rural health schemes (JSY, PMMVY, Ayushman Bharat) with eligibility query parameters.
-* **`ambulance_requests`** — SOS emergency event triggers with coordinate-based tracking and outcome logging.
-* **`vaccination_records`** — Mission Indradhanush immunization schedule and status tracking per child.
-* **`district_config`** — Per-district custom thresholds, emergency contact numbers, and automation parameters.
+Health endpoint: `{"db": "connected" | "SQLite fallback" | "degraded", "dynamodb": "connected" | "mock"}`
 
 ---
 
-> [!IMPORTANT]
-> **Why this matters**: Rural health infrastructure cannot afford either data corruption or high cloud costs. By routing critical medical records to ACID-compliant **Aurora PostgreSQL** and streaming high-frequency alerts to **DynamoDB (on-demand)**, we guarantee 100% data durability and single-digit millisecond latency while keeping operating costs close to zero.
+> **Why this matters**: Rural health infrastructure cannot afford data corruption or high cloud costs. Aurora PostgreSQL guarantees ACID safety for every pregnancy record and medical referral. DynamoDB PAY_PER_REQUEST provides millisecond outbreak alerting with zero provisioning. Together, they deliver hospital-grade data integrity at village-scale cost.
