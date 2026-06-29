@@ -93,9 +93,13 @@ function MiniBar({ pct, color, delay = 0 }) {
 
 /* ═══════════════════════════════════════════════ */
 export default function ApiKeysView() {
-  const [keys, setKeys] = useState([]);
-  const [usage, setUsage] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [keys, setKeys] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('api_keys_cache') || '[]'); } catch { return []; }
+  });
+  const [usage, setUsage] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('api_usage_cache') || 'null'); } catch { return null; }
+  });
+  const [loading, setLoading] = useState(!keys.length);
   const [showCreate, setShowCreate] = useState(false);
   const [newKeyName, setNewKeyName] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(null);
@@ -108,14 +112,16 @@ export default function ApiKeysView() {
   async function loadKeys() {
     try {
       const data = await adminService.getApiKeys();
-      if (data.success) setKeys(data.keys); else setKeys([]);
+      if (data.success) { setKeys(data.keys); try { localStorage.setItem('api_keys_cache', JSON.stringify(data.keys)); } catch {} }
+      else setKeys([]);
     } catch { setKeys([]); }
     finally { setLoading(false); }
   }
   async function loadUsage() {
     try {
       const data = await adminService.getApiKeyUsage();
-      if (data.success) setUsage(data); else setUsage({ totalKeys: 0, activeKeys: 0, totalUsage: 0, generatedAt: new Date().toISOString() });
+      if (data.success) { setUsage(data); try { localStorage.setItem('api_usage_cache', JSON.stringify(data)); } catch {} }
+      else setUsage({ totalKeys: 0, activeKeys: 0, totalUsage: 0, generatedAt: new Date().toISOString() });
     } catch { setUsage({ totalKeys: 0, activeKeys: 0, totalUsage: 0, generatedAt: new Date().toISOString() }); }
   }
   async function handleCreate() {

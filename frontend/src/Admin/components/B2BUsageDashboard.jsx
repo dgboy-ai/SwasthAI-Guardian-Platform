@@ -261,8 +261,10 @@ function TableRow({ tenant, maxCalls, index }) {
 
 /* ═══════════════════════════════════════════════ */
 export default function B2BUsageDashboard() {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('b2b_usage_cache') || 'null'); } catch { return null; }
+  });
+  const [loading, setLoading] = useState(!data);
   const [error, setError] = useState(null);
 
   const load = useCallback(async () => {
@@ -270,6 +272,7 @@ export default function B2BUsageDashboard() {
     try {
       const res = await adminService.getB2BUsage();
       setData(res);
+      try { localStorage.setItem('b2b_usage_cache', JSON.stringify(res)); } catch {}
     } catch {
       setData({ generatedAt: new Date().toISOString(), totals: { totalKeys: 0, totalCalls: 0, totalVillages: 0, totalUsers: 0, totalRecords: 0 }, tenants: [] });
     } finally {
