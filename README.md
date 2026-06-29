@@ -11,17 +11,6 @@ Scaffolded with v0 · Amazon Aurora PostgreSQL + DynamoDB · Offline-First Rural
 
 ---
 
-## 🚀 Try It Now — 30 Seconds
-
-1. Open **[Live Demo](https://swasth-ai-guardian-platform.vercel.app)**
-2. Enter phone `9876543210` → OTP `1234`
-3. Pick **Villager** → tap **Symptom Checker** → type "fever headache since 3 days"
-4. See AI triage with confidence score, alternatives, and severity assessment
-
-*No install. No signup. Works offline after first load.*
-
----
-
 ## 🌍 The Problem
 
 | Problem | How We Solve It |
