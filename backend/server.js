@@ -321,6 +321,8 @@ if (isProduction && cluster.isPrimary && maxWorkers > 1) {
         exec: (sql) => { sqliteDbInstance.exec(sql); return Promise.resolve(); },
       };
       await initSchema(fallbackDb, null, true);
+      await seedData(fallbackDb, null, true, bcrypt, dynamoHelper).catch(e => console.warn('⚠️ Runtime seed issue:', e.message));
+      autoSeedHackathonData(fallbackDb).catch(() => {});
       db = fallbackDb;
       usingSQLite = true;
       app.locals.db = db;
