@@ -87,11 +87,21 @@ SwasthAI-Guardian-Platform/
 │   ├── setup_guide.md            # Environment vars, Docker-Compose, local startup guides
 │   ├── repository_map.md         # (This file) Complete codebase index
 │   ├── judge_guide.md            # Step-by-step walkthrough for Devpost judges
-│   └── SUBMISSION_CHECKLIST.md   # Verification procedures & submission logs
+│   ├── SUBMISSION_SUMMARY.md     # Devpost submission text
+│   ├── architecture_diagram.html # HTML architecture diagram
+│   ├── architecture_diagram.md   # Mermaid architecture topology diagram
+│   ├── architecture_diagram.svg  # SVG architecture diagram
+│   ├── DEPLOYMENT.md             # Production deployment steps
+│   ├── CHANGELOG.md              # Chronological features & optimization log
+│   └── PITCH.md                  # Pitch document
 │
-├── architecture_diagram.md        # Mermaid architecture topology diagram
-├── DEPLOYMENT.md                 # Production deployment steps (AWS + Vercel + Render)
-├── CHANGELOG.md                  # Chronological features & optimization log
+├── infra/                         # Deployment infrastructure
+│   ├── nginx.conf                 # Nginx reverse proxy config
+│   ├── Procfile                   # Heroku process definition
+│   ├── render.yaml                # Render deployment config
+│   ├── .env.example               # Environment variable template
+│   └── dynamodb-tables.md         # DynamoDB table schemas
+│
 └── README.md                     # Main landing page for the project
 ```
 

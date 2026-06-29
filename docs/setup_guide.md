@@ -13,7 +13,7 @@
 
 ```bash
 # 1. Copy the env template and fill in your secrets
-cp .env.example .env
+cp infra/.env.example .env
 
 # 2. Launch all 3 services with health-checked startup ordering
 docker-compose up --build
@@ -59,7 +59,7 @@ uvicorn main:app --reload --port 8000
 #### 2. Backend API
 ```bash
 cd backend
-cp .env.example .env                 # fill in GROQ_API_KEY, JWT_SECRET, ALLOWED_ORIGINS
+cp ../infra/.env.example .env        # fill in GROQ_API_KEY, JWT_SECRET, ALLOWED_ORIGINS
 npm install
 npm run dev                          # starts on port 5000; SQLite auto-initializes
 ```
@@ -75,7 +75,7 @@ npm run dev                          # opens http://localhost:5173
 
 ### Environment Variables (`.env`)
 
-Copy `.env.example` to `.env` and fill in the values below.
+Copy `infra/.env.example` to `.env` and fill in the values below.
 
 ```env
 # ── Core Backend ──────────────────────────────────────────────────────────────

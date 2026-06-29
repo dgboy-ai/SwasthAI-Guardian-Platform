@@ -8,10 +8,11 @@ import {
   LayoutDashboard, Radio, Heart, Baby, Truck,
   WifiOff, BrainCircuit, BarChart3, Settings,
   Bell, ChevronRight, ChevronLeft, X, HeartPulse, TrendingUp,
-  AlertTriangle, LogOut, Key, Database, Building2, GitCompareArrows
+  AlertTriangle, LogOut, Key, Database, Building2, GitCompareArrows, DollarSign
 } from 'lucide-react';
 import adminService from '../services/adminService';
 import api from '../services/api';
+import PricingPage from '../pages/PricingPage';
 import { AnimatePresence, motion } from 'framer-motion';
 import DbBadge from './components/DbBadge';
 import useProvenance from './components/useProvenance';
@@ -52,6 +53,7 @@ const NAV_ITEMS = [
   { id: 'api-keys', label: 'API Keys', icon: Key },
   { id: 'database', label: 'DB Architecture', icon: Database },
   { id: 'pipeline', label: 'Data Pipeline', icon: GitCompareArrows },
+  { id: 'pricing', label: 'Pricing', icon: DollarSign },
 ];
 
 export default function AdminDashboard() {
@@ -618,7 +620,9 @@ export default function AdminDashboard() {
               return (
                 <div key={item.id} className="relative group/navitem">
                   <motion.button
-                    onClick={() => { setActiveView(item.id); setSidebarOpen(false); }}
+                    onClick={() => { 
+                      setActiveView(item.id); setSidebarOpen(false);
+                    }}
                     title={sidebarCollapsed ? item.label : ''}
                     whileTap={{ scale: 0.97 }}
                     className={`
@@ -1077,6 +1081,12 @@ export default function AdminDashboard() {
 
           {activeView === 'pipeline' && (
             <DataPipelineView />
+          )}
+
+          {activeView === 'pricing' && (
+            <div className="p-4">
+              <PricingPage />
+            </div>
           )}
 
           {['maternal', 'nutrition'].includes(activeView) && (

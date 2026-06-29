@@ -243,7 +243,7 @@ export default function Navbar() {
               </div>
             ) : (
               <>
-                <Link to="/pricing" className="hidden xl:block px-4 py-2 text-[11px] font-black text-slate-700 hover:text-emerald-600 uppercase tracking-widest transition-colors">Pricing</Link>
+                <Link to="/pricing" className="px-4 py-2 text-[11px] font-black text-slate-700 hover:text-emerald-600 uppercase tracking-widest transition-colors">Pricing</Link>
                 <Link to="/about" className="hidden xl:block px-4 py-2 text-[11px] font-black text-slate-700 hover:text-emerald-600 uppercase tracking-widest transition-colors">About</Link>
                 <Link to="/contact" className="hidden xl:block px-4 py-2 text-[11px] font-black text-slate-700 hover:text-emerald-600 uppercase tracking-widest transition-colors">Contact</Link>
                 <Link to="/login" className="hidden xl:block px-5 py-2.5 bg-emerald-600 text-white text-[11px] font-black uppercase tracking-widest rounded-xl hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-200">

@@ -524,9 +524,10 @@ export default function LandingPage() {
               <div className="bg-white rounded-[2rem] border border-slate-200 p-8 flex flex-col justify-between hover:shadow-xl transition-all">
                 <div>
                   <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 bg-slate-100 px-3 py-1 rounded-full">District Starter</span>
-                  <div className="mt-4 flex items-baseline">
-                    <span className="text-4xl font-black text-slate-900">$199</span>
+                  <div className="mt-4 flex items-baseline gap-2">
+                    <span className="text-4xl font-black text-slate-900">₹18,800</span>
                     <span className="text-slate-400 text-sm font-semibold">/month</span>
+                    <span className="text-[10px] font-semibold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">~$199</span>
                   </div>
                   <p className="text-slate-500 text-xs mt-2 font-medium">Perfect for smaller health networks or localized NGO pilots.</p>
                   <ul className="mt-6 space-y-3 text-xs text-slate-600 font-medium border-t border-slate-100 pt-6">
@@ -544,9 +545,10 @@ export default function LandingPage() {
                 <div className="absolute top-0 right-8 -translate-y-1/2 bg-emerald-500 text-white text-[8px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full">Recommended</div>
                 <div>
                   <span className="text-[9px] font-black uppercase tracking-widest text-emerald-400 bg-emerald-950 px-3 py-1 rounded-full">District Command</span>
-                  <div className="mt-4 flex items-baseline">
-                    <span className="text-4xl font-black text-white">$399</span>
+                  <div className="mt-4 flex items-baseline gap-2">
+                    <span className="text-4xl font-black text-white">₹37,700</span>
                     <span className="text-slate-400 text-sm font-semibold">/month</span>
+                    <span className="text-[10px] font-semibold text-slate-500 bg-slate-800 px-2 py-0.5 rounded-full">~$399</span>
                   </div>
                   <p className="text-slate-400 text-xs mt-2 font-medium">Standard choice for active district health departments.</p>
                   <ul className="mt-6 space-y-3 text-xs text-slate-300 font-medium border-t border-slate-800 pt-6">

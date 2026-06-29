@@ -233,7 +233,7 @@ The Nginx reverse proxy (`nginx.conf`) handles:
 
 ```bash
 # 1. Copy env template — all ${VAR:?} vars below must be set
-cp .env.example .env
+cp infra/.env.example .env
 # Edit .env to fill in GROQ_API_KEY, JWT_SECRET, AGENT_SECRET
 
 # 2. Launch all 4 services with health-checked startup ordering
