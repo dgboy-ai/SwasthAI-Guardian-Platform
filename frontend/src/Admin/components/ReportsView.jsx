@@ -1,233 +1,441 @@
-import React from 'react';
-import { motion } from 'framer-motion';
-import { Download, CheckCircle, Settings, Users, Clock } from 'lucide-react';
+import { useRef } from 'react';
+import { motion, useInView } from 'framer-motion';
+import {
+  Download, CheckCircle2, Settings, Users, Clock,
+  Heart, Truck, Radio, MapPin, BarChart3,
+  TrendingUp, TrendingDown, Shield, FileText,
+  AlertCircle, Star
+} from 'lucide-react';
 
+/* ─── Animated counter ─────────────────────────────────────────────────── */
+function AnimCount({ value }) {
+  const ref = useRef(null);
+  const inView = useInView(ref, { once: true });
+  const num = typeof value === 'number' ? value : 0;
+  const [n, setN] = [0, () => {}];
+  if (inView && typeof value === 'number') {/* handled below */}
+  return (
+    <span ref={ref}>
+      <motion.span
+        initial={{ opacity: 0 }}
+        animate={inView ? { opacity: 1 } : {}}
+      >
+        {value ?? '—'}
+      </motion.span>
+    </span>
+  );
+}
+
+/* ─── Bar chart bar ─────────────────────────────────────────────────────── */
+function Bar({ height, color, tooltip, delay }) {
+  return (
+    <div className="relative group flex flex-col justify-end h-full">
+      <motion.div
+        className="w-full rounded-t-sm cursor-default"
+        style={{ backgroundColor: color }}
+        initial={{ height: 0, opacity: 0 }}
+        animate={{ height: `${Math.max(height, 3)}%`, opacity: 1 }}
+        transition={{ duration: 0.55, delay, ease: 'easeOut' }}
+      />
+      {/* Tooltip */}
+      <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[8px] px-2 py-1 rounded-lg
+                      opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-20 shadow-lg font-bold">
+        {tooltip}
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════ */
 export default function ReportsView({
-  downloadReport,
-  getChartData,
-  SM,
-  systemStatus,
-  districtReport,
-  downloadDistrictReport,
-  reportLoading,
-  REP,
-  PERF,
-  demoTourMode,
-  lastSync
+  downloadReport, getChartData, SM, systemStatus,
+  districtReport, downloadDistrictReport, reportLoading, REP, PERF, demoTourMode, lastSync
 }) {
   const chartData = getChartData();
   const hasData = chartData.length > 0;
-  const maxVal = hasData ? Math.max(...chartData.map(d => Math.max(d.symptoms, d.emergencies)), 10) : 1;
+  const maxVal = hasData ? Math.max(...chartData.map(d => Math.max(d.symptoms, d.emergencies)), 1) : 1;
+
+  /* demo fallback data when no live data */
+  const DEMO_PERF = [
+    { name: 'Priya Sharma', villageId: 'V101', referrals_count: 14, pregnancies_tracked: 8, vaccinations_completed: 22, emergencies_reported: 3 },
+    { name: 'Anita Devi',   villageId: 'V103', referrals_count: 11, pregnancies_tracked: 6, vaccinations_completed: 18, emergencies_reported: 2 },
+    { name: 'Sunita Rai',   villageId: 'V107', referrals_count: 9,  pregnancies_tracked: 5, vaccinations_completed: 15, emergencies_reported: 1 },
+    { name: 'Meena Kumari', villageId: 'V104', referrals_count: 7,  pregnancies_tracked: 4, vaccinations_completed: 12, emergencies_reported: 2 },
+  ];
+
+  const DEMO_CHART = [
+    { label: 'Mon', symptoms: 3, emergencies: 1 },
+    { label: 'Tue', symptoms: 5, emergencies: 2 },
+    { label: 'Wed', symptoms: 2, emergencies: 1 },
+    { label: 'Thu', symptoms: 8, emergencies: 3 },
+    { label: 'Fri', symptoms: 4, emergencies: 2 },
+    { label: 'Sat', symptoms: 6, emergencies: 1 },
+    { label: 'Sun', symptoms: 3, emergencies: 0 },
+  ];
+
+  const chart = hasData ? chartData : DEMO_CHART;
+  const cMax = Math.max(...chart.map(d => Math.max(d.symptoms, d.emergencies)), 1);
+  const perf = PERF?.length > 0 ? PERF : DEMO_PERF;
+
+  const yLabels = [cMax, Math.round(cMax * 0.75), Math.round(cMax * 0.5), Math.round(cMax * 0.25), 0];
+
+  const checklistItems = [
+    { label: 'Village data uploaded',        done: (SM?.totalUsers || 0) > 0,              icon: MapPin,       category: 'Setup' },
+    { label: 'ASHA workers assigned',         done: (SM?.totalNgos || 0) > 0,              icon: Users,        category: 'Setup' },
+    { label: 'Outbreak threshold configured', done: true,                                   icon: Radio,        category: 'Config' },
+    { label: 'AWS storage verified',          done: systemStatus?.production_ready === true, icon: Shield,       category: 'Infra' },
+    { label: 'First district report exported',done: !!districtReport,                       icon: FileText,     category: 'Report' },
+  ];
+  const doneCount = checklistItems.filter(c => c.done).length;
 
   return (
-    <div className="p-4 lg:p-5 space-y-4 text-left">
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-        <div className="flex items-center justify-between mb-1">
-          <h2 className="font-black text-slate-900 text-[18px]">Reports &amp; Exports {demoTourMode && <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 border border-emerald-200 text-[8px] font-black uppercase tracking-wider ml-2">LIVE</span>}</h2>
-          {lastSync && (
-            <span className="flex items-center gap-1 text-[9px] text-slate-400 font-bold">
-              <Clock className="w-3 h-3" /> Synced {lastSync}
-            </span>
-          )}
-        </div>
-        <p className="text-[11px] text-slate-400 font-medium mb-5">Download full district health data as spreadsheets</p>
-        <button onClick={downloadReport} className="flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-xl font-black text-[12px] uppercase tracking-wider hover:bg-emerald-700 transition-colors shadow-sm">
-          <Download className="w-4 h-4" /> Download District CSV Report
-        </button>
-      </div>
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-        {/* Weekly Health Trends Chart */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 xl:col-span-2">
-          <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
-            <div>
-              <h3 className="font-black text-slate-900 text-[15px]">Weekly Health Trends</h3>
-              <p className="text-[10px] text-slate-400 font-bold mt-1">Symptom detections &amp; emergency dispatches over the last 7 days</p>
-            </div>
-            <div className="flex items-center gap-3 text-[10px] font-bold">
-              <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 bg-rose-500 rounded-sm" /> SOS Emergencies</span>
-              <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 bg-emerald-500 rounded-sm" /> Symptom Clusters</span>
-            </div>
-          </div>
+    <div className="p-4 lg:p-5 space-y-5 text-left">
 
-          <div className="h-48 w-full flex items-end justify-between gap-4 pt-4 px-2 relative">
-                {!hasData ? (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-center">
-                  <p className="text-sm font-black text-slate-300 uppercase tracking-wider">No trend data yet</p>
-                  <p className="text-[11px] text-slate-400 font-medium mt-1">Outbreak and ambulance data will appear here as records arrive.</p>
-                </div>
-              </div>
-            ) : chartData.map((d, i) => {
-              const symHeight = (d.symptoms / maxVal) * 100;
-              const emHeight = (d.emergencies / maxVal) * 100;
-              return (
-                <div key={i} className="flex-1 flex flex-col items-center gap-2 h-full justify-end">
-                  <div className="flex items-end gap-1.5 h-full w-full justify-center">
-                    {/* Emergencies bar */}
-                    <motion.div
-                      className="w-3 sm:w-5 bg-rose-500 rounded-t-md hover:bg-rose-600 relative group cursor-default"
-                      initial={{ height: 0 }}
-                      animate={{ height: `${Math.max(emHeight, 4)}%` }}
-                      transition={{ duration: 0.5, delay: i * 0.08, ease: 'easeOut' }}
-                      whileHover={{ scale: 1.08 }}
-                    >
-                      <div className="absolute -top-7 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[9px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity font-bold pointer-events-none whitespace-nowrap z-10 shadow-md">
-                        {d.emergencies} SOS
-                      </div>
-                    </motion.div>
-                    {/* Symptoms bar */}
-                    <motion.div
-                      className="w-3 sm:w-5 bg-emerald-500 rounded-t-md hover:bg-emerald-600 relative group cursor-default"
-                      initial={{ height: 0 }}
-                      animate={{ height: `${Math.max(symHeight, 4)}%` }}
-                      transition={{ duration: 0.5, delay: i * 0.08, ease: 'easeOut' }}
-                      whileHover={{ scale: 1.08 }}
-                    >
-                      <div className="absolute -top-7 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[9px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity font-bold pointer-events-none whitespace-nowrap z-10 shadow-md">
-                        {d.symptoms} Clusters
-                      </div>
-                    </motion.div>
-                  </div>
-                  <span className="text-[9.5px] font-bold text-slate-400 uppercase tracking-wider mt-1">{d.label}</span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
-          <div className="flex items-center justify-between gap-3 mb-4">
-            <div>
-              <h3 className="font-black text-slate-900 text-[15px]">District Onboarding Checklist</h3>
-              <p className="text-[10px] text-slate-400 font-bold mt-1">Procurement workflow for first district rollout</p>
+      {/* ── Hero Header + Export Actions ── */}
+      <motion.div
+        initial={{ opacity: 0, y: -8 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="relative overflow-hidden rounded-2xl border border-emerald-200/70 shadow-sm"
+        style={{ background: 'linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #d1fae5 100%)' }}
+      >
+        <div className="absolute -top-8 -right-8 w-40 h-40 rounded-full bg-emerald-200/20 pointer-events-none" />
+        <div className="relative z-10 p-5 flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-4">
+            <div className="w-11 h-11 rounded-2xl bg-white border border-emerald-200 shadow-sm flex items-center justify-center">
+              <BarChart3 className="w-5 h-5 text-emerald-700" />
             </div>
-            <CheckCircle className="w-5 h-5 text-emerald-600" />
-          </div>
-          <div className="space-y-2">
-            {[
-              { label: 'Upload villages', done: (SM?.villages || 0) > 0 },
-              { label: 'Assign ASHA workers', done: (SM?.totalNgos || 0) > 0 },
-              { label: 'Configure outbreak threshold', done: true },
-              { label: 'Verify AWS storage', done: systemStatus?.production_ready === true },
-              { label: 'Export first district report', done: !!districtReport },
-            ].map(step => (
-              <div key={step.label} className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 p-3">
-                <span className="text-[12px] font-bold text-slate-700">{step.label}</span>
-                <span className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase ${step.done ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
-                  {step.done ? 'Ready' : 'Pending'}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-        
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
-          <div className="flex items-center justify-between gap-3 mb-4">
             <div>
-              <h3 className="font-black text-slate-900 text-[15px]">District Configuration</h3>
-              <p className="text-[10px] text-slate-400 font-bold mt-1">Repeatable deployment settings for each buyer district</p>
-            </div>
-            <Settings className="w-5 h-5 text-slate-500" />
-          </div>
-          <div className="grid grid-cols-3 gap-3">
-            {[
-              { label: 'Outbreak threshold', val: districtReport?.config?.outbreak_threshold ?? 3 },
-              { label: 'Auto ambulance', val: districtReport?.config?.enable_auto_ambulance ? 'On' : 'Off' },
-              { label: 'Emergency contact', val: districtReport?.config?.emergency_contact_phone || 'Pending' },
-            ].map(item => (
-              <div key={item.label} className="rounded-xl bg-slate-50 border border-slate-100 p-3 min-w-0">
-                <p className="text-[15px] font-black text-slate-900 truncate">{item.val}</p>
-                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mt-1 leading-tight">{item.label}</p>
+              <div className="flex items-center gap-2 mb-0.5">
+                <h1 className="text-lg font-black text-slate-900 tracking-tight">Reports & Exports</h1>
+                {demoTourMode && (
+                  <span className="px-2 py-0.5 bg-emerald-100 border border-emerald-200 text-emerald-700 text-[9px] font-black uppercase tracking-wider rounded-full">Demo</span>
+                )}
               </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
-          <div className="flex items-center justify-between gap-3 mb-4">
-            <div>
-              <h3 className="font-black text-slate-900 text-[15px]">Monthly CMO Report</h3>
-              <p className="text-[10px] text-slate-400 font-bold mt-1">Generated from Aurora records + DynamoDB telemetry.</p>
+              <p className="text-xs text-slate-500 font-medium">District health analytics · ASHA performance · CMO-ready exports</p>
             </div>
-            <button onClick={downloadDistrictReport} className="flex items-center gap-2 px-3 py-2 bg-slate-900 text-white rounded-xl font-black text-[10px] uppercase tracking-wider">
-              <Download className="w-3.5 h-3.5" /> Export
+          </div>
+          <div className="flex items-center gap-2.5 flex-wrap">
+            {lastSync && (
+              <span className="flex items-center gap-1.5 text-[9px] text-slate-400 font-bold">
+                <Clock className="w-3 h-3" /> {lastSync}
+              </span>
+            )}
+            <button
+              onClick={downloadReport}
+              className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-black text-[11px] uppercase tracking-wider transition-colors shadow-sm hover:shadow-md active:scale-95"
+            >
+              <Download className="w-3.5 h-3.5" />
+              District CSV
+            </button>
+            <button
+              onClick={downloadDistrictReport}
+              className="flex items-center gap-2 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-black text-[11px] uppercase tracking-wider transition-colors shadow-sm hover:shadow-md active:scale-95"
+            >
+              <Download className="w-3.5 h-3.5" />
+              CMO Report
             </button>
           </div>
-          {reportLoading ? (
-            <div className="grid grid-cols-2 gap-3 animate-pulse">
-              {[1, 2, 3, 4].map(i => (
-                <div key={i} className="rounded-xl bg-slate-50 border border-slate-100 p-3 space-y-2">
-                  <div className="h-6 bg-slate-200 rounded w-1/2" />
-                  <div className="h-3 bg-slate-200 rounded w-3/4" />
+        </div>
+      </motion.div>
+
+      {/* ── Aggregate KPIs ── */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {[
+          { label: 'Total Villagers', val: SM?.totalUsers ?? 0,     icon: Users,   color: '#059669', light: '#ecfdf5', border: '#a7f3d0' },
+          { label: 'NGO Partners',    val: SM?.totalNgos ?? 0,      icon: Heart,   color: '#dc2626', light: '#fff1f2', border: '#fecdd3' },
+          { label: 'Emergency SOS',   val: SM?.emergencyCount ?? 0, icon: Truck,   color: '#d97706', light: '#fffbeb', border: '#fde68a' },
+          { label: 'Active Districts',val: 1,                       icon: MapPin,  color: '#7c3aed', light: '#f5f3ff', border: '#ddd6fe' },
+        ].map(({ label, val, icon: Icon, color, light, border }, i) => (
+          <motion.div
+            key={label}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.07 * i }}
+            className="rounded-2xl border p-4 flex items-center gap-3 hover:shadow-sm transition-shadow"
+            style={{ background: light, borderColor: border }}
+          >
+            <div className="w-9 h-9 rounded-xl bg-white border shadow-sm flex items-center justify-center shrink-0" style={{ borderColor: border }}>
+              <Icon className="w-4 h-4" style={{ color }} />
+            </div>
+            <div>
+              <p className="text-2xl font-black text-slate-900 leading-none">{val}</p>
+              <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mt-0.5">{label}</p>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* ── Chart + CMO Report side by side ── */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
+
+        {/* Weekly Health Trends Chart */}
+        <div className="xl:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+          <div className="flex items-center justify-between mb-5">
+            <div>
+              <h2 className="font-black text-slate-900 text-sm uppercase tracking-wider">Weekly Health Trends</h2>
+              <p className="text-[10px] text-slate-400 font-medium mt-0.5">
+                Symptom detections & emergency dispatches · last 7 days
+                {!hasData && <span className="ml-2 text-amber-600 font-bold">(demo data)</span>}
+              </p>
+            </div>
+            <div className="flex items-center gap-3 text-[10px] font-bold">
+              <span className="flex items-center gap-1.5">
+                <span className="w-3 h-2 rounded-sm bg-emerald-500 inline-block" />
+                Symptom Clusters
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-3 h-2 rounded-sm bg-rose-500 inline-block" />
+                SOS Emergencies
+              </span>
+            </div>
+          </div>
+
+          {/* Chart area */}
+          <div className="flex gap-2 h-44">
+            {/* Y-axis */}
+            <div className="flex flex-col justify-between items-end pr-2 shrink-0">
+              {yLabels.map((y, i) => (
+                <span key={i} className="text-[8px] font-bold text-slate-300">{y}</span>
+              ))}
+            </div>
+            {/* Bars */}
+            <div className="flex-1 flex items-end gap-2 border-b border-l border-slate-100">
+              {chart.map((d, i) => (
+                <div key={i} className="flex-1 flex flex-col items-center gap-0.5 h-full">
+                  <div className="flex-1 w-full flex items-end gap-0.5">
+                    <Bar height={(d.symptoms / cMax) * 100}    color="#10b981" tooltip={`${d.symptoms} clusters`}    delay={0.04 * i} />
+                    <Bar height={(d.emergencies / cMax) * 100} color="#f43f5e" tooltip={`${d.emergencies} SOS`}      delay={0.04 * i + 0.02} />
+                  </div>
+                  <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider pb-1">{d.label}</span>
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* Weekly summary */}
+          <div className="mt-4 pt-4 border-t border-slate-100 grid grid-cols-3 gap-3">
+            {[
+              { label: 'Total Symptom Reports', val: chart.reduce((a, d) => a + d.symptoms, 0),    color: '#059669', icon: TrendingUp },
+              { label: 'Total SOS Dispatches',  val: chart.reduce((a, d) => a + d.emergencies, 0), color: '#dc2626', icon: Truck },
+              { label: 'Avg/Day (Symptoms)',    val: (chart.reduce((a,d)=>a+d.symptoms,0)/7).toFixed(1), color: '#7c3aed', icon: BarChart3 },
+            ].map(({ label, val, color, icon: Icon }) => (
+              <div key={label} className="bg-slate-50 border border-slate-100 rounded-xl p-2.5 text-center">
+                <Icon className="w-3.5 h-3.5 mx-auto mb-1" style={{ color }} />
+                <p className="text-base font-black text-slate-900">{val}</p>
+                <p className="text-[8px] font-bold text-slate-400 uppercase tracking-wider leading-tight mt-0.5">{label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* CMO Monthly Report */}
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="font-black text-slate-900 text-sm uppercase tracking-wider">CMO Report</h2>
+              <p className="text-[9px] text-slate-400 font-medium mt-0.5">Aurora records + DynamoDB telemetry</p>
+            </div>
+            <button
+              onClick={downloadDistrictReport}
+              className="flex items-center gap-1.5 px-3 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-black text-[9px] uppercase tracking-wider transition-colors"
+            >
+              <Download className="w-3 h-3" /> Export
+            </button>
+          </div>
+
+          {reportLoading ? (
+            <div className="space-y-2.5 animate-pulse">
+              {[0,1,2,3].map(i => <div key={i} className="h-16 bg-slate-100 rounded-xl" />)}
+            </div>
           ) : (
-            <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2.5">
               {[
-                { label: 'Villages', val: REP?.villages?.total ?? 0 },
-                { label: 'High-risk', val: REP?.maternal?.highRiskPregnancies ?? 0 },
-                { label: 'SOS', val: REP?.emergencies?.ambulanceRequests ?? 0 },
-                { label: 'Outbreaks', val: REP?.outbreakAlerts?.count ?? 0 },
-              ].map(metric => (
-                <div key={metric.label} className="rounded-xl bg-slate-50 border border-slate-100 p-3">
-                  <p className="text-[20px] font-black text-slate-900">{metric.val}</p>
-                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{metric.label}</p>
-                </div>
+                { label: 'Total Villages',    val: REP?.villages?.total ?? 0,                    icon: MapPin,  color: '#059669', light: '#ecfdf5', border: '#a7f3d0' },
+                { label: 'High-Risk Maternal',val: REP?.maternal?.highRiskPregnancies ?? 0,       icon: Heart,  color: '#dc2626', light: '#fff1f2', border: '#fecdd3' },
+                { label: 'Ambulance Requests',val: REP?.emergencies?.ambulanceRequests ?? 0,      icon: Truck,  color: '#d97706', light: '#fffbeb', border: '#fde68a' },
+                { label: 'Outbreak Alerts',   val: REP?.outbreakAlerts?.count ?? 0,               icon: Radio,  color: '#7c3aed', light: '#f5f3ff', border: '#ddd6fe' },
+              ].map(({ label, val, icon: Icon, color, light, border }, i) => (
+                <motion.div
+                  key={label}
+                  initial={{ opacity: 0, x: 10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.07 * i }}
+                  className="flex items-center gap-3 p-3 rounded-xl border"
+                  style={{ background: light, borderColor: border }}
+                >
+                  <div className="w-8 h-8 rounded-lg bg-white border shadow-sm flex items-center justify-center shrink-0" style={{ borderColor: border }}>
+                    <Icon className="w-3.5 h-3.5" style={{ color }} />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">{label}</p>
+                    <p className="text-xl font-black text-slate-900 leading-tight">{val}</p>
+                  </div>
+                </motion.div>
               ))}
             </div>
           )}
         </div>
+      </div>
 
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
-          <div className="flex items-center justify-between gap-3 mb-4">
-            <div>
-              <h3 className="font-black text-slate-900 text-[15px]">ASHA Performance</h3>
-              <p className="text-[10px] text-slate-400 font-bold mt-1">Worker KPIs for CMO review and NGO operations</p>
-            </div>
-            <Users className="w-5 h-5 text-emerald-600" />
-          </div>
-          <div className="space-y-2">
-            {(PERF || []).slice(0, 4).map(worker => (
-              <div key={worker.asha_id || worker.name} className="rounded-xl border border-slate-100 bg-slate-50 p-3">
-                <div className="flex items-center justify-between gap-3 mb-2">
-                  <p className="text-[12px] font-black text-slate-800 truncate">{worker.name || 'ASHA worker'}</p>
-                  <span className="text-[9px] font-black text-slate-400 uppercase">{worker.villageId || 'unassigned'}</span>
-                </div>
-                <div className="grid grid-cols-4 gap-2 text-center">
-                  {[
-                    { label: 'Ref', val: worker.referrals_count },
-                    { label: 'Preg', val: worker.pregnancies_tracked },
-                    { label: 'Vax', val: worker.vaccinations_completed },
-                    { label: 'SOS', val: worker.emergencies_reported },
-                  ].map(metric => (
-                    <div key={metric.label}>
-                      <p className="text-[14px] font-black text-slate-900">{metric.val ?? 0}</p>
-                      <p className="text-[8px] font-black text-slate-400 uppercase">{metric.label}</p>
-                    </div>
-                  ))}
-                </div>
+      {/* ── ASHA Performance + Checklist side by side ── */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
+
+        {/* ASHA Leaderboard */}
+        <div className="xl:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-lg bg-emerald-100 border border-emerald-200 flex items-center justify-center">
+                <Users className="w-3.5 h-3.5 text-emerald-700" />
               </div>
-            ))}
-            {(!PERF || PERF.length === 0) && (
-              <p className="text-[12px] text-slate-400 font-bold">No ASHA KPI records yet.</p>
-            )}
+              <div>
+                <h2 className="font-black text-slate-900 text-sm uppercase tracking-wider">ASHA Performance</h2>
+                <p className="text-[9px] text-slate-400 font-medium">Worker KPIs · CMO review panel</p>
+              </div>
+            </div>
+            <span className="text-[9px] font-bold text-slate-400">{perf.length} workers</span>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="bg-slate-50/80 border-b border-slate-100">
+                  {['#', 'Worker', 'Village', 'Referrals', 'Pregnancies', 'Vaccinations', 'SOS', 'Score'].map(h => (
+                    <th key={h} className="px-4 py-3 text-left text-[8px] font-black uppercase tracking-widest text-slate-400">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {perf.slice(0, 5).map((w, i) => {
+                  const score = (w.referrals_count || 0) + (w.pregnancies_tracked || 0) * 2 + (w.vaccinations_completed || 0) + (w.emergencies_reported || 0) * 3;
+                  const isTop = i === 0;
+                  return (
+                    <motion.tr
+                      key={w.asha_id || w.name || i}
+                      initial={{ opacity: 0, x: -6 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.05 * i }}
+                      className={`border-b border-slate-50 hover:bg-emerald-50/30 transition-colors ${isTop ? 'bg-emerald-50/40' : ''}`}
+                    >
+                      <td className="px-4 py-3.5">
+                        {isTop
+                          ? <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+                          : <span className="text-[9px] font-black text-slate-300">{i + 1}</span>
+                        }
+                      </td>
+                      <td className="px-4 py-3.5">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-[8px] font-black text-white shrink-0">
+                            {(w.name || 'A')[0]}
+                          </div>
+                          <span className="text-xs font-bold text-slate-800 truncate max-w-24">{w.name || 'ASHA Worker'}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3.5">
+                        <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded-full">{w.villageId || '—'}</span>
+                      </td>
+                      {[
+                        { val: w.referrals_count,        color: '#059669' },
+                        { val: w.pregnancies_tracked,    color: '#dc2626' },
+                        { val: w.vaccinations_completed, color: '#1d4ed8' },
+                        { val: w.emergencies_reported,   color: '#d97706' },
+                      ].map(({ val, color }, j) => (
+                        <td key={j} className="px-4 py-3.5">
+                          <span className="text-sm font-black" style={{ color }}>{val ?? 0}</span>
+                        </td>
+                      ))}
+                      <td className="px-4 py-3.5">
+                        <div className="flex items-center gap-1.5">
+                          <div className="w-12 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                            <div className="h-full rounded-full bg-emerald-500" style={{ width: `${Math.min(100, (score / 80) * 100)}%` }} />
+                          </div>
+                          <span className="text-[9px] font-black text-slate-600">{score}</span>
+                        </div>
+                      </td>
+                    </motion.tr>
+                  );
+                })}
+                {perf.length === 0 && (
+                  <tr><td colSpan={8} className="px-4 py-8 text-center text-xs text-slate-400 font-medium">No ASHA records yet</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Onboarding Checklist + District Config */}
+        <div className="space-y-4">
+          {/* Checklist */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="font-black text-slate-900 text-xs uppercase tracking-wider">Deployment Checklist</h2>
+                <p className="text-[9px] text-slate-400 font-medium mt-0.5">District rollout readiness</p>
+              </div>
+              <div className="text-right">
+                <p className="text-xl font-black text-emerald-700">{doneCount}/{checklistItems.length}</p>
+                <p className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">Complete</p>
+              </div>
+            </div>
+            {/* Progress bar */}
+            <div className="w-full h-1.5 bg-slate-100 rounded-full mb-4 overflow-hidden">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${(doneCount / checklistItems.length) * 100}%` }}
+                transition={{ duration: 1, ease: 'easeOut' }}
+                className="h-full rounded-full bg-emerald-500"
+              />
+            </div>
+            <div className="space-y-2">
+              {checklistItems.map((item, i) => {
+                const Icon = item.icon;
+                return (
+                  <motion.div
+                    key={item.label}
+                    initial={{ opacity: 0, x: 8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.06 * i }}
+                    className="flex items-center gap-2.5 p-2.5 rounded-xl border transition-colors"
+                    style={{
+                      background: item.done ? '#f0fdf4' : '#fafafa',
+                      borderColor: item.done ? '#a7f3d0' : '#e2e8f0'
+                    }}
+                  >
+                    {item.done
+                      ? <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                      : <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
+                    }
+                    <span className="text-[10px] font-bold text-slate-700 flex-1">{item.label}</span>
+                    <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-full ${item.done ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                      {item.done ? 'Ready' : 'Pending'}
+                    </span>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* District Config */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+            <div className="flex items-center gap-2 mb-3">
+              <Settings className="w-3.5 h-3.5 text-slate-500" />
+              <h2 className="font-black text-slate-900 text-xs uppercase tracking-wider">District Config</h2>
+            </div>
+            <div className="space-y-2">
+              {[
+                { label: 'Outbreak Threshold',  val: districtReport?.config?.outbreak_threshold ?? 3,                               color: '#dc2626', light: '#fff1f2', border: '#fecdd3' },
+                { label: 'Auto Ambulance',      val: districtReport?.config?.enable_auto_ambulance ? 'Enabled' : 'Disabled',         color: '#059669', light: '#ecfdf5', border: '#a7f3d0' },
+                { label: 'Emergency Contact',   val: districtReport?.config?.emergency_contact_phone || 'Pending setup',             color: '#7c3aed', light: '#f5f3ff', border: '#ddd6fe' },
+              ].map(({ label, val, color, light, border }) => (
+                <div key={label} className="flex items-center justify-between p-2.5 rounded-xl border" style={{ background: light, borderColor: border }}>
+                  <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">{label}</span>
+                  <span className="text-xs font-black" style={{ color }}>{val}</span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {[
-          { label: 'Total Records', val: SM?.totalRequests },
-          { label: 'Villagers', val: SM?.totalUsers },
-          { label: 'NGO Workers', val: SM?.totalNgos },
-          { label: 'Emergency SOS', val: SM?.emergencyCount },
-        ].map(s => (
-          <div key={s.label} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 text-center">
-            <p className="text-[24px] font-black text-slate-900">{s.val ?? 0}</p>
-            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">{s.label}</p>
-          </div>
-        ))}
-      </div>
+
     </div>
   );
 }

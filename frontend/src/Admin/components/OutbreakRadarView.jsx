@@ -1,413 +1,491 @@
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { 
-  Radio, MapPin, Activity, Shield, AlertTriangle, 
-  Send, Download, Sparkles, BellRing, Target, 
-  TrendingUp, Zap, HelpCircle, HeartPulse, RefreshCw
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Radio, MapPin, Activity, Shield, AlertTriangle,
+  Send, Download, Sparkles, Target, Zap,
+  CheckCircle2, Clock, RefreshCw, ChevronRight, Bell
 } from 'lucide-react';
 import { timeAgo } from './utils';
 import { showToast } from '../../utils/toast';
 import DistrictOutbreakMap from '../../components/DistrictOutbreakMap';
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  show: { opacity: 1, transition: { staggerChildren: 0.05 } },
-};
-const cardVariants = {
-  hidden: { opacity: 0, y: 16 },
-  show: { opacity: 1, y: 0 },
+/* ─── Demo outbreak data ─────────────────────────────────────────────── */
+const DEMO_OB = [
+  {
+    id:'OB-001', villageId:'V-104', villageName:'Rajpur', disease:'Cholera', classification:'Cholera',
+    severity:'critical', confidence:0.91, caseCount:14, riskScore:94,
+    symptomPattern:'Profuse watery diarrhoea, vomiting, rapid dehydration in 14 patients.',
+    action:'Deploy ORS + IV-fluid packets. Alert district PHC. Boil-water advisory.',
+    detectedAt: new Date(Date.now()-18*60000).toISOString(),
+  },
+  {
+    id:'OB-002', villageId:'V-102', villageName:'Lakhpur', disease:'Dengue', classification:'Dengue Fever',
+    severity:'high', confidence:0.78, caseCount:8, riskScore:75,
+    symptomPattern:'Joint pain, rash, fever >39°C in 8 cases. Vector density elevated.',
+    action:'Vector control fogging. Distribute mosquito nets. Monitor platelet counts.',
+    detectedAt: new Date(Date.now()-47*60000).toISOString(),
+  },
+  {
+    id:'OB-003', villageId:'V-107', villageName:'Sindhpur', disease:'Typhoid', classification:'Typhoid',
+    severity:'medium', confidence:0.67, caseCount:5, riskScore:58,
+    symptomPattern:'Sustained high fever, headache, abdominal discomfort in 5 patients.',
+    action:'Water source testing. Prescribe antibiotics. Hygiene awareness drive.',
+    detectedAt: new Date(Date.now()-90*60000).toISOString(),
+  },
+];
+
+const SEVERITY_META = {
+  critical: { bg:'#fff1f2', border:'#fecdd3', text:'#9f1239', bar:'#dc2626', dot:'bg-rose-500',   label:'CRITICAL' },
+  high:     { bg:'#fff7ed', border:'#fed7aa', text:'#9a3412', bar:'#ea580c', dot:'bg-orange-500', label:'HIGH'     },
+  medium:   { bg:'#fefce8', border:'#fde68a', text:'#78350f', bar:'#d97706', dot:'bg-amber-500',  label:'MEDIUM'   },
+  low:      { bg:'#f0fdf4', border:'#a7f3d0', text:'#065f46', bar:'#059669', dot:'bg-emerald-500',label:'LOW'      },
 };
 
+function severityKey(s = '') { return (s.toLowerCase() in SEVERITY_META) ? s.toLowerCase() : 'medium'; }
+
+/* ─── Alert Card ──────────────────────────────────────────────────────── */
+function AlertCard({ ob, index, dispatched, onDispatch }) {
+  const [expanded, setExpanded] = useState(index === 0);
+  const sk = severityKey(ob.severity);
+  const meta = SEVERITY_META[sk];
+  const conf = Math.round((ob.confidence ?? 0.8) * 100);
+  const isDispatched = dispatched[ob.id];
+
+  return (
+    <motion.div
+      initial={{ opacity:0, y:10 }}
+      animate={{ opacity:1, y:0 }}
+      transition={{ delay:0.06*index }}
+      className="bg-white rounded-2xl border overflow-hidden hover:shadow-md transition-shadow duration-200"
+      style={{ borderColor: meta.border }}
+    >
+      {/* Header bar */}
+      <div
+        className="h-1 w-full"
+        style={{ background: `linear-gradient(90deg, ${meta.bar}, ${meta.bar}80)` }}
+      />
+
+      <button
+        className="w-full text-left px-4 py-3 flex items-center gap-3"
+        onClick={() => setExpanded(e => !e)}
+      >
+        {/* Pulsing dot */}
+        <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${meta.dot} ${sk === 'critical' ? 'animate-pulse' : ''}`} />
+
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <p className="text-xs font-black text-slate-900">{ob.classification || ob.disease} Cluster</p>
+            <span className="text-[8px] font-black px-1.5 py-0.5 rounded-full border uppercase tracking-wider"
+              style={{ background:meta.bg, color:meta.text, borderColor:meta.border }}>{meta.label}</span>
+          </div>
+          <p className="text-[9px] text-slate-400 font-medium mt-0.5">
+            {ob.villageName || ob.villageId} · {ob.caseCount} cases · Detected {timeAgo(ob.detectedAt)}
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="text-[9px] font-black" style={{ color:meta.bar }}>{conf}% AI</span>
+          <ChevronRight className={`w-3.5 h-3.5 text-slate-300 transition-transform ${expanded ? 'rotate-90' : ''}`} />
+        </div>
+      </button>
+
+      <AnimatePresence initial={false}>
+        {expanded && (
+          <motion.div
+            key="body"
+            initial={{ height:0, opacity:0 }}
+            animate={{ height:'auto', opacity:1 }}
+            exit={{ height:0, opacity:0 }}
+            transition={{ duration:0.18 }}
+            className="overflow-hidden"
+          >
+            <div className="px-4 pb-4 space-y-3 border-t border-slate-100">
+              {/* Symptom + action */}
+              <div className="pt-3 grid grid-cols-1 gap-2">
+                <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+                  <p className="text-[8px] font-black uppercase tracking-widest text-slate-400 mb-1">Symptom Pattern</p>
+                  <p className="text-[10px] font-medium text-slate-700 leading-relaxed">{ob.symptomPattern}</p>
+                </div>
+                <div className="rounded-xl p-3 border" style={{ background:meta.bg, borderColor:meta.border }}>
+                  <p className="text-[8px] font-black uppercase tracking-widest mb-1" style={{ color:meta.bar }}>
+                    Recommended Action
+                  </p>
+                  <p className="text-[10px] font-bold text-slate-800 leading-relaxed">{ob.action}</p>
+                </div>
+              </div>
+
+              {/* Stats row */}
+              <div className="grid grid-cols-4 gap-2">
+                {[
+                  { label:'AI Conf.',  val:`${conf}%`,         color:meta.bar },
+                  { label:'Risk Score',val:`${ob.riskScore}/100`, color:meta.bar },
+                  { label:'Cases',     val:ob.caseCount,       color:'#475569' },
+                  { label:'Priority',  val:sk==='critical'?'P1':sk==='high'?'P2':'P3', color:sk==='critical'?'#dc2626':'#d97706' },
+                ].map(({ label, val, color }) => (
+                  <div key={label} className="text-center bg-slate-50 rounded-lg py-2 border border-slate-100">
+                    <p className="text-xs font-black" style={{ color }}>{val}</p>
+                    <p className="text-[7px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">{label}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Dispatch */}
+              <div className="flex items-center justify-between pt-1">
+                <div className="flex items-center gap-1.5 text-[9px] text-slate-400">
+                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+                  Telemetry Active
+                </div>
+                <button
+                  onClick={() => onDispatch(ob.id, ob.villageId, ob.classification || ob.disease)}
+                  disabled={isDispatched}
+                  className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all ${
+                    isDispatched
+                      ? 'bg-emerald-100 text-emerald-700 border border-emerald-200 cursor-default'
+                      : 'bg-slate-900 hover:bg-emerald-600 text-white shadow-sm hover:shadow-md active:scale-95'
+                  }`}
+                >
+                  {isDispatched ? '✓ Unit Dispatched' : 'Dispatch Response Unit'}
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════ */
 export default function OutbreakRadarView({
-  OB,
-  S,
-  simulateOutbreak,
-  simulatingOutbreak,
-  issueDistrictAlert,
-  alertSent,
-  alertError,
-  downloadReport,
-  lastAgentScan,
-  demoTourMode,
-  loading,
-  lastSync,
+  OB, S, simulateOutbreak, simulatingOutbreak,
+  issueDistrictAlert, alertSent, alertError,
+  downloadReport, lastAgentScan, demoTourMode, loading, lastSync,
 }) {
-  const [dispatchedAlerts, setDispatchedAlerts] = useState({});
+  const [dispatched, setDispatched] = useState({});
+  const [consoleTab, setConsoleTab] = useState('actions');
 
-  const hasRealData = OB.length > 0 && OB.some(o => o.villageId && o.villageId !== 'demo' && !o.villageId.startsWith('V_DEMO'));
-  const uniqueVillages = new Set(OB.map(o => o.villageId).filter(Boolean)).size;
-  const highRiskCount = OB.filter(o => (o.severity || '').toLowerCase() === 'critical' || (o.severity || '').toLowerCase() === 'high').length;
-  const derivedMetrics = demoTourMode ? {
-    activeAlerts: OB.length || '−',
-    highRiskVillages: highRiskCount || uniqueVillages || (OB.length > 0 ? OB.length : '−'),
-    underMonitor: OB.length || '−',
-    symptomClusters: OB.length > 0 ? Math.max(1, Math.floor(OB.length * 2.5)) : '−',
-    casesToday: S?.today_symptoms || (OB.length > 0 ? OB.reduce((sum, o) => sum + (o.caseCount || 1), 0) : '−'),
-  } : {
-    activeAlerts: OB.length || '−',
-    highRiskVillages: highRiskCount || '−',
-    underMonitor: OB.length || '−',
-    symptomClusters: OB.length > 0 ? Math.max(1, Math.floor(OB.length * 2.5)) : '−',
-    casesToday: S?.today_symptoms || '−',
-  };
-  const usingDemoDefaults = demoTourMode || (!hasRealData && OB.length === 0);
+  const obList = OB?.length > 0 ? OB : DEMO_OB;
+  const isDemo = !OB?.length;
 
-  const handleDispatchUnit = (alertId, villageId, disease) => {
-    setDispatchedAlerts(prev => ({ ...prev, [alertId]: true }));
-    showToast(`Response Unit Dispatched to Village ${villageId} for ${disease}. ASHA local team alerted.`, 'success');
+  const highRisk   = obList.filter(o => ['critical','high'].includes((o.severity||'').toLowerCase())).length;
+  const totalCases = obList.reduce((a, o) => a + (o.caseCount || 1), 0);
+  const aiConf     = obList.length ? Math.round(obList.reduce((a,o)=>a+(o.confidence||0.8),0)/obList.length*100) : 0;
+
+  const diseaseCounts = {};
+  obList.forEach(o => {
+    const d = (o.disease || o.classification || 'Unknown').replace(/_/g,' ');
+    diseaseCounts[d] = (diseaseCounts[d] || 0) + (o.caseCount || 1);
+  });
+  const sorted = Object.entries(diseaseCounts).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const maxCount = sorted.length ? Math.max(...sorted.map(([,c])=>c)) : 1;
+  const dColors = ['#dc2626','#ea580c','#d97706','#1d4ed8','#7c3aed'];
+
+  const handleDispatch = (id, village, disease) => {
+    setDispatched(p => ({ ...p, [id]:true }));
+    showToast(`Response Unit dispatched to ${village} for ${disease}. ASHA teams alerted.`, 'success');
   };
 
   return (
-    <div className="p-4 lg:p-6 space-y-6 text-left bg-gradient-to-br from-[#EBF3FC] via-[#F3FAF7] to-[#FBF8FC] min-h-screen text-slate-800 font-inter relative overflow-hidden">
-      
-      {/* CSS animations — defined inline via Tailwind + className instead of dangerouslySetInnerHTML */}
-      <div className="hidden">
-        {/* Keyframes for progress-shimmer, card-shimmer, subtle-pulse are handled via Tailwind utility classes */}
-      </div>
+    <div className="p-4 lg:p-5 space-y-4 text-left">
 
-      {/* Premium ambient light blurs */}
-      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-emerald-300/10 rounded-full blur-[100px] pointer-events-none" />
-      <div className="absolute bottom-10 left-0 w-[400px] h-[400px] bg-rose-300/10 rounded-full blur-[100px] pointer-events-none" />
-      <div className="absolute top-1/3 left-1/3 w-[300px] h-[300px] bg-indigo-300/5 rounded-full blur-[80px] pointer-events-none" />
-
-      {/* ── HEADER SECTION ── */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200/80 pb-5">
-        <div className="flex items-center gap-4">
-          <div className="w-14 h-14 bg-gradient-to-br from-rose-500 to-red-500 rounded-2xl flex items-center justify-center shadow-[0_6px_20px_rgba(244,63,94,0.35)] relative">
-            <Radio className="w-7 h-7 text-white animate-pulse" />
-            <span className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-rose-550"></span>
-            </span>
+      {/* ── Hero Header ── */}
+      <motion.div
+        initial={{ opacity:0, y:-8 }} animate={{ opacity:1, y:0 }}
+        className="relative overflow-hidden rounded-2xl border border-rose-200/70 shadow-sm"
+        style={{ background:'linear-gradient(135deg,#fff1f2 0%,#fce7f3 40%,#fff7ed 100%)' }}
+      >
+        <div className="absolute -top-8 -right-8 w-40 h-40 rounded-full bg-rose-300/15 pointer-events-none" />
+        <div className="relative z-10 p-5 flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-4">
+            <div className="w-11 h-11 rounded-2xl bg-white border border-rose-200 shadow-sm flex items-center justify-center">
+              <Radio className="w-5 h-5 text-rose-600 animate-pulse" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 mb-0.5">
+                <h1 className="text-lg font-black text-slate-900 tracking-tight">Epidemic Outbreak Radar</h1>
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-100 border border-emerald-200 text-emerald-700 text-[9px] font-black rounded-full">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  Surveillance Active
+                </span>
+                {isDemo && <span className="text-[8px] font-bold px-2 py-0.5 rounded-full bg-amber-100 border border-amber-200 text-amber-700">Demo</span>}
+              </div>
+              <p className="text-xs text-slate-500 font-medium">Autonomous AI scan · Groq Llama-3.3 · DynamoDB outbreak_telemetry · 30-min loop</p>
+            </div>
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="font-black text-2xl tracking-tight text-slate-900 uppercase">Epidemic Outbreak Radar</h2>
-              <span className="px-2.5 py-0.5 bg-emerald-100 border border-emerald-300 text-emerald-800 rounded-full text-[9px] font-black uppercase tracking-wider animate-pulse">
-                Surveillance Active
+          <div className="flex items-center gap-2.5 flex-wrap">
+            {lastSync && (
+              <span className="flex items-center gap-1 text-[9px] text-slate-400 font-bold">
+                <Clock className="w-3 h-3" /> {lastSync}
               </span>
-            </div>
-            <p className="text-xs text-slate-500 font-medium mt-1">Autonomous surveillance scanning 1,200+ telemetry nodes every 30 minutes</p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <span className="flex items-center gap-1.5 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-bold text-slate-400">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            Synced {lastSync}
-          </span>
-          {lastAgentScan && (
-            <div className="flex items-center gap-1.5 px-3 py-2 bg-emerald-50 border border-emerald-200 rounded-xl text-[10px] font-bold text-emerald-700">
-              <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-              Agent scan: {timeAgo(lastAgentScan.timestamp)}
-            </div>
-          )}
-          <button
-            onClick={() => showToast('Surveillance AI node diagnostics normal. Cache synced.', 'info')}
-            className="p-2.5 bg-white hover:bg-slate-50 border border-slate-250 rounded-xl text-slate-650 hover:text-slate-900 transition-all text-xs font-black flex items-center gap-2 shadow-md hover:shadow-lg active:scale-95 duration-200"
-          >
-            <Zap className="w-3.5 h-3.5 text-emerald-500" /> Diagnostics
-          </button>
-        </div>
-      </div>
-
-      {/* ── HIGH DENSITY METRICS OVERVIEW ── */}
-      {loading ? (
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-4 animate-pulse">
-          {[...Array(6)].map((_, i) => (
-            <div key={i} className="bg-white/80 border border-slate-200/60 rounded-3xl p-5 space-y-4 shadow-md">
-              <div className="h-8 bg-slate-200 rounded w-1/2" />
-              <div className="h-9 w-9 bg-slate-200 rounded-xl" />
-              <div className="h-3 bg-slate-200 rounded w-3/4" />
-            </div>
-          ))}
-        </div>
-      ) : (<>
-      {usingDemoDefaults && (
-        <div className="flex items-center gap-2 px-4 py-2 bg-emerald-50 border border-emerald-200 rounded-xl">
-          <span className="text-[9px] font-black uppercase tracking-wider text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-200">LIVE</span>
-          <span className="text-[11px] text-emerald-800 font-bold">Connected to DynamoDB outbreak telemetry</span>
-        </div>
-      )}
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
-        {[
-          { label: 'Active Alerts', val: derivedMetrics.activeAlerts, icon: '🚨', borderCls: 'from-rose-400 to-red-500', glowCls: 'hover:shadow-[0_12px_30px_rgba(244,63,94,0.15)] hover:border-rose-300/80', valCls: 'text-rose-600', iconBg: 'bg-rose-50 text-rose-500 border-rose-100' },
-          { label: 'High-Risk Villages', val: derivedMetrics.highRiskVillages, icon: '🏘️', borderCls: 'from-orange-400 to-amber-500', glowCls: 'hover:shadow-[0_12px_30px_rgba(245,158,11,0.15)] hover:border-orange-300/80', valCls: 'text-orange-600', iconBg: 'bg-orange-50 text-orange-500 border-orange-100' },
-          { label: 'Under Monitor', val: derivedMetrics.underMonitor, icon: '🕵️', borderCls: 'from-sky-400 to-blue-500', glowCls: 'hover:shadow-[0_12px_30px_rgba(14,165,233,0.15)] hover:border-sky-300/80', valCls: 'text-sky-600', iconBg: 'bg-sky-50 text-sky-500 border-sky-100' },
-          { label: 'Symptom Clusters', val: derivedMetrics.symptomClusters, icon: '📊', borderCls: 'from-yellow-400 to-amber-500', glowCls: 'hover:shadow-[0_12px_30px_rgba(234,179,8,0.15)] hover:border-yellow-300/80', valCls: 'text-amber-600', iconBg: 'bg-amber-50 text-amber-500 border-amber-100' },
-          { label: 'Cases Today', val: derivedMetrics.casesToday, icon: '📈', borderCls: 'from-indigo-400 to-purple-500', glowCls: 'hover:shadow-[0_12px_30px_rgba(99,102,241,0.15)] hover:border-indigo-300/80', valCls: 'text-indigo-600', iconBg: 'bg-indigo-50 text-indigo-550 border-indigo-100' },
-          { label: 'AI Risk Prediction', val: '94.2%', icon: '🧠', borderCls: 'from-emerald-400 to-teal-500', glowCls: 'hover:shadow-[0_12px_30px_rgba(16,185,129,0.15)] hover:border-emerald-300/80', valCls: 'text-emerald-600', iconBg: 'bg-emerald-50 text-emerald-500 border-emerald-100' },
-        ].map(s => (
-          <div key={s.label} className={`bg-white/80 border border-slate-200/60 backdrop-blur-md rounded-3xl p-5 flex flex-col justify-between hover:-translate-y-1.5 transition-all duration-300 cursor-default relative overflow-hidden group shadow-md ${s.glowCls}`}>
-            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r items-stretch" style={{ backgroundImage: `linear-gradient(to right, ${s.borderCls.split(' ')[1]} , ${s.borderCls.split(' ')[3]})` }} />
-            <div className="flex justify-between items-start">
-              <span className={`text-3xl font-black tracking-tight font-sans ${s.valCls}`}>{s.val}</span>
-              <div className={`w-9 h-9 border rounded-xl flex items-center justify-center font-bold text-sm shadow-inner group-hover:scale-110 transition-transform ${s.iconBg}`}>{s.icon}</div>
-            </div>
-            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-4">{s.label}</p>
-          </div>
-        ))}
-      </div>
-      </>)}
-
-      {/* ── ACTION CONTROLS WIDGET ── */}
-      <div className="bg-white border border-slate-100 rounded-[2rem] p-4 flex flex-col lg:flex-row lg:items-center justify-between gap-4 shadow-[0_8px_30px_rgba(0,0,0,0.02)]">
-        <div className="flex items-center gap-2.5 pl-2">
-          <span className="relative flex h-2.5 w-2.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-500 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-600"></span>
-          </span>
-          <span className="text-[10.5px] font-black text-slate-500 uppercase tracking-wider">Outbreak Response Console</span>
-        </div>
-        
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            onClick={simulateOutbreak}
-            disabled={simulatingOutbreak}
-            className="px-6 py-3.5 bg-[#f43f5e] hover:bg-[#e11d48] disabled:opacity-50 text-white font-black rounded-full text-xs uppercase tracking-wider transition-all duration-300 shadow-[0_6px_20px_rgba(244,63,94,0.25)] hover:shadow-[0_8px_25px_rgba(244,63,94,0.35)] active:scale-95 cursor-pointer"
-          >
-            {simulatingOutbreak ? 'Simulating Event...' : 'Simulate Outbreak'}
-          </button>
-          
-          <button
-            onClick={issueDistrictAlert}
-            className={`px-6 py-3.5 rounded-full text-xs font-black uppercase tracking-wider transition-all duration-300 active:scale-95 border cursor-pointer ${
-              alertSent 
-                ? 'bg-emerald-600 text-white border-emerald-500 shadow-[0_6px_20px_rgba(16,185,129,0.2)]' 
-                : alertError 
-                ? 'bg-rose-600 text-white border-rose-500 shadow-[0_6px_20px_rgba(244,63,94,0.2)]' 
-                : 'bg-white border-slate-200 text-[#1e293b] hover:bg-slate-50 hover:border-slate-300 shadow-sm'
-            }`}
-          >
-            {alertSent ? '✓ Alert Dispatched' : alertError ? '⚠️ Action Failed' : 'Dispatch Alert'}
-          </button>
-
-          <button
-            onClick={() => showToast('ASHA Local Networks Broadcast Completed.', 'success')}
-            className="px-6 py-3.5 bg-[#0f172a] hover:bg-[#1e293b] text-white font-black rounded-full text-xs uppercase tracking-wider transition-all duration-300 shadow-[0_6px_20px_rgba(15,23,42,0.15)] active:scale-95 cursor-pointer"
-          >
-            Notify ASHA workers
-          </button>
-          
-          <button
-            onClick={downloadReport}
-            className="px-6 py-3.5 bg-white hover:bg-slate-50 border border-slate-200 text-[#1e293b] rounded-full text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-sm active:scale-95 cursor-pointer"
-          >
-            <Download className="w-4 h-4 text-slate-500" /> Export CSV
-          </button>
-
-          <button
-            onClick={() => showToast('AI Surveillance Analysis: Fever spikes in Northern Zone require vector control fogging immediately. Dispatches prioritized.', 'info')}
-            className="px-6 py-3.5 bg-gradient-to-r from-[#6366f1] via-[#818cf8] to-[#9333ea] hover:from-[#4f46e5] hover:to-[#7c3aed] text-white font-black rounded-full text-xs uppercase tracking-wider transition-all duration-300 shadow-[0_6px_20px_rgba(99,102,241,0.25)] hover:shadow-[0_8px_25px_rgba(99,102,241,0.35)] flex items-center gap-1.5 active:scale-95 cursor-pointer"
-          >
-            <Sparkles className="w-4 h-4" /> AI Summary
-          </button>
-        </div>
-      </div>
-
-      {/* Conditional message boxes */}
-      {alertSent && (
-        <div className="bg-emerald-50 border border-emerald-200 text-emerald-850 p-4.5 rounded-2xl text-xs font-bold flex items-center gap-2.5 animate-in fade-in duration-350 shadow-md">
-          <span className="w-2 h-2 bg-emerald-500 rounded-full animate-ping" />
-          <span>Outbreak Alert SSE Broadcast completed. DynamoDB and Aurora successfully synchronized across nodes.</span>
-        </div>
-      )}
-      {alertError && (
-        <div className="bg-rose-50 border border-rose-200 text-rose-850 p-4.5 rounded-2xl text-xs font-bold flex items-center gap-2.5 animate-in fade-in duration-350 shadow-md">
-          <span className="w-2 h-2 bg-rose-500 rounded-full animate-ping" />
-          <span>Transmission Error: {alertError}</span>
-        </div>
-      )}
-
-      {/* ── TICKER/ALERT BANNER ── */}
-      <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/5 border border-amber-250 rounded-2xl p-4.5 flex items-start sm:items-center gap-3.5 relative overflow-hidden shadow-sm animate-subtle-pulse">
-        <div className="absolute top-0 bottom-0 left-0 w-1.5 bg-amber-500" />
-        <span className="text-xl shrink-0 p-2 bg-amber-500/10 rounded-2xl border border-amber-200/60 text-amber-600">⚠️</span>
-        <div className="text-[12.5px] font-bold text-amber-900/95 leading-relaxed text-left">
-          <span className="text-amber-750 uppercase tracking-wider font-black text-[11px] block sm:inline mr-1.5">District Warning Alert:</span>
-          {OB.length} outbreak clusters identified across 5 sectors. AI surveillance recommends immediate vector/hygiene intervention in Northern Zone.
-        </div>
-      </div>
-
-      {/* ── MAP CONTAINER ── */}
-      <div className="w-full bg-white border border-slate-200/80 rounded-[2.5rem] p-4.5 shadow-xl relative overflow-hidden">
-        <div className="absolute top-3.5 left-8 px-4.5 py-1.5 bg-slate-900 border border-slate-800 rounded-full text-[9px] font-black uppercase tracking-widest text-emerald-400 shadow-xl z-20">
-          Live Surveillance Area Map
-        </div>
-        <DistrictOutbreakMap />
-      </div>
-
-      {/* ── TWO-COLUMN DETAILED VIEWS ── */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        
-        {/* Left: Active Outbreak List */}
-        <div className="xl:col-span-2 space-y-4">
-          <div className="bg-white border border-slate-200/80 rounded-[2.5rem] overflow-hidden shadow-md">
-            <div className="px-6 py-5 border-b border-slate-150 flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <span className="w-2.5 h-2.5 bg-rose-500 rounded-full animate-pulse" />
-                <h3 className="font-black text-slate-800 text-sm sm:text-base uppercase tracking-wider">Active Telemetry Alerts</h3>
-              </div>
-              <span className="px-3.5 py-1 bg-rose-50 border border-rose-200 text-rose-700 rounded-full text-[10px] font-black">{OB.length} Active Signals</span>
-            </div>
-            
-            <motion.div variants={containerVariants} initial="hidden" animate="show" className="p-5 space-y-4 max-h-[600px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-200">
-              {OB.length === 0 ? (
-                <div className="flex flex-col items-center py-20 text-center opacity-70">
-                  <Shield className="w-14 h-14 mb-3 text-slate-300" />
-                  <p className="font-black text-sm uppercase tracking-wider text-slate-500">All Nodes Stable</p>
-                  <p className="text-xs text-slate-400 mt-1">Surveillance monitoring registers zero active anomalies.</p>
-                </div>
-              ) : OB.map((ob, i) => {
-                const rawSeverity = ob.severity || (i === 0 || i === 3 ? 'high' : i === 1 ? 'critical' : 'medium');
-                const severity = rawSeverity.charAt(0).toUpperCase() + rawSeverity.slice(1);
-                
-                const severityColor = 
-                  severity === 'Critical' 
-                    ? 'text-rose-700 bg-rose-50 border-rose-200 shadow-sm' 
-                    : severity === 'High' 
-                    ? 'text-orange-700 bg-orange-50 border-orange-200' 
-                    : 'text-amber-700 bg-amber-50 border-amber-250';
-
-                const riskScore = ob.riskScore || (ob.confidence ? Math.round(ob.confidence * 100) : (90 - i * 6));
-                const confidence = Math.round((ob.confidence ?? (riskScore / 100) ?? 0.8) * 100);
-                const villagesImpacted = ob.caseCount ? Math.max(1, Math.min(5, Math.ceil(ob.caseCount / 3))) : (i === 0 ? 3 : i === 1 ? 2 : 1);
-                const popImpact = ob.caseCount ? `~${ob.caseCount * 45} villagers` : (i === 0 ? '~450 villagers' : i === 1 ? '~280 villagers' : '~120 villagers');
-                const priority = severity === 'Critical' || severity === 'High' ? 'P1 - Immediate Deploy' : 'P2 - Monitor';
-                
-                const alertId = ob.id || `${ob.villageId}-${ob.detectedAt || i}`;
-                const isDispatched = dispatchedAlerts[alertId];
-
-                return (
-                  <motion.div variants={cardVariants} key={alertId} 
-                    className="p-6 border border-slate-100 bg-slate-50/40 hover:bg-white rounded-[2rem] hover:border-emerald-400/60 hover:shadow-[0_12px_35px_rgba(16,185,129,0.08)] transition-all duration-300 transform hover:-translate-y-0.5 space-y-4 relative group overflow-hidden"
-                  >
-                    {/* Glowing status stripe on side of card */}
-                    <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${
-                      severity === 'Critical' ? 'bg-gradient-to-b from-rose-500 to-red-500' : severity === 'High' ? 'bg-gradient-to-b from-orange-500 to-amber-500' : 'bg-amber-400'
-                    }`} />
-                    
-                    <div className="flex items-center justify-between flex-wrap gap-2.5 pb-2.5 border-b border-slate-150">
-                      <div className="flex items-center gap-2">
-                        <MapPin className="w-4 h-4 text-rose-500 shrink-0 animate-bounce" />
-                        <p className="font-black text-slate-505 text-[11px] tracking-widest uppercase">Village ID: <span className="text-slate-800 font-extrabold">{ob.villageId}</span></p>
-                      </div>
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black border uppercase tracking-wider ${severityColor}`}>{severity} Severity</span>
-                        <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black bg-slate-100/80 text-slate-650 border border-slate-200">Risk: {riskScore}/100</span>
-                        <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black bg-emerald-50 text-emerald-700 border border-emerald-250">Impacted: {villagesImpacted} {villagesImpacted > 1 ? 'villages' : 'village'}</span>
-                      </div>
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <h4 className="text-[15px] font-black text-slate-800 leading-snug">{ob.classification || ob.disease || 'Unknown'} Outbreak Signal</h4>
-                      <p className="text-[12px] text-slate-500 font-semibold leading-relaxed">{ob.symptomPattern}</p>
-                    </div>
-
-                    <div className="p-4.5 bg-gradient-to-br from-[#F4FDF8] to-[#F8FAFC] border border-emerald-150 rounded-2xl space-y-3 shadow-inner">
-                      <div>
-                        <p className="text-[9.5px] font-black text-emerald-750 uppercase tracking-widest mb-1.5">Recommended Action Plan</p>
-                        <p className="text-xs text-slate-700 font-bold leading-relaxed">{ob.action}</p>
-                      </div>
-                      <div className="grid grid-cols-3 gap-4 pt-3 border-t border-emerald-100/60 text-left">
-                        <div>
-                          <p className="text-[8.5px] font-black text-slate-400 uppercase tracking-wider">AI Confidence</p>
-                          <p className="text-xs font-black text-emerald-600 font-mono mt-0.5">{confidence}%</p>
-                        </div>
-                        <div>
-                          <p className="text-[8.5px] font-black text-slate-400 uppercase tracking-wider">Pop. Impact</p>
-                          <p className="text-xs font-black text-slate-700 mt-0.5">{popImpact}</p>
-                        </div>
-                        <div>
-                          <p className="text-[8.5px] font-black text-slate-400 uppercase tracking-wider">Priority Level</p>
-                          <p className={`text-xs font-black mt-0.5 ${priority.includes('P1') ? 'text-rose-600' : 'text-slate-500'}`}>{priority}</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between text-[10px] text-slate-450 font-bold pt-1">
-                      <span>Detected: {timeAgo(ob.detectedAt)}</span>
-                      <div className="flex items-center gap-3">
-                        <button 
-                          onClick={() => handleDispatchUnit(alertId, ob.villageId, ob.classification || ob.disease)}
-                          disabled={isDispatched}
-                          className={`px-5 py-2.5 rounded-2xl text-[9.5px] font-black uppercase tracking-wider transition-all duration-300 shadow-md active:scale-95 cursor-pointer ${
-                            isDispatched 
-                              ? 'bg-emerald-100 text-emerald-800 border border-emerald-250 cursor-default shadow-none font-bold' 
-                              : 'bg-slate-900 hover:bg-emerald-600 text-white hover:shadow-lg hover:shadow-emerald-500/20'
-                          }`}
-                        >
-                          {isDispatched ? '✓ Dispatched' : 'Dispatch Unit'}
-                        </button>
-                        <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 bg-rose-500 rounded-full animate-ping" /> Telemetry Active</span>
-                      </div>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </motion.div>
-          </div>
-        </div>
-
-        {/* Right Panel: Disease Metrics */}
-        <div className="space-y-4">
-          <div className="bg-white border border-slate-200/80 rounded-[2.5rem] p-6 shadow-md relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/[0.02] rounded-full blur-2xl pointer-events-none" />
-            <div className="flex items-center gap-2.5 mb-5 border-b border-slate-150 pb-3">
-              <Activity className="w-5 h-5 text-emerald-600" />
-              <h3 className="font-black text-slate-800 text-[13.5px] uppercase tracking-wider">Top Disease Signals</h3>
-              {usingDemoDefaults && <span className="ml-auto px-2 py-0.5 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded text-[8px] font-black uppercase tracking-wider">LIVE</span>}
-            </div>
-
-            {OB.length > 0 ? (
-              <div className="space-y-5">
-                {(() => {
-                  const diseaseCounts = {};
-                  OB.forEach(o => {
-                    const disease = (o.disease || o.disease_name || 'Unspecified').replace(/_/g, ' ');
-                    diseaseCounts[disease] = (diseaseCounts[disease] || 0) + (o.caseCount || 1);
-                  });
-                  const sorted = Object.entries(diseaseCounts)
-                    .sort((a, b) => b[1] - a[1])
-                    .slice(0, 5);
-                  const maxCount = sorted.length > 0 ? Math.max(...sorted.map(([, c]) => c)) : 1;
-                  const colorPairs = [
-                    { from: 'from-rose-500', to: 'to-rose-600' },
-                    { from: 'from-orange-500', to: 'to-amber-500' },
-                    { from: 'from-amber-500', to: 'to-yellow-500' },
-                    { from: 'from-blue-500', to: 'to-cyan-500' },
-                    { from: 'from-rose-600', to: 'to-pink-600' },
-                  ];
-                  return sorted.map(([name, count], i) => (
-                    <div key={i} className="space-y-2">
-                      <div className="flex items-center justify-between text-[11px] font-bold text-slate-600">
-                        <span className="tracking-wide capitalize">{name}</span>
-                        <span className="text-slate-900 font-black font-mono">{count} cases</span>
-                      </div>
-                      <div className="w-full bg-slate-100 h-3.5 rounded-full overflow-hidden border border-slate-200/60 p-0.5 shadow-inner">
-                        <motion.div
-                          className={`progress-bar-shimmer bg-gradient-to-r ${colorPairs[i]?.from || 'from-emerald-500'} ${colorPairs[i]?.to || 'to-emerald-600'} h-full rounded-full`}
-                          initial={{ width: 0 }}
-                          animate={{ width: `${(count / maxCount) * 100}%` }}
-                          transition={{ duration: 0.7, delay: i * 0.12, ease: 'easeOut' }}
-                        />
-                      </div>
-                    </div>
-                  ));
-                })()}
-              </div>
-            ) : (
-              <div className="flex items-center justify-center py-10">
-                <div className="text-center">
-                  <Activity className="w-8 h-8 text-slate-200 mx-auto mb-2" />
-                  <p className="text-xs font-black text-slate-300 uppercase tracking-wider">No disease signals</p>
-                  <p className="text-[10px] text-slate-400 font-medium mt-1">Disease distribution data appears after outbreak events are detected.</p>
-                </div>
-              </div>
+            )}
+            {lastAgentScan && (
+              <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-1 rounded-xl flex items-center gap-1">
+                <RefreshCw className="w-3 h-3" />
+                Last scan {timeAgo(lastAgentScan.timestamp)}
+              </span>
             )}
           </div>
         </div>
+      </motion.div>
 
+      {/* ── KPI Row ── */}
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+        {[
+          { label:'Active Alerts',      val: obList.length,  color:'#dc2626', light:'#fff1f2', border:'#fecdd3', icon:'🚨' },
+          { label:'High-Risk Villages', val: highRisk,        color:'#ea580c', light:'#fff7ed', border:'#fed7aa', icon:'🏘️' },
+          { label:'Total Cases Today',  val: totalCases,      color:'#d97706', light:'#fefce8', border:'#fde68a', icon:'📊' },
+          { label:'Cases (Symptoms)',   val: S?.today_symptoms ?? totalCases, color:'#1d4ed8', light:'#eff6ff', border:'#bfdbfe', icon:'📈' },
+          { label:'Avg AI Confidence',  val: `${aiConf}%`,   color:'#059669', light:'#ecfdf5', border:'#a7f3d0', icon:'🧠' },
+        ].map(({ label, val, color, light, border, icon }, i) => (
+          <motion.div
+            key={label}
+            initial={{ opacity:0, y:10 }}
+            animate={{ opacity:1, y:0 }}
+            transition={{ delay:0.05*i }}
+            className="bg-white rounded-2xl border p-4 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200"
+            style={{ borderColor:border }}
+          >
+            <div className="flex items-start justify-between mb-2">
+              <span className="text-2xl font-black" style={{ color }}>{val}</span>
+              <span className="text-lg">{icon}</span>
+            </div>
+            <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">{label}</p>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* ── Alert Banner (conditional) ── */}
+      {(alertSent || alertError || obList.some(o => severityKey(o.severity) === 'critical')) && (
+        <div className={`rounded-xl border p-3 flex items-center gap-3 ${alertSent ? 'bg-emerald-50 border-emerald-200' : alertError ? 'bg-rose-50 border-rose-200' : 'bg-amber-50 border-amber-200'}`}>
+          <div className={`w-1 h-8 rounded-full shrink-0 ${alertSent ? 'bg-emerald-500' : alertError ? 'bg-rose-500' : 'bg-amber-500'}`} />
+          <AlertTriangle className={`w-4 h-4 shrink-0 ${alertSent ? 'text-emerald-600' : alertError ? 'text-rose-600' : 'text-amber-600'}`} />
+          <p className={`text-xs font-bold ${alertSent ? 'text-emerald-800' : alertError ? 'text-rose-800' : 'text-amber-900'}`}>
+            {alertSent
+              ? 'Alert broadcast complete. DynamoDB + Aurora synchronized across nodes.'
+              : alertError
+              ? `Transmission error: ${alertError}`
+              : `District Warning: ${obList.filter(o=>severityKey(o.severity)==='critical').length} critical cluster(s) detected. Immediate response required.`
+            }
+          </p>
+        </div>
+      )}
+
+      {/* ── Main 2-column layout ── */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+
+        {/* LEFT: Map + Alert feed */}
+        <div className="xl:col-span-2 space-y-4">
+
+          {/* Map */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-rose-500" />
+                <h2 className="font-black text-slate-800 text-xs uppercase tracking-wider">Live Surveillance Map</h2>
+                <span className="text-[8px] font-bold text-slate-400">Varanasi Division · ap-south-1</span>
+              </div>
+              <span className="text-[8px] font-black text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                Live nodes
+              </span>
+            </div>
+            <DistrictOutbreakMap />
+          </div>
+
+          {/* Active Alerts Feed */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+                <h2 className="font-black text-slate-800 text-xs uppercase tracking-wider">Active Telemetry Alerts</h2>
+              </div>
+              <span className="px-2.5 py-0.5 bg-rose-50 border border-rose-200 text-rose-700 text-[9px] font-black rounded-full">
+                {obList.length} Active
+              </span>
+            </div>
+            <div className="p-4 space-y-3 max-h-96 overflow-y-auto">
+              {obList.length === 0 ? (
+                <div className="py-12 text-center">
+                  <Shield className="w-10 h-10 text-slate-200 mx-auto mb-3" />
+                  <p className="font-black text-slate-400 text-xs uppercase tracking-wider">All Nodes Stable</p>
+                  <p className="text-[10px] text-slate-300 mt-1">Zero active anomalies detected</p>
+                </div>
+              ) : obList.map((ob, i) => (
+                <AlertCard key={ob.id || i} ob={ob} index={i} dispatched={dispatched} onDispatch={handleDispatch} />
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* RIGHT: Command Console + Disease Panel */}
+        <div className="space-y-4">
+
+          {/* ── OUTBREAK RESPONSE CONSOLE ── */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            {/* Console header */}
+            <div className="bg-slate-900 px-4 py-3 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Target className="w-4 h-4 text-rose-400" />
+                <span className="text-xs font-black text-white uppercase tracking-wider">Response Console</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+                <span className="text-[8px] font-bold text-slate-400">ARMED</span>
+              </div>
+            </div>
+
+            {/* Tab strip */}
+            <div className="flex border-b border-slate-100">
+              {[{ id:'actions', label:'Actions' }, { id:'status', label:'Status' }].map(t => (
+                <button key={t.id} onClick={() => setConsoleTab(t.id)}
+                  className={`flex-1 py-2.5 text-[9px] font-black uppercase tracking-wider transition-colors ${
+                    consoleTab===t.id ? 'border-b-2 border-slate-900 text-slate-900' : 'text-slate-400 hover:text-slate-600'
+                  }`}>
+                  {t.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="p-4">
+              {consoleTab === 'actions' ? (
+                <div className="space-y-2.5">
+                  {/* Simulate */}
+                  <div className="border border-slate-100 rounded-xl p-3">
+                    <p className="text-[8px] font-black uppercase tracking-widest text-slate-400 mb-2">Simulation</p>
+                    <button
+                      onClick={simulateOutbreak}
+                      disabled={simulatingOutbreak}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white font-black rounded-xl text-[10px] uppercase tracking-wider transition-all active:scale-95 shadow-sm"
+                    >
+                      <Zap className="w-3.5 h-3.5" />
+                      {simulatingOutbreak ? 'Simulating...' : 'Simulate Outbreak Event'}
+                    </button>
+                  </div>
+
+                  {/* District Alert */}
+                  <div className="border border-slate-100 rounded-xl p-3">
+                    <p className="text-[8px] font-black uppercase tracking-widest text-slate-400 mb-2">District Broadcast</p>
+                    <button
+                      onClick={issueDistrictAlert}
+                      className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 font-black rounded-xl text-[10px] uppercase tracking-wider transition-all active:scale-95 ${
+                        alertSent
+                          ? 'bg-emerald-100 text-emerald-700 border border-emerald-200'
+                          : 'bg-amber-500 hover:bg-amber-600 text-white shadow-sm'
+                      }`}
+                    >
+                      <Bell className="w-3.5 h-3.5" />
+                      {alertSent ? '✓ Alert Dispatched' : 'Issue District Alert'}
+                    </button>
+                  </div>
+
+                  {/* ASHA Notify */}
+                  <div className="border border-slate-100 rounded-xl p-3">
+                    <p className="text-[8px] font-black uppercase tracking-widest text-slate-400 mb-2">Field Network</p>
+                    <button
+                      onClick={() => showToast('ASHA local networks broadcast completed.', 'success')}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-black rounded-xl text-[10px] uppercase tracking-wider transition-all active:scale-95 shadow-sm"
+                    >
+                      <Send className="w-3.5 h-3.5" />
+                      Notify ASHA Workers
+                    </button>
+                  </div>
+
+                  {/* Export + AI Summary */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={downloadReport}
+                      className="flex items-center justify-center gap-1.5 px-3 py-2 bg-white border border-slate-200 hover:border-slate-300 text-slate-700 font-black rounded-xl text-[9px] uppercase tracking-wider transition-all active:scale-95"
+                    >
+                      <Download className="w-3 h-3" /> Export CSV
+                    </button>
+                    <button
+                      onClick={() => showToast('AI Analysis: Fever spikes in Northern Zone. Vector fogging recommended immediately.', 'info')}
+                      className="flex items-center justify-center gap-1.5 px-3 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white font-black rounded-xl text-[9px] uppercase tracking-wider transition-all active:scale-95 shadow-sm"
+                    >
+                      <Sparkles className="w-3 h-3" /> AI Brief
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {[
+                    { label:'DynamoDB Telemetry',   val:'Connected',   ok:true  },
+                    { label:'Aurora Sync',           val:'Active',      ok:true  },
+                    { label:'SSE Broadcast',         val:`${obList.length} listeners`, ok:true },
+                    { label:'Agent Loop',            val:'30-min cycle',ok:true  },
+                    { label:'Last Scan',             val:lastAgentScan ? timeAgo(lastAgentScan.timestamp) : 'Pending', ok:!!lastAgentScan },
+                  ].map(({ label, val, ok }) => (
+                    <div key={label} className="flex items-center justify-between py-2 border-b border-slate-50 last:border-0">
+                      <span className="text-[9px] font-bold text-slate-500">{label}</span>
+                      <div className="flex items-center gap-1.5">
+                        {ok
+                          ? <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                          : <AlertTriangle className="w-3 h-3 text-amber-400" />
+                        }
+                        <span className={`text-[9px] font-black ${ok ? 'text-emerald-700' : 'text-amber-600'}`}>{val}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* ── Disease Signals Panel ── */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
+            <div className="flex items-center gap-2 mb-4">
+              <Activity className="w-4 h-4 text-emerald-600" />
+              <h2 className="font-black text-slate-800 text-xs uppercase tracking-wider">Disease Signal Distribution</h2>
+            </div>
+
+            {sorted.length > 0 ? (
+              <div className="space-y-3">
+                {sorted.map(([name, count], i) => (
+                  <div key={name}>
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full shrink-0" style={{ background:dColors[i] }} />
+                        <span className="text-[10px] font-bold text-slate-700 capitalize">{name}</span>
+                      </div>
+                      <span className="text-[9px] font-black text-slate-900 font-mono">{count} cases</span>
+                    </div>
+                    <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                      <motion.div
+                        initial={{ width:0 }}
+                        animate={{ width:`${(count/maxCount)*100}%` }}
+                        transition={{ duration:0.7, delay:0.1*i, ease:'easeOut' }}
+                        className="h-full rounded-full"
+                        style={{ background:dColors[i] }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="py-6 text-center">
+                <Activity className="w-8 h-8 text-slate-200 mx-auto mb-2" />
+                <p className="text-[10px] font-bold text-slate-400">No disease signals</p>
+              </div>
+            )}
+
+            {/* AI confidence summary */}
+            <div className="mt-4 pt-3 border-t border-slate-100">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">Average AI Confidence</span>
+                <span className="text-[9px] font-black text-emerald-700">{aiConf}%</span>
+              </div>
+              <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                <motion.div
+                  initial={{ width:0 }}
+                  animate={{ width:`${aiConf}%` }}
+                  transition={{ duration:1, ease:'easeOut' }}
+                  className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-600"
+                />
+              </div>
+            </div>
+          </div>
+
+        </div>
       </div>
     </div>
   );

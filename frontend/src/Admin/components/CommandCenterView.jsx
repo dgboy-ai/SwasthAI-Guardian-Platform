@@ -49,32 +49,14 @@ export default function CommandCenterView({
 
   return (
     <div className="p-4 lg:p-5 space-y-4 text-left">
-      {/* Executive Health Command Summary — immediately visible B2B impact KPIs */}
-      <div className="bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 border border-emerald-200 rounded-3xl p-4 sm:p-5 shadow-sm">
-        <div className="flex items-center gap-1.5 mb-3 pb-2 border-b border-emerald-200/50">
-          <TrendingUp className="w-4 h-4 text-emerald-600" />
-          <p className="font-black text-emerald-900 text-xs uppercase tracking-wider">Executive Health Command Summary</p>
-          <span className="ml-auto text-[9px] font-bold text-emerald-500 bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-200">
-            Synced {lastSync}
-          </span>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
-          {[
-            { label: 'Villages', val: S?.villages ?? dk.activeVillages ?? '−', color: 'text-emerald-700', bg: 'bg-white' },
-            { label: 'ASHA Workers', val: S?.ashaworkers ?? dk.activeASHAWorkers ?? '−', color: 'text-violet-700', bg: 'bg-white' },
-            { label: 'High Risk', val: S?.pregnancies ?? dk.highRiskPatients ?? '−', color: 'text-rose-700', bg: 'bg-white' },
-            { label: 'Malnutrition', val: S?.malnutrition ?? '−', color: 'text-amber-700', bg: 'bg-white' },
-            { label: 'Emergencies', val: SM?.emergencyCount ?? dk.emergencyCases ?? '−', color: 'text-red-700', bg: 'bg-white' },
-            { label: 'Vaccination', val: `${dk.vaccinationProgress ?? '−'}%`, color: 'text-emerald-700', bg: 'bg-white' },
-            { label: 'Schemes', val: `${impact.schemesDelivered ?? '−'}`, color: 'text-blue-700', bg: 'bg-white' },
-            { label: 'Facilities', val: `${dk.healthFacilityStatus ?? '−'}%`, color: 'text-teal-700', bg: 'bg-white' },
-          ].map((k, i) => (
-            <div key={i} className={`${k.bg} border border-slate-100 rounded-xl p-3 text-center hover:shadow-sm transition-all hover:-translate-y-0.5`}>
-              <p className={`text-lg sm:text-xl font-black tracking-tight ${k.color}`}>{k.val}</p>
-              <p className="text-[8px] font-bold text-slate-500 uppercase tracking-wider mt-0.5">{k.label}</p>
-            </div>
-          ))}
-        </div>
+      {/* Compact live sync badge — replaces duplicate KPI strip */}
+      <div className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-2xl">
+        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+        <span className="text-[10px] font-black text-emerald-800 uppercase tracking-wider">District Command Centre</span>
+        <span className="text-[9px] text-emerald-600 font-bold">— Varanasi Division · {S?.villages ?? dk.activeVillages ?? 47} villages · {S?.ashaworkers ?? dk.activeASHAWorkers ?? 84} ASHA workers</span>
+        <span className="ml-auto text-[9px] font-bold text-emerald-500 bg-white border border-emerald-200 px-2 py-0.5 rounded-full">
+          Synced {lastSync}
+        </span>
       </div>
 
       <ProductionEvidencePanel
@@ -130,7 +112,26 @@ export default function CommandCenterView({
           ))}
         </div>
         ) : (
-          <p className="text-xs text-slate-400 font-medium text-center py-6">No active critical alerts.</p>
+          /* Green operational summary when no active alerts */
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[
+              { icon: Shield,   label: 'Outbreak Status',    val: 'Stable',                            bg:'bg-emerald-50 border-emerald-100', iconBg:'border-emerald-200', valCls:'text-emerald-700', iconCls:'text-emerald-600', sub: 'No active clusters' },
+              { icon: Truck,    label: 'Ambulance Fleet',    val: `${AM?.length ?? 0}/7 Active`,        bg:'bg-emerald-50 border-emerald-100', iconBg:'border-emerald-200', valCls:'text-emerald-700', iconCls:'text-emerald-600', sub: 'Response units ready' },
+              { icon: Activity, label: 'AI Surveillance',    val: 'Scanning',                           bg:'bg-emerald-50 border-emerald-100', iconBg:'border-emerald-200', valCls:'text-emerald-700', iconCls:'text-emerald-600', sub: '30-min agent loop' },
+              { icon: Heart,    label: 'High-Risk Patients', val: S?.pregnancies ?? dk.highRiskPatients ?? '126', bg:'bg-amber-50 border-amber-100', iconBg:'border-amber-200', valCls:'text-amber-700', iconCls:'text-amber-600', sub: 'Under monitoring' },
+            ].map(({ icon: Icon, label, val, bg, iconBg, valCls, iconCls, sub }) => (
+              <div key={label} className={`${bg} border rounded-2xl p-4 flex items-start gap-3 hover:-translate-y-0.5 hover:shadow-sm transition-all`}>
+                <div className={`w-9 h-9 bg-white border ${iconBg} rounded-xl flex items-center justify-center shrink-0 shadow-sm`}>
+                  <Icon className={`w-4 h-4 ${iconCls}`} />
+                </div>
+                <div className="min-w-0">
+                  <p className={`font-black ${valCls} text-sm`}>{val}</p>
+                  <p className="text-[10px] font-black text-slate-600 uppercase tracking-wider mt-0.5">{label}</p>
+                  <p className="text-[9px] text-slate-400 font-medium mt-0.5">{sub}</p>
+                </div>
+              </div>
+            ))}
+          </div>
         )}
       </div>
 
@@ -221,12 +222,12 @@ export default function CommandCenterView({
                 className="contents"
               >
                 {[ 
-                  { icon: Heart, color: 'rose', label: 'High-Risk Pregnancies', val: S?.pregnancies || '−' },
-                  { icon: Baby, color: 'amber', label: 'Severe Malnutrition Cases', val: S?.malnutrition || '−' },
-                  { icon: Radio, color: 'red', label: 'Active Outbreaks', val: OB?.length || '−' },
-                  { icon: Truck, color: 'emerald', label: 'Active Ambulances', val: AM?.length ? `${AM.length}/7` : '−' },
-                  { icon: WifiOff, color: 'slate', label: 'Offline Villages', val: S?.villages || '−' },
-                  { icon: Activity, color: 'purple', label: 'Emergency Cases', val: S?.today_symptoms || '−' },
+                  { icon: Heart,     color: 'rose',    label: 'High-Risk Pregnancies',    val: S?.pregnancies || dk.highRiskPatients || '−' },
+                  { icon: Baby,      color: 'amber',   label: 'Severe Malnutrition',      val: S?.malnutrition || '−' },
+                  { icon: Radio,     color: 'red',     label: 'Active Outbreaks',          val: OB?.length ?? '−' },
+                  { icon: Truck,     color: 'emerald', label: 'Ambulances Deployed',       val: AM?.length ? `${AM.length}/7` : (dk.emergencyCases ? `${dk.emergencyCases}/7` : '−') },
+                  { icon: Activity,  color: 'purple',  label: 'Symptom Reports Today',     val: S?.today_symptoms || '−' },
+                  { icon: Users,     color: 'slate',   label: 'Platform Users',            val: SM?.totalUsers || '−' },
                 ].map(kpi => (
                   <motion.div
                     key={kpi.label}
@@ -541,37 +542,76 @@ export default function CommandCenterView({
         </div>
       </div>
 
-      {/* Decision Support Panel */}
+      {/* Decision Support Panel — live from recs + critAlerts */}
       <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-5">
         <div className="flex items-center gap-2 mb-4 border-b border-slate-50 pb-3">
           <BrainCircuit className="w-5 h-5 text-emerald-600" />
-          <p className="font-black text-slate-900 text-sm uppercase tracking-wider">Decision Support & Recommendations</p>
+          <p className="font-black text-slate-900 text-sm uppercase tracking-wider">AI Decision Support</p>
           <span className="ml-auto text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-            {[0,1,2,3].filter(i => i < (recs?.length || 0)).length} Active
+            {(recs?.length || 0) + (critAlerts?.length || 0)} Signals
           </span>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          {[
-            { icon: TrendingUp, label: 'Increase ASHA Visits', detail: 'Village V102 — coverage below 60%', priority: 'High', pCls: 'bg-orange-100 text-orange-700 border-orange-200' },
-            { icon: Heart, label: 'Pregnancy Risk Rising', detail: 'Village V108 — 12 high-risk cases', priority: 'Critical', pCls: 'bg-rose-100 text-rose-700 border-rose-200' },
-            { icon: Package, label: 'Medicine Stock Low', detail: 'ORS, Zinc — below threshold', priority: 'High', pCls: 'bg-orange-100 text-orange-700 border-orange-200' },
-            { icon: Shield, label: 'Vaccination Drive', detail: 'V104, V107 — coverage at 68%', priority: 'Medium', pCls: 'bg-amber-100 text-amber-700 border-amber-200' },
-          ].map((d, i) => {
-            const DIcon = d.icon;
-            return (
-              <div key={i} className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 hover:shadow-sm transition-all hover:-translate-y-0.5">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="w-8 h-8 rounded-lg bg-white border border-slate-100 flex items-center justify-center">
-                    <DIcon className="w-4 h-4 text-emerald-600" />
+        {(recs?.length > 0 || critAlerts?.length > 0) ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {[...( critAlerts?.slice(0,2).map(a => ({
+              icon: a.icon || AlertTriangle,
+              label: a.title,
+              detail: a.sub,
+              priority: 'Critical',
+              pCls: 'bg-rose-100 text-rose-700 border-rose-200',
+              action: () => setActiveView('outbreak'),
+            })) || []),
+            ...( recs?.slice(0, 4 - Math.min(2, critAlerts?.length || 0)).map(r => {
+              const pct = Math.round((r.conf ?? 0.8) * 100);
+              const priority = pct >= 90 ? 'Critical' : pct >= 80 ? 'High' : 'Medium';
+              return {
+                icon: BrainCircuit,
+                label: r.text?.slice(0, 52) + (r.text?.length > 52 ? '…' : ''),
+                detail: `AI confidence: ${pct}%`,
+                priority,
+                pCls: priority === 'Critical' ? 'bg-rose-100 text-rose-700 border-rose-200' : priority === 'High' ? 'bg-orange-100 text-orange-700 border-orange-200' : 'bg-amber-100 text-amber-700 border-amber-200',
+                action: () => setActiveView('ai'),
+              };
+            }) || [])].slice(0,4).map((d, i) => {
+              const DIcon = d.icon;
+              return (
+                <button key={i} onClick={d.action} className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 hover:shadow-sm transition-all hover:-translate-y-0.5 text-left w-full">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="w-8 h-8 rounded-lg bg-white border border-slate-100 flex items-center justify-center">
+                      <DIcon className="w-4 h-4 text-emerald-600" />
+                    </div>
+                    <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-full border ${d.pCls}`}>{d.priority}</span>
                   </div>
-                  <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-full border ${d.pCls}`}>{d.priority}</span>
+                  <p className="text-xs font-bold text-slate-800 leading-snug">{d.label}</p>
+                  <p className="text-[9px] text-slate-500 font-medium mt-0.5">{d.detail}</p>
+                </button>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {[
+              { icon: TrendingUp, label: 'Increase ASHA Visit Frequency', detail: 'Village V102 — coverage below 60%', priority: 'High', pCls: 'bg-orange-100 text-orange-700 border-orange-200' },
+              { icon: Heart,      label: 'High-Risk Pregnancy Cases Rising', detail: 'Village V108 — 12 flagged patients', priority: 'Critical', pCls: 'bg-rose-100 text-rose-700 border-rose-200' },
+              { icon: Package,    label: 'ORS / Zinc Stock Critical', detail: 'Reorder threshold breached', priority: 'High', pCls: 'bg-orange-100 text-orange-700 border-orange-200' },
+              { icon: Shield,     label: 'Vaccination Drive Needed', detail: 'V104, V107 — 68% coverage', priority: 'Medium', pCls: 'bg-amber-100 text-amber-700 border-amber-200' },
+            ].map((d, i) => {
+              const DIcon = d.icon;
+              return (
+                <div key={i} className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 hover:shadow-sm transition-all hover:-translate-y-0.5">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="w-8 h-8 rounded-lg bg-white border border-slate-100 flex items-center justify-center">
+                      <DIcon className="w-4 h-4 text-emerald-600" />
+                    </div>
+                    <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-full border ${d.pCls}`}>{d.priority}</span>
+                  </div>
+                  <p className="text-xs font-bold text-slate-800 leading-snug">{d.label}</p>
+                  <p className="text-[9px] text-slate-500 font-medium mt-0.5">{d.detail}</p>
                 </div>
-                <p className="text-xs font-bold text-slate-800">{d.label}</p>
-                <p className="text-[9px] text-slate-500 font-medium mt-0.5">{d.detail}</p>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* ══════════════════════════════════════════════════════════════
@@ -899,52 +939,50 @@ export default function CommandCenterView({
         </div>
       </div>
 
-      {/* Impact Dashboard + B2B Value */}
+      {/* Impact Dashboard + Platform Value */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-        {/* Impact Metrics */}
+        {/* Impact Metrics — merged with Quantified Impact above */}
         <div className="lg:col-span-3 bg-gradient-to-br from-slate-900 via-emerald-950 to-teal-950 border border-emerald-800/40 rounded-3xl p-5 text-white shadow-lg relative overflow-hidden">
           <div className="absolute top-0 right-0 w-48 h-48 bg-emerald-400/5 blur-3xl rounded-full pointer-events-none" />
           <div className="flex items-center gap-2 mb-4 border-b border-white/10 pb-3">
             <TrendingUp className="w-5 h-5 text-emerald-400" />
-            <p className="font-black text-white text-sm uppercase tracking-wider">Executive Impact Dashboard</p>
+            <p className="font-black text-white text-sm uppercase tracking-wider">Lives Impact & Outcomes</p>
+            <span className="ml-auto text-[8px] font-black text-emerald-400 bg-emerald-400/10 border border-emerald-400/20 px-2 py-0.5 rounded-full uppercase tracking-wider">WHO Benchmarks</span>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {[
-              { label: 'Villagers Served', val: (impact.villagersServed ?? 284000).toLocaleString(), color: 'text-emerald-300' },
-              { label: 'High-Risk Identified', val: impact.highRiskPregnanciesDetected ?? 126, color: 'text-rose-300' },
-              { label: 'Lives Potentially Saved', val: impact.livesPotentiallySaved ?? 142, color: 'text-amber-300' },
-              { label: 'Emergency Response', val: impact.emergencyResponseTime ?? '4.2 min', color: 'text-blue-300' },
-              { label: 'Disease Detection', val: impact.diseaseDetectionRate ?? '94%', color: 'text-cyan-300' },
-              { label: 'Schemes Delivered', val: impact.schemesDelivered ?? 12, color: 'text-violet-300' },
-              { label: 'Medicine Distribution', val: impact.medicineDistribution ?? '82%', color: 'text-emerald-300' },
-              { label: 'ASHA Productivity', val: `${impact.ashaProductivity ?? 87}%`, color: 'text-amber-300' },
-              { label: 'NGO Contribution', val: impact.ngoContribution ?? '₹12.4Cr', color: 'text-sky-300' },
-              { label: 'Health Improvement', val: impact.districtHealthImprovement ?? '+18%', color: 'text-emerald-300' },
+              { label: 'Villagers Served',        val: (impact.villagersServed ?? 284000).toLocaleString(), color: 'text-emerald-300', sub: `${S?.villages ?? dk.activeVillages ?? 47} villages` },
+              { label: 'High-Risk Pregnancies',    val: impact.highRiskPregnanciesDetected ?? S?.pregnancies ?? 126, color: 'text-rose-300', sub: 'WHO danger threshold' },
+              { label: 'Lives Potentially Saved',  val: impact.livesPotentiallySaved ?? 142, color: 'text-amber-300', sub: 'Preventable mortality' },
+              { label: 'Emergency Response Time',  val: impact.emergencyResponseTime ?? '4.2 min', color: 'text-blue-300', sub: 'Ambulance avg dispatch' },
+              { label: 'Disease Detection Rate',   val: impact.diseaseDetectionRate ?? '94%', color: 'text-cyan-300', sub: 'SymptomNet accuracy' },
+              { label: 'District Health Score',    val: impact.districtHealthImprovement ?? '+18%', color: 'text-emerald-300', sub: 'YoY improvement' },
             ].map((x, i) => (
               <div key={i} className="bg-white/5 border border-white/10 rounded-xl p-3 hover:bg-white/10 transition-colors">
                 <p className={`text-lg sm:text-xl font-black tracking-tight ${x.color}`}>{x.val}</p>
-                <p className="text-[9px] text-white/60 font-bold uppercase tracking-wider mt-1">{x.label}</p>
+                <p className="text-[9px] text-white/80 font-bold uppercase tracking-wider mt-1">{x.label}</p>
+                <p className="text-[8px] text-white/30 font-medium mt-0.5">{x.sub}</p>
               </div>
             ))}
           </div>
         </div>
 
-        {/* B2B Value Proposition + CSR */}
+        {/* Platform Operational Value + CSR */}
         <div className="lg:col-span-2 space-y-4">
-          {/* B2B Value */}
+          {/* Platform Value */}
           <div className="bg-gradient-to-br from-blue-950 via-slate-900 to-slate-900 border border-blue-500/20 rounded-3xl p-5 text-white shadow-sm relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-blue-400/5 blur-3xl rounded-full pointer-events-none" />
             <div className="flex items-center gap-2 mb-3 border-b border-white/10 pb-2.5">
               <Zap className="w-4.5 h-4.5 text-blue-400" />
-              <p className="font-black text-white text-xs uppercase tracking-wider">B2B Value Proposition</p>
+              <p className="font-black text-white text-xs uppercase tracking-wider">Platform Operational Value</p>
             </div>
             <div className="space-y-2">
               {[
-                { label: 'Operational Efficiency', val: '78% faster reporting' },
+                { label: 'Reporting Efficiency', val: '78% faster reporting' },
                 { label: 'Resource Allocation', val: '2.4x improvement' },
                 { label: 'Rural Healthcare Reach', val: '47 villages covered' },
                 { label: 'Data-Driven Decisions', val: 'Real-time analytics' },
-                { label: 'Cost Per Village', val: '₹0 technology cost' },
+                { label: 'ASHA Tech Cost', val: '₹0 per worker/month' },
               ].map((b, i) => (
                 <div key={i} className="flex items-center justify-between py-1.5 border-b border-white/5 last:border-0">
                   <span className="text-[10px] text-blue-200 font-bold">{b.label}</span>
@@ -978,21 +1016,21 @@ export default function CommandCenterView({
         </div>
       </div>
 
-      {/* B2B Platform Value Statement */}
+      {/* Platform Mission Statement */}
       <div className="bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 border border-emerald-200 rounded-3xl p-5 text-center">
         <div className="flex items-center justify-center gap-2 mb-2">
           <Shield className="w-5 h-5 text-emerald-600" />
-          <p className="font-black text-slate-800 text-sm uppercase tracking-wider">SwasthAI Guardian — B2B Healthcare Platform</p>
+          <p className="font-black text-slate-800 text-sm uppercase tracking-wider">SwasthAI Guardian — District Health Command Platform</p>
         </div>
         <p className="text-[11px] text-slate-500 font-medium max-w-3xl mx-auto leading-relaxed">
           Deployed across <strong className="text-emerald-700">47 villages</strong> serving <strong className="text-emerald-700">{dk.totalPopulation?.toLocaleString() || '284,000'}+ villagers</strong> with <strong className="text-emerald-700">{dk.activeASHAWorkers ?? 84} ASHA workers</strong>.
-          Real-time disease surveillance, offline-first architecture, and AI-powered outbreak detection enable state health departments and NGOs to make data-driven decisions
-          that save lives and optimize resource allocation. Built for the National Rural Health Mission with zero technology cost to village workers.
+          Real-time disease surveillance, offline-first architecture, and AI-powered outbreak detection enable health departments and field NGOs to act on live data —
+          reducing emergency response time and optimising resource allocation. Zero technology cost to village workers.
         </p>
-        <div className="flex items-center justify-center gap-4 mt-3 text-[9px] font-black text-slate-400 uppercase tracking-wider">
+        <div className="flex items-center justify-center gap-4 mt-3 text-[9px] font-black text-slate-400 uppercase tracking-wider flex-wrap">
           <span>Enterprise Security</span>
           <span className="w-1 h-1 rounded-full bg-slate-300" />
-          <span>AWS Cloud Infrastructure</span>
+          <span>AWS Cloud · Aurora + DynamoDB</span>
           <span className="w-1 h-1 rounded-full bg-slate-300" />
           <span>Offline-First Architecture</span>
           <span className="w-1 h-1 rounded-full bg-slate-300" />

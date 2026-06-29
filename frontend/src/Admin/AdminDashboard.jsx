@@ -221,7 +221,14 @@ export default function AdminDashboard() {
         // Recover from demo mode if API succeeds after a previous failure
         setDemoTourMode(false);
       } catch (e) {
-        console.debug('Admin analytics offline:', e.message);
+        console.debug('Admin analytics offline — activating demo mode:', e.message);
+        // Auto-activate demo tour so the dashboard is never stuck in skeleton loading
+        setDemoTourMode(true);
+        import('./demoTourData').then(m => setDemoData(m)).catch(() => {
+          // If demo data also fails, set empty objects so isLoading resolves
+          setStats({});
+          setSummary({});
+        });
       }
     };
     let ambLoadedOnce = false;
@@ -441,7 +448,7 @@ export default function AdminDashboard() {
 
   const REP = getLiveReport();
   const PERF = ashaPerformance && ashaPerformance.length > 0 ? ashaPerformance : (demoData?.DEMO_ASHA_PERFORMANCE || []);
-  const isLoading = stats === null && summary === null && !demoTourMode;
+  const isLoading = stats === null && summary === null && !demoTourMode && !demoData;
   // Derive DB status from actual loaded data as fallback when systemStatus endpoint is slow
   const auroraFromData = stats && (stats.villages > 0 || stats.pregnancies > 0 || stats.ambulances > 0);
   const dynamoFromData = outbreaks && outbreaks.length > 0;
