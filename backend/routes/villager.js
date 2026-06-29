@@ -817,22 +817,12 @@ router.post('/villager/pad-request', auth, checkRole(['villager', 'ngo', 'admin'
   const safePhoto = photoBase64 && photoBase64.length < 300000 ? photoBase64 : null;
 
   try {
-    let userName = 'Unknown Villager';
-    if (!usingSQLite && pool) {
-      const userRecord = await pool.query('SELECT name FROM users WHERE id = $1', [req.user.id]);
-      userName = userRecord.rows[0]?.name || 'Unknown Villager';
-      await pool.query(
-        'INSERT INTO ambulance_requests (user_id, name, location, priority, request_type, symptoms, status, "villageId") VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
-        [req.user.id, userName, locationStr, 'Low', 'pad_request', 'Requires Sanitary Pads — Camera Verified', 'pending', userVillageId]
-      );
-    } else {
-      const userRecord = await db.get('SELECT name FROM users WHERE id = ?', [req.user.id]);
-      userName = userRecord?.name || 'Unknown Villager';
-      await db.run(
-        'INSERT INTO ambulance_requests (user_id, name, location, priority, request_type, symptoms, status, "villageId") VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-        [req.user.id, userName, locationStr, 'Low', 'pad_request', 'Requires Sanitary Pads — Camera Verified', 'pending', userVillageId]
-      );
-    }
+    const userRecord = await db.get('SELECT name FROM users WHERE id = ?', [req.user.id]);
+    const userName = userRecord?.name || 'Unknown Villager';
+    await db.run(
+      'INSERT INTO ambulance_requests (user_id, name, location, priority, request_type, symptoms, status, "villageId") VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [req.user.id, userName, locationStr, 'Low', 'pad_request', 'Requires Sanitary Pads — Camera Verified', 'pending', userVillageId]
+    );
 
     res.send({ success: true });
 
