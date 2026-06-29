@@ -1,8 +1,6 @@
 # SwasthAI Guardian
 ### Offline-First Healthcare Infrastructure for Low-Connectivity Environments
 
-**🏆 Devpost Submission — Most Impact Track + B2B Track | Deadline: June 30, 2026**
-
 [**Live Demo**](https://swasth-ai-guardian-platform.vercel.app) · [**Deployment Guide**](DEPLOYMENT.md) · [**Architecture Diagram**](architecture_diagram.md) · [**Changelog**](CHANGELOG.md)
 
 ---
