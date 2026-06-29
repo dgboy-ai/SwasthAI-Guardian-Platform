@@ -6,7 +6,7 @@
 
 ![AWS Aurora](https://img.shields.io/badge/AWS-Aurora%20PostgreSQL-FF9900?logo=amazonaws) ![AWS DynamoDB](https://img.shields.io/badge/AWS-DynamoDB-FF9900?logo=amazonaws) ![Vercel](https://img.shields.io/badge/Vercel-v0-000000?logo=vercel) ![React 18](https://img.shields.io/badge/React-18-61DAFB?logo=react) ![FastAPI](https://img.shields.io/badge/Python-FastAPI-009688?logo=fastapi) ![Groq](https://img.shields.io/badge/Groq-Llama--3.3--70b-F55036?logo=groq)
 
-> **🏆 Tracks:** Monetizable B2B App · Most Impactful · Open Innovation  
+> **🏆 Tracks:** Monetizable B2B App
 > **👥 Team ID:** `team_ZuoCZ7nsvWVIrutn3eqmYdQD`  
 > **🗓️ Hackathon:** H0: Hack the Zero Stack with Vercel v0 and AWS Databases  
 > **🔧 Significantly upgraded during submission period (May 28 – Jun 30):** See [CHANGELOG](docs/CHANGELOG.md) for full list of additions — Aurora PostgreSQL + DynamoDB integration, autonomous Outbreak Agent, Sakhi RAG, camera-verified pad requests, B2B API gateway, SymptomNet DL model, offline-first PWA, 7-language voice I/O, admin/NGO dashboards, and more.
