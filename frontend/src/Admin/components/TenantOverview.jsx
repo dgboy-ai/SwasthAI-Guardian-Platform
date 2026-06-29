@@ -205,40 +205,23 @@ export default function TenantOverview({ activeDistrict }) {
   const [tenantData, setTenantData] = useState({});
   const [loading, setLoading] = useState(true);
 
-  const DEMO_TENANT_DATA = {
-    Varanasi: { totalUsers: 1, totalNgos: 1, emergencyCount: 1, sanitaryCount: 1, status: 'connected' },
-    Lucknow:  { totalUsers: 0, totalNgos: 0, emergencyCount: 0, sanitaryCount: 0, status: 'connected' },
-    Sehore:   { totalUsers: 0, totalNgos: 0, emergencyCount: 0, sanitaryCount: 0, status: 'connected' },
-    Bhopal:   { totalUsers: 0, totalNgos: 0, emergencyCount: 0, sanitaryCount: 0, status: 'connected' },
-    Indore:   { totalUsers: 0, totalNgos: 0, emergencyCount: 0, sanitaryCount: 0, status: 'connected' },
-    Pune:     { totalUsers: 0, totalNgos: 0, emergencyCount: 0, sanitaryCount: 0, status: 'connected' },
-  };
-
   useEffect(() => {
     let active = true;
     const loadAll = async () => {
       setLoading(true);
       const results = {};
-      const queryDistrictMap = {
-        Varanasi: 'varanasi_district',
-        Lucknow: 'lucknow_district',
-        Sehore: 'sehore_district',
-        Bhopal: 'bhopal_district',
-        Indore: 'indore_district',
-        Pune: 'pune_district',
-      };
 
       try {
+        // Fetch all districts in parallel for speed
         const promises = DISTRICTS.map(async d => {
-          const queryId = queryDistrictMap[d] || d;
           try {
-            const res = await api.get(`/admin/summary?districtId=${queryId}`);
+            const res = await api.get(`/admin/summary?districtId=${d}`);
             if (active) {
               results[d] = { ...res.data, status: 'connected' };
             }
           } catch {
             if (active) {
-              results[d] = DEMO_TENANT_DATA[d] || { totalUsers: 0, totalNgos: 0, emergencyCount: 0, sanitaryCount: 0, status: 'unreachable' };
+              results[d] = { totalUsers: 0, totalNgos: 0, emergencyCount: 0, sanitaryCount: 0, status: 'unreachable' };
             }
           }
         });
