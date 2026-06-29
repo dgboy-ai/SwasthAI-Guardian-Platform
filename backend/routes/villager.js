@@ -854,7 +854,13 @@ router.post('/villager/pad-request', auth, checkRole(['villager', 'ngo', 'admin'
       });
     }
   } catch (err) {
-    console.error('[PAD REQUEST ERROR]', err);
+    console.error('[PAD REQUEST ERROR DETAILS]', {
+      message: err.message,
+      stack: err.stack,
+      code: err.code,
+      detail: err.detail,
+      constraint: err.constraint
+    });
     res.status(500).send({ error: 'Failed to process pad request.' });
   }
 });

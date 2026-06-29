@@ -332,6 +332,7 @@ export async function initSchema(db, pool, usingSQLite) {
       CREATE INDEX IF NOT EXISTS idx_symptoms_createdat    ON symptoms("createdAt");
       CREATE INDEX IF NOT EXISTS idx_ambulance_userid      ON ambulance_requests(user_id);
       CREATE INDEX IF NOT EXISTS idx_ambulance_status      ON ambulance_requests(status);
+      CREATE INDEX IF NOT EXISTS idx_ambulance_village     ON ambulance_requests("villageId");
       CREATE INDEX IF NOT EXISTS idx_pregnancy_village     ON pregnancy_data("villageId");
       CREATE INDEX IF NOT EXISTS idx_malnut_village        ON malnutrition_data("villageId");
       CREATE INDEX IF NOT EXISTS idx_referrals_village     ON referrals("villageId");
@@ -874,6 +875,7 @@ export async function initSchema(db, pool, usingSQLite) {
     await db.exec(`
       CREATE UNIQUE INDEX IF NOT EXISTS idx_sqlite_symptoms_client_request      ON symptoms(client_request_id);
       CREATE UNIQUE INDEX IF NOT EXISTS idx_sqlite_ambulance_client_request     ON ambulance_requests(client_request_id);
+      CREATE INDEX IF NOT EXISTS idx_sqlite_ambulance_village                   ON ambulance_requests("villageId");
       CREATE UNIQUE INDEX IF NOT EXISTS idx_sqlite_pregnancy_client_request     ON pregnancy_data(client_request_id);
       CREATE UNIQUE INDEX IF NOT EXISTS idx_sqlite_malnutrition_client_request  ON malnutrition_data(client_request_id);
       CREATE UNIQUE INDEX IF NOT EXISTS idx_sqlite_referrals_client_request     ON referrals(client_request_id);
