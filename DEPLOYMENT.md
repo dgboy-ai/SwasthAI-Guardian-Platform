@@ -202,6 +202,43 @@ We deploy the Node.js backend and Python FastAPI AI services on **Render.com** (
    - **Value**: `https://swasthai-guardian-platform-0jsb.onrender.com/api` (from Step 2.2 + `/api` suffix)
 6. Click **Deploy**.
 
-Vercel will build your static React App, optimize it as a Progressive Web App (PWA), and make it available under a production SSL URL (e.g. `https://swasthai-guardian.vercel.app`).
+Vercel will build your static React App, optimize it as a Progressive Web App (PWA), and make it available under a production SSL URL (e.g. `https://swasth-ai-guardian-platform.vercel.app/`).
 
-You are now fully deployed on production-grade infrastructure!
+
+---
+
+## Phase 4: Containerization & Load Balancing (Docker & Multi-Core Scaling)
+
+SwasthAI Guardian includes built-in configurations for localized self-hosting via Docker Compose and multi-core process load balancing.
+
+### 4.1 Local Self-Hosting with Docker Compose
+1. Ensure Docker and Docker Compose are installed on your host system.
+2. Clone the repository and navigate to the project root.
+3. Copy the environment variables template and customize it:
+   ```bash
+   cp .env.example .env
+   ```
+4. Build and start the services in detached mode:
+   ```bash
+   docker compose up --build -d
+   ```
+5. Verify container health:
+   ```bash
+   docker compose ps
+   ```
+   - **`swasthai_frontend`**: Serves React build outputs via static Nginx with gzip and 1-year aggressive caching configured. External port `80` (or configured `HOST_PORT`).
+   - **`swasthai_backend`**: Internal port `5000` (bridged, only exposed to frontend proxy).
+   - **`swasthai_ai`**: Internal port `8000` (bridged, only exposed to backend process).
+
+### 4.2 Multi-Worker Process Load Balancing
+The platform scales dynamically on multi-core environments to maximize throughput:
+- **Node.js API Gateway (Backend)**:
+  - Uses the native `cluster` module in production.
+  - Automatically reads the `WEB_CONCURRENCY` environment variable to fork worker processes.
+  - If `WEB_CONCURRENCY` is absent, it defaults to running a cluster size of `Math.min(CPUs, 2)` to optimize resource use.
+- **Python FastAPI (AI Service)**:
+  - Uses `uvicorn` as the ASGI application server.
+  - Automatically scales to multiple workers dynamically using the `WEB_CONCURRENCY` variable (e.g., `uvicorn main:app --workers ${WEB_CONCURRENCY:-2}`).
+- **Configuring Concurrency**:
+  - In `docker-compose.yml` or your Render service dashboards, set `WEB_CONCURRENCY` (Node) and `AI_WEB_CONCURRENCY` (Python) to match the allocated CPU threads of your server instance.
+

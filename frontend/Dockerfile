@@ -19,18 +19,18 @@ RUN printf 'server {\n\
     index index.html;\n\
     # SPA fallback — redirect all 404s to index.html for React Router\n\
     location / {\n\
-        try_files $uri $uri/ /index.html;\n\
+    try_files $uri $uri/ /index.html;\n\
     }\n\
     # Cache static assets aggressively\n\
     location ~* \\.(js|css|png|jpg|jpeg|gif|svg|ico|woff2)$ {\n\
-        expires 1y;\n\
-        add_header Cache-Control "public, immutable";\n\
+    expires 1y;\n\
+    add_header Cache-Control "public, immutable";\n\
     }\n\
     # Security headers (supplement Helmet on backend)\n\
     add_header X-Frame-Options "SAMEORIGIN" always;\n\
     add_header X-Content-Type-Options "nosniff" always;\n\
     add_header Referrer-Policy "strict-origin-when-cross-origin" always;\n\
-}\n' > /etc/nginx/conf.d/default.conf
+    }\n' > /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
 
