@@ -135,6 +135,7 @@ export async function initSchema(db, pool, usingSQLite) {
       request_type VARCHAR(30) DEFAULT 'ambulance',
       symptoms TEXT,
       status VARCHAR(20) DEFAULT 'pending',
+      "villageId" VARCHAR(60) DEFAULT NULL,
       client_request_id VARCHAR(120) UNIQUE DEFAULT NULL,
       created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
@@ -373,6 +374,7 @@ export async function initSchema(db, pool, usingSQLite) {
     await addColIfMissing('ambulance_requests', 'type', "VARCHAR(30) DEFAULT 'emergency'");
     await addColIfMissing('ambulance_requests', 'request_type', "VARCHAR(30) DEFAULT 'ambulance'");
     await addColIfMissing('ambulance_requests', 'client_request_id', 'VARCHAR(120) DEFAULT NULL');
+    await addColIfMissing('ambulance_requests', '"villageId"', 'VARCHAR(60) DEFAULT NULL');
     await addColIfMissing('ambulance_requests', 'updated_at', 'TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP');
     await addColIfMissing('users', 'created_at', 'TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP');
     await addColIfMissing('users', 'updated_at', 'TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP');
@@ -598,6 +600,7 @@ export async function initSchema(db, pool, usingSQLite) {
         request_type TEXT DEFAULT 'ambulance',
         symptoms TEXT,
         status TEXT DEFAULT 'pending',
+        "villageId" TEXT DEFAULT NULL,
         client_request_id TEXT UNIQUE DEFAULT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -840,6 +843,7 @@ export async function initSchema(db, pool, usingSQLite) {
     await addSQLiteColIfMissing('ambulance_requests', 'type', "TEXT DEFAULT 'emergency'");
     await addSQLiteColIfMissing('ambulance_requests', 'request_type', "TEXT DEFAULT 'ambulance'");
     await addSQLiteColIfMissing('ambulance_requests', 'client_request_id', 'TEXT DEFAULT NULL');
+    await addSQLiteColIfMissing('ambulance_requests', '"villageId"', 'TEXT DEFAULT NULL');
     await addSQLiteColIfMissing('ambulance_requests', 'updated_at', 'DATETIME DEFAULT NULL');
 
     await addSQLiteColIfMissing('pregnancy_data', 'recorded_by', 'INTEGER REFERENCES users(id) ON DELETE SET NULL');
