@@ -30,7 +30,6 @@ graph LR
     subgraph Cloud [AWS Cloud Datastore]
         Aurora[(Aurora PostgreSQL)]
         Dynamo[(Amazon DynamoDB)]
-        S3[(AWS S3 Bucket)]
     end
 
     %% Client to Backend Connections
@@ -40,7 +39,6 @@ graph LR
     %% Backend Database Writes
     Express -->|Transactional SQL| Aurora
     Express -->|Telemetry Stream| Dynamo
-    Express -->|Pre-signed Url| S3
 
     %% Event Dispatcher Async Writes
     ED -->|Deferred Writes| Aurora

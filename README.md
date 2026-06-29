@@ -6,11 +6,22 @@ Offline-First Rural Health Platform · 3-Layer Microservice · Amazon Aurora + D
 
 ![AWS Aurora](https://img.shields.io/badge/AWS-Aurora%20PostgreSQL-FF9900?logo=amazonaws) ![AWS DynamoDB](https://img.shields.io/badge/AWS-DynamoDB-FF9900?logo=amazonaws) ![React 18](https://img.shields.io/badge/React-18-61DAFB?logo=react) ![FastAPI](https://img.shields.io/badge/Python-FastAPI-009688?logo=fastapi) ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker) ![Groq](https://img.shields.io/badge/Groq-Llama--3.3--70b-F55036?logo=groq)
 
+**Team ID:** `team_ZuoCZ7nsvWVIrutn3eqmYdQD`
+
 ---
 
-Over 650 million rural Indians lack access to quality healthcare. ASHA workers manage 1,000+ families with paper registers. Disease outbreaks are detected two weeks late — after the infection spreads. Cloud apps fail where internet doesn't reach. SwasthAI Guardian solves this with an offline-first PWA that works in zero-signal zones, powered by an autonomous AI outbreak agent, real-time telemetry into Amazon Aurora PostgreSQL + DynamoDB, and a 3-layer microservice architecture deployed via Docker Compose.
+Over 650 million rural Indians lack access to quality healthcare. Here's what SwasthAI Guardian does about it:
+
+| The Problem | The Solution |
+|---|---|
+| ASHA workers manage 1,000+ families with paper registers. Data never leaves the notebook. | Real-time telemetry into Amazon Aurora PostgreSQL + DynamoDB. Every village, digitized. |
+| Disease outbreaks detected 2 weeks late — after the infection spreads. | Autonomous AI agent scans clinical data every 30 min via Groq Llama-3.3-70b. SSE alerts instantly. |
+| Cloud apps useless where internet doesn't reach. | ONNX runs in-browser. IndexedDB queues auto-sync on reconnect. Works in zero-signal zones. |
+| District officers have no early warning system. | Predictive 5-factor risk intelligence with per-village heatmap and XAI breakdown. |
 
 **101 disease classes** · **7 Indian languages** · **5 DynamoDB tables / 7 GSIs** · **52,900 training samples**
+
+**Explore in 2 minutes:** Open the [Live Demo](https://swasth-ai-guardian-platform.vercel.app) → pick any role card (offline login, no backend needed) → explore the dashboard. For the full experience, try all three roles: Villager (symptom checker, SOS), ASHA (maternal tracking, outbreak alerts), Admin (command center, B2B API keys, live infrastructure monitor).
 
 ---
 
@@ -31,7 +42,7 @@ Over 650 million rural Indians lack access to quality healthcare. ASHA workers m
 
 ## Architecture & Infrastructure
 
-_[Full diagram → docs/system_architecture.md](docs/system_architecture.md)_
+<img src="architecture_diagram.svg" alt="Architecture" width="100%" />
 
 | Layer | Platform | What It Handles |
 |---|---|---|
@@ -39,7 +50,7 @@ _[Full diagram → docs/system_architecture.md](docs/system_architecture.md)_
 | **Express API** | Render (2 workers) | JWT auth, REST + SSE + WebSocket, Aurora PostgreSQL + DynamoDB |
 | **FastAPI AI** | Render | SymptomNet MLP (64.6%), LR fallback (71.1%), Sakhi RAG (F1=1.00), outbreak agent |
 | **Nginx Proxy** | Docker | Reverse proxy, round-robin load balancing, 24h SSE timeout, cold-start tolerance |
-| **Aurora PostgreSQL** | AWS ap-south-1 | Patient records, auth, referrals, B2B analytics (ACID, pg.Pool(20)) |
+| **Aurora PostgreSQL** | AWS ap-south-1 | Patient records, auth, referrals, B2B analytics (ACID, parameterized queries) |
 | **DynamoDB** | AWS ap-south-1 | Outbreak telemetry, sync queues, emergency streams, audit logs (5 tables, 7 GSIs) |
 
 ---
@@ -103,13 +114,15 @@ curl -H "x-api-key: sk_live_abc123..." \
 
 | Component | How It Works | Why It Matters |
 |---|---|---|
-| **Outbreak Agent** | Polls PostgreSQL every 30min → Groq Llama → DynamoDB (TTL 90d) → SSE alerts | Catches outbreaks weeks before manual reporting. UI can simulate outbreaks for drills. |
-| **Edge AI** | 3-tier fallback: DL (64.6%) → LR (71.1%) → offline WHO heuristic | Never silent failure. ONNX in-browser sub-ms. RAG falls back to top chunk when Groq is down. |
-| **Sync Engine** | 6 IndexedDB queues, client UUID idempotency, auto-drain on reconnect | 3 conflict rules: Reject-Duplicate, LWW, Accumulate. SHA-256 offline auth. |
-| **Pad Request** | Selfie → gender detect → GPS → SSE to ASHA with photo + Google Maps link | 3-step camera-gated flow. Blocks abuse. Approve/deliver loop. |
-| **Security** | DISHA 2023, DPDP Act, Aadhaar hash, KMS, Helmet, rate limit, Zod, PII redaction, 7-year audit trails | Production-grade compliance on every layer. |
+| **Outbreak Agent** | Polls PostgreSQL every 30min → Groq Llama classifies symptom clusters → writes to DynamoDB (TTL 90d) → SSE pushes alerts to admin + ASHA dashboards | Catches outbreaks **weeks before manual reporting**. 3-attempt exponential backoff. UI can simulate outbreaks for real-time drill exercises. |
+| **Edge AI** | 3-tier fallback: SymptomNet DL (64.6%) → Logistic Regression (71.1%) → offline WHO/MoHFW heuristic. ONNX in-browser sub-ms. Sakhi RAG: 243 chunks, threshold 0.45, F1=1.00 | **Clinical decisions never silently fail.** When Groq is unreachable, the top KB chunk serves as fallback. Entire symptom checker works with zero internet connectivity. |
+| **Sync Engine** | 4 IndexedDB queues (maternal, child, ambulance, symptoms). Client UUID idempotency. Auto-drains on reconnect. | 3 conflict rules: Reject-Duplicate (clinical), LWW (ambulance), Accumulate (telemetry). SHA-256 offline password auth works without backend. |
+| **Pad Request** | Selfie capture → `/api/detect-gender` verification → GPS reverse geocode → SSE broadcast to ASHA with photo + Google Maps link | **Privacy-first welfare distribution.** 3-step camera-gated flow blocks male misuse. ASHA sees thumbnail, verified badge, map link. Approve/deliver loop. |
+| **Security** | DISHA 2023 consent, DPDP Act, Aadhaar hash (unique salt), AWS KMS encryption, Helmet.js, rate limiting (100/min/IP), Zod validation, PII redaction, 7-year immutable audit trails | Production-grade compliance. Every security layer has a counterpart in the codebase. |
 
 ---
 
 *SwasthAI Guardian — Built for Bharat's villages, not just its cities.*
 *"We didn't build AI for doctors. We built it for the 600,000 villages that don't have one."*
+
+[Judge's Guide](docs/judge_guide.md) · [Devpost](https://devpost.com/software/swasthai-guardian)

@@ -25,7 +25,6 @@ SwasthAI-Guardian-Platform/
 │       ├── context/              # Global states (AuthContext with client-side SHA-256 caching, LanguageContext)
 │       ├── services/             # API services with timeout wrappers and intercepts
 │       └── pages/                # Features & workflows (30+ active files)
-│           ├── dashboards/       # Role-specific analytics wrappers
 │           ├── LandingPage.jsx   # Public marketing page (new)
 │           ├── LoginPage.jsx     # OTP + password login (offline-capable)
 │           ├── RegisterPage.jsx  # Aadhaar QR-assisted registration
@@ -39,7 +38,6 @@ SwasthAI-Guardian-Platform/
 │           ├── SkinDiseaseCheckerPage.jsx  # Melanoid-inclusive skin triage
 │           ├── SymptomCheckerPage.jsx      # On-device SymptomNet & RAG fallback
 │           ├── PadRequestForm.jsx          # Offline-queued sanitary pad requests
-│           └── workflows/        # Multi-step medical workflows (Pregnancy, Fever, Child, SOS)
 │
 ├── backend/                      # Express.js REST API
 │   ├── server.js                 # Server entrypoint with Health Watchdog monitor loop
@@ -77,7 +75,10 @@ SwasthAI-Guardian-Platform/
 │   ├── skin_analyzer.py          # Melanin-tolerant HSV skin lesion range detector
 │   ├── train_deep_model.py       # SymptomNet training pipeline (PyTorch MLP)
 │   ├── train_disease_model.py    # Logistic Regression training pipeline
-│   └── tests/                    # Stress-tests, guardrails, & safety validation suites
+│   ├── test_guardrail.py         # Stress-tests, guardrails, & safety validation
+│   ├── test_rag_guardrail.py     # RAG-specific safety and response quality tests
+│   ├── test_rural.py             # Rural connectivity and low-bandwidth simulation
+│   └── test_text_guardrail_direct.py  # Text safety guardrail validation
 │
 ├── docs/                         # Technical Guides & System Documentation
 │   ├── system_architecture.md    # Data flow diagram, ERDs, event schedules, and tables

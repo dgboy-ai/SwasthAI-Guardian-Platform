@@ -1,6 +1,7 @@
 # Judge's Guide — SwasthAI Guardian
 
-*Devpost Submission: Most Impact Track + B2B Track | June 30, 2026*
+*Devpost Submission: Most Impact Track + B2B Track | June 30, 2026*  
+*Team ID: `team_ZuoCZ7nsvWVIrutn3eqmYdQD`*
 
 This guide walks through the platform's most impressive features in ~15 minutes. Each section shows exactly what to click and what to notice.
 
@@ -25,13 +26,13 @@ This guide walks through the platform's most impressive features in ~15 minutes.
 - **Sakhi Chatbot** — Ask "What are the danger signs in pregnancy?" in Hindi or English. Grounded RAG (243 clinical chunks, threshold 0.45, F1=1.00) with cited sources. Falls back to local KB if Groq API is down.
 - **Menstrual Health** — Clinical content, zero API calls. Works fully offline.
 
-**What to note:** 5 of 10 major features work completely offline (symptom check, ambulance, schemes, menstrual health, maternal/child records — see the Offline-First Capability Matrix in README). This is not a "loading spinner" offline mode — it's real local inference.
+**What to note:** 5 of 10 major features work completely offline (symptom check, ambulance, schemes, menstrual health, maternal/child records). This is not a "loading spinner" offline mode — it's real local inference.
 
 ## 3. Admin Panel & AWS Infrastructure Proof (3 min)
 
 **Login:** Phone `9876543212` · OTP `1234` · Role: Admin
 
-- **Navigate to `/verify`** (top nav) — Live connection status to:
+- **Navigate to Live Infrastructure Monitor** (top nav) — Live connection status to:
   - **Aurora PostgreSQL**: Connection OK, pool health, query latency, item counts
   - **DynamoDB**: 5 tables with GSIs, TTL config, item counts, access patterns
   - **AI Service**: Module status, RAG config, model availability
@@ -39,7 +40,7 @@ This guide walks through the platform's most impressive features in ~15 minutes.
 - **B2B Usage Dashboard** — Per-tenant API key analytics with village stats, user counts, record volumes. Data comes from real PostgreSQL JOIN queries.
 - **Production Evidence Panel** — Shows data provenance (`_db: postgresql` or `_db: dynamodb` on every response). Degraded mode banner when DynamoDB is in mock mode.
 
-**What to note:** Every data point has provenance — `_db` field on every API response. The `/verify` page is cached in localStorage to survive Render cold starts. 18 AWS judge audit gaps were closed — no hardcoded metrics, no fabricated fallbacks.
+**What to note:** Every data point has provenance — `_db` field on every API response. The Live Infrastructure Monitor page is cached in localStorage to survive Render cold starts. 18 AWS judge audit gaps were closed — no hardcoded metrics, no fabricated fallbacks.
 
 ## 4. B2B API Key System (3 min)
 
