@@ -211,34 +211,97 @@ Vercel will build your static React App, optimize it as a Progressive Web App (P
 
 SwasthAI Guardian includes built-in configurations for localized self-hosting via Docker Compose and multi-core process load balancing.
 
-### 4.1 Local Self-Hosting with Docker Compose
-1. Ensure Docker and Docker Compose are installed on your host system.
-2. Clone the repository and navigate to the project root.
-3. Copy the environment variables template and customize it:
-   ```bash
-   cp .env.example .env
-   ```
-4. Build and start the services in detached mode:
-   ```bash
-   docker compose up --build -d
-   ```
-5. Verify container health:
-   ```bash
-   docker compose ps
-   ```
-   - **`swasthai_frontend`**: Serves React build outputs via static Nginx with gzip and 1-year aggressive caching configured. External port `80` (or configured `HOST_PORT`).
-   - **`swasthai_backend`**: Internal port `5000` (bridged, only exposed to frontend proxy).
-   - **`swasthai_ai`**: Internal port `8000` (bridged, only exposed to backend process).
+### 4.1 Architecture
 
-### 4.2 Multi-Worker Process Load Balancing
+```
+Internet → [Nginx Reverse Proxy] → /api/* → [Node.js Backend — 2 cluster workers]
+                               → /ws/*  → [Node.js Backend — WebSocket]
+                               → /*     → [Nginx Frontend — static PWA]
+                                               ↓
+                                    [FastAPI AI Service — 1 uvicorn worker]
+```
+
+The Nginx reverse proxy (`nginx.conf`) handles:
+- API reverse proxying to the backend cluster with 20s connect / 30s read timeouts for cold-start tolerance
+- WebSocket/SSE proxying with 24h read timeout
+- Static frontend serving via upstream frontend container
+- `max_fails=3` with `fail_timeout=10s` health-based load balancing across workers
+
+### 4.2 Local Self-Hosting with Docker Compose
+
+**Prerequisites:** Docker Engine 24+ and Docker Compose v2.
+
+```bash
+# 1. Copy env template — all ${VAR:?} vars below must be set
+cp .env.example .env
+# Edit .env to fill in GROQ_API_KEY, JWT_SECRET, AGENT_SECRET
+
+# 2. Launch all 4 services with health-checked startup ordering
+docker compose up --build -d
+
+# 3. Verify everything is healthy
+docker compose ps
+
+# 4. Open http://localhost (or $HOST_PORT)
+```
+
+**Container roles:**
+
+| Container | Internal Network | Role |
+|-----------|:---------------:|------|
+| `swasthai_nginx` | port `80` (published) | Reverse proxy: API → backend cluster, WS → backend, static → frontend |
+| `swasthai_frontend` | port `80` (bridged) | Serves React PWA build via Nginx (SPA fallback, gzip, 1y cache) |
+| `swasthai_backend` | port `5000` (bridged) | Express API with Node.js `cluster` module — forks `$WEB_CONCURRENCY` workers |
+| `swasthai_ai` | port `8000` (bridged) | FastAPI SymptomNet MLP + Sakhi RAG + Outbreak Agent |
+
+**Docker Compose env vars (set in `.env`):**
+
+| Variable | Required | Default | Notes |
+|----------|:--------:|:-------:|-------|
+| `GROQ_API_KEY` | Yes | — | Groq API key for Sakhi RAG + Outbreak Agent |
+| `JWT_SECRET` | Yes | — | Signs all auth tokens (min 32 chars) |
+| `AGENT_SECRET` | Yes | — | Bearer token for Outbreak Agent alert injection |
+| `WEB_CONCURRENCY` | No | `2` (backend), `1` (AI) | Controls Node.js cluster forks + uvicorn workers |
+| `DATABASE_URL` | No | SQLite (local) | Aurora PostgreSQL connection string for production |
+| `AWS_REGION` | No | `ap-south-1` | AWS region for DynamoDB + Aurora |
+| `AWS_ACCESS_KEY_ID` | No | — | Required when using Aurora/DynamoDB |
+| `AWS_SECRET_ACCESS_KEY` | No | — | Required when using Aurora/DynamoDB |
+| `HOST_PORT` | No | `80` | External port for the Nginx reverse proxy |
+
+### 4.3 Service Boot Order & Health Checks
+
+Containers start in strict dependency order using Docker Compose `depends_on` with `condition: service_healthy`:
+
+1. **ai-service** — boots first; FastAPI health endpoint at `/health`
+2. **backend** — waits for ai-service to pass health check; exposes `/api/health` 
+3. **nginx + frontend** — wait for backend health check; static frontend has no dependencies
+
+Each service defines an HTTP readiness probe in `docker-compose.yml`:
+- `interval: 30s` — checks every 30 seconds
+- `timeout: 10s` — marks failed if no response in 10 seconds
+- `retries: 3` — declares unhealthy after 3 consecutive failures
+- `start_period` — gives the service time to initialize before probes begin
+
+### 4.4 Multi-Worker Process Load Balancing
+
 The platform scales dynamically on multi-core environments to maximize throughput:
+
 - **Node.js API Gateway (Backend)**:
-  - Uses the native `cluster` module in production.
-  - Automatically reads the `WEB_CONCURRENCY` environment variable to fork worker processes.
-  - If `WEB_CONCURRENCY` is absent, it defaults to running a cluster size of `Math.min(CPUs, 2)` to optimize resource use.
+  - Uses the native `cluster` module in production (`backend/server.js:52-62`).
+  - Reads `WEB_CONCURRENCY` env var to fork worker processes.
+  - Default: `Math.min(CPUs, 2)` (or `1` on Render free tier).
+  - Auto-restarts workers on uncaught exit (`cluster.on('exit') → cluster.fork()`).
+
 - **Python FastAPI (AI Service)**:
-  - Uses `uvicorn` as the ASGI application server.
-  - Automatically scales to multiple workers dynamically using the `WEB_CONCURRENCY` variable (e.g., `uvicorn main:app --workers ${WEB_CONCURRENCY:-2}`).
+  - Uvicorn ASGI server with `--workers ${WEB_CONCURRENCY:-1}`.
+  - Both `ai-service/Dockerfile` and `ai-service/Procfile` read the same env var.
+
+- **Nginx Reverse Proxy** (`nginx.conf`):
+  - `upstream backend_cluster` block with `max_fails=3` and `fail_timeout=10s`.
+  - SSE/WebSocket support with `proxy_buffering off` and 24h read timeout.
+  - Cold-start tolerance with 20s connect / 30s read timeouts.
+
 - **Configuring Concurrency**:
-  - In `docker-compose.yml` or your Render service dashboards, set `WEB_CONCURRENCY` (Node) and `AI_WEB_CONCURRENCY` (Python) to match the allocated CPU threads of your server instance.
+  - Set `WEB_CONCURRENCY=2` for a dual-core host, `4` for quad-core, etc.
+  - On Render free tier (512MB RAM), defaults to `1` to stay within memory limits.
 

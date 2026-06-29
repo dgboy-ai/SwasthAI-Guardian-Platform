@@ -12,6 +12,7 @@ WORKDIR /app
 RUN apk add --no-cache curl
 
 ENV NODE_ENV=production
+ENV WEB_CONCURRENCY=2
 
 # Copy only production deps and source
 COPY --from=deps /app/node_modules ./node_modules

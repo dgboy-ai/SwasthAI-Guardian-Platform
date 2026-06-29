@@ -1,7 +1,9 @@
 # SwasthAI Guardian
-### Offline-First Healthcare Infrastructure for Low-Connectivity Environments
+### Amazon Aurora PostgreSQL + Amazon DynamoDB · Vercel v0 · Offline-First Rural Health AI
 
 [**Live Demo**](https://swasth-ai-guardian-platform.vercel.app) · [**Deployment Guide**](DEPLOYMENT.md) · [**Architecture Diagram**](architecture_diagram.svg) · [**Changelog**](CHANGELOG.md)
+
+> **Built for the H0 Hackathon** — Scaffolded with [Vercel v0](https://v0.dev), powered by **Amazon Aurora PostgreSQL** (ACID medical records) and **Amazon DynamoDB** (high-throughput telemetry, 5 tables, 7 GSIs), deployed on **Vercel** (frontend PWA) + **Render** (backend & AI services).
 
 <img src="architecture_diagram.svg" alt="SwasthAI Guardian Platform — Production Architecture" width="100%" />
 
@@ -10,6 +12,16 @@
 ## Executive Overview
 
 SwasthAI Guardian is a production-grade, offline-first B2B operations and epidemiologic intelligence platform built for rural public health networks. It bridges the gap between remote, disconnected frontline health workers (ASHA) and district command centers. By transforming low-connectivity clinical logs into real-time, auditable telemetry streams, the platform replaces slow paper-based tracking, automates infectious outbreak forecasting, and ensures closed-loop emergency dispatches.
+
+### Why Amazon Aurora PostgreSQL + Amazon DynamoDB?
+
+This is a deliberate **dual-database architecture**, not a convenience choice:
+
+| Requirement | Chosen AWS Database | Rationale |
+|:---|---:|:---|
+| **Patient medical records, user auth, referrals** | **Amazon Aurora PostgreSQL** | ACID transactions, relational integrity, `pg.Pool(20)` connection pooling, and complex JOIN queries for B2B analytics |
+| **Outbreak telemetry, sync queues, emergency streams, village heartbeats, audit logs** | **Amazon DynamoDB** | High-throughput time-series writes, PAY_PER_REQUEST auto-scaling, TTL auto-expiry, 7 GSIs for 10-way sharded access patterns |
+| **Both** are live-provisioned in `ap-south-1` (Mumbai) and verifiable at `/verify` | | Live pool health, table item counts, GSI schemas, and query latency exposed on the admin panel |
 
 ---
 
@@ -52,9 +64,27 @@ SwasthAI Guardian is a production-grade, offline-first B2B operations and epidem
 | :--- | :--- | :--- |
 | **Relational Database** | Amazon Aurora PostgreSQL | Relational system of record (ACID), ap-south-1 |
 | **NoSQL Telemetry** | Amazon DynamoDB | Time-series event logging & telemetry, ap-south-1 |
-| **Frontend Platform** | Vercel | Vite-based Progressive Web App (PWA) |
+| **Frontend Platform** | Vercel (scaffolded with v0) | Vite PWA, React.lazy() code-split for 2G |
+| **Vercel Team ID** | `team_ZuoCZ7nsvWVIrutn3eqmYdQD` | Required for Devpost submission verification |
 | **Backend API** | Node.js + Express on Render | REST API, SSE, WebSocket telemetry |
 | **AI Microservices** | FastAPI (Python) + Render | SymptomNet MLP, Sakhi RAG, & Outbreak Agent |
+
+---
+
+## Containerization & Load Balancing
+
+SwasthAI is fully containerized with Docker Compose and employs multi-core process load balancing:
+
+| Layer | Technology | Configuration |
+| :--- | :--- | :--- |
+| **Orchestration** | Docker Compose (3 services) | `docker compose up --build -d` — AI Service → Backend → Frontend, health-checked startup ordering |
+| **Backend Load Balancing** | Node.js `cluster` module | Forks `WEB_CONCURRENCY` workers (default: `Math.min(CPUs, 2)`). Auto-restarts on worker death. |
+| **AI Service Scaling** | Uvicorn ASGI workers | `--workers ${WEB_CONCURRENCY:-1}` — tuneable per CPU core |
+| **Frontend Serving** | Nginx (production) | SPA fallback, 1-year aggressive asset caching, security headers (X-Frame-Options, X-Content-Type-Options, Referrer-Policy) |
+| **Security** | Non-root users | All containers run as non-root (`swasthai` user). Secrets excluded via `.dockerignore`. |
+| **Health Checks** | HTTP readiness probes | Each service validates its `/health` endpoint before dependent services start |
+
+See [DEPLOYMENT.md Section 4](DEPLOYMENT.md#phase-4-containerization--load-balancing-docker--multi-core-scaling) for detailed setup.
 
 ---
 
@@ -65,7 +95,7 @@ Jump directly into the detailed architecture logs, code reference maps, and setu
 | Technical Guide | Focus & Key Highlights | Quick Link |
 | :--- | :--- | :--- |
 | **System Architecture & Database Designs** | End-to-end data flows, DB ERDs, DynamoDB composite key schemas, GSIs, access patterns, SQLite fallbacks. | [System Arch](docs/system_architecture.md) |
-| **Architecture Diagram** | Topology of Vercel, Aurora, DynamoDB, FastAPI, and data flow between all services. | [SVG](architecture_diagram.svg) · [HTML (full detail)](architecture_diagram.html) · [Mermaid source](architecture_diagram.md) |
+| **Architecture Diagram** | Topology of Vercel, Aurora, DynamoDB, FastAPI, and data flow between all services. | [SVG](architecture_diagram.svg) · [HTML](architecture_diagram.html) · [Mermaid source](architecture_diagram.md) |
 | **AI Architecture & Validation** | SymptomNet 5-Fold Stratified CV, RAG calibration parameters, ISIC skin triage. | [AI Arch](docs/ai_architecture.md) |
 | **Offline Sync Strategy** | IndexedDB queue replay, idempotency keys, Last-Write-Wins (LWW) rules. | [Sync Strategy](docs/offline_sync_strategy.md) |
 | **Complete Repository Map** | Directory-by-directory tree layout, file roles, component descriptions. | [Repo Map](docs/repository_map.md) |

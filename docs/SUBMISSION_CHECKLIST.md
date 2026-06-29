@@ -42,12 +42,13 @@
 - [x] B2B API keys are tenant-scoped and track usage
 
 ### Build & Deploy
-- [ ] Frontend deployed to Vercel
-- [ ] Backend deployed to Render
-- [ ] AI Service deployed to Render
-- [ ] AWS Aurora + DynamoDB provisioned in ap-south-1
-- [ ] Seed data loaded (5 villages, 6 pregnancies, etc.)
-- [ ] Demo credentials tested end-to-end
+- [x] Frontend deployed to Vercel
+- [x] Vercel Team ID: `team_ZuoCZ7nsvWVIrutn3eqmYdQD`
+- [x] Backend deployed to Render
+- [x] AI Service deployed to Render
+- [x] AWS Aurora + DynamoDB provisioned in ap-south-1
+- [x] Seed data loaded (5 villages, 6 pregnancies, etc.)
+- [x] Demo credentials tested end-to-end
 
 ### Recording
 - [ ] 3-min demo video recorded

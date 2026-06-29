@@ -74,7 +74,7 @@ const FLOW_STAGES = [
   { id: 'asha', label: 'Villager / ASHA', sub: 'Offline-first PWA', color: '#059669', light: '#ecfdf5', border: '#a7f3d0', items: ['Symptom check', 'Maternal record', 'Emergency SOS', 'IndexedDB queue'] },
   { id: 'api',  label: 'Node.js API',     sub: 'Express + EventEmitter', color: '#2563eb', light: '#eff6ff', border: '#bfdbfe', items: ['ACID write → Aurora', 'Async → DynamoDB', 'SSE broadcast', 'DLQ retry'] },
   { id: 'aurora', label: 'Aurora PostgreSQL', sub: 'Source of Truth', color: '#065f46', light: '#d1fae5', border: '#6ee7b7', items: ['12 ACID tables', 'FK integrity', 'Trigger audit', 'Idempotent sync'] },
-  { id: 'dynamo', label: 'DynamoDB', sub: 'Hot-Path Telemetry', color: '#92400e', light: '#fef3c7', border: '#fcd34d', items: ['5 tables, 8 GSIs', 'TTL auto-expire', '256K+ sync items', 'PAY_PER_REQUEST'] },
+  { id: 'dynamo', label: 'DynamoDB', sub: 'Hot-Path Telemetry', color: '#92400e', light: '#fef3c7', border: '#fcd34d', items: ['5 tables, 7 GSIs', 'TTL auto-expire', '256K+ sync items', 'PAY_PER_REQUEST'] },
   { id: 'dash',  label: 'Admin Dashboard', sub: 'Real-time SSE', color: '#5b21b6', light: '#f5f3ff', border: '#ddd6fe', items: ['Command Center', 'Outbreak Radar', 'Risk Intel', 'System Status'] },
 ];
 
@@ -646,7 +646,7 @@ export default function DatabaseArchitectureView() {
         <Lock className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
         <code className="text-[10px] font-mono text-slate-500 flex-1">
           Aurora PostgreSQL <span className="text-emerald-700 font-bold">12 tables</span> ·
-          DynamoDB <span className="text-amber-700 font-bold">5 tables, 8 GSIs</span> ·
+          DynamoDB <span className="text-amber-700 font-bold">5 tables, 7 GSIs</span> ·
           Region <span className="text-slate-700 font-bold">ap-south-1</span> ·
           Billing <span className="text-violet-700 font-bold">PAY_PER_REQUEST</span> ·
           Compliance <span className="text-rose-700 font-bold">DPDP Act 7-yr audit retention</span>

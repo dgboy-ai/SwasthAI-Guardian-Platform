@@ -21,6 +21,62 @@ All notable changes and feature developments completed during the project develo
 
 ---
 
+## June 29–30, 2026 — Pre-Submission Audit & Hardening (Judges + AWS Alignment)
+
+### B2B & Tenant Analytics Hardening
+- **Real B2B data wired** (`2a5945e`): `GET /api/admin/b2b-usage` endpoint now returns real PostgreSQL aggregate queries instead of fake seed data. B2BUsageDashboard and ApiKeysView both consume live data.
+- **localStorage cache for B2B pages** (`091b430`): ApiKeysView and B2BUsageDashboard now cache their last successful response — instant load on revisit, survives Render cold starts.
+- **TenantOverview component** (`f6dea39`): New animated dashboard with district metrics, 3-column stat cards, service status visualization, and scaling explainers.
+- **Tenant overview fixes** (`6969dbd`, `fab7ba4`): Removed `_district` suffix from tenant IDs in queries, removed all hardcoded fake data, parallel fetch for speed, summary uses global counts where district JOIN fails for emergencies/pads.
+- **Summary scope by district** (`04be289`): `GET /admin/summary` now correctly scopes emergency and pad request counts to the requesting admin's district.
+- **parseInt tenant totals** (`0a7284d`): Fixed string concatenation bug (`14+14=1414`) by wrapping aggregate counts in `parseInt`.
+- **NGO pads endpoint fix** (`088025a`): Removed broken village filter on pad requests — pad GPS addresses don't match villageId format.
+
+### Pad Request System Bug Fixes
+- **Removed photoBase64 from payload** (`203b499`): Pad request no longer sends full-resolution photo in JSON body (exceeded 10KB backend limit, caused 413 errors). Photo is now sent as a separate multipart upload.
+- **Removed enforceVillageScope from pad-request** (`f506959`): Pad GPS address doesn't match villageId format, so village-scope enforcement was rejecting all pad requests from authenticated users.
+- **PostgreSQL syntax unification** (`dc1a5b8`): Pad request insertions now use unified wrapper calls instead of raw SQL that differed between SQLite and PostgreSQL.
+- **Camera consent permission prompt** (`6d6d942`): Added browser camera permission request UI before opening the selfie capture flow.
+
+### Architecture Diagram & README
+- **HTML architecture diagram** (`bfe542a`): Created `architecture_diagram.html` — clean 845-line standalone page with CSS grid, colored tier cards, and typed service badges. Replaces the previous overlapping-arrow SVG mess.
+- **SVG embedded inline in README** (`76dcb34`): `architecture_diagram.svg` now renders as an embedded image at the top of README.md for immediate visual impact on GitHub.
+- **README cleanup** (`f3a6e97`): Removed expired Devpost submission notice.
+
+### GSI Count Correction
+- **GSI count flip-flop fixed**: A prior commit (`39524cb`) set the GSI count to 8 across all docs/diagrams/UI, but the actual DynamoDB table definitions in `backend/dynamodb.js` total 7 (outbreak_telemetry=3, sync_queues=1, village_node_state=1, emergency_streams=2, security_audit_logs=0). Corrected back to 7 in `README.md`, `DemoPage.jsx`, `AboutPage.jsx`, `DatabaseArchitectureView.jsx`, `judge_guide.md`, `architecture_diagram.svg`, `architecture_diagram.html`, `architecture_diagram.md`, `infra/dynamodb-tables.md`.
+
+### README Restructured
+- **Subtitle now leads with AWS**: "Amazon Aurora PostgreSQL + Amazon DynamoDB · Vercel v0 · Offline-First Rural Health AI".
+- **Added H0 banner**: Explicitly states "Scaffolded with Vercel v0, powered by Amazon Aurora PostgreSQL + Amazon DynamoDB".
+- **Added dual-DB rationale table** right after Executive Overview explaining why each AWS database was chosen (ACID vs high-throughput telemetry).
+- **Added Containerization & Load Balancing section** covering Docker Compose, Node.js cluster module, Nginx reverse proxy, health checks.
+- **Added Vercel Team ID** to infrastructure table: `team_ZuoCZ7nsvWVIrutn3eqmYdQD`.
+- **Infrastructure table** updated: Vercel entry now says "(scaffolded with v0)".
+
+### Docker & Load Balancing Overhaul
+- **`backend/Dockerfile`**: Added `ENV WEB_CONCURRENCY=2` so Node.js cluster module forks workers inside Docker.
+- **`ai-service/Dockerfile`**: CMD now reads `$PORT` and `$WEB_CONCURRENCY` from env (was hardcoded `--workers 1`).
+- **`ai-service/Procfile`**: Same fix — `${WEB_CONCURRENCY:-1}` instead of `--workers 1`.
+- **`frontend/Dockerfile`**: Replaced fragile `printf` inline Nginx config with proper `COPY nginx.conf ...`.
+- **`frontend/nginx.conf`** (NEW): Standalone config — SPA fallback, 1-year cache, gzip, security headers.
+- **`nginx.conf`** (NEW, root): Nginx reverse proxy — upstream backend cluster with `max_fails=3`, SSE/WebSocket support (24h timeout), cold-start tolerance (20s connect / 30s read timeout), routes `/api/*` → backend, `/ws/*` → backend, `/*` → frontend.
+- **`docker-compose.yml`** (rewritten): Added bridge network, `WEB_CONCURRENCY` per service, `:?}` required-var validation for `GROQ_API_KEY`/`JWT_SECRET`/`AGENT_SECRET`, `DATABASE_URL` + AWS vars, Nginx reverse proxy service, strict health-checked boot ordering.
+- **`.dockerignore`**: Added `scratch/`, `*.sqlite`, `*.pkl`, `*.csv`, `symptom_dataset.csv`, `*.log`.
+- **`render.yaml`**: Added `WEB_CONCURRENCY: 1` + `AGENT_SECRET` to both services.
+- **`DEPLOYMENT.md`**: Expanded Phase 4 with architecture diagram, env vars table, boot order, multi-worker details, Nginx upstream config.
+- **`.env.example`**: Renamed `NODE_CLUSTER_WORKERS` → `WEB_CONCURRENCY`.
+- **`docs/setup_guide.md`**: Same env var rename.
+
+### Docs & Meta Alignment
+- **`index.html`**: OG + Twitter descriptions now include "Built with Vercel v0 + Amazon Aurora PostgreSQL & DynamoDB".
+- **`SUBMISSION_SUMMARY.md`**: Opening paragraph now explicitly declares "AWS Databases Used: Amazon Aurora PostgreSQL + Amazon DynamoDB".
+- **Docs cross-references audited**: All 404 links checked — zero broken across README, judge_guide, SUBMISSION_CHECKLIST, SUBMISSION_SUMMARY.
+- **`SUBMISSION_CHECKLIST.md`**: Marked all build/deploy items complete, added Vercel Team ID.
+- **PricingPage.jsx**: Added "Book a Pilot Demo" CTA section with `mailto:enterprise@swasthai.in`.
+
+---
+
 ## June 28, 2026 — B2B API Key Wiring + README & Docs Overhaul + Judge Guide
 
 ### Added

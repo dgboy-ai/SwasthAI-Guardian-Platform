@@ -1,8 +1,12 @@
 # SwasthAI Guardian: Integrated Rural Health Platform
 
+**AWS Databases Used:** Amazon Aurora PostgreSQL (ACID relational store for medical records, users, and referrals) + Amazon DynamoDB (high-throughput telemetry — 5 tables, 7 GSIs, PAY_PER_REQUEST, TTL auto-expire). Both provisioned in `ap-south-1` (Mumbai). Live proof at `/verify`.
+
+**Built with:** Vercel v0 (frontend scaffolding), Vercel (PWA deployment), Render (backend + AI microservices).
+
 ## Inspiration
 
-Over 65% of India’s population resides in rural areas, yet access to healthcare infrastructure remains severely limited. We were inspired by ASHA (Accredited Social Health Activist) workers who tirelessly serve these communities under challenging circumstances, often relying on manual paper records, facing poor cellular connectivity, and having limited clinical tools.Our goal was to build a scalable, AI-powered digital health ecosystem that bridges this gap — providing villagers with immediate, accessible medical guidance in their native language, while equipping frontline workers and district authorities with real-time, proactive data to prevent outbreaks and save lives.
+Over 65% of India's population resides in rural areas, yet access to healthcare infrastructure remains severely limited. We were inspired by ASHA (Accredited Social Health Activist) workers who tirelessly serve these communities under challenging circumstances, often relying on manual paper records, facing poor cellular connectivity, and having limited clinical tools.Our goal was to build a scalable, AI-powered digital health ecosystem that bridges this gap — providing villagers with immediate, accessible medical guidance in their native language, while equipping frontline workers and district authorities with real-time, proactive data to prevent outbreaks and save lives.
 
 
 ---

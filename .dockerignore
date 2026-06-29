@@ -28,3 +28,11 @@ Thumbs.db
 # Dev tools
 **/.eslintcache
 **/coverage
+
+# Generated / scratch data (large, not needed in image)
+scratch/
+**/*.sqlite
+**/*.pkl
+**/*.csv
+**/symptom_dataset.csv
+**/*.log

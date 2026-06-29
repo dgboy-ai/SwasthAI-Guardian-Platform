@@ -17,13 +17,18 @@ services:
         generateValue: true
       - key: DATA_DIR
         value: /data
+      - key: WEB_CONCURRENCY
+        value: 1
       - key: GROQ_API_KEY
-        sync: false # Set this in the Render Dashboard
+        sync: false
       - key: AI_SERVICE_URL
+        # If AI service name differs (e.g., swasthai-ai-service-new), update below or override manually
         fromService:
           type: web
           name: swasthai-ai-service
           property: host
+      - key: AGENT_SECRET
+        sync: false
     disk:
       name: sqlite-data
       mountPath: /data
@@ -37,8 +42,12 @@ services:
     dockerContext: ai-service
     dockerfilePath: ai-service/Dockerfile
     envVars:
+      - key: WEB_CONCURRENCY
+        value: 1
       - key: GROQ_API_KEY
-        sync: false # Set this in the Render Dashboard
+        sync: false
+      - key: AGENT_SECRET
+        sync: false
       - key: BACKEND_URL
         fromService:
           type: web

@@ -10,6 +10,6 @@ SwasthAI creates these tables automatically on backend startup when `AWS_ACCESS_
 | `emergency_streams` | `districtId` | `streamId` | `priority-index`, `district-date-index` (`districtDateBucket` + `timestamp`) | 2 |
 | `security_audit_logs` | `actor` | `timestamp` | None — all queries actor-scoped for audit trail integrity | 0 |
 
-**Total: 8 GSIs across 5 tables (verified live on AWS console)**
+**Total: 7 GSIs across 5 tables (verified live on AWS console)**
 
 Region defaults to `ap-south-1`. See `backend/dynamodb.js` for schema definitions.

@@ -267,7 +267,7 @@
   <rect x="423" y="555" width="125" height="17" rx="8" fill="#ea580c"/>
   <text x="485" y="567" text-anchor="middle" font-size="8.5" font-weight="700" fill="white" letter-spacing="0.8">AMAZON DYNAMODB</text>
   <rect x="555" y="555" width="140" height="17" rx="8" fill="#fed7aa" stroke="#ea580c" stroke-width="1"/>
-  <text x="625" y="567" text-anchor="middle" font-size="8" font-weight="600" fill="#7c2d12">PAY_PER_REQUEST  |  5 Tables  |  8 GSIs</text>
+  <text x="625" y="567" text-anchor="middle" font-size="8" font-weight="600" fill="#7c2d12">PAY_PER_REQUEST  |  5 Tables  |  7 GSIs</text>
   <rect x="703" y="555" width="164" height="17" rx="8" fill="#7c2d12"/>
   <text x="785" y="567" text-anchor="middle" font-size="8" font-weight="600" fill="#fde68a">Millisecond write latency — &lt;10ms cluster alert</text>
 
@@ -321,7 +321,7 @@
 
   <!-- DynamoDB billing note -->
   <text x="645" y="928" text-anchor="middle" font-size="8" fill="#b45309">PAY_PER_REQUEST billing — auto-scales to millions of writes per second with zero provisioning overhead</text>
-  <text x="645" y="940" text-anchor="middle" font-size="8" fill="#b45309">8 GSIs total  |  TTL active on 3 tables (outbreak_telemetry, village_node_state, sync_queues)</text>
+  <text x="645" y="940" text-anchor="middle" font-size="8" fill="#b45309">7 GSIs total  |  TTL active on 3 tables (outbreak_telemetry, village_node_state, sync_queues)</text>
   <text x="645" y="952" text-anchor="middle" font-size="8" fill="#b45309">dynamoDB.endpoint: ap-south-1  |  PAY_PER_REQUEST  |  Multi-AZ managed by AWS</text>
   <text x="645" y="964" text-anchor="middle" font-size="8" fill="#b45309">DLQ: Failed events → capped 100-item JSON file  |  SSE broadcast to all admin sessions on outbreak</text>
   <text x="645" y="976" text-anchor="middle" font-size="8" fill="#b45309">B2B /api/b2b/outbreaks endpoint scoped via districtId tenant from API key table</text>

@@ -662,7 +662,7 @@
     <div class="dynamo-panel">
       <div class="tier-badge-row">
         <span class="badge badge-main">AMAZON DYNAMODB</span>
-        <span class="badge badge-env">PAY_PER_REQUEST · 5 Tables · 8 GSIs</span>
+        <span class="badge badge-env">PAY_PER_REQUEST · 5 Tables · 7 GSIs</span>
         <span class="badge badge-v0">Millisecond write latency — &lt;10ms cluster alert</span>
       </div>
       <div class="tier-title">High-velocity telemetry + outbreak event store</div>
@@ -696,7 +696,7 @@
       <div class="dynamo-meta">
         <strong>Production Hardening Applied:</strong>&nbsp; Scan → Query on district-time-index · Dynamic districtId: getDistrictId(db, villageId) — Aurora join resolves real district before every DynamoDB write<br>
         Atomic UpdateCommand: patches only 4 owned fields — safe under concurrent writes · GSI Validation: DescribeTableCommand on startup · Idempotent ensureTTL()<br>
-        PAY_PER_REQUEST billing — auto-scales to millions of writes · 8 GSIs total · TTL active on 3 tables · Multi-AZ managed by AWS
+        PAY_PER_REQUEST billing — auto-scales to millions of writes · 7 GSIs total · TTL active on 3 tables · Multi-AZ managed by AWS
       </div>
     </div>
 

@@ -107,7 +107,8 @@ DATABASE_URL=postgresql://user:password@your-aurora-cluster.ap-south-1.rds.amazo
 
 # ── Performance ───────────────────────────────────────────────────────────────
 # Use 1 on Render/Fargate free tier to stay within memory limits
-NODE_CLUSTER_WORKERS=1
+# Controls both Node.js cluster workers and uvicorn ASGI workers
+WEB_CONCURRENCY=1
 
 # ── AI Service ───────────────────────────────────────────────────────────────
 # Set to true to enable the 64.6%-accurate SymptomNet deep MLP (requires ~500MB RAM).
