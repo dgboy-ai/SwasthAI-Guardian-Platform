@@ -1675,5 +1675,48 @@ router.get('/village-risk/:villageId', auth, checkRole(['admin']), async (req, r
   }
 });
 
+// GET /admin/b2b-usage — B2B platform analytics for tenant cards
+router.get('/b2b-usage', auth, checkRole(['admin']), async (req, res) => {
+  const db = req.app.locals.db;
+  try {
+    const keys = await db.all('SELECT * FROM api_keys ORDER BY id DESC');
+    const tenants = {};
+    for (const k of keys) {
+      const tid = k.tenant_id || 'unassigned';
+      if (!tenants[tid]) tenants[tid] = { tenantId: tid, users: 0, apiKeys: { total: 0, active: 0, totalCalls: 0 }, villages: { total: 0, population: 0, pregnancies: 0, malnutrition: 0 }, records: { symptoms: 0, pregnancies: 0, emergencies: 0 } };
+      tenants[tid].apiKeys.total++;
+      if (k.is_active) tenants[tid].apiKeys.active++;
+      tenants[tid].apiKeys.totalCalls += k.usage_count || 0;
+    }
+    // Enrich with real counts
+    for (const tid of Object.keys(tenants)) {
+      try {
+        const vCount = await db.get('SELECT COUNT(*) as c FROM village_health WHERE "districtId" = ?', [tid]);
+        const uCount = await db.get('SELECT COUNT(*) as c FROM users u INNER JOIN village_health vh ON u."villageId" = vh."villageId" WHERE vh."districtId" = ?', [tid]);
+        const pCount = await db.get('SELECT COUNT(*) as c FROM pregnancy_data pd INNER JOIN village_health vh ON pd."villageId" = vh."villageId" WHERE vh."districtId" = ?', [tid]);
+        const sCount = await db.get('SELECT COUNT(*) as c FROM symptoms s INNER JOIN village_health vh ON s."villageId" = vh."villageId" WHERE vh."districtId" = ?', [tid]);
+        const eCount = await db.get('SELECT COUNT(*) as c FROM ambulance_requests WHERE request_type = \'ambulance\'');
+        tenants[tid].villages.total = parseInt(vCount?.c || 0);
+        tenants[tid].users = parseInt(uCount?.c || 0);
+        tenants[tid].records.pregnancies = parseInt(pCount?.c || 0);
+        tenants[tid].records.symptoms = parseInt(sCount?.c || 0);
+        tenants[tid].records.emergencies = parseInt(eCount?.c || 0);
+      } catch (_) {}
+    }
+    const tenantList = Object.values(tenants);
+    const totals = {
+      totalKeys: keys.length,
+      totalCalls: keys.reduce((s, k) => s + (k.usage_count || 0), 0),
+      totalVillages: tenantList.reduce((s, t) => s + t.villages.total, 0),
+      totalUsers: tenantList.reduce((s, t) => s + t.users, 0),
+      totalRecords: tenantList.reduce((s, t) => s + t.records.symptoms + t.records.pregnancies + t.records.emergencies, 0),
+    };
+    res.json({ generatedAt: new Date().toISOString(), totals, tenants: tenantList });
+  } catch (err) {
+    console.error('[B2B USAGE]', err.message);
+    sendError(res, 500, 'B2B_USAGE_FAILED', 'Failed to fetch B2B usage data.');
+  }
+});
+
 export default router;
 
