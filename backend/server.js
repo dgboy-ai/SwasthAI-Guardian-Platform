@@ -247,8 +247,40 @@ if (isProduction && cluster.isPrimary && maxWorkers > 1) {
     }
   }
 
+  async function tryConnectAurora() {
+    if (!process.env.DATABASE_URL && !process.env.DB_PASSWORD) return false;
+    try {
+      const newPool = new Pool({
+        connectionString: process.env.DATABASE_URL || `postgresql://${process.env.DB_USER || 'postgres'}:${process.env.DB_PASSWORD}@${process.env.DB_HOST || 'localhost'}:5432/${process.env.DB_NAME || 'swasthai'}`,
+        ssl: process.env.DATABASE_URL ? { rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED !== 'false' } : false,
+        connectionTimeoutMillis: 30000,
+      });
+      await newPool.query('SELECT 1');
+      pool = newPool;
+      db = {
+        get: async (sql, params = []) => { const { rows } = await pool.query(toPostgres(sql), params); return rows[0] || null; },
+        all: async (sql, params = []) => { const { rows } = await pool.query(toPostgres(sql), params); return rows; },
+        run: async (sql, params = []) => { const pgSql = toPostgres(sql); const { rows } = await pool.query(pgSql + ' RETURNING id', params).catch(async () => pool.query(pgSql, params)); return { lastID: rows?.[0]?.id }; },
+        exec: async (sql) => { await pool.query(sql); },
+        pool,
+      };
+      usingSQLite = false;
+      app.locals.db = db;
+      app.locals.usingSQLite = false;
+      return true;
+    } catch { return false; }
+  }
   async function checkAuroraHealth() {
-    if (!pool) { connectionHealth.aurora.ok = false; return; }
+    if (!pool) {
+      connectionHealth.aurora.ok = false;
+      if (await tryConnectAurora()) {
+        connectionHealth.aurora.ok = true;
+        connectionHealth.aurora.consecutiveFailures = 0;
+        connectionHealth.aurora.lastOk = new Date().toISOString();
+      }
+      connectionHealth.aurora.lastChecked = new Date().toISOString();
+      return;
+    }
     if (usingSQLite) {
       connectionHealth.aurora.ok = false;
       await reconnectAurora();
@@ -282,12 +314,14 @@ if (isProduction && cluster.isPrimary && maxWorkers > 1) {
     try {
       const sqlite3 = require('better-sqlite3');
       const sqliteDbInstance = sqlite3(path.join(__dirname, 'swasthai_guardian.sqlite'));
-      db = {
+      const fallbackDb = {
         get: (sql, params = []) => Promise.resolve(sqliteDbInstance.prepare(sql).get(params) || null),
         all: (sql, params = []) => Promise.resolve(sqliteDbInstance.prepare(sql).all(params)),
         run: (sql, params = []) => { const info = sqliteDbInstance.prepare(sql).run(params); return Promise.resolve({ lastID: info.lastInsertRowid }); },
         exec: (sql) => { sqliteDbInstance.exec(sql); return Promise.resolve(); },
       };
+      await initSchema(fallbackDb, null, true);
+      db = fallbackDb;
       usingSQLite = true;
       app.locals.db = db;
       app.locals.usingSQLite = true;
