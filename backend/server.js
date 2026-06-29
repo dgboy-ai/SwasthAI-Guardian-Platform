@@ -248,7 +248,18 @@ if (isProduction && cluster.isPrimary && maxWorkers > 1) {
   }
 
   async function checkAuroraHealth() {
-    if (usingSQLite || !pool) { connectionHealth.aurora.ok = false; return; }
+    if (!pool) { connectionHealth.aurora.ok = false; return; }
+    if (usingSQLite) {
+      connectionHealth.aurora.ok = false;
+      await reconnectAurora();
+      if (!usingSQLite) {
+        connectionHealth.aurora.ok = true;
+        connectionHealth.aurora.consecutiveFailures = 0;
+        connectionHealth.aurora.lastOk = new Date().toISOString();
+      }
+      connectionHealth.aurora.lastChecked = new Date().toISOString();
+      return;
+    }
     try {
       await pool.query('SELECT 1');
       connectionHealth.aurora.ok = true;
@@ -256,10 +267,54 @@ if (isProduction && cluster.isPrimary && maxWorkers > 1) {
       connectionHealth.aurora.lastOk = new Date().toISOString();
     } catch {
       connectionHealth.aurora.consecutiveFailures++;
-      if (connectionHealth.aurora.consecutiveFailures >= 2) connectionHealth.aurora.ok = false;
+      if (connectionHealth.aurora.consecutiveFailures >= 2) {
+        connectionHealth.aurora.ok = false;
+        initSQLiteFallback().catch(() => {});
+      }
     }
     connectionHealth.aurora.lastChecked = new Date().toISOString();
   }
+  async function initSQLiteFallback() {
+    if (usingSQLite) return;
+    console.log('📦 Aurora unavailable — switching to SQLite fallback at runtime');
+    const { createRequire } = await import('module');
+    const require = createRequire(import.meta.url);
+    try {
+      const sqlite3 = require('better-sqlite3');
+      const sqliteDbInstance = sqlite3(path.join(__dirname, 'swasthai_guardian.sqlite'));
+      db = {
+        get: (sql, params = []) => Promise.resolve(sqliteDbInstance.prepare(sql).get(params) || null),
+        all: (sql, params = []) => Promise.resolve(sqliteDbInstance.prepare(sql).all(params)),
+        run: (sql, params = []) => { const info = sqliteDbInstance.prepare(sql).run(params); return Promise.resolve({ lastID: info.lastInsertRowid }); },
+        exec: (sql) => { sqliteDbInstance.exec(sql); return Promise.resolve(); },
+      };
+      usingSQLite = true;
+      app.locals.db = db;
+      app.locals.usingSQLite = true;
+      console.log('✅ Runtime SQLite fallback active');
+    } catch (err) {
+      console.error('❌ Runtime SQLite fallback failed:', err.message);
+    }
+  }
+
+  async function reconnectAurora() {
+    if (!pool) return;
+    try {
+      await pool.query('SELECT 1');
+      db = {
+        get: async (sql, params = []) => { const { rows } = await pool.query(toPostgres(sql), params); return rows[0] || null; },
+        all: async (sql, params = []) => { const { rows } = await pool.query(toPostgres(sql), params); return rows; },
+        run: async (sql, params = []) => { const pgSql = toPostgres(sql); const { rows } = await pool.query(pgSql + ' RETURNING id', params).catch(async () => pool.query(pgSql, params)); return { lastID: rows?.[0]?.id }; },
+        exec: async (sql) => { await pool.query(sql); },
+        pool,
+      };
+      usingSQLite = false;
+      app.locals.db = db;
+      app.locals.usingSQLite = false;
+      console.log('🔄 Aurora restored — switched back from SQLite');
+    } catch { /* still down */ }
+  }
+
   async function checkDynamoHealth() {
     if (dynamoHelper.isMock) { connectionHealth.dynamodb.ok = false; return; }
     try {
@@ -293,7 +348,7 @@ if (isProduction && cluster.isPrimary && maxWorkers > 1) {
         ssl: process.env.DATABASE_URL
           ? { rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED !== 'false' }
           : false,
-        connectionTimeoutMillis: 3000,
+        connectionTimeoutMillis: 30000,
       });
       await testPool.query('SELECT 1');
       console.log('✅ Connected to PostgreSQL / Aurora');
