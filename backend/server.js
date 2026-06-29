@@ -197,11 +197,13 @@ if (isProduction && cluster.isPrimary && maxWorkers > 1) {
   };
 
   // Auto-seed demo data on startup if DB is empty (survives Render ephemeral storage)
-  async function autoSeedHackathonData(db) {
+  async function autoSeedHackathonData(db, force) {
     try {
-      const row = await db.get('SELECT COUNT(*) as c FROM users');
-      const count = parseInt(row?.c ?? row?.cnt ?? 0, 10);
-      if (count > 0) return; // Already seeded
+      if (!force) {
+        const row = await db.get('SELECT COUNT(*) as c FROM users');
+        const count = parseInt(row?.c ?? row?.cnt ?? 0, 10);
+        if (count > 0) return; // Already seeded
+      }
       console.log('[AUTO-SEED] Empty database detected, seeding hackathon demo data...');
       // Inline seed — villages, users, pregnancies, symptoms, referrals, ambulances, vaccinations
       const villages = [
@@ -322,7 +324,7 @@ if (isProduction && cluster.isPrimary && maxWorkers > 1) {
       };
       await initSchema(fallbackDb, null, true);
       await seedData(fallbackDb, null, true, bcrypt, dynamoHelper).catch(e => console.warn('⚠️ Runtime seed issue:', e.message));
-      autoSeedHackathonData(fallbackDb).catch(() => {});
+      autoSeedHackathonData(fallbackDb, true).catch(() => {});
       db = fallbackDb;
       usingSQLite = true;
       app.locals.db = db;
