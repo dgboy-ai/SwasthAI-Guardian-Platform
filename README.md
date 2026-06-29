@@ -1,7 +1,9 @@
 # SwasthAI Guardian
 ### Offline-First Healthcare Infrastructure for Low-Connectivity Environments
 
-[**Live Demo**](https://swasth-ai-guardian-platform.vercel.app) · [**Deployment Guide**](DEPLOYMENT.md) · [**Architecture Diagram**](architecture_diagram.md) · [**Changelog**](CHANGELOG.md)
+[**Live Demo**](https://swasth-ai-guardian-platform.vercel.app) · [**Deployment Guide**](DEPLOYMENT.md) · [**Architecture Diagram**](architecture_diagram.svg) · [**Changelog**](CHANGELOG.md)
+
+<img src="architecture_diagram.svg" alt="SwasthAI Guardian Platform — Production Architecture" width="100%" />
 
 ---
 
@@ -63,7 +65,7 @@ Jump directly into the detailed architecture logs, code reference maps, and setu
 | Technical Guide | Focus & Key Highlights | Quick Link |
 | :--- | :--- | :--- |
 | **System Architecture & Database Designs** | End-to-end data flows, DB ERDs, DynamoDB composite key schemas, GSIs, access patterns, SQLite fallbacks. | [System Arch](docs/system_architecture.md) |
-| **Architecture Diagram** | Topology of Vercel, Aurora, DynamoDB, FastAPI, and data flow between all services. | [SVG](architecture_diagram.svg) · [Mermaid source](architecture_diagram.md) |
+| **Architecture Diagram** | Topology of Vercel, Aurora, DynamoDB, FastAPI, and data flow between all services. | [SVG](architecture_diagram.svg) · [HTML (full detail)](architecture_diagram.html) · [Mermaid source](architecture_diagram.md) |
 | **AI Architecture & Validation** | SymptomNet 5-Fold Stratified CV, RAG calibration parameters, ISIC skin triage. | [AI Arch](docs/ai_architecture.md) |
 | **Offline Sync Strategy** | IndexedDB queue replay, idempotency keys, Last-Write-Wins (LWW) rules. | [Sync Strategy](docs/offline_sync_strategy.md) |
 | **Complete Repository Map** | Directory-by-directory tree layout, file roles, component descriptions. | [Repo Map](docs/repository_map.md) |
