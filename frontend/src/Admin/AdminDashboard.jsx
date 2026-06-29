@@ -258,20 +258,15 @@ export default function AdminDashboard() {
     const loadSystemProof = async () => {
       setSystemLoading(true);
       try {
-        const [status, feed, audit] = await Promise.all([
-          adminService.getSystemStatus().catch(err => {
-            console.debug('System status API failed:', err);
-            throw err;
-          }),
-          adminService.getDynamoFeed().catch(() => null),
-          adminService.getAuditLogs().catch(() => ({ logs: [] })),
-        ]);
-        setSystemStatus(status);
-        setDynamoFeed(feed);
+        // Fetch independently — don't let one failure block the others
+        const status = await adminService.getSystemStatus().catch(() => null);
+        const feed = await adminService.getDynamoFeed().catch(() => null);
+        const audit = await adminService.getAuditLogs().catch(() => ({ logs: [] }));
+        if (status) setSystemStatus(status);
+        if (feed) setDynamoFeed(feed);
         setAuditLogs(audit?.logs || []);
         setSystemError(null);
-        // Cache for next cold start
-        try { localStorage.setItem('swasthai_system_status_cache', JSON.stringify(status)); } catch (_) {}
+        try { if (status) localStorage.setItem('swasthai_system_status_cache', JSON.stringify(status)); } catch (_) {}
       } catch (err) {
         setSystemError(typeof err === 'string' ? err : err.message || 'System status unavailable');
       } finally {
