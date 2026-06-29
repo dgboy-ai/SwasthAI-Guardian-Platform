@@ -74,9 +74,9 @@ export function broadcastToAdmins(eventType, data) {
     }
 
     const payload = `event: ${eventType}\ndata: ${JSON.stringify(data)}\n\n`;
-    try { 
-      res.write(payload); 
-    } catch (_) { 
+    try {
+      res.write(payload);
+    } catch (_) {
       adminSseClients.delete(clientId);
     }
   });
@@ -148,7 +148,7 @@ router.post('/agent-scan', async (req, res) => {
       if (decoded && decoded.role === 'admin') {
         isAuthedAdmin = true;
       }
-    } catch (_) {}
+    } catch (_) { }
   }
 
   if (!isAgent && !isAuthedAdmin) {
@@ -168,7 +168,7 @@ router.post('/agent-scan', async (req, res) => {
     if (vRow && vRow.name) {
       villageName = vRow.name.split(' / ')[0];
     }
-  } catch (_) {}
+  } catch (_) { }
 
   const newScan = {
     villageId,
@@ -269,11 +269,11 @@ router.post('/seed-hackathon', async (req, res) => {
     results.aurora.users = users.length;
 
     // ── Clear old hackathon seed data to prevent duplicates ──
-    await db.run('DELETE FROM pregnancy_data WHERE name IN (?,?,?,?,?,?)', ['Sunita Devi','Rani Kumari','Pooja Gupta','Meena Kumari','Lata Devi','Aarti Sen']);
+    await db.run('DELETE FROM pregnancy_data WHERE name IN (?,?,?,?,?,?)', ['Sunita Devi', 'Rani Kumari', 'Pooja Gupta', 'Meena Kumari', 'Lata Devi', 'Aarti Sen']);
     await db.run('DELETE FROM symptoms WHERE model_used = ?', ['SymptomNet-DL']);
-    await db.run('DELETE FROM referrals WHERE patient_name IN (?,?,?,?,?)', ['Sunita Devi','Raju Kumar','Lata Devi','Karan Singh','Geeta Devi']);
-    await db.run("DELETE FROM ambulance_requests WHERE name IN (?,?,?) AND request_type = 'ambulance'", ['Ram Singh','Lata Devi','Geeta Devi']);
-    await db.run('DELETE FROM vaccination_records WHERE child_name IN (?,?,?,?)', ['Raju Kumar','Priya Singh','Amit Kumar','Sita Devi']);
+    await db.run('DELETE FROM referrals WHERE patient_name IN (?,?,?,?,?)', ['Sunita Devi', 'Raju Kumar', 'Lata Devi', 'Karan Singh', 'Geeta Devi']);
+    await db.run("DELETE FROM ambulance_requests WHERE name IN (?,?,?) AND request_type = 'ambulance'", ['Ram Singh', 'Lata Devi', 'Geeta Devi']);
+    await db.run('DELETE FROM vaccination_records WHERE child_name IN (?,?,?,?)', ['Raju Kumar', 'Priya Singh', 'Amit Kumar', 'Sita Devi']);
 
     // ── Aurora: Pregnancies ──
     const pregnancies = [
@@ -386,9 +386,9 @@ router.post('/seed-hackathon', async (req, res) => {
     for (const e of emergencies) {
       const ts = new Date().toISOString();
       await dynamoHelper.put('emergency_streams', {
-        ...e, streamId: `SOS-${Date.now()}-${Math.random().toString(36).slice(2,6)}`,
+        ...e, streamId: `SOS-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
         timestamp: ts, status: 'pending',
-        districtDateBucket: `${e.districtId}#${ts.slice(0,10)}`,
+        districtDateBucket: `${e.districtId}#${ts.slice(0, 10)}`,
       });
     }
     results.dynamodb.emergencies = emergencies.length;
@@ -495,14 +495,14 @@ router.get('/ambulances', auth, checkRole(['admin']), async (req, res) => {
     const lastId = parseInt(req.query.lastId) || null;
     const joinFrom = 'FROM ambulance_requests ar LEFT JOIN users u ON ar.user_id = u.id LEFT JOIN village_health vh ON u."villageId" = vh."villageId"';
     const whereClause = districtId ? ` WHERE vh."districtId" = ? OR vh."districtId" IS NULL` : '';
-    
+
     let rows;
     if (lastId) {
       rows = await db.all(`SELECT ar.* ${joinFrom}${whereClause} AND ar.id < ? ORDER BY ar.id DESC LIMIT ?`, districtId ? [districtId, lastId, limit] : [lastId, limit]);
     } else {
       rows = await db.all(`SELECT ar.* ${joinFrom}${whereClause} ORDER BY ar.id DESC LIMIT ?`, districtId ? [districtId, limit] : [limit]);
     }
-    
+
     res.send(rows);
   } catch (err) {
     sendError(res, 500, 'FETCH_AMBULANCE_FAILED', 'Failed to fetch ambulance records.');
@@ -546,13 +546,13 @@ router.get('/village-status', auth, checkRole(['admin', 'ngo']), async (req, res
   try {
     const village = await db.get('SELECT * FROM village_health WHERE "villageId" = ?', [villageId]);
     if (!village) return sendError(res, 404, 'VILLAGE_NOT_FOUND', 'Village not found');
-    
+
     // Fetch latest telemetry from DynamoDB village_node_state
     const nodeState = await dynamoHelper.get('village_node_state', { villageId }) || {};
-    
+
     // Fetch recent outbreaks
     const outbreaks = await dynamoHelper.queryByVillage('outbreak_telemetry', villageId, 7) || [];
-    
+
     res.json({
       villageId,
       name: village.name,
@@ -600,8 +600,18 @@ router.get('/summary', auth, checkRole(['admin']), async (req, res) => {
        WHERE vh."districtId" = ? AND u.role = 'ngo'`, [districtId]
     );
 
-    const emergencyReqs = await db.get("SELECT COUNT(*) as c FROM ambulance_requests WHERE request_type = 'ambulance'").catch(() => ({ c: 0 }));
-    const padReqs = await db.get("SELECT COUNT(*) as c FROM ambulance_requests WHERE request_type = 'pad_request'").catch(() => ({ c: 0 }));
+    const emergencyReqs = await db.get(
+      `SELECT COUNT(*) as c FROM ambulance_requests ar
+       INNER JOIN users u ON ar.user_id = u.id
+       INNER JOIN village_health vh ON u."villageId" = vh."villageId"
+       WHERE vh."districtId" = ? AND ar.request_type = 'ambulance'`, [districtId]
+    ).catch(() => ({ c: 0 }));
+    const padReqs = await db.get(
+      `SELECT COUNT(*) as c FROM ambulance_requests ar
+       INNER JOIN users u ON ar.user_id = u.id
+       INNER JOIN village_health vh ON u."villageId" = vh."villageId"
+       WHERE vh."districtId" = ? AND ar.request_type = 'pad_request'`, [districtId]
+    ).catch(() => ({ c: 0 }));
 
     res.send({
       districtId,
@@ -674,7 +684,7 @@ router.get('/clusters', async (req, res) => {
       if (decoded && decoded.role === 'admin') {
         isAuthedAdmin = true;
       }
-    } catch (_) {}
+    } catch (_) { }
   }
 
   if (!isAgent && !isAuthedAdmin) {
@@ -720,7 +730,7 @@ router.post('/outbreak-alert', async (req, res) => {
       if (decoded && decoded.role === 'admin') {
         isAuthedAdmin = true;
       }
-    } catch (_) {}
+    } catch (_) { }
   }
 
   if (!isAgent && !isAuthedAdmin) {
@@ -744,7 +754,7 @@ router.post('/outbreak-alert', async (req, res) => {
     await dynamoHelper.put('outbreak_telemetry', {
       villageId,
       districtId,
-      detectedAt:     timestamp,
+      detectedAt: timestamp,
       disease,
       classification: disease,
       action,
@@ -752,9 +762,9 @@ router.post('/outbreak-alert', async (req, res) => {
       caseCount,
       symptomPattern,
       source,
-      severity:       confidence >= 0.9 ? 'critical' : confidence >= 0.75 ? 'high' : 'medium',
-      riskScore:      Math.round(confidence * 100),
-      traceId:        req.traceId
+      severity: confidence >= 0.9 ? 'critical' : confidence >= 0.75 ? 'high' : 'medium',
+      riskScore: Math.round(confidence * 100),
+      traceId: req.traceId
     });
 
     try {
@@ -764,7 +774,7 @@ router.post('/outbreak-alert', async (req, res) => {
          ON CONFLICT("villageId") DO UPDATE
            SET "outbreakAlert" = excluded."outbreakAlert",
                "lastUpdated" = excluded."lastUpdated"`,
-         [villageId, `${disease}: ${action}`, timestamp]
+        [villageId, `${disease}: ${action}`, timestamp]
       );
     } catch (auroraSyncErr) {
       console.warn(`[OUTBREAK] Aurora sync skipped: ${auroraSyncErr.message}`);
@@ -786,11 +796,11 @@ router.post('/outbreak-alert', async (req, res) => {
         action,
         confidence,
         caseCount,
-        riskScore:   Math.round(confidence * 100),
-        severity:    confidence >= 0.9 ? 'critical' : confidence >= 0.75 ? 'high' : 'medium',
-        detectedAt:  timestamp,
+        riskScore: Math.round(confidence * 100),
+        severity: confidence >= 0.9 ? 'critical' : confidence >= 0.75 ? 'high' : 'medium',
+        detectedAt: timestamp,
         source,
-        traceId:     req.traceId
+        traceId: req.traceId
       });
     }
 
@@ -813,26 +823,26 @@ router.post('/outbreak', auth, checkRole(['admin']), logAudit('simulate', 'outbr
   const resolvedConfidence = confidence !== undefined ? Number(confidence) : 0.95;
   const resolvedCaseCount = caseCount !== undefined ? Number(caseCount) : 8;
   const resolvedSymptomPattern = symptomPattern || 'Severe dehydration, vomiting, and acute watery diarrhea';
-  
+
   const timestamp = new Date().toISOString();
 
   try {
     const districtId = await resolveDistrictId(db, resolvedVillageId);
 
     await dynamoHelper.put('outbreak_telemetry', {
-      villageId:      resolvedVillageId,
+      villageId: resolvedVillageId,
       districtId,
-      detectedAt:     timestamp,
-      disease:        resolvedDisease,
+      detectedAt: timestamp,
+      disease: resolvedDisease,
       classification: resolvedDisease,
-      action:         resolvedAction,
-      confidence:     resolvedConfidence,
-      caseCount:      resolvedCaseCount,
+      action: resolvedAction,
+      confidence: resolvedConfidence,
+      caseCount: resolvedCaseCount,
       symptomPattern: resolvedSymptomPattern,
-      source:         'AdminSimulator',
-      severity:       resolvedConfidence >= 0.9 ? 'critical' : resolvedConfidence >= 0.75 ? 'high' : 'medium',
-      riskScore:      Math.round(resolvedConfidence * 100),
-      traceId:        req.traceId
+      source: 'AdminSimulator',
+      severity: resolvedConfidence >= 0.9 ? 'critical' : resolvedConfidence >= 0.75 ? 'high' : 'medium',
+      riskScore: Math.round(resolvedConfidence * 100),
+      traceId: req.traceId
     });
 
     try {
@@ -842,7 +852,7 @@ router.post('/outbreak', auth, checkRole(['admin']), logAudit('simulate', 'outbr
          ON CONFLICT("villageId") DO UPDATE
            SET "outbreakAlert" = excluded."outbreakAlert",
                "lastUpdated" = excluded."lastUpdated"`,
-         [resolvedVillageId, `${resolvedDisease}: ${resolvedAction}`, timestamp]
+        [resolvedVillageId, `${resolvedDisease}: ${resolvedAction}`, timestamp]
       );
     } catch (auroraSyncErr) {
       console.warn(`[OUTBREAK] Aurora sync skipped: ${auroraSyncErr.message}`);
@@ -857,18 +867,18 @@ router.post('/outbreak', auth, checkRole(['admin']), logAudit('simulate', 'outbr
 
     if (typeof req.app.locals.broadcastToAdmins === 'function') {
       req.app.locals.broadcastToAdmins('outbreak', {
-        villageId:      resolvedVillageId,
+        villageId: resolvedVillageId,
         districtId,
-        disease:        resolvedDisease,
+        disease: resolvedDisease,
         classification: resolvedDisease,
-        action:         resolvedAction,
-        confidence:     resolvedConfidence,
-        caseCount:      resolvedCaseCount,
-        riskScore:      Math.round(resolvedConfidence * 100),
-        severity:       resolvedConfidence >= 0.9 ? 'critical' : resolvedConfidence >= 0.75 ? 'high' : 'medium',
-        detectedAt:     timestamp,
-        source:         'AdminSimulator',
-        traceId:        req.traceId
+        action: resolvedAction,
+        confidence: resolvedConfidence,
+        caseCount: resolvedCaseCount,
+        riskScore: Math.round(resolvedConfidence * 100),
+        severity: resolvedConfidence >= 0.9 ? 'critical' : resolvedConfidence >= 0.75 ? 'high' : 'medium',
+        detectedAt: timestamp,
+        source: 'AdminSimulator',
+        traceId: req.traceId
       });
     }
 
@@ -883,7 +893,7 @@ router.post('/outbreak', auth, checkRole(['admin']), logAudit('simulate', 'outbr
 
 router.get('/outbreaks-dynamo', async (req, res) => {
   const agentSecret = req.headers['x-agent-secret'];
-  const isAgent  = agentSecret === process.env.AGENT_SECRET;
+  const isAgent = agentSecret === process.env.AGENT_SECRET;
   const authHeader = req.headers.authorization;
   let isAuthed = false;
   if (authHeader) {
@@ -892,7 +902,7 @@ router.get('/outbreaks-dynamo', async (req, res) => {
       if (decoded && ['admin', 'ngo'].includes(decoded.role)) {
         isAuthed = true;
       }
-    } catch (_) {}
+    } catch (_) { }
   }
   if (!isAgent && !isAuthed) return sendError(res, 403, 'FORBIDDEN', 'Forbidden');
 
@@ -1003,11 +1013,11 @@ router.get('/heatmap-data', auth, checkRole(['admin', 'ngo']), async (req, res) 
     // Compose heatmap payload with a simple composite risk score 0-100
     // Score = clamp(symptomCnt*5 + malnutrition*3 + highRiskPreg*4 + outbreakAlert*20, 0, 100)
     const payload = villages.map((v, index) => {
-      const symptoms   = symptomMap[v.villageId] || 0;
-      const malnut     = parseInt(v.malnutrition_cases || 0);
+      const symptoms = symptomMap[v.villageId] || 0;
+      const malnut = parseInt(v.malnutrition_cases || 0);
       const highRiskVal = highRiskMap[v.villageId] || 0;
-      const hasAlert   = v.outbreakAlert ? 1 : 0;
-      const rawScore   = symptoms * 5 + malnut * 3 + highRiskVal * 4 + hasAlert * 20;
+      const hasAlert = v.outbreakAlert ? 1 : 0;
+      const rawScore = symptoms * 5 + malnut * 3 + highRiskVal * 4 + hasAlert * 20;
       const outbreakScore = Math.min(Math.round(rawScore), 100);
 
       // Deterministic lat/lng centered around Varanasi matching getVillageCoords in frontend
@@ -1041,22 +1051,22 @@ router.get('/heatmap-data', auth, checkRole(['admin', 'ngo']), async (req, res) 
 // Accepts raw text/csv body OR JSON { rows: [...] } for B2B integrations
 // CSV format: villageId,name,population,pregnant_women,children_under_5,malnutrition_cases,asha_contact
 const bulkUploadSchema = z.object({
-  villageId:          z.string().min(1).max(60),
-  name:               z.string().min(1).max(120),
-  population:         z.coerce.number().int().nonnegative(),
-  pregnant_women:     z.coerce.number().int().nonnegative().optional().default(0),
-  children_under_5:   z.coerce.number().int().nonnegative().optional().default(0),
+  villageId: z.string().min(1).max(60),
+  name: z.string().min(1).max(120),
+  population: z.coerce.number().int().nonnegative(),
+  pregnant_women: z.coerce.number().int().nonnegative().optional().default(0),
+  children_under_5: z.coerce.number().int().nonnegative().optional().default(0),
   malnutrition_cases: z.coerce.number().int().nonnegative().optional().default(0),
-  asha_contact:       z.string().max(20).optional().default(''),
+  asha_contact: z.string().max(20).optional().default(''),
 });
 
 router.post('/village-bulk-upload',
   auth, checkRole(['admin']), logAudit('bulk_upload', 'village_health'),
   express.text({ type: ['text/csv', 'text/plain'], limit: '1mb' }),
   async (req, res) => {
-    const db         = req.app.locals.db;
-    const userId     = req.user.id;
-    const filename   = req.headers['x-filename'] || 'upload.csv';
+    const db = req.app.locals.db;
+    const userId = req.user.id;
+    const filename = req.headers['x-filename'] || 'upload.csv';
 
     // Support both raw-CSV body and JSON {rows:[]} body
     let rawRows = [];
@@ -1064,11 +1074,11 @@ router.post('/village-bulk-upload',
       const lines = req.body.split('\n').map(l => l.trim()).filter(Boolean);
       if (lines.length < 2) return sendError(res, 400, 'INVALID_CSV', 'CSV must have a header row and at least one data row');
 
-      const EXPECTED_HEADERS = ['villageId','name','population','pregnant_women','children_under_5','malnutrition_cases','asha_contact'];
+      const EXPECTED_HEADERS = ['villageId', 'name', 'population', 'pregnant_women', 'children_under_5', 'malnutrition_cases', 'asha_contact'];
       const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
 
       // Validate required columns present
-      const missing = ['villageId','name','population'].filter(h => !headers.includes(h));
+      const missing = ['villageId', 'name', 'population'].filter(h => !headers.includes(h));
       if (missing.length) return sendError(res, 400, 'MISSING_COLUMNS', `Required columns missing: ${missing.join(', ')}`);
 
       for (let i = 1; i < lines.length; i++) {
@@ -1084,7 +1094,7 @@ router.post('/village-bulk-upload',
     }
 
     let inserted = 0;
-    let skipped  = 0;
+    let skipped = 0;
     const errors = [];
 
     for (const { row, lineNum } of rawRows) {
@@ -1138,14 +1148,14 @@ router.post('/village-bulk-upload',
 // ── DISTRICT REPORT — CMO monthly aggregation ─────────────────────────────────
 // GET /api/admin/district-report?month=YYYY-MM
 router.get('/district-report', auth, checkRole(['admin']), logAudit('export_report', 'district_monthly_report'), async (req, res) => {
-  const db         = req.app.locals.db;
+  const db = req.app.locals.db;
   const usingSQLite = req.app.locals.usingSQLite;
-  const format      = (req.query.format || 'json').toLowerCase();
+  const format = (req.query.format || 'json').toLowerCase();
 
   // Parse optional month filter (default: current month)
   const monthParam = req.query.month || new Date().toISOString().slice(0, 7); // 'YYYY-MM'
   const monthStart = `${monthParam}-01`;
-  const monthEnd   = `${monthParam}-31`;
+  const monthEnd = `${monthParam}-31`;
 
   try {
     // Village summary
@@ -1205,13 +1215,13 @@ router.get('/district-report', auth, checkRole(['admin']), logAudit('export_repo
     let outbreaks = [];
     try {
       const monthStart = `${monthParam}-01T00:00:00.000Z`;
-      const monthEnd   = `${monthParam}-31T23:59:59.999Z`;
+      const monthEnd = `${monthParam}-31T23:59:59.999Z`;
       const raw = await dynamoHelper.queryByDistrict('outbreak_telemetry', process.env.DISTRICT_NAME || 'district_main', 60);
       outbreaks = (raw || []).filter(o => {
         const ts = o.detectedAt || '';
         return ts >= monthStart && ts <= monthEnd;
       });
-    } catch (_) {}
+    } catch (_) { }
 
     // Symptom cluster count
     const symptomTotal = await db.get(
@@ -1227,51 +1237,51 @@ router.get('/district-report', auth, checkRole(['admin']), logAudit('export_repo
         generatedAt: new Date().toISOString(),
         generatedBy: req.user.id,
         district: process.env.DISTRICT_NAME || 'Pune District',
-        state:    process.env.STATE_NAME    || 'Maharashtra',
+        state: process.env.STATE_NAME || 'Maharashtra',
       },
       villages: {
-        total:         villages.length,
-        totalPop:      villages.reduce((s, v) => s + (v.population || 0), 0),
-        withAlerts:    villages.filter(v => v.outbreakAlert).length,
-        list:          villages.map(v => ({
-          villageId:         v.villageId,
-          name:              v.name,
-          population:        v.population,
-          pregnantWomen:     v.pregnant_women,
+        total: villages.length,
+        totalPop: villages.reduce((s, v) => s + (v.population || 0), 0),
+        withAlerts: villages.filter(v => v.outbreakAlert).length,
+        list: villages.map(v => ({
+          villageId: v.villageId,
+          name: v.name,
+          population: v.population,
+          pregnantWomen: v.pregnant_women,
           malnutritionCases: v.malnutrition_cases,
-          outbreakAlert:     v.outbreakAlert || null,
+          outbreakAlert: v.outbreakAlert || null,
         })),
       },
       maternal: {
-        totalPregnancies:    parseInt(pregnancyStats?.total || 0),
+        totalPregnancies: parseInt(pregnancyStats?.total || 0),
         highRiskPregnancies: parseInt(pregnancyStats?.high_risk || 0),
       },
       malnutrition: {
-        totalScreened:    parseInt(malnutStats?.total || 0),
-        abnormalCases:    parseInt(malnutStats?.abnormal || 0),
+        totalScreened: parseInt(malnutStats?.total || 0),
+        abnormalCases: parseInt(malnutStats?.abnormal || 0),
       },
       emergencies: {
         ambulanceRequests: parseInt(ambStats?.total || 0),
-        resolved:          parseInt(ambStats?.completed || 0),
+        resolved: parseInt(ambStats?.completed || 0),
       },
       referrals: {
-        total:     parseInt(referralStats?.total || 0),
+        total: parseInt(referralStats?.total || 0),
         completed: parseInt(referralStats?.completed || 0),
       },
       symptoms: {
         reportedThisMonth: parseInt(symptomTotal?.cnt || symptomTotal?.count || 0),
       },
       outbreakAlerts: {
-        count:  outbreaks.length,
+        count: outbreaks.length,
         events: outbreaks.slice(0, 10),
       },
     };
 
     if (format === 'csv') {
       // Flatten top-level metrics into a single-row CSV
-      const headers = ['Month','District','State','Villages','TotalPop','WithAlerts','TotalPregnancies','HighRisk',
-                       'MalnutritionCases','AmbulanceReqs','AmbulanceResolved','ReferralsTotal','ReferralsDone',
-                       'SymptomsReported','OutbreakAlerts','GeneratedAt'];
+      const headers = ['Month', 'District', 'State', 'Villages', 'TotalPop', 'WithAlerts', 'TotalPregnancies', 'HighRisk',
+        'MalnutritionCases', 'AmbulanceReqs', 'AmbulanceResolved', 'ReferralsTotal', 'ReferralsDone',
+        'SymptomsReported', 'OutbreakAlerts', 'GeneratedAt'];
       const row = [
         report.meta.month, report.meta.district, report.meta.state,
         report.villages.total, report.villages.totalPop, report.villages.withAlerts,
@@ -1298,7 +1308,7 @@ router.get('/live-feed', async (req, res) => {
   let decoded;
   try {
     const headerToken = req.header('Authorization')?.replace('Bearer ', '');
-    const queryToken  = req.query.token;
+    const queryToken = req.query.token;
     const cookieToken = req.cookies?.token;
     // Token priority: Authorization header > cookie > query param
     // Query param kept only as last-resort fallback for environments where
@@ -1331,10 +1341,10 @@ router.get('/live-feed', async (req, res) => {
   if (adminSseClients.size >= MAX_SSE_CLIENTS) {
     const oldestClientId = adminSseClients.keys().next().value;
     const oldestClientObj = adminSseClients.get(oldestClientId);
-    try { 
+    try {
       oldestClientObj.res.write('event: evicted\ndata: connection closed due to client limit\n\n');
-      oldestClientObj.res.end(); 
-    } catch (_) {}
+      oldestClientObj.res.end();
+    } catch (_) { }
     adminSseClients.delete(oldestClientId);
   }
 
@@ -1356,10 +1366,10 @@ router.get('/live-feed', async (req, res) => {
   });
 
   const heartbeat = setInterval(() => {
-    try { 
-      res.write(`event: ping\ndata: ${Date.now()}\n\n`); 
-    } catch (_) { 
-      clearInterval(heartbeat); 
+    try {
+      res.write(`event: ping\ndata: ${Date.now()}\n\n`);
+    } catch (_) {
+      clearInterval(heartbeat);
       adminSseClients.delete(clientId);
     }
   }, 30000);
@@ -1500,7 +1510,7 @@ router.get('/dlq', auth, checkRole(['admin']), (req, res) => {
 // ── PREDICTIVE DISTRICT RISK HEATMAP ────────────────────────────────────────────
 // Shared seasonal risk calendar (same logic as ngo.js risk engine — pure fn, no circular dep)
 function _getSeasonalScore(month) {
-  const calendar = { 1:12, 2:8, 3:10, 4:18, 5:20, 6:28, 7:32, 8:30, 9:25, 10:22, 11:15, 12:14 };
+  const calendar = { 1: 12, 2: 8, 3: 10, 4: 18, 5: 20, 6: 28, 7: 32, 8: 30, 9: 25, 10: 22, 11: 15, 12: 14 };
   return calendar[month] || 10;
 }
 function _getRiskLevel(score) {
