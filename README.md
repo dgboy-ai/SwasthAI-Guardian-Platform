@@ -41,7 +41,7 @@ Scaffolded with v0 · Amazon Aurora PostgreSQL + DynamoDB · Offline-First Rural
 
 ## 🏗️ Architecture & Infrastructure
 
-<img src="docs/architecture.png" alt="SwasthAI Guardian — System Architecture" width="100%" />
+<img src="docs/architecture_v3.png" alt="SwasthAI Guardian — System Architecture" width="100%" />
 
 | Layer | Platform | What It Handles |
 |-------|----------|-----------------|
