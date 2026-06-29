@@ -1,10 +1,6 @@
 <p align="center">
-  <img src="architecture_diagram.svg" alt="SwasthAI Guardian" width="100%" />
-</p>
-
-<p align="center">
   <strong>Offline-First Rural Health Platform</strong><br/>
-  3-Layer Microservice · Amazon Aurora PostgreSQL · Amazon DynamoDB
+  3-Layer Microservice
 </p>
 
 <p align="center">
@@ -39,11 +35,11 @@
 
 <br/>
 
-> **Live AWS Proof** — Visit `/verify` to see real-time Aurora PostgreSQL connection health, all 5 DynamoDB tables with their 7 GSIs, TTL configs, item counts, and AI service latency. Every admin dashboard metric carries a provenance badge showing which database served it. No screenshots, no promises — live infrastructure, verifiable now.
+> **🚀 Production-Ready Infrastructure** — One command (`docker compose up --build -d`) reproduces the entire stack. Nginx reverse proxy load-balances across a 2-worker Node.js cluster with round-robin, 24-hour SSE/WebSocket timeouts, 1-year static asset caching with gzip, and cold-start tolerance (20s connect, 30s read). All containers run as non-root users. Health-checked boot ordering ensures the AI service initializes before the backend, which starts before the proxy.
 
 <br/>
 
-### Quick Reference
+### 📚 Quick Reference
 
 | Guide | What It Covers |
 |---|---|
@@ -53,8 +49,12 @@
 | [Judge's Guide](docs/judge_guide.md) | Step-by-step walkthrough for B2B, technical, and impact tracks |
 | [Deployment Guide](DEPLOYMENT.md) | Docker Compose, multi-worker scaling, cold-start tuning |
 | [Setup Guide](docs/setup_guide.md) | Local dev with SQLite, env vars, one-command startup |
+| [Repository Map](docs/repository_map.md) | Full directory tree, file roles, naming conventions |
+| [DynamoDB Tables](infra/dynamodb-tables.md) | Table schemas, PK/SK design, GSI access patterns, TTL config |
 
-### Architecture & Infrastructure
+### ⚙️ Architecture & Infrastructure
+
+_[Full architecture diagram → docs/system_architecture.md](docs/system_architecture.md)_
 
 Three independently deployable, fault-isolated services. If the AI service goes down, the backend keeps serving auth and records. If the backend is unreachable, the frontend keeps running symptom checks and SOS queuing locally.
 
@@ -69,9 +69,9 @@ Three independently deployable, fault-isolated services. If the AI service goes 
 
 ---
 
-### Key Features by Role
+### 👥 Key Features by Role
 
-#### Villager
+#### 👨‍🌾 Villager
 
 | # | Feature | What It Does |
 |---|---|---|
@@ -81,7 +81,7 @@ Three independently deployable, fault-isolated services. If the AI service goes 
 | 4 | **Camera Pad Requests** | Selfie → AI gender verification → GPS geocoding → SSE broadcast to ASHA with photo + map link. Privacy-first. |
 | 5 | **Voice + 7 Languages** | Hindi, English, Marathi, Tamil, Telugu, Bengali, Hinglish. Speak symptoms, auto-fills forms, TTS reads results aloud. |
 
-#### ASHA / NGO Worker
+#### 🏥 ASHA / NGO Worker
 
 | # | Feature | What It Does |
 |---|---|---|
@@ -91,7 +91,7 @@ Three independently deployable, fault-isolated services. If the AI service goes 
 | 4 | **Smart Tasks** | AI-prioritized daily visits with route suggestions. Clinical notes, mark-as-done workflow. |
 | 5 | **Impact Analytics** | Animated KPIs: pregnancies registered, children screened, emergencies handled. Sync queue with manual trigger. |
 
-#### District Admin
+#### 🏛️ District Admin
 
 | # | Feature | What It Does |
 |---|---|---|
@@ -99,11 +99,11 @@ Three independently deployable, fault-isolated services. If the AI service goes 
 | 2 | **Outbreak Radar** | AI-driven detection every 30 min via Groq Llama. Simulate outbreaks, issue district alerts, confidence scores. |
 | 3 | **Risk Intelligence** | 5-factor per-village risk model: symptom trend, outbreak proximity, seasonal calendar, referral backlog. XAI breakdown. |
 | 4 | **B2B API Keys** | Create/revoke tenant-scoped `sk_live_*` keys. 3 permission levels. 6-district isolation. Usage tracking for billing. |
-| 5 | **System Verification** | `/verify` panel: Aurora pool health, all 5 DynamoDB tables + 7 GSIs, AI latency. Live data, live queries. |
+| 5 | **Live Infrastructure Monitor** | Real-time Aurora PostgreSQL connection health, all 5 DynamoDB tables with 7 GSIs, AI service latency — all queried from production databases live. |
 
 ---
 
-### B2B API Key System
+### 🔑 B2B API Key System
 
 Admins generate tenant-scoped API keys for partner NGOs and district health departments. Each key (`sk_live_` + 32 hex chars) locks to exactly one district — Varanasi data never leaks to Lucknow. Three permission levels (Read, ReadWrite, Admin) with per-request `usage_count` and `last_used_at` tracking, ready for consumption-based billing.
 
@@ -124,7 +124,7 @@ Multi-tenancy spans **6 districts**: Varanasi, Lucknow, Sehore, Bhopal, Indore, 
 
 ---
 
-### What's Under the Hood
+### ⚡ What's Under the Hood
 
 | Component | How It Works | Why It Matters |
 |---|---|---|
