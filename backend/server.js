@@ -225,7 +225,7 @@ if (isProduction && cluster.isPrimary && maxWorkers > 1) {
       ];
       for (const [name,age,tri,vil,risk,sbp,dbp,hr] of pregnancies) {
         const due = new Date(Date.now()+(9-tri)*30*86400000).toISOString().slice(0,10);
-        await db.run(`INSERT OR IGNORE INTO pregnancy_data (name,age,trimester,"dueDate","riskLevel","villageId",systolic_bp,diastolic_bp,heart_rate) VALUES (?,?,?,?,?,?,?,?,?)`, [name,age,tri,due,risk,vil,sbp,dbp,hr]);
+        await db.run(`INSERT INTO pregnancy_data (name,age,trimester,"dueDate","riskLevel","villageId",systolic_bp,diastolic_bp,heart_rate) VALUES (?,?,?,?,?,?,?,?,?) ON CONFLICT DO NOTHING`, [name,age,tri,due,risk,vil,sbp,dbp,hr]);
       }
       const symptoms = [['V101','Fever, Headache','Malaria',0.82],['V101','Cough, Breathing difficulty','Respiratory Infection',0.75],['V102','Fever, Rash, Joint pain','Dengue',0.78],['V103','Diarrhea, Vomiting','Gastroenteritis',0.85],['V101','Fever, Cough, Fatigue','Malaria',0.79],['V104','Skin rash, Itching','Dermatitis',0.71],['V105','Fever, Body ache','Viral Fever',0.68],['V102','Cough, Sore throat','Common Cold',0.88]];
       for (const [vil,sym,disease,conf] of symptoms) {
