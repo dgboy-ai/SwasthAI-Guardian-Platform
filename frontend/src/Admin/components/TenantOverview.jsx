@@ -202,33 +202,30 @@ function DistrictCard({ name, data, maxUsers, isActive, index }) {
 
 /* ═══════════════════════════════════════════════ */
 export default function TenantOverview({ activeDistrict }) {
-  const [tenantData, setTenantData] = useState({});
-  const [loading, setLoading] = useState(true);
+  const [tenantData, setTenantData] = useState(() => {
+    // Instant load from cache — no blank screen
+    try { return JSON.parse(localStorage.getItem('tenant_cache') || '{}'); } catch { return {}; }
+  });
+  const [loading, setLoading] = useState(!Object.keys(tenantData).length);
 
   useEffect(() => {
     let active = true;
     const loadAll = async () => {
-      setLoading(true);
       const results = {};
-
       try {
-        // Fetch all districts in parallel for speed
         const promises = DISTRICTS.map(async d => {
           try {
             const res = await api.get(`/admin/summary?districtId=${d}`);
-            if (active) {
-              results[d] = { ...res.data, status: 'connected' };
-            }
+            if (active) results[d] = { ...res.data, status: 'connected' };
           } catch {
-            if (active) {
-              results[d] = { totalUsers: 0, totalNgos: 0, emergencyCount: 0, sanitaryCount: 0, status: 'unreachable' };
-            }
+            if (active) results[d] = { totalUsers: 0, totalNgos: 0, emergencyCount: 0, sanitaryCount: 0, status: 'unreachable' };
           }
         });
         await Promise.all(promises);
         if (active) {
           setTenantData(results);
           setLoading(false);
+          try { localStorage.setItem('tenant_cache', JSON.stringify(results)); } catch {}
         }
       } catch (err) {
         if (active) {

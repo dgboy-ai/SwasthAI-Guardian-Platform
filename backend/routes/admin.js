@@ -600,18 +600,8 @@ router.get('/summary', auth, checkRole(['admin']), async (req, res) => {
        WHERE vh."districtId" = ? AND u.role = 'ngo'`, [districtId]
     );
 
-    const emergencyReqs = await db.get(
-      `SELECT COUNT(*) as c FROM ambulance_requests ar
-       INNER JOIN users u ON ar.user_id = u.id
-       INNER JOIN village_health vh ON u."villageId" = vh."villageId"
-       WHERE vh."districtId" = ? AND ar.request_type = 'ambulance'`, [districtId]
-    ).catch(() => ({ c: 0 }));
-    const padReqs = await db.get(
-      `SELECT COUNT(*) as c FROM ambulance_requests ar
-       INNER JOIN users u ON ar.user_id = u.id
-       INNER JOIN village_health vh ON u."villageId" = vh."villageId"
-       WHERE vh."districtId" = ? AND ar.request_type = 'pad_request'`, [districtId]
-    ).catch(() => ({ c: 0 }));
+    const emergencyReqs = await db.get("SELECT COUNT(*) as c FROM ambulance_requests WHERE request_type = 'ambulance'").catch(() => ({ c: 0 }));
+    const padReqs = await db.get("SELECT COUNT(*) as c FROM ambulance_requests WHERE request_type = 'pad_request'").catch(() => ({ c: 0 }));
 
     res.send({
       districtId,
