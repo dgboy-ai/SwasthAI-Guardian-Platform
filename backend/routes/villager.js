@@ -800,7 +800,7 @@ router.get('/schemes/:id', auth, checkRole(['villager', 'ngo', 'admin']), async 
 // ── POST /villager/pad-request — Camera-verified sanitary pad request ─────────
 // Accepts: village, gpsCoords { lat, lng }, photoBase64 (JPEG, ≤150KB base64)
 // Broadcasts photo + GPS to ASHA via SSE so they can see who/where from ASHA dashboard
-router.post('/villager/pad-request', auth, checkRole(['villager', 'ngo', 'admin']), enforceVillageScope, logAudit('request_pads', 'ambulance_requests'), async (req, res) => {
+router.post('/villager/pad-request', auth, checkRole(['villager', 'ngo', 'admin']), logAudit('request_pads', 'ambulance_requests'), async (req, res) => {
   const db = req.app.locals.db;
   const pool = req.app.locals.pool;
   const usingSQLite = req.app.locals.usingSQLite;
