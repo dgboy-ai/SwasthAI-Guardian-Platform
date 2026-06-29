@@ -487,33 +487,34 @@
   <line x1="233" y1="1024" x2="233" y2="360" stroke="#059669" stroke-width="2" marker-end="url(#m-em)"/>
   <!-- Frontend → Backend -->
   <line x1="233" y1="360" x2="233" y2="370" stroke="#059669" stroke-width="2" marker-end="url(#m-em)"/>
-  <!-- Backend → AI -->
+  <!-- ── Clean vertical data flow connectors (no diagonal crossing) ── -->
+
+  <!-- Tier 1 → Tier 2 (Frontend to Backend) -->
+  <line x1="233" y1="360" x2="233" y2="370" stroke="#059669" stroke-width="2" marker-end="url(#m-em)"/>
+
+  <!-- Tier 2 → Tier 3 (Backend to AI Service) -->
   <line x1="233" y1="665" x2="233" y2="677" stroke="#7c3aed" stroke-width="2" marker-end="url(#m-pu)"/>
-  <!-- Backend → Aurora (right) -->
-  <path d="M398 460 Q408 460 415 320" stroke="#d97706" stroke-width="2" fill="none" stroke-dasharray="7,3" marker-end="url(#m-or)"/>
-  <!-- Backend → DynamoDB (right) -->
-  <path d="M398 520 Q408 520 415 620" stroke="#d97706" stroke-width="2" fill="none" stroke-dasharray="7,3" marker-end="url(#m-or)"/>
-  <!-- AI → Aurora (query clusters) -->
-  <path d="M398 780 Q406 780 415 750" stroke="#7c3aed" stroke-width="1.5" fill="none" stroke-dasharray="5,4" marker-end="url(#m-pu)"/>
-  <!-- OutbreakAgent loop back to Backend -->
-  <path d="M398 900 Q440 975 440 600 Q440 530 398 520" stroke="#ea580c" stroke-width="2" fill="none" stroke-dasharray="7,3" marker-end="url(#m-re)"/>
-  <!-- AI → Groq (right) -->
-  <line x1="398" y1="800" x2="894" y2="150" stroke="#7c3aed" stroke-width="1.5" fill="none" stroke-dasharray="5,4" marker-end="url(#m-pu)"/>
-  <!-- Backend → Twilio -->
-  <line x1="398" y1="490" x2="1085" y2="165" stroke="#2563eb" stroke-width="1.5" stroke-dasharray="4,4" marker-end="url(#m-bl)"/>
 
-  <!-- Flow labels -->
-  <rect x="246" y="690" width="142" height="13" rx="4" fill="#7c3aed" fill-opacity="0.1"/>
-  <text x="317" y="701" text-anchor="middle" font-size="7.5" fill="#4c1d95" font-weight="600">HTTP /api/ai/* triage calls</text>
+  <!-- Tier 2 → Aurora (short right connector, stays within gap) -->
+  <line x1="398" y1="450" x2="415" y2="450" stroke="#d97706" stroke-width="2" stroke-dasharray="6,3" marker-end="url(#m-or)"/>
 
-  <rect x="246" y="714" width="142" height="13" rx="4" fill="#059669" fill-opacity="0.1"/>
-  <text x="317" y="725" text-anchor="middle" font-size="7.5" fill="#065f46" font-weight="600">REST + WebSocket + SSE</text>
+  <!-- Tier 2 → DynamoDB (short right connector) -->
+  <line x1="398" y1="560" x2="415" y2="590" stroke="#d97706" stroke-width="2" stroke-dasharray="6,3" marker-end="url(#m-or)"/>
 
-  <text x="458" y="398" text-anchor="middle" font-size="7.5" fill="#d97706" font-weight="600" transform="rotate(-70,458,398)">SQL/Aurora</text>
-  <text x="460" y="580" text-anchor="middle" font-size="7.5" fill="#d97706" font-weight="600" transform="rotate(70,460,580)">DynamoDB</text>
+  <!-- AI → Aurora (short query connector) -->
+  <line x1="398" y1="780" x2="415" y2="760" stroke="#7c3aed" stroke-width="1.5" stroke-dasharray="5,4" marker-end="url(#m-pu)"/>
 
-  <!-- OutbreakAgent loop label -->
-  <text x="450" y="775" font-size="7.5" fill="#ea580c" font-weight="600" transform="rotate(-90,450,775)">OutbreakAgent 30min loop</text>
+  <!-- Flow labels (within the gap between columns) -->
+  <rect x="246" y="688" width="142" height="13" rx="4" fill="#7c3aed" fill-opacity="0.10"/>
+  <text x="317" y="699" text-anchor="middle" font-size="7.5" fill="#4c1d95" font-weight="600">HTTP /api/ai/* triage calls</text>
+
+  <rect x="246" y="710" width="142" height="13" rx="4" fill="#059669" fill-opacity="0.10"/>
+  <text x="317" y="721" text-anchor="middle" font-size="7.5" fill="#065f46" font-weight="600">REST + WebSocket + SSE</text>
+
+  <!-- Column gap labels -->
+  <text x="406" y="447" font-size="7" fill="#d97706" font-weight="600">SQL writes</text>
+  <text x="406" y="587" font-size="7" fill="#ea580c" font-weight="600">Telemetry</text>
+  <text x="406" y="757" font-size="7" fill="#7c3aed" font-weight="600">Query clusters</text>
 
   <!-- ================================================================
        FOOTER
