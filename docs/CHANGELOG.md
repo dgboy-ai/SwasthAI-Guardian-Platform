@@ -2,6 +2,36 @@
 
 All notable changes and feature developments completed during the project development window are documented in this file chronologically.
 
+## June 30, 2026 — Submission Finale: Pricing, Docs Overhaul, Aurora Resilience, Architecture Redesign
+
+### Added
+- **PricingPage — Emerald glassmorphism redesign**: Production pricing cards (₹18,800 — ₹37,700 — Custom) with emerald gradient glass panels, framer-motion staggered entrance, AWS Aurora + DynamoDB battle-tested badges, and B2B enterprise contact CTA.
+- **LandingPage prices synced**: ₹18,800/₹37,700 with `~$199`/`~$399` USD annotation badges matching PricingPage.
+- **Navbar Pricing link always visible**: Removed `hidden xl:block` so Pricing shows on all screen sizes.
+- **AdminDashboard PricingPage + DollarSign icon**: Imported and mounted `PricingPage` component, added `DollarSign` to lucide imports.
+- **Runtime SQLite fallback with Aurora auto-reconnect**: When Aurora fails 2 consecutive health checks (~60s), `initSQLiteFallback()` creates a better-sqlite3 database, runs `initSchema` + `seedData` + `autoSeedHackathonData(force=true)`, swaps `db` and `app.locals`. All API calls hit SQLite instead of failing. Health watchdog retries Aurora every 30s — when it recovers, `db` is swapped back to PostgreSQL transparently.
+- **Cold start timeout raised**: `connectionTimeoutMillis` 3s → 30s to tolerate Aurora Serverless v1 resume latency.
+- **Force-seed hackathon demo data at startup**: `autoSeedHackathonData(app.locals.db, true)` at server listen — ensures pregnancies, symptoms, referrals, ambulances, vaccinations are seeded even when SQLite fallback is active and `seedData` already created users.
+- **system_architecture.md redesigned**: 4-table layout (Tier breakdown, Aurora vs DynamoDB comparison, Aurora table list, DynamoDB 5-table GSI schema) with production hardening table and runtime resilience section. Zero mermaid, zero walls of text.
+- **ai_architecture.md redesigned**: 4-table layout (Ensemble 4-tier architecture, model specifications, disease classes by category, Sakhi RAG 7-stage pipeline) with key design decisions table. Zero mermaid.
+
+### Fixed
+- **`autoSeedHackathonData` startup call** at `server.js:787` — now passes `force=true` so hackathon demo data survives cold starts where Aurora is down and SQLite fallback re-seeds from scratch.
+- **`initSchema` + `seedData` in runtime SQLite fallback**: Both now correctly called during `initSQLiteFallback()` so the fallback database has the full schema and demo accounts before hackathon data is seeded.
+- **Docs cross-references**: Updated `docs/judge_guide.md`, `docs/repository_map.md`, `docs/setup_guide.md`, `docs/DEPLOYMENT.md`, `docker-compose.yml`, `README.md` to reflect file moves from root to `docs/` and `infra/`.
+
+### Removed
+- **Stale docs**: `docs/architecture-diagram.svg` (hyphen variant), `docs/demo_video_script.md`.
+- **Redundant docs**: `docs/SUBMISSION_CHECKLIST.md`, `docs/SUBMISSION_SUMMARY.md` (info covered in README and judge_guide).
+
+### Changed
+- **README header**: Added `[Demo Video](https://youtu.be/VCmt5OPmDGs)` link between Docs and Tech Stack badges.
+- **Frontend build**: `dist/` rebuilt at Jun 29 23:36 — includes all pricing, landing, navbar, and admin changes.
+
+---
+
+## June 29, 2026 — Camera-Verified Sanitary Pad Request System & ASHA Dashboard Upgrades
+
 ## June 29, 2026 — Camera-Verified Sanitary Pad Request System & ASHA Dashboard Upgrades
 
 ### Added
