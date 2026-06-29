@@ -145,10 +145,10 @@ Proactive AI shifts medicine from reactive triage to epidemic prevention. The ou
 
 ## What's next
 
-- **ABDM Integration:** Link village health records with India's Ayushman Bharat Digital Mission for nationwide health ID interoperability
-- **SMS Fallback:** Support basic feature phones through lightweight SMS symptom checking and referral alerts
-- **Low-Bandwidth Telemedicine:** Real-time text and image consult pipelines optimized for 2G and sub-100kbps conditions
-- **Government Pilots:** Partner with district health ministries to deploy in active community health centers under real rural connectivity conditions
+- **ABDM Health ID Integration** — Link each patient record in Aurora PostgreSQL with their Ayushman Bharat Digital Mission (ABHA) ID, enabling nationwide portability of village health records without re-registration
+- **SMS-Fallback Mode (USSD/IVR)** — Compress the SymptomNet inference to a 160-character SMS response format so ASHA workers on 2G feature phones can still get clinical triage without a data connection
+- **Federated District Deployments** — Each district gets a dedicated Aurora read replica + DynamoDB table prefix, with a central outbreak hub that merges telemetry across state boundaries for early cross-district epidemic detection
+- **Government Pilot (NHM Madhya Pradesh)** — First deployment target is 6 blocks in Sehore district (already in the B2B API district list), partnering with existing ASHA worker supervisors for real-world validation
 
 ---
 

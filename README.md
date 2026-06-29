@@ -1,13 +1,14 @@
-# SwasthAI Guardian
+# SwasthAI Guardian — AI Health Platform for 600M Rural Indians
 
-Scaffolded with v0 · Amazon Aurora PostgreSQL + DynamoDB · Offline-First Rural Health AI
+> *We didn't build AI for doctors. We built it for the 600,000 villages that don't have one.*
 
-[Live Demo](https://swasth-ai-guardian-platform.vercel.app) · [Demo Video](https://youtu.be/VCmt5OPmDGs) · [Deploy Guide](docs/DEPLOYMENT.md) · [Judge's Guide](docs/judge_guide.md) · [Changelog](docs/CHANGELOG.md)
+[![Live Demo](https://img.shields.io/badge/🌐%20Live%20Demo-swasthai.vercel.app-059669?style=for-the-badge)](https://swasth-ai-guardian-platform.vercel.app) [![Demo Video](https://img.shields.io/badge/▶%20Demo%20Video-YouTube-FF0000?style=for-the-badge&logo=youtube)](https://youtu.be/VCmt5OPmDGs) [![Judge's Guide](https://img.shields.io/badge/📋%20Judge's%20Guide-Read%20Now-6366F1?style=for-the-badge)](docs/judge_guide.md)
 
-![Vercel](https://img.shields.io/badge/Vercel-v0-000000?logo=vercel) ![AWS Aurora](https://img.shields.io/badge/AWS-Aurora%20PostgreSQL-FF9900?logo=amazonaws) ![AWS DynamoDB](https://img.shields.io/badge/AWS-DynamoDB-FF9900?logo=amazonaws) ![React 18](https://img.shields.io/badge/React-18-61DAFB?logo=react) ![FastAPI](https://img.shields.io/badge/Python-FastAPI-009688?logo=fastapi) ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker) ![Groq](https://img.shields.io/badge/Groq-Llama--3.3--70b-F55036?logo=groq)
+![AWS Aurora](https://img.shields.io/badge/AWS-Aurora%20PostgreSQL-FF9900?logo=amazonaws) ![AWS DynamoDB](https://img.shields.io/badge/AWS-DynamoDB-FF9900?logo=amazonaws) ![Vercel](https://img.shields.io/badge/Vercel-v0-000000?logo=vercel) ![React 18](https://img.shields.io/badge/React-18-61DAFB?logo=react) ![FastAPI](https://img.shields.io/badge/Python-FastAPI-009688?logo=fastapi) ![Groq](https://img.shields.io/badge/Groq-Llama--3.3--70b-F55036?logo=groq)
 
-> **🏆 Tracks:** Monetizable B2B App · Most Impactful · Open Innovation
-> **👥 Team ID:** `team_ZuoCZ7nsvWVIrutn3eqmYdQD`
+> **🏆 Tracks:** Monetizable B2B App · Most Impactful · Open Innovation  
+> **👥 Team ID:** `team_ZuoCZ7nsvWVIrutn3eqmYdQD`  
+> **🗓️ Hackathon:** H0: Hack the Zero Stack with Vercel v0 and AWS Databases
 
 ---
 
@@ -45,12 +46,11 @@ Scaffolded with v0 · Amazon Aurora PostgreSQL + DynamoDB · Offline-First Rural
 
 | Layer | Platform | What It Handles |
 |-------|----------|-----------------|
-| **React PWA** | Vercel + v0 | Offline MLP (101 diseases, 64.6%), 7-language voice UI, IndexedDB queues, ~4MB PWA |
-| **Express API** | Render (2 workers) | JWT auth, REST + SSE, Aurora PostgreSQL + DynamoDB |
-| **FastAPI AI** | Render | SymptomNet MLP (64.6%), LR fallback (71.1%), Sakhi RAG, outbreak agent |
-| **Nginx Proxy** | Docker | Reverse proxy, load balancing, 24h WebSocket timeout |
-| **Aurora PostgreSQL** | AWS ap-south-1 | Patient records, auth, referrals, B2B analytics (ACID) |
-| **DynamoDB** | AWS ap-south-1 | Outbreak telemetry, sync queues, SOS streams, audit (5 tables, 7 GSIs) |
+| **React 18 PWA** | Vercel Edge CDN (v0) | Offline MLP (101 diseases, 64.6%), 7-language voice + TTS, IndexedDB queues, Workbox PWA |
+| **Node.js API** | Render (multi-worker cluster) | JWT auth, Helmet OWASP, REST + SSE, B2B API keys (`sk_live_`), DynamoDB telemetry on every request |
+| **FastAPI AI** | Render (separate service) | SymptomNet MLP (64.6%), LR fallback (71.1%), Sakhi RAG (243 chunks, F1=1.00), 30-min outbreak agent |
+| **Aurora PostgreSQL** | AWS ap-south-1 | 19 tables — patient records, auth, referrals, welfare schemes, B2B analytics (ACID, SSL) |
+| **DynamoDB** | AWS ap-south-1 | 5 tables, 7 GSIs — outbreak telemetry, sync queues, emergency streams, audit (PAY_PER_REQUEST) |
 
 ---
 

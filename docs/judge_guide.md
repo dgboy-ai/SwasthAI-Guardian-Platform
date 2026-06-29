@@ -72,8 +72,7 @@ This guide walks through the platform's most impressive features in ~15 minutes.
 
 Review these docs for the full technical picture:
 
-- **[architecture_diagram.html](architecture_diagram.html)** — Clean HTML architecture diagram (open in browser for full-resolution view) showing all 4 tiers, AWS services, and 4 Differentiators without overlapping connectors
-- **[architecture_diagram.svg](architecture_diagram.svg)** — SVG topology diagram (GitHub preview). [Mermaid source](architecture_diagram.md)
+- **[Architecture Diagram](../docs/architecture_v3.png)** — Premium visual architecture showing all 5 layers, AWS dual-DB design, 4 differentiators, and real tech stack (dark-mode, scannable in 5 seconds)
 - **[system_architecture.md](system_architecture.md)** — ERD, DynamoDB access patterns, GSI schema, production hardening table
 - **[ai_architecture.md](ai_architecture.md)** — 5-Fold Stratified CV results, RAG calibration (threshold 0.45, F1=1.00), 101 disease classes
 - **[offline_sync_strategy.md](offline_sync_strategy.md)** — Three conflict resolution rules (Reject-Duplicate, LWW, Accumulate)
