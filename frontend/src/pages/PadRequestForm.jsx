@@ -302,7 +302,6 @@ export default function PadRequestForm() {
     const payload = {
       village,
       gpsCoords,
-      photoBase64: selfieDataUrl,
       gender: 'female',
       verificationMethod: 'camera-ai',
     };
