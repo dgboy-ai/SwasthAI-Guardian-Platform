@@ -148,25 +148,28 @@ export default function MaternalNutritionView({ activeView, demoTourMode, lastSy
           <div className="mb-4">
             <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">Risk Classification</p>
             <div className="flex rounded-xl overflow-hidden border border-slate-100 h-6">
-              {isMaternal ? [
-                { label:'High Risk', count: DEMO_MATERNAL.highRisk,  color:'#dc2626' },
-                { label:'Moderate',  count: DEMO_MATERNAL.moderate,  color:'#f59e0b' },
-                { label:'Normal',    count: DEMO_MATERNAL.normal,    color:'#10b981' },
-              ] : [
-                { label:'SAM',   count: DEMO_NUTRITION.sam,    color:'#dc2626' },
-                { label:'MAM',   count: DEMO_NUTRITION.mam,    color:'#f59e0b' },
-                { label:'Normal',count: DEMO_NUTRITION.normal, color:'#10b981' },
-              ]}.map((band, i, arr) => {
-                const total = arr.reduce((a, b) => a + b.count, 0);
-                const pct = (band.count / total) * 100;
-                return (
-                  <div key={band.label} className="relative group" style={{ width:`${pct}%`, background: band.color }}>
-                    <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[8px] px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 font-bold">
-                      {band.label}: {band.count}
+              {(() => {
+                const bands = isMaternal ? [
+                  { label:'High Risk', count: DEMO_MATERNAL.highRisk,  color:'#dc2626' },
+                  { label:'Moderate',  count: DEMO_MATERNAL.moderate,  color:'#f59e0b' },
+                  { label:'Normal',    count: DEMO_MATERNAL.normal,    color:'#10b981' },
+                ] : [
+                  { label:'SAM',   count: DEMO_NUTRITION.sam,    color:'#dc2626' },
+                  { label:'MAM',   count: DEMO_NUTRITION.mam,    color:'#f59e0b' },
+                  { label:'Normal',count: DEMO_NUTRITION.normal, color:'#10b981' },
+                ];
+                return bands.map((band, i, arr) => {
+                  const total = arr.reduce((a, b) => a + b.count, 0);
+                  const pct = (band.count / total) * 100;
+                  return (
+                    <div key={band.label} className="relative group" style={{ width:`${pct}%`, background: band.color }}>
+                      <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[8px] px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 font-bold">
+                        {band.label}: {band.count}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                });
+              })()}
             </div>
             <div className="flex items-center gap-4 mt-1.5">
               {(isMaternal ? [

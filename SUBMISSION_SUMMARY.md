@@ -71,7 +71,7 @@ SwasthAI Guardian uses a **deliberate dual-database strategy** — each database
 *   **Sakhi Women's Health AI** powered by Grounded RAG using WHO/MoHFW guidelines.
 *   **Skin Disease Scanner** with image-based Edge AI assessment and skin tone/blur/blank verification guardrails.
 *   **Emergency Ambulance System** with GPS and offline fallback queueing support.
-*   **Sanitary Pad Request System** for private, discreet NGO/ASHA assistance.
+*   **Camera-Verified Sanitary Pad Request** — 3-step flow: villager takes a selfie → AI gender verification (`/api/detect-gender`) confirms identity → GPS-tagged pad request submitted with photo. Blocks misuse. ASHA receives the selfie, verified badge, and clickable Google Maps location link in real-time via SSE.
 *   **Voice Input & Voice Output** seamless support.
 *   **Offline PWA Support** with Install-to-Home-Screen functionality.
 *   **Multilingual Support** for Hindi, Marathi, Tamil, Telugu, Bengali, and English.
@@ -87,7 +87,7 @@ SwasthAI Guardian uses a **deliberate dual-database strategy** — each database
 *   **🔮 Risk Forecast Tab** — AI-powered predictive village risk score (0–100) with XAI contributor breakdown (symptom surge, seasonal risk, nearby outbreaks, referral backlog), health category flags, recommended prevention actions, and Intervention Impact Forecast simulator.
 *   **📊 Impact Analytics & B2B Monthly Reports** — Grant-proof dashboard with referral closure rates, vaccination completion rates, Risk Watchlist, Top Performers leaderboard, Recommended Actions engine, and PDF export.
 *   **Emergency Ambulance Feed** for local emergency requests.
-*   **Smart Share QR System** to instantly distribute the app in rural areas.
+*   **Pad Request Photo Dashboard** — ASHA sees each request with selfie thumbnail, camera-verified badge, GPS map link (opens Google Maps), approve/deliver action buttons, and full-photo view.
 *   **Offline Login & Sync** for low-connectivity environments.
 
 ---
@@ -163,7 +163,7 @@ SwasthAI Guardian uses a **deliberate dual-database strategy** — each database
 *   Developed **under-the-hood text and image guardrails** that protect the model against noise.
 *   Developed complete **offline Login, Registration, and maternal/child sync** registry.
 *   Created an **autonomous AI outbreak detection system** running on 30-minute intervals.
-*   Built a **Predictive Village Risk Intelligence engine** — a transparent, weighted 4-signal forecasting system (symptom trends, seasonal NVBDCP calendar, outbreak proximity, referral backlogs) giving India's health system proactive early warning before epidemics begin.
+*   Built a **Camera-Verified Identity System** for pad requests: getUserMedia selfie capture → AI gender detection → GPS reverse geocoding → SSE broadcast to ASHA with photo + map link. First privacy-preserving, camera-gated welfare request system in a rural health platform.
 *   Delivered **B2B NGO Impact Analytics** with grant-proof metrics, leaderboards, risk watchlists, and PDF exports.
 *   Achieved **100% multilingual translation key synchronization (366 unique keys)** across **7 Indian languages** (including Hinglish) with voice interaction.
 *   Designed a highly polished, production-grade offline-first PWA.

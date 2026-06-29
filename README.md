@@ -40,7 +40,7 @@ SwasthAI Guardian is a production-grade, offline-first B2B operations and epidem
 | NGO Maternal/Child Records | **Yes** | IndexedDB queue + local WHO risk calculations |
 | Sakhi AI Chat | No | Requires Groq LLM API |
 | Voice AI Assistant | No | Requires speech-to-text API |
-| Pad Request | No | Requires server for fulfillment routing |
+| Pad Request | **Partial** | Camera verify + GPS captured offline; queued to IndexedDB, replays on reconnect |
 | NGO Alerts/Patients | No | Real-time SSE from server |
 | Admin Live Telemetry | No | Real-time SSE + DynamoDB streams |
 
@@ -232,7 +232,7 @@ The following details the key architectural milestones, feature developments, an
     *   **Secure Offline Login**: Password mode stores SHA-256 hashed credentials locally — works without any backend.
 
 *   **Epidemic Forecasting & Real-Time Alerts**:
-    *   **Predictive Early Warning System**: Forecasts village risk using symptom trend velocity, nearby clusters, and NVBDCP seasonal signals.
+    *   **Camera-Verified Pad Request System** — 3-step flow: selfie capture → AI gender verification (/detect-gender) → GPS-tagged request with photo. ASHA worker sees selfie thumbnail, verified badge, and clickable GPS map link in real-time via SSE.
     *   **Intervention Simulator**: CMOs can simulate risk reductions (referral closures, vaccination drives) on heatmaps.
     *   **Autonomous Agentic Outbreak Loop**: Checks trends every 30m, dedupes via DynamoDB, and dispatches SSE.
 
