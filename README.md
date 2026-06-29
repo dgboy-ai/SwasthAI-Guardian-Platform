@@ -1,111 +1,86 @@
-<p align="center">
-  <strong>Offline-First Rural Health Platform</strong><br/>
-  3-Layer Microservice
-</p>
+# SwasthAI Guardian
 
-<p align="center">
-  <a href="https://swasth-ai-guardian-platform.vercel.app"><b>Live Demo</b></a> ·
-  <a href="DEPLOYMENT.md"><b>Deploy Guide</b></a> ·
-  <a href="docs/judge_guide.md"><b>Judge's Guide</b></a> ·
-  <a href="CHANGELOG.md"><b>Changelog</b></a>
-</p>
+Offline-First Rural Health Platform · 3-Layer Microservice · Amazon Aurora + DynamoDB
 
-<p align="center">
-  <img src="https://img.shields.io/badge/AWS-Aurora%20PostgreSQL-FF9900?logo=amazonaws" alt="AWS Aurora">
-  <img src="https://img.shields.io/badge/AWS-DynamoDB-FF9900?logo=amazonaws" alt="AWS DynamoDB">
-  <img src="https://img.shields.io/badge/React-18-61DAFB?logo=react" alt="React 18">
-  <img src="https://img.shields.io/badge/Python-FastAPI-009688?logo=fastapi" alt="FastAPI">
-  <img src="https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker" alt="Docker">
-  <img src="https://img.shields.io/badge/Groq-Llama--3.3--70b-F55036?logo=groq" alt="Groq">
-</p>
+[Live Demo](https://swasth-ai-guardian-platform.vercel.app) · [Deploy Guide](DEPLOYMENT.md) · [Judge's Guide](docs/judge_guide.md) · [Changelog](CHANGELOG.md)
+
+![AWS Aurora](https://img.shields.io/badge/AWS-Aurora%20PostgreSQL-FF9900?logo=amazonaws) ![AWS DynamoDB](https://img.shields.io/badge/AWS-DynamoDB-FF9900?logo=amazonaws) ![React 18](https://img.shields.io/badge/React-18-61DAFB?logo=react) ![FastAPI](https://img.shields.io/badge/Python-FastAPI-009688?logo=fastapi) ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker) ![Groq](https://img.shields.io/badge/Groq-Llama--3.3--70b-F55036?logo=groq)
 
 ---
 
-### The Problem → The Solution
+Over 650 million rural Indians lack access to quality healthcare. ASHA workers manage 1,000+ families with paper registers. Disease outbreaks are detected two weeks late — after the infection spreads. Cloud apps fail where internet doesn't reach. SwasthAI Guardian solves this with an offline-first PWA that works in zero-signal zones, powered by an autonomous AI outbreak agent, real-time telemetry into Amazon Aurora PostgreSQL + DynamoDB, and a 3-layer microservice architecture deployed via Docker Compose.
 
-| The Problem | The Solution |
-|---|---|
-| 650M+ rural Indians lack access to quality healthcare. The nearest doctor is often 20km away. | An offline-first PWA that works in zero-signal zones. ~4MB installable, QR-shareable, no app store needed. |
-| ASHA workers manage 1,000+ families with paper registers. No data ever leaves the notebook. | Real-time telemetry flowing into Amazon Aurora PostgreSQL + DynamoDB. Every village, every visit, digitized. |
-| Disease outbreaks are detected 2 weeks late — after the infection has spread across villages. | Autonomous AI agent scans clinical data every 30 min via Groq Llama-3.3-70b. SSE alerts hit admin dashboards instantly. |
-| Maternal deaths from high-risk BP readings that never reach a doctor. | WHO risk classification computed in-browser. Critical alerts escalated via SSE to district CMO in real time. |
-| Child malnutrition buried in monthly registers. No one audits, no one aggregates. | Offline WHO Z-score calculator. Auto-syncs to Aurora for district-wide SAM/MAM tracking. |
-| Cloud apps are useless where internet doesn't reach. Rural sub-centers have zero connectivity. | ONNX runs in-browser. IndexedDB queues maternal, child, and SOS records. Auto-replays on reconnect. |
-| District officers have no early warning system. They fly blind until people die. | Predictive 5-factor risk intelligence: per-village heatmap, XAI breakdown, prevention checklists. |
+**101 disease classes** · **7 Indian languages** · **5 DynamoDB tables / 7 GSIs** · **52,900 training samples**
 
-<br/>
+---
 
-> **🚀 Production-Ready Infrastructure** — One command (`docker compose up --build -d`) reproduces the entire stack. Nginx reverse proxy load-balances across a 2-worker Node.js cluster with round-robin, 24-hour SSE/WebSocket timeouts, 1-year static asset caching with gzip, and cold-start tolerance (20s connect, 30s read). All containers run as non-root users. Health-checked boot ordering ensures the AI service initializes before the backend, which starts before the proxy.
-
-<br/>
-
-### 📚 Quick Reference
+## Quick Reference
 
 | Guide | What It Covers |
 |---|---|
 | [System Architecture](docs/system_architecture.md) | ERDs, DynamoDB access patterns, GSI schemas, TTL policies |
 | [AI Architecture](docs/ai_architecture.md) | 5-fold CV results, RAG calibration (threshold 0.45, F1=1.00) |
-| [Offline Sync Strategy](docs/offline_sync_strategy.md) | IndexedDB queues, idempotency, 3 conflict resolution rules |
-| [Judge's Guide](docs/judge_guide.md) | Step-by-step walkthrough for B2B, technical, and impact tracks |
+| [Offline Sync Strategy](docs/offline_sync_strategy.md) | IndexedDB queues, idempotency, conflict resolution |
+| [Judge's Guide](docs/judge_guide.md) | Walkthrough for B2B, technical, and impact tracks |
 | [Deployment Guide](DEPLOYMENT.md) | Docker Compose, multi-worker scaling, cold-start tuning |
 | [Setup Guide](docs/setup_guide.md) | Local dev with SQLite, env vars, one-command startup |
-| [Repository Map](docs/repository_map.md) | Full directory tree, file roles, naming conventions |
-| [DynamoDB Tables](infra/dynamodb-tables.md) | Table schemas, PK/SK design, GSI access patterns, TTL config |
-
-### ⚙️ Architecture & Infrastructure
-
-_[Full architecture diagram → docs/system_architecture.md](docs/system_architecture.md)_
-
-Three independently deployable, fault-isolated services. If the AI service goes down, the backend keeps serving auth and records. If the backend is unreachable, the frontend keeps running symptom checks and SOS queuing locally.
-
-| Layer | Platform | What It Handles | Production Details |
-|---|---|---|---|
-| **React PWA** | Vercel (edge) | ONNX offline inference (101 diseases, sub-ms), 7-language voice UI, IndexedDB queues, 20+ schemes cached | ~4MB PWA, lazy-loaded ONNX weights, service worker caching, QR sharing |
-| **Express API** | Render (2 workers) | JWT + bcrypt auth, REST CRUD, SSE for real-time alerts, WebSocket for ambulance telemetry | `pg.Pool(20)` to Aurora, DynamoDB SDK with retry, health-checked boot |
-| **FastAPI AI** | Render (isolated) | SymptomNet MLP (64.6%), LR fallback (71.1%), Sakhi RAG (243 chunks, F1=1.00), outbreak agent (30-min) | 3-tier fallback (DL → ML → heuristic), never silent, Groq Llama inference |
-| **Nginx Proxy** | Docker Compose | Reverse proxy routing `/api/*` to backend, `/*` to frontend | Round-robin upstream, `max_fails=3`, 24h SSE timeout, cold-start tolerance |
-| **Aurora PostgreSQL** | AWS ap-south-1 | Patient records, user auth, referrals, B2B analytics, scheme eligibility | ACID, SERIAL PKs, TIMESTAMPTZ, parameterized queries, `pg.Pool(20)` |
-| **Amazon DynamoDB** | AWS ap-south-1 | Outbreak telemetry (90d TTL), sync queues (7d), emergency streams (30d), village heartbeats, audit logs | 5 tables, 7 GSIs, PAY_PER_REQUEST, KMS encryption, sub-ms writes |
+| [Repository Map](docs/repository_map.md) | Directory tree, file roles, naming conventions |
+| [DynamoDB Tables](infra/dynamodb-tables.md) | Table schemas, PK/SK design, GSI access patterns |
 
 ---
 
-### 👥 Key Features by Role
+## Architecture & Infrastructure
 
-#### 👨‍🌾 Villager
+_[Full diagram → docs/system_architecture.md](docs/system_architecture.md)_
 
-| # | Feature | What It Does |
+| Layer | Platform | What It Handles |
 |---|---|---|
-| 1 | **AI Symptom Checker** | 101 disease classes, ONNX runs fully offline in-browser. Voice input in 7 languages. Severity triage with location recommendations. |
-| 2 | **Ambulance SOS** | One-tap emergency dispatch with GPS. Queues to IndexedDB when offline. 60s cooldown prevents spam. Falls back to 108. |
-| 3 | **Sakhi Women's Health AI** | Grounded RAG chatbot trained on 243 WHO/MoHFW clinical chunks. Full conversation memory. Falls back to fuzzy local KB offline. |
-| 4 | **Camera Pad Requests** | Selfie → AI gender verification → GPS geocoding → SSE broadcast to ASHA with photo + map link. Privacy-first. |
-| 5 | **Voice + 7 Languages** | Hindi, English, Marathi, Tamil, Telugu, Bengali, Hinglish. Speak symptoms, auto-fills forms, TTS reads results aloud. |
-
-#### 🏥 ASHA / NGO Worker
-
-| # | Feature | What It Does |
-|---|---|---|
-| 1 | **Maternal Health** | Register pregnancies, track trimesters. WHO risk classification (BP, Hb, weight). Fully offline with IndexedDB queue. |
-| 2 | **Child Nutrition** | WHO WHZ-score for SAM/MAM/Normal. Weight, height, MUAC. Zero internet required. |
-| 3 | **Outbreak Alerts** | Real-time SSE notifications from the autonomous outbreak agent. Containment status, action plans. |
-| 4 | **Smart Tasks** | AI-prioritized daily visits with route suggestions. Clinical notes, mark-as-done workflow. |
-| 5 | **Impact Analytics** | Animated KPIs: pregnancies registered, children screened, emergencies handled. Sync queue with manual trigger. |
-
-#### 🏛️ District Admin
-
-| # | Feature | What It Does |
-|---|---|---|
-| 1 | **Command Center** | 15-tab district hub. Live KPI gauges, SSE telemetry, trend charts. Every metric shows which database served it. |
-| 2 | **Outbreak Radar** | AI-driven detection every 30 min via Groq Llama. Simulate outbreaks, issue district alerts, confidence scores. |
-| 3 | **Risk Intelligence** | 5-factor per-village risk model: symptom trend, outbreak proximity, seasonal calendar, referral backlog. XAI breakdown. |
-| 4 | **B2B API Keys** | Create/revoke tenant-scoped `sk_live_*` keys. 3 permission levels. 6-district isolation. Usage tracking for billing. |
-| 5 | **Live Infrastructure Monitor** | Real-time Aurora PostgreSQL connection health, all 5 DynamoDB tables with 7 GSIs, AI service latency — all queried from production databases live. |
+| **React PWA** | Vercel | ONNX offline inference (101 diseases), 7-language voice UI, IndexedDB queues, ~4MB PWA |
+| **Express API** | Render (2 workers) | JWT auth, REST + SSE + WebSocket, Aurora PostgreSQL + DynamoDB |
+| **FastAPI AI** | Render | SymptomNet MLP (64.6%), LR fallback (71.1%), Sakhi RAG (F1=1.00), outbreak agent |
+| **Nginx Proxy** | Docker | Reverse proxy, round-robin load balancing, 24h SSE timeout, cold-start tolerance |
+| **Aurora PostgreSQL** | AWS ap-south-1 | Patient records, auth, referrals, B2B analytics (ACID, pg.Pool(20)) |
+| **DynamoDB** | AWS ap-south-1 | Outbreak telemetry, sync queues, emergency streams, audit logs (5 tables, 7 GSIs) |
 
 ---
 
-### 🔑 B2B API Key System
+## Key Features by Role
 
-Admins generate tenant-scoped API keys for partner NGOs and district health departments. Each key (`sk_live_` + 32 hex chars) locks to exactly one district — Varanasi data never leaks to Lucknow. Three permission levels (Read, ReadWrite, Admin) with per-request `usage_count` and `last_used_at` tracking, ready for consumption-based billing.
+### Villager
+
+| Feature | What It Does |
+|---|---|
+| **AI Symptom Checker** | 101 disease classes, ONNX offline in-browser, voice in 7 languages, severity triage |
+| **Ambulance SOS** | One-tap GPS dispatch, offline IndexedDB queue, 60s cooldown, 108 fallback |
+| **Sakhi Women's Health AI** | RAG chatbot, 243 WHO/MoHFW chunks, conversation memory, offline fallback |
+| **Camera Pad Requests** | Selfie → gender verify → GPS geocode → SSE to ASHA with photo + map |
+| **Voice + 7 Languages** | Hindi, English, Marathi, Tamil, Telugu, Bengali, Hinglish |
+
+### ASHA / NGO Worker
+
+| Feature | What It Does |
+|---|---|
+| **Maternal Health** | Pregnancy tracking, WHO risk classification, fully offline |
+| **Child Nutrition** | WHO Z-score (SAM/MAM/Normal), offline, MUAC tracking |
+| **Outbreak Alerts** | Real-time SSE from autonomous agent, containment status, action plans |
+| **Smart Tasks** | AI-prioritized visits, route suggestions, clinical notes |
+| **Impact Analytics** | Animated KPIs, health scores, sync queue manager |
+
+### District Admin
+
+| Feature | What It Does |
+|---|---|
+| **Command Center** | 15-tab district hub, live SSE telemetry, provenance badges on every metric |
+| **Outbreak Radar** | AI detection every 30min via Groq, simulate outbreaks, confidence scores |
+| **Risk Intelligence** | 5-factor village risk model, XAI breakdown, prevention checklists |
+| **B2B API Keys** | Tenant-scoped keys, 3 permission levels, 6-district isolation, usage tracking |
+| **Live Infrastructure Monitor** | Real-time Aurora + DynamoDB health, GSIs, AI latency from production |
+
+---
+
+## B2B API Key System
+
+Tenant-scoped `sk_live_` keys lock to exactly one district. Read / ReadWrite / Admin permissions. Per-request usage tracking ready for consumption-based billing.
 
 ```bash
 curl -H "x-api-key: sk_live_abc123..." \
@@ -114,29 +89,27 @@ curl -H "x-api-key: sk_live_abc123..." \
 
 | Endpoint | Response |
 |---|---|
-| `GET /api/b2b/me` | Key metadata, tenant district, permission level, usage stats |
-| `GET /api/b2b/villages` | Village health data scoped to tenant (population, pregnancies, malnutrition, outbreak status) |
-| `GET /api/b2b/analytics` | Aggregate counts — villages, pregnancies, symptoms, ambulance requests, users |
-| `GET /api/b2b/ambulances` | Recent ambulance requests per tenant (7-day window, status, priority) |
-| `GET /api/b2b/outbreaks` | DynamoDB outbreak telemetry per tenant (48-hour window, confidence scores) |
+| `GET /api/b2b/me` | Key metadata, tenant, permissions, usage |
+| `GET /api/b2b/villages` | Village health data scoped to tenant |
+| `GET /api/b2b/analytics` | Aggregate counts by district |
+| `GET /api/b2b/ambulances` | Recent requests (7-day window) |
+| `GET /api/b2b/outbreaks` | DynamoDB outbreak telemetry (48h window) |
 
-Multi-tenancy spans **6 districts**: Varanasi, Lucknow, Sehore, Bhopal, Indore, Pune. The admin API keys panel supports create, revoke, rotate, and copy-to-clipboard with per-tenant usage dashboards and animated counters.
+6 districts: Varanasi, Lucknow, Sehore, Bhopal, Indore, Pune. Fully isolated. Admin panel supports create, revoke, rotate, copy-to-clipboard.
 
 ---
 
-### ⚡ What's Under the Hood
+## What's Under the Hood
 
 | Component | How It Works | Why It Matters |
 |---|---|---|
-| **Outbreak Agent** | Polls PostgreSQL every 30 min for symptom clusters → classifies via Groq Llama-3.3-70b → writes to DynamoDB (TTL 90d) → pushes SSE alerts | Catches outbreaks weeks before manual reporting. 3-attempt backoff (1s, 2s, 4s). Simulated outbreaks from UI for drills. |
-| **Edge AI** | 3-tier fallback: SymptomNet MLP (64.6%) → Logistic Regression (71.1%) → MoHFW/WHO heuristic (offline). ONNX runs in-browser sub-ms. Sakhi RAG: 243 chunks, threshold 0.45, F1=1.00 | Clinical decisions never silently fail. When Groq is down, the top KB chunk serves as fallback. Works with zero connectivity. |
-| **Sync Engine** | 6 IndexedDB queues (maternal, child, ambulance, symptom, emergency, records). Client UUIDs for idempotency. Auto-drains on reconnect. | 3 conflict rules: Reject-Duplicate (clinical), LWW (ambulance), Accumulate (telemetry). SHA-256 offline password auth. |
-| **Pad Request** | Selfie → `/api/detect-gender` → GPS reverse geocode → SSE to ASHA with photo + map link | 3-step camera-gated flow blocks abuse. ASHA sees thumbnail, verified badge, Google Maps link. Approve/deliver loop. |
-| **Security** | DISHA 2023 consent, DPDP Act, Aadhaar hash (unique salt), AWS KMS encryption, Helmet.js, rate limiting (100/min/IP), Zod validation, PII redaction, 7-year audit trails | Production-grade compliance. Every layer has a security counterpart. |
+| **Outbreak Agent** | Polls PostgreSQL every 30min → Groq Llama → DynamoDB (TTL 90d) → SSE alerts | Catches outbreaks weeks before manual reporting. UI can simulate outbreaks for drills. |
+| **Edge AI** | 3-tier fallback: DL (64.6%) → LR (71.1%) → offline WHO heuristic | Never silent failure. ONNX in-browser sub-ms. RAG falls back to top chunk when Groq is down. |
+| **Sync Engine** | 6 IndexedDB queues, client UUID idempotency, auto-drain on reconnect | 3 conflict rules: Reject-Duplicate, LWW, Accumulate. SHA-256 offline auth. |
+| **Pad Request** | Selfie → gender detect → GPS → SSE to ASHA with photo + Google Maps link | 3-step camera-gated flow. Blocks abuse. Approve/deliver loop. |
+| **Security** | DISHA 2023, DPDP Act, Aadhaar hash, KMS, Helmet, rate limit, Zod, PII redaction, 7-year audit trails | Production-grade compliance on every layer. |
 
 ---
 
-<p align="center">
-  <em>SwasthAI Guardian — Built for Bharat's villages, not just its cities.</em><br/>
-  <strong>"We didn't build AI for doctors. We built it for the 600,000 villages that don't have one."</strong>
-</p>
+*SwasthAI Guardian — Built for Bharat's villages, not just its cities.*
+*"We didn't build AI for doctors. We built it for the 600,000 villages that don't have one."*
