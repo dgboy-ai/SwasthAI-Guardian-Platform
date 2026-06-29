@@ -178,8 +178,8 @@ export default function PadRequestForm() {
   const l = lang || 'en';
   const T = { ...L.en, ...(L[l] || {}) };
 
-  /* ── Step state: 'camera' | 'verifying' | 'blocked' | 'form' | 'success' ── */
-  const [step, setStep] = useState('camera');
+  /* ── Step state: 'prompt' | 'camera' | 'verifying' | 'blocked' | 'form' | 'success' ── */
+  const [step, setStep] = useState('prompt');
 
   /* Camera */
   const videoRef  = useRef(null);
@@ -230,6 +230,7 @@ export default function PadRequestForm() {
   const stopCamera = () => {
     streamRef.current?.getTracks().forEach(t => t.stop());
     streamRef.current = null;
+    setCameraReady(false);
   };
 
   /* ── Capture selfie → call gender detect API ──────────────────────────── */
@@ -272,7 +273,7 @@ export default function PadRequestForm() {
     setSelfieDataUrl(null);
     setCameraReady(false);
     setCameraError('');
-    setStep('camera');
+    setStep('prompt');
   };
 
   /* ── GPS capture ──────────────────────────────────────────────────────── */
@@ -338,7 +339,7 @@ export default function PadRequestForm() {
     setCameraReady(false);
     setCameraError('');
     setError('');
-    setStep('camera');
+    setStep('prompt');
   };
 
   /* ════════════════════════════════════════════════════════════════════════
@@ -416,7 +417,7 @@ export default function PadRequestForm() {
         {['camera', 'verifying', 'form'].map((s, i) => (
           <div key={s} className="flex items-center gap-2">
             <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black transition-all ${
-              step === s ? 'bg-rose-600 text-white shadow-md shadow-rose-200'
+              step === s || (step === 'prompt' && i === 0) ? 'bg-rose-600 text-white shadow-md shadow-rose-200'
               : (step === 'form' && i < 2) || (step === 'verifying' && i === 0) || step === 'success'
               ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-400'
             }`}>
@@ -426,12 +427,65 @@ export default function PadRequestForm() {
           </div>
         ))}
         <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider ml-1">
-          {step === 'camera' || step === 'verifying' ? '1 / 2 — Verify' : '2 / 2 — Request'}
+          {step === 'camera' || step === 'prompt' || step === 'verifying' ? '1 / 2 — Verify' : '2 / 2 — Request'}
         </span>
       </div>
 
-      {/* ── STEP 1: CAMERA ──────────────────────────────────────────────────── */}
+      {/* ── STEP 1: CAMERA CONSENT PROMPT & SCANNER ─────────────────────────── */}
       <AnimatePresence mode="wait">
+        {step === 'prompt' && (
+          <motion.div key="prompt-step"
+            initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}
+            className="space-y-4">
+            <div>
+              <h2 className="text-2xl font-black text-slate-900 mb-1">{T.step1Title}</h2>
+              <p className="text-slate-500 font-medium text-sm leading-relaxed">{T.step1Sub || L.en.step1Sub}</p>
+            </div>
+
+            {/* Premium consent block */}
+            <div className="rounded-3xl border border-slate-100 bg-white shadow-xl shadow-slate-100 p-6 space-y-6">
+              <div className="flex justify-center py-4">
+                <div className="relative">
+                  <div className="w-24 h-24 rounded-full bg-rose-50 flex items-center justify-center border-4 border-rose-100/50 shadow-inner">
+                    <Camera className="w-10 h-10 text-rose-600 animate-pulse" />
+                  </div>
+                  <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center border-3 border-white shadow-md">
+                    <ShieldCheck className="w-4 h-4 text-white" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-3.5">
+                <div className="flex items-start gap-3">
+                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0 mt-2" />
+                  <p className="text-xs font-bold text-slate-600 leading-relaxed">
+                    Camera access is required for gender validation to confirm female identity.
+                  </p>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0 mt-2" />
+                  <p className="text-xs font-bold text-slate-600 leading-relaxed">
+                    All images are secured and encrypted. Only your village ASHA worker sees this request.
+                  </p>
+                </div>
+              </div>
+
+              {/* Privacy badge */}
+              <div className="flex items-center gap-2.5 p-3.5 bg-slate-50 rounded-2xl border border-slate-100">
+                <Lock className="w-4 h-4 text-slate-400 shrink-0" />
+                <p className="text-[10px] font-bold text-slate-500 leading-relaxed">
+                  Your privacy is fully protected under end-to-end security protocols.
+                </p>
+              </div>
+
+              <button onClick={() => setStep('camera')}
+                className="w-full py-4 bg-rose-600 text-white rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-rose-700 transition-all shadow-lg shadow-rose-200 flex items-center justify-center gap-2">
+                <Camera className="w-5 h-5" /> Start Verification Camera
+              </button>
+            </div>
+          </motion.div>
+        )}
+
         {(step === 'camera' || step === 'verifying') && (
           <motion.div key="camera-step"
             initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}
