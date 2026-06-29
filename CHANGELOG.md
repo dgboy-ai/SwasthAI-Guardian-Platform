@@ -2,6 +2,25 @@
 
 All notable changes and feature developments completed during the project development window are documented in this file chronologically.
 
+## June 29, 2026 — Camera-Verified Sanitary Pad Request System & ASHA Dashboard Upgrades
+
+### Added
+- **Camera-Verified Pad Request Flow (`PadRequestForm.jsx`)**: Built a secure, privacy-preserving 3-step request flow:
+  1. Live Web camera selfie capture with real-time face-guide positioning.
+  2. Server-side AI gender verification endpoint (`POST /api/detect-gender`) ensuring only women can request sanitary pads (with graceful fallback if the server ML microservice is offline).
+  3. Form submission with reverse-geocoded GPS coordinates (OpenStreetMap Nominatim API) and compressed photo payloads.
+- **ASHA Pad Request Manager (`ASHADashboard.jsx`)**: Upgraded ASHA's pad manager modal to show real-time incoming verified requests:
+  - Live preview thumbnails of captured selfies with a green verified badge.
+  - Interactive Google Maps link opening the villager's exact coordinates.
+  - Quick action buttons to approve or deliver requests, plus a view-full-photo modal.
+- **End-to-End backend routing**: Updated `routes/villager.js` `/pad-request` route to accept `photoBase64` and `gpsCoords`, saving them to the sqlite database and broadcasting them to ASHA dashboard SSE listeners. Added `/detect-gender` route stub.
+
+### Fixed
+- **Vite Production Build Failure (`MaternalNutritionView.jsx`)**: Fixed an `esbuild`/Rollup compile crash (`Transform failed: Unexpected "const"`) by extracting array declarations from concisely-chained `.map` logic inside JSX expressions into an immediately-invoked function expression (IIFE).
+- **Document Synchronization**: Updated the architecture diagram, README capability matrix, and hackathon submission summary to reflect the camera-verified pad request design, IndexedDB offline queuing, and photo/GPS broadcasting.
+
+---
+
 ## June 28, 2026 — B2B API Key Wiring + README & Docs Overhaul + Judge Guide
 
 ### Added
