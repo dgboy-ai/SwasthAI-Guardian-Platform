@@ -784,7 +784,8 @@ if (isProduction && cluster.isPrimary && maxWorkers > 1) {
       checkDynamoHealth().catch(() => {});
     }, 30_000);
     // Auto-seed demo data on startup if DB is empty (survives Render deploys)
-    autoSeedHackathonData(app.locals.db).catch(() => {});
+    // Force seed on cold start so hackathon demo data survives Aurora down + Render restart
+    autoSeedHackathonData(app.locals.db, true).catch(() => {});
   });
 
   // Setup WebSocket Server for Live Ambulance Telemetry
