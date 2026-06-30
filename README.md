@@ -1,4 +1,4 @@
-# SwasthAI Guardian — AI Health Platform for 600M Rural Indians
+# SwasthAI Guardian — AI Health Platform for 650M Rural Indians
 
 > *We didn't build AI for doctors. We built it for the 600,000 villages that don't have one.*
 
