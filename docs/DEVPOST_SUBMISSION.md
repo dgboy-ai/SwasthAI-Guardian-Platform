@@ -1,7 +1,7 @@
-# SwasthAI Guardian — AI-Powered Rural Health Platform for 650M Indians
+# SwasthAI Guardian — Offline-First B2B SaaS Healthcare Platform for 650M Indians
 
-> ### **⚡ TL;DR — Technical Highlights & Key Metrics**
-> *   **65x Over Random Baseline:** Classifies **101 distinct disease states** with **71.1% validation accuracy** across **7 regional languages** (documented in training outputs `ai-service/model_accuracy.txt` and `ai-service/deep_model_accuracy.txt`).
+> ### **⚡ Executive Summary: Technical Highlights & Key Metrics**
+> *   **101-Class Diagnostic Triage:** Evaluates **101 distinct disease states** with **71.1% validation accuracy** across **7 regional languages** (documented in training outputs `ai-service/model_accuracy.txt` and `ai-service/deep_model_accuracy.txt`).
 > *   **True Offline-First:** Core diagnostic triage, WHO Z-score malnutrition calculations, and pregnancy risk scoring run **fully client-side** under 1ms (implemented in `frontend/src/utils/localSymptomNet.js` and `frontend/src/utils/offlineSyncQueue.js`).
 > *   **Autonomous Outbreak Detection:** A 30-minute background AI agent analyzes telemetry logs to identify disease clusters (implemented in `ai-service/outbreak_agent.py`).
 > *   **Production-Grade B2B Gateway:** Integrates tenant-scoped `sk_live_` API keys, token authorization, and SQL-level isolation (implemented in `backend/routes/apiKeys.js` and database schemas in `backend/db/schema.js`).
@@ -72,7 +72,7 @@ To support 650 million lives across offline areas, we made several critical engi
 
 ## Accomplishments that we're proud of
 
-*   **101-Class Multilingual Classifier:** General symptom triaging that outperforms baseline random models by over 65x.
+*   **101-Class Diagnostic Classifier:** General symptom triage system validating at 71.1% accuracy across 7 regional languages, running entirely in-browser.
 *   **Genuine Offline Capability:** Registration, login, maternal checks, and offline sync function completely offline.
 *   **Autonomous Outbreak Agent:** A 30-minute backend cron worker that parses telemetry data, detects local symptom spikes, and issues warning signals autonomously.
 *   **Camera-Verified Health Requests:** Integrates on-device canvas capture with server-side Pillow image verification to validate gender and geocode coordinates, preventing distribution fraud.
@@ -94,3 +94,15 @@ To support 650 million lives across offline areas, we made several critical engi
 *   **USSD / SMS Fallback:** Support basic feature phones by encoding SymptomNet query/response parameters into lightweight 160-character messages.
 *   **Federated District Infrastructure:** Implement read replicas and table prefix rules across regions, facilitating interstate outbreak tracking.
 *   **Community Pilot:** Partnering with health departments in Bhopal and Sehore districts to pilot the system on active tablets used by frontline workers.
+
+---
+
+### **A Final Thought: Empowering Frontline Healthcare**
+
+> We built SwasthAI Guardian to support the **1.4 million ASHA workers** and **650 million villagers** who face daily challenges in remote regions. 
+> 
+> By combining the transactional safety of **Amazon Aurora** with the scale of **Amazon DynamoDB**, we want to ensure that a lack of internet connectivity does not prevent access to essential health guidance. 
+> 
+> **SwasthAI Guardian** is designed to bring clinical decision support to the doorstep of every village in India, saving lives one sync at a time.
+
+

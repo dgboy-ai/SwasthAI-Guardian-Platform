@@ -148,7 +148,7 @@ curl -H "x-api-key: sk_live_abc123..." \
 ## 👥 Team
 
 - **Divyansh Gupta (Team Leader):** AI/ML, Backend, AWS Cloud, API Design
-- **Tejshvee Yerpurwad:** Frontend, UX, Localization, Grounded RAG
+- **Tejshvini Yerpurwad:** Frontend, UX, Localization, Grounded RAG
 
 *Built for H0 Hackathon 2026 · Team ID: `team_ZuoCZ7nsvWVIrutn3eqmYdQD`*
 
