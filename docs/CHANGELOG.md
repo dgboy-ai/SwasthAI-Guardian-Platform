@@ -197,6 +197,38 @@ All notable changes and feature developments completed during the project develo
 
 ---
 
+## June 26, 2026 — B2B Key Management, AWS Database Alignment & Model Migration
+
+### Added
+- **B2B API Management View**: Integrated pricing, about, contact, and privacy pages, and added B2B navigation links in the header and sidebar.
+- **Harded Admin Auth**: Secured the admin passcode (`swasthai-admin-2026` as safe fallback) and updated backend logic to enforce environment variables.
+
+### Fixed
+- **Groq LLM Migration**: Upgraded model configurations from deprecated `llama-3.1-8b-instant` to `llama-3.3-70b-versatile` across all AI pipelines.
+- **DynamoDB Helper Crash**: Fixed backend startup crash by importing `dynamoHelper` directly inside `ngo.js` and removed redundant direct DynamoDB writes in `villager.js`.
+- **Compatibility Patch**: Pin scikit-learn numpy dependency for Python 3.11/3.14 to resolve library import errors on Render.
+
+---
+
+## June 25, 2026 — Production Environment Routing Overhaul
+
+### Changed
+- **Render Live URL Update**: Swapped API base and WebSocket routing endpoints to the updated live Production Render server URL (`swasthai-guardian-platform-0jsb.onrender.com`).
+
+---
+
+## June 22, 2026 — Global System Configuration & Live Health Integration
+
+### Added
+- **Dynamic Connectivity Monitor**: Updated detailed health checking logic to transition from local SQLite mock fallbacks to active live database connections.
+- **Outbreak Agent Pulse**: Heartbeat verification added to background cron worker, verifying persistent active state.
+
+### Fixed
+- **Status Panel Warnings**: Resolved UI panels showing unavailable on cold startup by introducing active health fallback values.
+- **Generalize Evaluations**: Replaced local evaluator names and hackathon-specific references across codebase and documentation for clean evaluation.
+
+---
+
 ## June 18, 2026 — Final Dashboard Section Order Correction
 ### Changed
 - **ASHADashboard section order corrected**: Fixed `renderDashboardGrid()` so Today's Tasks + Quick Add Record appear immediately after the Status Row (Village Info, ASHA Worker, Offline Mode), before Active Outbreak Alert. Physically moved the Two-Column grid JSX block (Today's Tasks + Quick Add, lines 614–724) above Active Outbreak Alert (lines 726–752) in the render sequence. No CSS order, flex-order, or grid-order used.
