@@ -158,4 +158,4 @@ curl -H "x-api-key: sk_live_abc123..." \
 
 **SwasthAI Guardian** — *We didn't build AI for doctors. We built it for the 600,000 villages that don't have one.*
 
-[Judge's Guide](docs/judge_guide.md) · [Devpost](https://devpost.com/software/swasthai-guardian)
+[Judge's Guide](docs/judge_guide.md) · [Devpost](https://devpost.com/software/swasthai-guardian-nsdexa)
