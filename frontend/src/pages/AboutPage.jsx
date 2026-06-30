@@ -7,9 +7,9 @@ import {
 
 const IMPACT_STATS = [
   { val: '600M+', label: 'Rural Indians addressable', color: 'text-emerald-600' },
-  { val: '1.4M',  label: 'ASHA workers supported',  color: 'text-violet-600'  },
-  { val: '101',   label: 'Disease classes modelled', color: 'text-rose-600'    },
-  { val: '7',     label: 'Indian languages (+ Hinglish)', color: 'text-amber-600' },
+  { val: '1.4M', label: 'ASHA workers supported', color: 'text-violet-600' },
+  { val: '101', label: 'Disease classes modelled', color: 'text-rose-600' },
+  { val: '7', label: 'Indian languages (+ Hinglish)', color: 'text-amber-600' },
 ];
 
 const PILLARS = [
@@ -58,12 +58,12 @@ const PILLARS = [
 ];
 
 const TECH_STACK = [
-  { cat: 'Frontend',    tech: 'React 18 + Vite PWA · Vercel Edge · React.lazy() code splitting' },
+  { cat: 'Frontend', tech: 'React 18 + Vite PWA · Vercel Edge · React.lazy() code splitting' },
   { cat: 'Relational DB', tech: 'Amazon Aurora PostgreSQL · ap-south-1 · pg.Pool:20 · ACID' },
-  { cat: 'NoSQL DB',    tech: 'Amazon DynamoDB · PAY_PER_REQUEST · 5 tables · 7 GSIs' },
-  { cat: 'AI/ML',       tech: 'FastAPI + SymptomNet MLP + Groq Llama-3.3-70b + ONNX offline' },
-  { cat: 'Backend',     tech: 'Node.js + Express · Render · SSE · WebSocket telemetry' },
-  { cat: 'Security',    tech: 'JWT + Bcrypt + DISHA consent · PII redaction · Helmet headers' },
+  { cat: 'NoSQL DB', tech: 'Amazon DynamoDB · PAY_PER_REQUEST · 5 tables · 7 GSIs' },
+  { cat: 'AI/ML', tech: 'FastAPI + SymptomNet MLP + Groq Llama-3.3-70b + ONNX offline' },
+  { cat: 'Backend', tech: 'Node.js + Express · Render · SSE · WebSocket telemetry' },
+  { cat: 'Security', tech: 'JWT + Bcrypt + DISHA consent · PII redaction · Helmet headers' },
 ];
 
 const TEAM = [

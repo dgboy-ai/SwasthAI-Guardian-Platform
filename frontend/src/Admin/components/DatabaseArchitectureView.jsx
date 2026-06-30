@@ -163,7 +163,7 @@ export default function DatabaseArchitectureView() {
             {[
               { val: '12', label: 'Aurora Tables', color: '#059669' },
               { val: '5',  label: 'DynamoDB Tables', color: '#d97706' },
-              { val: '8',  label: 'GSIs', color: '#7c3aed' },
+              { val: '7',  label: 'GSIs', color: '#7c3aed' },
               { val: '5',  label: 'TTL Policies', color: '#dc2626' },
               { val: '256K+', label: 'Sync Items', color: '#2563eb' },
             ].map(k => (
@@ -447,7 +447,7 @@ export default function DatabaseArchitectureView() {
                   ))}
                 </div>
                 <div className="mt-4 pt-3 border-t border-amber-200">
-                  <p className="text-[9px] font-bold text-amber-700 text-center">8 Total GSIs · Sharded to prevent hot partitions</p>
+                  <p className="text-[9px] font-bold text-amber-700 text-center">7 Total GSIs · Sharded to prevent hot partitions</p>
                 </div>
               </motion.div>
             </div>

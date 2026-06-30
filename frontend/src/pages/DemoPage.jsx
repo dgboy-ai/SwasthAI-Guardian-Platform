@@ -71,19 +71,19 @@ const ROLES = [
 ];
 
 const TECH_STACK = [
-  { icon: Globe,       label: 'Frontend',   val: 'React 18 + Vite + PWA',          sub: 'Vercel Edge' },
-  { icon: Database,    label: 'Relational',  val: 'Amazon Aurora PostgreSQL',        sub: 'ap-south-1' },
-  { icon: Database,    label: 'NoSQL',       val: 'Amazon DynamoDB PAY_PER_REQUEST', sub: '5 tables · 7 GSIs' },
-  { icon: BrainCircuit,label: 'LLM',         val: 'Groq Llama-3.3-70b',             sub: 'RAG + Agent' },
-  { icon: Stethoscope, label: 'AI Models',   val: 'PyTorch SymptomNet',              sub: '71.1% LR · 64.6% DL' },
-  { icon: WifiOff,     label: 'Offline',     val: 'IndexedDB Sync Queue',            sub: 'Zero-signal villages' },
+  { icon: Globe, label: 'Frontend', val: 'React 18 + Vite + PWA', sub: 'Vercel Edge' },
+  { icon: Database, label: 'Relational', val: 'Amazon Aurora PostgreSQL', sub: 'ap-south-1' },
+  { icon: Database, label: 'NoSQL', val: 'Amazon DynamoDB PAY_PER_REQUEST', sub: '5 tables · 7 GSIs' },
+  { icon: BrainCircuit, label: 'LLM', val: 'Groq Llama-3.3-70b', sub: 'RAG + Agent' },
+  { icon: Stethoscope, label: 'AI Models', val: 'PyTorch SymptomNet', sub: '71.1% LR · 64.6% DL' },
+  { icon: WifiOff, label: 'Offline', val: 'IndexedDB Sync Queue', sub: 'Zero-signal villages' },
 ];
 
 const IMPACT = [
   { val: '600M+', label: 'Rural Indians addressable' },
-  { val: '1.4M',  label: 'ASHA workers supported' },
-  { val: '101',   label: 'Disease classes' },
-  { val: '6',     label: 'Indian languages' },
+  { val: '1.4M', label: 'ASHA workers supported' },
+  { val: '101', label: 'Disease classes' },
+  { val: '6', label: 'Indian languages' },
 ];
 
 export default function DemoPage() {
@@ -95,7 +95,7 @@ export default function DemoPage() {
   const [activeTab, setActiveTab] = useState('villager');
 
   useEffect(() => {
-    api.get('/admin/analytics').then(r => setStats(r.data)).catch(() => {});
+    api.get('/admin/analytics').then(r => setStats(r.data)).catch(() => { });
   }, []);
 
   const handleOneClickLogin = async (id, password, role) => {
@@ -111,7 +111,7 @@ export default function DemoPage() {
   };
 
   const copy = (text, key) => {
-    navigator.clipboard.writeText(text).catch(() => {});
+    navigator.clipboard.writeText(text).catch(() => { });
     setCopied(key);
     setTimeout(() => setCopied(null), 2000);
   };
@@ -127,7 +127,7 @@ export default function DemoPage() {
             <span className="text-emerald-400 text-[11px] font-black uppercase tracking-widest">Platform Live Demo</span>
           </div>
           <h1 className="text-5xl md:text-7xl font-black text-white mb-4 tracking-tight leading-none">
-            SwasthAI<br/><span className="text-emerald-400">Guardian</span>
+            SwasthAI<br /><span className="text-emerald-400">Guardian</span>
           </h1>
           <p className="text-slate-400 text-lg font-medium max-w-2xl mx-auto mb-3 leading-relaxed">
             National Rural Health Intelligence Platform — AI-powered disease surveillance, offline-first medical access,
@@ -154,10 +154,10 @@ export default function DemoPage() {
             <div className="inline-flex items-center gap-6 px-6 py-3 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl mb-12">
               <span className="text-[10px] text-emerald-400 font-black uppercase tracking-widest">Live from Aurora PostgreSQL</span>
               {[
-                { val: stats.villages,       label: 'Villages' },
-                { val: stats.pregnancies,    label: 'Pregnancies' },
+                { val: stats.villages, label: 'Villages' },
+                { val: stats.pregnancies, label: 'Pregnancies' },
                 { val: stats.today_symptoms, label: 'Diagnoses Today' },
-                { val: stats.ambulances,     label: 'SOS Requests' },
+                { val: stats.ambulances, label: 'SOS Requests' },
               ].map(({ val, label }) => (
                 <div key={label} className="text-center">
                   <p className="text-xl font-black text-white">{val ?? 0}</p>
@@ -183,11 +183,10 @@ export default function DemoPage() {
                 <button
                   key={roleKey}
                   onClick={() => setActiveTab(roleKey)}
-                  className={`flex items-center gap-2 px-6 py-3 rounded-full text-xs font-bold transition-all duration-300 uppercase tracking-wider ${
-                    isActive
+                  className={`flex items-center gap-2 px-6 py-3 rounded-full text-xs font-bold transition-all duration-300 uppercase tracking-wider ${isActive
                       ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/25 scale-105'
                       : 'text-slate-400 hover:text-white'
-                  }`}
+                    }`}
                 >
                   <Icon className="w-4 h-4" />
                   {role}
@@ -217,10 +216,10 @@ export default function DemoPage() {
                       Explore the {currentRole.role} Experience
                     </h3>
                     <p className="text-slate-400 text-sm leading-relaxed mb-6">
-                      Interact with the platform from the perspective of a {currentRole.role.toLowerCase()}. 
+                      Interact with the platform from the perspective of a {currentRole.role.toLowerCase()}.
                       Test the primary features, workflows, and tools built specifically for this workflow.
                     </p>
-                    
+
                     <div className="space-y-3">
                       <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest mb-2">Key Capabilities Available:</p>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -238,7 +237,7 @@ export default function DemoPage() {
                 {/* Simulation / Action Card */}
                 <div className="lg:col-span-5 flex flex-col justify-between bg-slate-950/50 border border-slate-800 rounded-2xl p-6 relative overflow-hidden">
                   <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-transparent pointer-events-none" />
-                  
+
                   <div>
                     <div className="flex justify-between items-center mb-4 border-b border-slate-800 pb-3">
                       <div>

@@ -50,7 +50,7 @@
 | **React 18 PWA** | Vercel Edge CDN (v0) | Offline MLP (101 diseases, 64.6%), 7-language voice + TTS, IndexedDB queues, Workbox PWA |
 | **Node.js API** | Render (multi-worker cluster) | JWT auth, Helmet OWASP, REST + SSE, B2B API keys (`sk_live_`), DynamoDB telemetry on every request |
 | **FastAPI AI** | Render (separate service) | SymptomNet MLP (64.6%), LR fallback (71.1%), Sakhi RAG (243 chunks, F1=1.00), 30-min outbreak agent |
-| **Aurora PostgreSQL** | AWS ap-south-1 | 19 tables — patient records, auth, referrals, welfare schemes, B2B analytics (ACID, SSL) |
+| **Aurora PostgreSQL** | AWS ap-south-1 | 19 core tables (plus 1 system utility table) — patient records, auth, B2B gateway, configs |
 | **DynamoDB** | AWS ap-south-1 | 5 tables, 7 GSIs — outbreak telemetry, sync queues, emergency streams, audit (PAY_PER_REQUEST) |
 
 ---

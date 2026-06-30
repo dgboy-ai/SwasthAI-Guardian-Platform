@@ -68,20 +68,20 @@ if (isProduction && cluster.isPrimary && maxWorkers > 1) {
   if (process.env.NODE_ENV === 'production' && AI_SERVICE_URL === 'http://127.0.0.1:8000') {
     console.warn('⚠️ WARNING: AI_SERVICE_URL is running on local fallback in production environment!');
   }
-    // Cookie parser for SSE token auth (avoids token in URL query params)
-    app.use((req, res, next) => {
-      req.cookies = {};
-      const cookieHeader = req.headers.cookie;
-      if (cookieHeader) {
-        cookieHeader.split(';').forEach(c => {
-          const [key, ...val] = c.trim().split('=');
-          req.cookies[key] = val.join('=');
-        });
-      }
-      next();
-    });
+  // Cookie parser for SSE token auth (avoids token in URL query params)
+  app.use((req, res, next) => {
+    req.cookies = {};
+    const cookieHeader = req.headers.cookie;
+    if (cookieHeader) {
+      cookieHeader.split(';').forEach(c => {
+        const [key, ...val] = c.trim().split('=');
+        req.cookies[key] = val.join('=');
+      });
+    }
+    next();
+  });
 
-    if (process.env.NODE_ENV === 'production' && !process.env.TWILIO_AUTH_TOKEN) {
+  if (process.env.NODE_ENV === 'production' && !process.env.TWILIO_AUTH_TOKEN) {
     console.warn('⚠️ WARNING: TWILIO_AUTH_TOKEN is not set — Twilio webhook signature validation will be skipped!');
   }
 
@@ -207,41 +207,41 @@ if (isProduction && cluster.isPrimary && maxWorkers > 1) {
       console.log('[AUTO-SEED] Empty database detected, seeding hackathon demo data...');
       // Inline seed — villages, users, pregnancies, symptoms, referrals, ambulances, vaccinations
       const villages = [
-        ['V101','Rampur',1240,'Varanasi',25.3176,82.9739], ['V102','Nagwa',890,'Varanasi',25.292,83.008],
-        ['V103','Sarai',1100,'Varanasi',25.34,83.01], ['V104','Dariyapur',760,'Varanasi',25.27,82.95],
-        ['V105','Kashirampur',950,'Varanasi',25.305,83.02],
+        ['V101', 'Rampur', 1240, 'Varanasi', 25.3176, 82.9739], ['V102', 'Nagwa', 890, 'Varanasi', 25.292, 83.008],
+        ['V103', 'Sarai', 1100, 'Varanasi', 25.34, 83.01], ['V104', 'Dariyapur', 760, 'Varanasi', 25.27, 82.95],
+        ['V105', 'Kashirampur', 950, 'Varanasi', 25.305, 83.02],
       ];
-      for (const [id,name,pop,dist,lat,lng] of villages) {
-        await db.run(`INSERT INTO village_health ("villageId",name,population,"districtId",lat,lng,"lastUpdated") VALUES (?,?,?,?,?,?,CURRENT_TIMESTAMP) ON CONFLICT("villageId") DO UPDATE SET name=EXCLUDED.name`, [id,name,pop,dist,lat,lng]);
+      for (const [id, name, pop, dist, lat, lng] of villages) {
+        await db.run(`INSERT INTO village_health ("villageId",name,population,"districtId",lat,lng,"lastUpdated") VALUES (?,?,?,?,?,?,CURRENT_TIMESTAMP) ON CONFLICT("villageId") DO UPDATE SET name=EXCLUDED.name`, [id, name, pop, dist, lat, lng]);
       }
-      const users = [['9876543211','Sunita Devi','ngo','V101'],['9876543213','Priya Sharma','ngo','V102'],['9876543214','Geeta Yadav','ngo','V103'],['9876543212','Dr. Rajesh Kumar (CMO)','admin',null]];
-      for (const [phone,name,role,vid] of users) {
-        await db.run(`INSERT INTO users (phone,name,role,"villageId") VALUES (?,?,?,?) ON CONFLICT(phone) DO UPDATE SET name=EXCLUDED.name`, [phone,name,role,vid]);
+      const users = [['9876543211', 'Sunita Devi', 'ngo', 'V101'], ['9876543213', 'Priya Sharma', 'ngo', 'V102'], ['9876543214', 'Geeta Yadav', 'ngo', 'V103'], ['9876543212', 'Dr. Rajesh Kumar (CMO)', 'admin', null]];
+      for (const [phone, name, role, vid] of users) {
+        await db.run(`INSERT INTO users (phone,name,role,"villageId") VALUES (?,?,?,?) ON CONFLICT(phone) DO UPDATE SET name=EXCLUDED.name`, [phone, name, role, vid]);
       }
       const pregnancies = [
-        ['Sunita Devi',26,3,'V101','High',145,95,88], ['Rani Kumari',22,2,'V102','Medium',128,82,76],
-        ['Pooja Gupta',24,1,'V103','Low',118,75,72], ['Meena Kumari',28,3,'V101','High',152,98,92],
-        ['Lata Devi',20,2,'V104','Low',120,78,74], ['Aarti Sen',30,3,'V105','Medium',135,88,80],
+        ['Sunita Devi', 26, 3, 'V101', 'High', 145, 95, 88], ['Rani Kumari', 22, 2, 'V102', 'Medium', 128, 82, 76],
+        ['Pooja Gupta', 24, 1, 'V103', 'Low', 118, 75, 72], ['Meena Kumari', 28, 3, 'V101', 'High', 152, 98, 92],
+        ['Lata Devi', 20, 2, 'V104', 'Low', 120, 78, 74], ['Aarti Sen', 30, 3, 'V105', 'Medium', 135, 88, 80],
       ];
-      for (const [name,age,tri,vil,risk,sbp,dbp,hr] of pregnancies) {
-        const due = new Date(Date.now()+(9-tri)*30*86400000).toISOString().slice(0,10);
-        await db.run(`INSERT INTO pregnancy_data (name,age,trimester,"dueDate","riskLevel","villageId",systolic_bp,diastolic_bp,heart_rate) VALUES (?,?,?,?,?,?,?,?,?) ON CONFLICT DO NOTHING`, [name,age,tri,due,risk,vil,sbp,dbp,hr]);
+      for (const [name, age, tri, vil, risk, sbp, dbp, hr] of pregnancies) {
+        const due = new Date(Date.now() + (9 - tri) * 30 * 86400000).toISOString().slice(0, 10);
+        await db.run(`INSERT INTO pregnancy_data (name,age,trimester,"dueDate","riskLevel","villageId",systolic_bp,diastolic_bp,heart_rate) VALUES (?,?,?,?,?,?,?,?,?) ON CONFLICT DO NOTHING`, [name, age, tri, due, risk, vil, sbp, dbp, hr]);
       }
-      const symptoms = [['V101','Fever, Headache','Malaria',0.82],['V101','Cough, Breathing difficulty','Respiratory Infection',0.75],['V102','Fever, Rash, Joint pain','Dengue',0.78],['V103','Diarrhea, Vomiting','Gastroenteritis',0.85],['V101','Fever, Cough, Fatigue','Malaria',0.79],['V104','Skin rash, Itching','Dermatitis',0.71],['V105','Fever, Body ache','Viral Fever',0.68],['V102','Cough, Sore throat','Common Cold',0.88]];
-      for (const [vil,sym,disease,conf] of symptoms) {
-        await db.run(`INSERT INTO symptoms ("villageId",symptoms,disease,confidence,model_used) VALUES (?,?,?,?,?)`, [vil,sym,disease,conf,'SymptomNet-DL']);
+      const symptoms = [['V101', 'Fever, Headache', 'Malaria', 0.82], ['V101', 'Cough, Breathing difficulty', 'Respiratory Infection', 0.75], ['V102', 'Fever, Rash, Joint pain', 'Dengue', 0.78], ['V103', 'Diarrhea, Vomiting', 'Gastroenteritis', 0.85], ['V101', 'Fever, Cough, Fatigue', 'Malaria', 0.79], ['V104', 'Skin rash, Itching', 'Dermatitis', 0.71], ['V105', 'Fever, Body ache', 'Viral Fever', 0.68], ['V102', 'Cough, Sore throat', 'Common Cold', 0.88]];
+      for (const [vil, sym, disease, conf] of symptoms) {
+        await db.run(`INSERT INTO symptoms ("villageId",symptoms,disease,confidence,model_used) VALUES (?,?,?,?,?)`, [vil, sym, disease, conf, 'SymptomNet-DL']);
       }
-      const referrals = [['Sunita Devi','V101','High BP in 8th month','urgent','pending'],['Raju Kumar','V101','Severe malnutrition SAM','high','in_progress'],['Lata Devi','V104','Chest pain cardiac risk','urgent','completed'],['Karan Singh','V103','Moderate malnutrition','routine','completed']];
-      for (const [name,vil,reason,pri,status] of referrals) {
-        await db.run(`INSERT INTO referrals (patient_name,"villageId",reason,priority,status) VALUES (?,?,?,?,?)`, [name,vil,reason,pri,status]);
+      const referrals = [['Sunita Devi', 'V101', 'High BP in 8th month', 'urgent', 'pending'], ['Raju Kumar', 'V101', 'Severe malnutrition SAM', 'high', 'in_progress'], ['Lata Devi', 'V104', 'Chest pain cardiac risk', 'urgent', 'completed'], ['Karan Singh', 'V103', 'Moderate malnutrition', 'routine', 'completed']];
+      for (const [name, vil, reason, pri, status] of referrals) {
+        await db.run(`INSERT INTO referrals (patient_name,"villageId",reason,priority,status) VALUES (?,?,?,?,?)`, [name, vil, reason, pri, status]);
       }
-      const ambulances = [['Ram Singh','Rampur Sector 4','high','Chest pain, Breathing difficulty','dispatched'],['Lata Devi','Nagwa Village','critical','Pregnancy labour pain','assigned'],['Geeta Devi','Sarai Block','medium','High fever, Dehydration','pending']];
-      for (const [name,loc,pri,sym,status] of ambulances) {
-        await db.run(`INSERT INTO ambulance_requests (name,location,priority,symptoms,status,request_type) VALUES (?,?,?,?,?,'ambulance')`, [name,loc,pri,sym,status]);
+      const ambulances = [['Ram Singh', 'Rampur Sector 4', 'high', 'Chest pain, Breathing difficulty', 'dispatched'], ['Lata Devi', 'Nagwa Village', 'critical', 'Pregnancy labour pain', 'assigned'], ['Geeta Devi', 'Sarai Block', 'medium', 'High fever, Dehydration', 'pending']];
+      for (const [name, loc, pri, sym, status] of ambulances) {
+        await db.run(`INSERT INTO ambulance_requests (name,location,priority,symptoms,status,request_type) VALUES (?,?,?,?,?,'ambulance')`, [name, loc, pri, sym, status]);
       }
-      const vaccs = [['Raju Kumar','BCG','V101','given','2026-06-15',null],['Raju Kumar','OPV-0','V101','given','2026-06-15',null],['Priya Singh','DPT-1','V102','scheduled',null,'2026-07-01'],['Amit Kumar','Measles','V103','scheduled',null,'2026-07-05']];
-      for (const [child,vac,vil,status,given,sched] of vaccs) {
-        await db.run(`INSERT INTO vaccination_records (child_name,vaccine_name,"villageId",status,given_date,scheduled_date) VALUES (?,?,?,?,?,?)`, [child,vac,vil,status,given,sched]);
+      const vaccs = [['Raju Kumar', 'BCG', 'V101', 'given', '2026-06-15', null], ['Raju Kumar', 'OPV-0', 'V101', 'given', '2026-06-15', null], ['Priya Singh', 'DPT-1', 'V102', 'scheduled', null, '2026-07-01'], ['Amit Kumar', 'Measles', 'V103', 'scheduled', null, '2026-07-05']];
+      for (const [child, vac, vil, status, given, sched] of vaccs) {
+        await db.run(`INSERT INTO vaccination_records (child_name,vaccine_name,"villageId",status,given_date,scheduled_date) VALUES (?,?,?,?,?,?)`, [child, vac, vil, status, given, sched]);
       }
       console.log('[AUTO-SEED] Hackathon demo data seeded successfully');
     } catch (err) {
@@ -303,7 +303,7 @@ if (isProduction && cluster.isPrimary && maxWorkers > 1) {
       connectionHealth.aurora.consecutiveFailures++;
       if (connectionHealth.aurora.consecutiveFailures >= 2) {
         connectionHealth.aurora.ok = false;
-        initSQLiteFallback().catch(() => {});
+        initSQLiteFallback().catch(() => { });
       }
     }
     connectionHealth.aurora.lastChecked = new Date().toISOString();
@@ -324,7 +324,7 @@ if (isProduction && cluster.isPrimary && maxWorkers > 1) {
       };
       await initSchema(fallbackDb, null, true);
       await seedData(fallbackDb, null, true, bcrypt, dynamoHelper).catch(e => console.warn('⚠️ Runtime seed issue:', e.message));
-      autoSeedHackathonData(fallbackDb, true).catch(() => {});
+      autoSeedHackathonData(fallbackDb, true).catch(() => { });
       db = fallbackDb;
       usingSQLite = true;
       app.locals.db = db;
@@ -523,7 +523,7 @@ if (isProduction && cluster.isPrimary && maxWorkers > 1) {
         caseCount: 1,
         symptomPattern: JSON.stringify(lead),
         source: 'b2b-lead',
-      }).catch(() => {});
+      }).catch(() => { });
       res.json({ success: true, message: 'Demo request received. We will contact you within 24 hours.' });
     } catch (err) {
       res.status(500).json({ error: 'Failed to submit request' });
@@ -612,17 +612,17 @@ if (isProduction && cluster.isPrimary && maxWorkers > 1) {
 
     const auroraConnected = connectionHealth.aurora.ok && !usingSQLite;
     const dynamoConnected = connectionHealth.dynamodb.ok && !dynamoHelper.isMock;
-    
+
     const pgEngine = auroraConnected ? 'Amazon Aurora PostgreSQL' : (process.env.DATABASE_URL ? 'Aurora PostgreSQL (connection failed)' : 'SQLite local cache');
     const pgRegion = auroraConnected ? (process.env.AWS_REGION || 'ap-south-1') : 'N/A (local SQLite)';
-    const pgSetup  = auroraConnected ? null : (process.env.DATABASE_URL ? 'DATABASE_URL set but connection failed — check credentials and network' : 'DATABASE_URL not set — using local SQLite for development');
+    const pgSetup = auroraConnected ? null : (process.env.DATABASE_URL ? 'DATABASE_URL set but connection failed — check credentials and network' : 'DATABASE_URL not set — using local SQLite for development');
 
     const dynamoRegion = dynamoConnected ? (process.env.AWS_REGION || 'ap-south-1') : 'N/A (mock mode)';
-    const dynamoSetup  = dynamoConnected ? null : 'AWS_ACCESS_KEY_ID not configured — using in-memory mock store. Set AWS credentials for real DynamoDB.';
+    const dynamoSetup = dynamoConnected ? null : 'AWS_ACCESS_KEY_ID not configured — using in-memory mock store. Set AWS credentials for real DynamoDB.';
 
     let aiHealth = null;
     let aiLiveStatus = 'unreachable';
-    
+
     try {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 2500);
@@ -663,34 +663,34 @@ if (isProduction && cluster.isPrimary && maxWorkers > 1) {
     }
 
     res.json({
-      service:   'SwasthAI Guardian — District Health Command Platform',
-      version:   '2.0.0',
-      uptime:    `${Math.floor(process.uptime())}s`,
+      service: 'SwasthAI Guardian — District Health Command Platform',
+      version: '2.0.0',
+      uptime: `${Math.floor(process.uptime())}s`,
       timestamp: new Date().toISOString(),
       cluster: {
-        pid:     process.pid,
+        pid: process.pid,
         workers: os.cpus().length,
-        mode:    process.env.NODE_ENV || 'development'
+        mode: process.env.NODE_ENV || 'development'
       },
       databases: {
         aurora_postgresql: {
-          status:           auroraConnected ? 'connected' : (process.env.DATABASE_URL ? 'connection_failed' : 'not_configured'),
-          engine:           pgEngine,
-          region:           pgRegion,
+          status: auroraConnected ? 'connected' : (process.env.DATABASE_URL ? 'connection_failed' : 'not_configured'),
+          engine: pgEngine,
+          region: pgRegion,
           registered_users: dbUserCount,
           monitored_villages: dbVillageCount,
-          pad_requests:     padRequestCount,
+          pad_requests: padRequestCount,
           ambulance_requests: ambulanceCount,
-          pool:             pool ? { total: pool.totalCount, idle: pool.idleCount, waiting: pool.waitingCount } : null,
+          pool: pool ? { total: pool.totalCount, idle: pool.idleCount, waiting: pool.waitingCount } : null,
           query_latency_ms: dbLatencySummary,
-          rationale:        'ACID compliance for medical records — a corrupted pregnancy record could cost a life',
+          rationale: 'ACID compliance for medical records — a corrupted pregnancy record could cost a life',
           production_setup: pgSetup,
         },
         dynamodb: {
-          status:    dynamoConnected ? 'connected' : 'mock',
-          region:    dynamoRegion,
-          billing:   'PAY_PER_REQUEST (serverless scaling)',
-          tables:    dynamoHelper.schema,
+          status: dynamoConnected ? 'connected' : 'mock',
+          region: dynamoRegion,
+          billing: 'PAY_PER_REQUEST (serverless scaling)',
+          tables: dynamoHelper.schema,
           item_counts: await dynamoHelper.tableItemCounts(),
           rationale: 'Millisecond write latency for outbreak telemetry — a disease cluster must be recorded instantly',
           production_setup: dynamoSetup,
@@ -777,15 +777,15 @@ if (isProduction && cluster.isPrimary && maxWorkers > 1) {
   const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 SwasthAI Core active on port ${PORT} (Mode: ${process.env.NODE_ENV || 'development'})`);
     // Start live connection monitor
-    checkAuroraHealth().catch(() => {});
-    checkDynamoHealth().catch(() => {});
+    checkAuroraHealth().catch(() => { });
+    checkDynamoHealth().catch(() => { });
     setInterval(() => {
-      checkAuroraHealth().catch(() => {});
-      checkDynamoHealth().catch(() => {});
+      checkAuroraHealth().catch(() => { });
+      checkDynamoHealth().catch(() => { });
     }, 30_000);
     // Auto-seed demo data on startup if DB is empty (survives Render deploys)
     // Force seed on cold start so hackathon demo data survives Aurora down + Render restart
-    autoSeedHackathonData(app.locals.db, true).catch(() => {});
+    autoSeedHackathonData(app.locals.db, true).catch(() => { });
   });
 
   // Setup WebSocket Server for Live Ambulance Telemetry

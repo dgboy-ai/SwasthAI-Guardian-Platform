@@ -41,8 +41,10 @@
 | **ambulance_requests** | name, location, priority, status, request_type | SOS ambulance + pad request routing |
 | **vaccination_records** | child_name, vaccine_name, status | Mission Indradhanush immunization schedule |
 | **government_schemes** | 20 MoHFW schemes with eligibility JSON | Ayushman Bharat, JSY, PMMVY, RBSK, PMSBY + 15 more |
-| **malnutrition_cases** | child measurements, WHO Z-score, SAM/MAM | Child malnutrition classification |
-| *(6 more)* | audit_logs, api_keys, district_config, asha_performance, otps, malnutrition_data |
+| **malnutrition_data** | child measurements, WHO Z-score, SAM/MAM | Child malnutrition classification (WHO Z-scores) |
+| *(10 more)* | audit_logs, api_keys, district_config, asha_performance, otps, refresh_tokens, revoked_tokens, skin_logs, ngo_reports, village_bulk_uploads |
+
+> **Note on Table Count:** An additional 20th database table (`twilio_receipts`) operates purely as an internal background logging utility for SMS delivery statuses. It is excluded from the 19 core application tables shown in the system architecture diagram.
 
 ---
 
